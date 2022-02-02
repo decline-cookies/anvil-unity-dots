@@ -1,4 +1,4 @@
-# anvil-ecs-dots-core
+# anvil-unity-dots
 
 An opinionated collection of systems and utilities that add [Unity](https://unity.com) [ECS](https://docs.unity3d.com/Packages/com.unity.entities@0.17/manual/index.html) [DOTS](https://unity.com/dots) specific implementations of [Anvil](https://github.com/decline-cookies/anvil-csharp-core) systems and add new common tools and systems that are uniquely useful to Unity ECS/DOTS development.
 
@@ -15,15 +15,13 @@ The code is reasonably clean but documentation and examples are sparse. Feel fre
 # Dependencies
 - [Unity](https://unity.com/)
 - [anvil-csharp-core](https://github.com/decline-cookies/anvil-csharp-core)
-- ###ECS and DOTS Packages
-    - [com.unity.burst](https://docs.unity3d.com/Packages/com.unity.burst@latest)
-    - [com.unity.collections](https://docs.unity3d.com/Packages/com.unity.collections@latest)
-    - [com.unity.dots.editor](https://docs.unity3d.com/Packages/com.unity.dots.editor@latest)
-    - [com.unity.entities](https://docs.unity3d.com/Packages/com.unity.entities@latest)
-    - [com.unity.jobs](https://docs.unity3d.com/Packages/com.unity.jobs@latest)
-    - [com.unity.mathematics](https://docs.unity3d.com/Packages/com.unity.mathematics@latest)
-    - [com.unity.platforms](https://docs.unity3d.com/Packages/com.unity.platforms@latest)
-    - [com.unity.rendering.hybrid](https://docs.unity3d.com/Packages/com.unity.rendering.hybrid@latest)
+- [anvil-unity-core](https://github.com/decline-cookies/anvil-unity-core)
+- *ECS and DOTS Packages*
+    - [com.unity.burst](https://docs.unity3d.com/Packages/com.unity.burst@1.6/manual/index.html)
+    - [com.unity.collections](https://docs.unity3d.com/Packages/com.unity.collections@0.15/manual/index.html)
+    - [com.unity.entities](https://docs.unity3d.com/Packages/com.unity.entities@0.17/manual/index.html)
+    - [com.unity.jobs](https://docs.unity3d.com/Packages/com.unity.jobs@0.8/manual/index.html)
+    - [com.unity.mathematics](https://docs.unity3d.com/Packages/com.unity.mathematics@1.2/manual/index.html)
     
 At this point in time, all ECS and DOTS related functionality will go into this one submodule. As it grows and it makes sense to, we may split the functionality into further submodules. Splitting to a separate submodule per ECS/DOTS Unity package seems overly tedious at the moment.
 
@@ -38,6 +36,8 @@ At this point in time, all ECS and DOTS related functionality will go into this 
 This is the recommended Unity project folder structure:
 - Assets
   - Anvil
+    - csharp
+      - anvil-csharp-core
     - unity
-        - anvil-unity-core
-        - anvil-ecs-dots-core
+      - anvil-unity-core
+      - anvil-ecs-dots-core

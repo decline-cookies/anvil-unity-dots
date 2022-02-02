@@ -1,0 +1,22 @@
+{
+    "name": "anvil-unity-dots-editor",
+    "references": [
+        "anvil-csharp-core",
+        "anvil-unity-core-editor",
+        "anvil-unity-dots-runtime",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Entities",
+        "Unity.Jobs",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
