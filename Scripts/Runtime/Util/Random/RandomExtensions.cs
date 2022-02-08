@@ -11,14 +11,15 @@ namespace Anvil.Unity.DOTS.Util
     {
         private const uint SPREAD = uint.MaxValue / JobsUtility.MaxJobThreadCount;
         
+        //TODO: Revisit when we get C# 8 support in Unity ECS https://github.com/decline-cookies/anvil-unity-dots/issues/3
         /// <summary>
         /// Given an instance of <see cref="Random"/>, this extension modifies the <see cref="Random"/>'s state so that
-        /// multiple threads using the same initial state will have output different random values based on the thread
+        /// multiple threads using the same initial state will output different random values based on the thread
         /// index.
         /// </summary>
         /// <remarks>
         /// A typical use case with <see cref="Random"/> is to create an instance on the main thread with a given seed.
-        /// Then pass that instance into a job which will get split across many different threads to do some work that
+        /// Then pass that instance into a job which will get copied across many different threads to do some work that
         /// requires randomized values.
         ///
         /// Because the instance is copied into each of the threads they all have the same state and will all output the
