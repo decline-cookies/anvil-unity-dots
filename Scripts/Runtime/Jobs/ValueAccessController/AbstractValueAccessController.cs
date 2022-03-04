@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// A wrapper class for managing async access to a value.
     /// </summary>
     /// <remarks>
-    /// Take care that value type implementations propogate state through copies (usually by wrapping a pointer).
+    /// Take care that value type implementations propagate state through copies (usually by wrapping a pointer).
     /// For Example: <see cref="NativeArray{T}" />
     /// </remarks>
     public abstract class AbstractValueAccessController<T> : AbstractAnvilBase
@@ -79,7 +79,7 @@ namespace Anvil.Unity.DOTS.Jobs
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             Debug.Assert(!IsDisposed);
-            Debug.Assert(m_State != AcquisitionState.Unacquired, "There is no outstanding acquisition to realease.");
+            Debug.Assert(m_State != AcquisitionState.Unacquired, "There is no outstanding acquisition to release.");
 
             switch (m_State)
             {
@@ -101,10 +101,12 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <summary>
         /// Get the value of the <see cref="AbstractValueAccessController{T}"/> immediately.
         /// This blocks the calling thread until the value is available.
-        /// <see cref="Release"/> must be called before any other calls to <see cref="AcquireAsync" /> or <see cref="Acquire" /> are made for this value.
+        /// <see cref="Release"/> must be called before any other calls to <see cref="AcquireAsync" /> 
+        /// or <see cref="Acquire" /> are made for this value.
         /// </summary>
         /// <remarks>
-        /// This method and its compliment <see cref="Release" /> are intended to be used for syncronous work on the main thread.
+        /// This method and its compliment <see cref="Release" /> are intended to be used for synchronous work 
+        /// on the main thread.
         /// </remarks>
         public T Acquire(bool isReadOnly)
         {
@@ -123,12 +125,14 @@ namespace Anvil.Unity.DOTS.Jobs
         /// Paired with the use of <see cref="Acquire"/>.
         /// </summary>
         /// <remarks>
-        /// This method can be called after <see cref="AcquireAsync"/> has been called but it will block the calling thread until the value's access dependency is resolved. <see cref="ReleaseAsync" /> is typically the better option.
+        /// This method can be called after <see cref="AcquireAsync"/> has been called but it will 
+        // block the calling thread until the value's access dependency is resolved. <see cref="ReleaseAsync" /> 
+        /// is typically the better option.
         /// </remarks>
         public void Release()
         {
             Debug.Assert(!IsDisposed);
-            Debug.Assert(m_State != AcquisitionState.Unacquired, "There is no outstanding acquisition to realease.");
+            Debug.Assert(m_State != AcquisitionState.Unacquired, "There is no outstanding acquisition to release.");
             m_State = AcquisitionState.Unacquired;
 
             m_ReadAccessDependency.Complete();
