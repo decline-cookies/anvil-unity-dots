@@ -1,6 +1,8 @@
 {
     "name": "anvil-unity-dots-runtime",
     "references": [
+        "anvil-csharp-core",
+        "anvil-unity-core-runtime",
         "Unity.Burst",
         "Unity.Collections",
         "Unity.Entities",
