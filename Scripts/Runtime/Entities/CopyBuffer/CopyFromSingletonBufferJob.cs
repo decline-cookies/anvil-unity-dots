@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// Copy a singleton <see cref="DynamicBuffer{T}" /> to a <see cref="NativeArray{T}" />.
     /// </summary>
-    // <remarks>
+    /// <remarks>
     /// <see cref="DynamicBuffer{T}" /> and <see cref="NativeArray{T}" /> must have the same length.
     /// </remarks>
     [BurstCompile]

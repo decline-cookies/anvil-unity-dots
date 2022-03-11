@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return base.Dependency;
             }
-            // Detects situations where the existing dependency is overwritten rather than chained or cominbed.
+            // Detects situations where the existing dependency is overwritten rather than chained or combined.
             set
             {
                 // Note: The arguments to JobHandle.CheckFenceIsDependencyOrDidSyncFence seem backward.
@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// Builds a container to provide in job access to a singleton <see cref="DynamicBuffer{T}" />.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="isReadOnly">true if the data will not be written too.</param>
+        /// <param name="isReadOnly">true if the data will not be written to.</param>
         /// <returns>A container that provides in job access to the requested <see cref="DynamicBuffer{T}" />.</returns>
         protected BufferFromSingleEntity<T> GetBufferFromSingletonEntity<T>(bool isReadOnly = false) where T : struct, IBufferElementData
         {
@@ -55,7 +55,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
         /// <param name="entity">The <see cref="Entity" /> to get the <see cref="DynamicBuffer{T}" /> from.</param>
-        /// <param name="isReadOnly">true if the data will not be written too.</param>
+        /// <param name="isReadOnly">true if the data will not be written to.</param>
         /// <returns>A container that provides in job access to the requested <see cref="DynamicBuffer{T}" />.</returns>
         protected BufferFromSingleEntity<T> GetBufferFromSingleEntity<T>(Entity entity, bool isReadOnly = false) where T : struct, IBufferElementData
         {
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// Builds a container to provide in job access to a singleton <see cref="IComponentData" />.
         /// </summary>
         /// <typeparam name="T">The type that implements <see cref="IComponentData" />.</typeparam>
-        /// <param name="isReadOnly">true if the data will not be written too.</param>
+        /// <param name="isReadOnly">true if the data will not be written to.</param>
         /// <returns>A container that provides in job access to the requested <see cref="T" />.</returns>
         protected ComponentDataFromSingleEntity<T> GetComponentDataFromSingletonEntity<T>(bool isReadOnly) where T : struct, IComponentData
         {
@@ -78,7 +78,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="IComponentData" />.</typeparam>
         /// <param name="entity">The <see cref="Entity" /> to get the <see cref="T" /> from.</param>
-        /// <param name="isReadOnly">true if the data will not be written too.</param>
+        /// <param name="isReadOnly">true if the data will not be written to.</param>
         /// <returns>A container that provides in job access to the requested <see cref="T" />.</returns>
         protected ComponentDataFromSingleEntity<T> GetComponentDataFromSingleEntity<T>(Entity entity, bool isReadOnly) where T : struct, IComponentData
         {
@@ -87,11 +87,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         // ----- Copy From Buffers ----- //
         /// <summary>
-        /// Schedule a job to asyncronously copy a singleton <see cref="DynamicBuffer{T}" /> to 
+        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to 
         /// a <see cref="NativeArray{T}" /> after <see cref="Dependency"/> has completed.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy too.</param>
+        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy to.</param>
         /// <remarks>Actual copy is performed by <see cref="CopyFromSingletonBuffer{T}" /></remarks>
         protected void CopyFromSingletonBufferAsync<T>(NativeArray<T> outputBuffer) where T : struct, IBufferElementData
         {
@@ -99,12 +99,12 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Schedule a job to asyncronously copy a singleton <see cref="DynamicBuffer{T}" /> to 
+        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to 
         /// a <see cref="NativeArray{T}" /> after the provided <see cref="JobHandle"/> has completed.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
         /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
-        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy too.</param>
+        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy to.</param>
         /// <remarks>Actual copy is performed by <see cref="CopyFromSingletonBuffer{T}" /></remarks>
         protected JobHandle CopyFromSingletonBufferAsync<T>(in JobHandle dependsOn, in NativeArray<T> outputBuffer) where T : struct, IBufferElementData
         {
@@ -119,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         // ----- Copy To Buffers ----- //
         /// <summary>
-        /// Schedule a job to asyncronously copy a <see cref="NativeArray{T}" /> to a
+        /// Schedule a job to asynchronously copy a <see cref="NativeArray{T}" /> to a
         /// singleton <see cref="DynamicBuffer{T}" /> after <see cref="Dependency"/> has completed.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
@@ -131,7 +131,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// /// <summary>
-        /// Schedule a job to asyncronously copy a <see cref="NativeArray{T}" /> to a
+        /// Schedule a job to asynchronously copy a <see cref="NativeArray{T}" /> to a
         /// singleton <see cref="DynamicBuffer{T}" /> after the provided <see cref="JobHandle"/> has completed.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>

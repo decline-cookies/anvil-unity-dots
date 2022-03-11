@@ -4,7 +4,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// A container that provides access to an <see cref="IComponentData" /> from a single entitiy.
+    /// A container that provides access to an <see cref="IComponentData" /> from a single entity.
     /// </summary>
     /// <typeparam name="T">The type that implements <see cref="IComponentData" /></typeparam>
     /// <remarks>Allows developers to define jobs with fewer parameters that clearly communicate intent.</remarks>
