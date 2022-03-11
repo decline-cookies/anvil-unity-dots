@@ -161,7 +161,7 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             Debug.Assert(m_State == AcquisitionState.Unacquired, $"Release must be scheduled before scheduling acquisition again. Last ScheduleAcquire caller hasn't scheduled release yet. {m_AcquireCallerInfo}");
 
-            System.Diagnostics.StackFrame frame = new System.Diagnostics.StackFrame(1);
+            System.Diagnostics.StackFrame frame = new System.Diagnostics.StackFrame(2);
             m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
         }
 #endif
