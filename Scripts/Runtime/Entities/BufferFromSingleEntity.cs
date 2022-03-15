@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Entities;
 
 
@@ -8,9 +9,10 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <typeparam name="T">The element type of the buffer</typeparam>
     /// <remarks>Allows developers to define jobs with fewer parameters that clearly communicate intent.</remarks>
-    public readonly struct BufferFromSingleEntity<T> where T : struct, IBufferElementData
+    public struct BufferFromSingleEntity<T> where T : struct, IBufferElementData
     {
-        private readonly BufferFromEntity<T> m_Lookup;
+        [NativeDisableParallelForRestriction]
+        private BufferFromEntity<T> m_Lookup;
         private readonly Entity m_Entity;
 
         /// <summary>
