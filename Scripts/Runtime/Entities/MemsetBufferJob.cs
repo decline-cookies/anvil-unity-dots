@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// Sets all elements of a <see cref="DynamicBuffer{T}"/> to a given value.
     /// </summary>
     /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}"/></typeparam>
-    /// <remarks>The <see cref="DynamicBuffer{T}"/> compliement to <see cref="MemsetNativeArray{T}"/>.</remarks>
+    /// <remarks>The <see cref="DynamicBuffer{T}"/> compliment to <see cref="MemsetNativeArray{T}"/>.</remarks>
     [BurstCompile]
     public struct MemsetBufferJob<T> : IJobParallelForBatch where T : struct, IBufferElementData
     {
@@ -25,7 +25,8 @@ namespace Anvil.Unity.DOTS.Entities
         public void Execute(int startIndex, int count)
         {
             NativeArray<T> buffer = Source.GetBuffer().AsNativeArray();
-            for (int i = startIndex; i < startIndex + count; i++)
+            int endIndex = startIndex + count;
+            for (int i = startIndex; i < endIndex; i++)
             {
                 buffer[i] = Value;
             }
