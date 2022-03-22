@@ -5,7 +5,9 @@
         "UnityEditor.TestRunner",
         "anvil-unity-dots-runtime",
         "Unity.Entities",
-        "Unity.Entities.Tests"
+        "Unity.Entities.Tests",
+        "Unity.Jobs",
+        "Unity.Burst"
     ],
     "includePlatforms": [
         "Editor"
