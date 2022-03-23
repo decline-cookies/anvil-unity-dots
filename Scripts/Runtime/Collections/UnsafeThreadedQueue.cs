@@ -36,6 +36,8 @@ namespace Anvil.Unity.DOTS.Collections
     public unsafe struct UnsafeThreadedQueue<T> : INativeDisposable
         where T : struct
     {
+        private const int CHUNK_SIZE = 16 * 1024;
+
         private readonly Allocator m_Allocator;
         private readonly int m_ElementSize;
         private readonly int m_ElementAlignment;
@@ -47,6 +49,20 @@ namespace Anvil.Unity.DOTS.Collections
         public bool IsCreated
         {
             get => m_ThreadData != null;
+        }
+
+        public int ScheduleBatchCount
+        {
+            get => m_MaxThreads;
+        }
+
+        public int ScheduleBatchMinIndicesPerJobCount
+        {
+            get => 1;
+        }
+
+        public UnsafeThreadedQueue(Allocator allocator) : this(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), allocator)
+        {
         }
 
         public UnsafeThreadedQueue(int elementsPerBlock, Allocator allocator)
@@ -81,7 +97,7 @@ namespace Anvil.Unity.DOTS.Collections
             {
                 return;
             }
-            
+
             for (int i = 0; i < m_MaxThreads; ++i)
             {
                 ThreadData* threadData = m_ThreadData + i;
@@ -91,12 +107,12 @@ namespace Anvil.Unity.DOTS.Collections
                 {
                     BlockPointer* currentBlockPointer = blockPointer;
                     blockPointer = currentBlockPointer->Next;
-                    
+
                     UnsafeUtility.Free(currentBlockPointer->Pointer, m_Allocator);
                     UnsafeUtility.Free(currentBlockPointer, m_Allocator);
                 }
             }
-            
+
             UnsafeUtility.Free(m_ThreadData, m_Allocator);
             m_ThreadData = null;
         }
@@ -106,7 +122,7 @@ namespace Anvil.Unity.DOTS.Collections
             DisposeJob disposeJob = new DisposeJob(this);
             JobHandle disposeJobHandle = disposeJob.Schedule(inputDeps);
             m_ThreadData = null;
-            
+
             return disposeJobHandle;
         }
 
@@ -128,7 +144,7 @@ namespace Anvil.Unity.DOTS.Collections
             {
                 return true;
             }
-            
+
             for (int i = 0; i < m_MaxThreads; ++i)
             {
                 ThreadData* threadData = m_ThreadData + i;
@@ -146,66 +162,148 @@ namespace Anvil.Unity.DOTS.Collections
             return new Writer(ref this);
         }
 
-        public Reader AsReader()
+        public ThreadReader AsThreadReader()
         {
-            return new Reader(ref this);
+            return new ThreadReader(ref this);
+        }
+
+        public SingleThreadReader AsSingleThreadReader()
+        {
+            return new SingleThreadReader(ref this);
         }
 
         [BurstCompatible]
-        public struct Reader
+        public struct SingleThreadReader
         {
             private readonly int m_ElementSize;
+            private readonly int m_BlockSize;
             private readonly int m_MaxThreads;
             
-            [NativeSetThreadIndex] private readonly int m_ThreadIndex;
             [NativeDisableUnsafePtrRestriction] private readonly ThreadData* m_ThreadData;
 
-            public Reader(ref UnsafeThreadedQueue<T> unsafeThreadedQueue)
+            public int MaxThreads
+            {
+                get => m_MaxThreads;
+            }
+            
+            public SingleThreadReader(ref UnsafeThreadedQueue<T> unsafeThreadedQueue)
             {
                 m_ThreadData = unsafeThreadedQueue.m_ThreadData;
                 m_ElementSize = unsafeThreadedQueue.m_ElementSize;
+                m_BlockSize = unsafeThreadedQueue.m_BlockSize;
                 m_MaxThreads = unsafeThreadedQueue.m_MaxThreads;
-                m_ThreadIndex = 0;
             }
 
-            public bool CanRead()
+            public int CountOnThread(int threadIndex)
             {
-                ThreadData* threadData = m_ThreadData + m_ThreadIndex - 1;
-                return threadData->ReaderHead != null;
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
+                return threadData->Count;
             }
 
-            public ref T Peek()
+            public ref T Peek(int threadIndex)
             {
-                Assert.IsTrue(m_ThreadIndex <= m_MaxThreads && m_ThreadIndex > 0);
-                ThreadData* threadData = m_ThreadData + m_ThreadIndex - 1;
-                
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
+
                 //Otherwise nothing has been written
                 //TODO: Write test for this
                 Assert.IsTrue(threadData->CurrentReadBlock != null && threadData->ReaderHead != null);
-                
+
                 byte* readPointer = threadData->ReaderHead;
-                
+
                 return ref UnsafeUtility.AsRef<T>(readPointer);
             }
-            
-            public ref T Read()
+
+            public ref T Read(int threadIndex)
             {
-                Assert.IsTrue(m_ThreadIndex <= m_MaxThreads && m_ThreadIndex > 0);
-                ThreadData* threadData = m_ThreadData + m_ThreadIndex - 1;
-                
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
+
                 //Otherwise nothing has been written
                 //TODO: Write test for this
                 Assert.IsTrue(threadData->CurrentReadBlock != null && threadData->ReaderHead != null);
 
                 byte* readPointer = threadData->ReaderHead;
                 threadData->ReaderHead += m_ElementSize;
-                
+
                 if (threadData->ReaderHead > threadData->ReaderEndOfBlock)
                 {
                     threadData->CurrentReadBlock = threadData->CurrentReadBlock->Next;
                     threadData->ReaderHead = (threadData->CurrentReadBlock != null)
                         ? threadData->CurrentReadBlock->Pointer
                         : null;
+                    threadData->ReaderEndOfBlock = threadData->ReaderHead + m_BlockSize - 1;
+                }
+
+                return ref UnsafeUtility.AsRef<T>(readPointer);
+            }
+            
+            
+        }
+
+        [BurstCompatible]
+        public struct ThreadReader
+        {
+            private readonly int m_ElementSize;
+            private readonly int m_BlockSize;
+            private readonly int m_MaxThreads;
+
+            [NativeSetThreadIndex] private readonly int m_ThreadIndex;
+            [NativeDisableUnsafePtrRestriction] private readonly ThreadData* m_ThreadData;
+
+            public int CountOnThread(int threadIndex)
+            {
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
+                return threadData->Count;
+            }
+
+            public int ThreadIndex
+            {
+                get => m_ThreadIndex;
+            }
+
+            public ThreadReader(ref UnsafeThreadedQueue<T> unsafeThreadedQueue)
+            {
+                m_ThreadData = unsafeThreadedQueue.m_ThreadData;
+                m_ElementSize = unsafeThreadedQueue.m_ElementSize;
+                m_BlockSize = unsafeThreadedQueue.m_BlockSize;
+                m_MaxThreads = unsafeThreadedQueue.m_MaxThreads;
+                m_ThreadIndex = 0;
+            }
+
+            public ref T Peek(int threadIndex)
+            {
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
+
+                //Otherwise nothing has been written
+                //TODO: Write test for this
+                Assert.IsTrue(threadData->CurrentReadBlock != null && threadData->ReaderHead != null);
+
+                byte* readPointer = threadData->ReaderHead;
+
+                return ref UnsafeUtility.AsRef<T>(readPointer);
+            }
+
+            public ref T Read(int threadIndex)
+            {
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
+
+                //Otherwise nothing has been written
+                //TODO: Write test for this
+                Assert.IsTrue(threadData->CurrentReadBlock != null && threadData->ReaderHead != null);
+
+                byte* readPointer = threadData->ReaderHead;
+                threadData->ReaderHead += m_ElementSize;
+
+                if (threadData->ReaderHead > threadData->ReaderEndOfBlock)
+                {
+                    threadData->CurrentReadBlock = threadData->CurrentReadBlock->Next;
+                    threadData->ReaderHead = (threadData->CurrentReadBlock != null)
+                        ? threadData->CurrentReadBlock->Pointer
+                        : null;
+                    threadData->ReaderEndOfBlock = threadData->ReaderHead + m_BlockSize - 1;
                 }
 
                 return ref UnsafeUtility.AsRef<T>(readPointer);
@@ -220,9 +318,14 @@ namespace Anvil.Unity.DOTS.Collections
             private readonly int m_ElementAlignment;
             private readonly Allocator m_Allocator;
             private readonly int m_MaxThreads;
-            
+
             [NativeSetThreadIndex] private readonly int m_ThreadIndex;
             [NativeDisableUnsafePtrRestriction] private readonly ThreadData* m_ThreadData;
+            
+            public int ThreadIndex
+            {
+                get => m_ThreadIndex;
+            }
 
             public Writer(ref UnsafeThreadedQueue<T> unsafeThreadedQueue)
             {
@@ -234,12 +337,12 @@ namespace Anvil.Unity.DOTS.Collections
                 m_MaxThreads = unsafeThreadedQueue.m_MaxThreads;
                 m_ThreadIndex = 0;
             }
-            
-            public void Write(T value)
-            {
-                Assert.IsTrue(m_ThreadIndex <= m_MaxThreads && m_ThreadIndex > 0);
 
-                ThreadData* threadData = m_ThreadData + m_ThreadIndex - 1;
+            public void Write(T value, int threadIndex)
+            {
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
+
+                ThreadData* threadData = m_ThreadData + threadIndex - 1;
 
                 //Checks if we need a new block to be allocated
                 if (threadData->WriterHead > threadData->WriterEndOfBlock)
@@ -248,16 +351,17 @@ namespace Anvil.Unity.DOTS.Collections
                     BlockPointer* blockPointer = (BlockPointer*)UnsafeUtility.Malloc(BlockPointer.SIZE, BlockPointer.ALIGNMENT, m_Allocator);
                     blockPointer->Pointer = (byte*)UnsafeUtility.Malloc(m_BlockSize, m_ElementAlignment, m_Allocator);
                     blockPointer->Next = null;
-                    
+
                     threadData->WriterHead = blockPointer->Pointer;
                     threadData->WriterEndOfBlock = blockPointer->Pointer + m_BlockSize - 1;
-                
+
                     //If this is the first block for the thread, we'll assign that
                     if (threadData->FirstBlock == null)
                     {
                         threadData->CurrentWriterBlock = threadData->FirstBlock = blockPointer;
                         threadData->CurrentReadBlock = blockPointer;
                         threadData->ReaderHead = blockPointer->Pointer;
+                        threadData->ReaderEndOfBlock = blockPointer->Pointer + m_BlockSize - 1;
                     }
                     //Otherwise we'll update our linked list of blocks
                     else
@@ -284,12 +388,11 @@ namespace Anvil.Unity.DOTS.Collections
             {
                 m_UnsafeThreadedQueue = unsafeThreadedQueue;
             }
-            
+
             public void Execute()
             {
                 m_UnsafeThreadedQueue.Dispose();
             }
         }
-        
     }
 }
