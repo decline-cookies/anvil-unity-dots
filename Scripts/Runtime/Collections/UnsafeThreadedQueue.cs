@@ -196,6 +196,7 @@ namespace Anvil.Unity.DOTS.Collections
 
             public int CountOnThread(int threadIndex)
             {
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
                 ThreadData* threadData = m_ThreadData + threadIndex - 1;
                 return threadData->Count;
             }
@@ -253,6 +254,7 @@ namespace Anvil.Unity.DOTS.Collections
 
             public int CountOnThread(int threadIndex)
             {
+                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
                 ThreadData* threadData = m_ThreadData + threadIndex - 1;
                 return threadData->Count;
             }
