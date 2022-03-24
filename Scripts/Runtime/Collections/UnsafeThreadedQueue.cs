@@ -172,6 +172,24 @@ namespace Anvil.Unity.DOTS.Collections
             return new SingleThreadReader(ref this);
         }
 
+        public NativeArray<T> ToNativeArray(Allocator allocator)
+        {
+            NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
+            SingleThreadReader reader = AsSingleThreadReader();
+            int arrayIndex = 0;
+            for (int i = 1; i <= reader.MaxThreads; ++i)
+            {
+                int len = reader.CountOnThread(i);
+                for (int j = 0; j < len; ++j)
+                {
+                    array[arrayIndex] = reader.Read(i);
+                    arrayIndex++;
+                }
+            }
+
+            return array;
+        }
+
         [BurstCompatible]
         public struct SingleThreadReader
         {
