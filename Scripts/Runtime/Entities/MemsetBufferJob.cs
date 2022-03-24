@@ -4,6 +4,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -15,20 +16,34 @@ namespace Anvil.Unity.DOTS.Entities
     [BurstCompile]
     public struct MemsetBufferJob<T> : IJobParallelForBatch where T : struct, IBufferElementData
     {
-        //TODO: Measuere an ideal value.
-        private const float MIN_BATCH_SIZE_PER_THREAD = 50_000;
+        // The minimum number of elements to process in a single batch.
+        // Attempts to keep batch sizes large enough to prevent multiple cores from copying the same
+        // data into cache. This job's operation is so simple the copy into cache is probably the most expensive part.
+        //
+        // Ex: We shouldn't split a set of 10 across 5 threads.
+        //
+        // Re CacheSize: If generalizing to a 64kb cache size is good enough for Unity it's good 
+        // enough for us.
+        private static readonly float MIN_BATCH_SIZE_PER_THREAD = math.max(1f, JobsUtility.CacheLineSize * 1024 / (float)UnsafeUtility.SizeOf<T>());
 
         /// <summary>
         /// Calculate an ideal batch size per thread.
-        /// Aim to spread work across as many threads as possible unless the batch is too small to 
-        /// overcome the prformance cost of a batch's initialization.
+        /// Aim to spread work across as many threads as possible while satisfying (in order of importance):
+        ///  - Aligning batch size to cache line size
+        ///  - Keeping batch sizes large enough to overcome the cost of splitting.
+        ///  - Minimizing the number of batches (there's overhead in each batch run)
         /// </summary>
-        /// <param name="length"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// This approach minimizes frame time consumed not total computation time. 
+        /// Single thread will always consume the fewest CPU cycles.
+        /// </remarks>
+        /// <param name="length">The total length of the data set</param>
+        /// <returns>The ideal batch size</returns>
         public static int CalculateOptimalBatchSize(int length)
         {
-            float optimalWorkerCount = math.clamp(length / MIN_BATCH_SIZE_PER_THREAD, 1, JobsUtility.JobWorkerCount);
-            return (int)math.ceil(length / optimalWorkerCount);
+            float maxBatches = length / MIN_BATCH_SIZE_PER_THREAD;
+            // Spread the max batches across all threads but round up to the nearest MIN_BATCH_SIZE_PER_THREAD.
+            return (int)(math.ceil(maxBatches / (float)JobsUtility.JobWorkerCount) * MIN_BATCH_SIZE_PER_THREAD);
         }
 
         /// <summary>
@@ -51,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Schedule the job with an optimimal batch size
+        /// Schedule the job with an optimal batch size
         /// </summary>
         /// <param name="arrayLength">The length of the buffer</param>
         /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
