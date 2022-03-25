@@ -22,9 +22,9 @@ namespace Anvil.Unity.DOTS.Entities
         //
         // Ex: We shouldn't split a set of 10 across 5 threads.
         //
-        // Re CacheSize: If generalizing to a 64kb cache size is good enough for Unity it's good 
-        // enough for us.
-        private static readonly float MIN_BATCH_SIZE_PER_THREAD = math.max(1f, JobsUtility.CacheLineSize * 1024 / (float)UnsafeUtility.SizeOf<T>());
+        // Re CacheSize: If generalizing to a 16kb cache size is good enough for Unity it's good 
+        // enough for us. If this isn't good enough #12 will allow us to get the actual cache size.
+        private static readonly float MIN_BATCH_SIZE_PER_THREAD = math.max(1f, 16 * 1024 / (float)UnsafeUtility.SizeOf<T>());
 
         /// <summary>
         /// Calculate an ideal batch size per thread.
