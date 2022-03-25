@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// Calculate an ideal batch size per thread.
         /// Aim to spread work across as many threads as possible while satisfying (in order of importance):
-        ///  - Aligning batch size to cache line size
+        ///  - Aligning batch size to chunk size
         ///  - Keeping batch sizes large enough to overcome the cost of splitting.
         ///  - Minimizing the number of batches (there's overhead in each batch run)
         /// </summary>
