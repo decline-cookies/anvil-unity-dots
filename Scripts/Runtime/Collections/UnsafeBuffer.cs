@@ -30,18 +30,23 @@ namespace Anvil.Unity.DOTS.Collections
     }
 
     [BurstCompatible]
+    internal struct BufferInfo
+    {
+        public int ElementSize;
+        public int ElementAlignment;
+        public int BlockSize;
+        public int LaneCount;
+        public Allocator Allocator;
+    }
+
+    [BurstCompatible]
     public unsafe struct UnsafeBuffer<T> : INativeDisposable
         where T : struct
     {
         //See Chunk.kChunkSize (Can't access here so we redefine)
         private const int CHUNK_SIZE = 16 * 1024;
 
-        private readonly Allocator m_Allocator;
-        private readonly int m_ElementSize;
-        private readonly int m_ElementAlignment;
-        private readonly int m_BlockSize;
-        private readonly int m_LaneCount;
-
+        [NativeDisableUnsafePtrRestriction] private BufferInfo* m_BufferInfo;
         [NativeDisableUnsafePtrRestriction] private Lane* m_Lanes;
 
         public bool IsCreated
@@ -51,12 +56,17 @@ namespace Anvil.Unity.DOTS.Collections
 
         public int ScheduleBatchCount
         {
-            get => m_LaneCount;
+            get => m_BufferInfo->LaneCount;
         }
 
         public int ScheduleBatchMinIndicesPerJobCount
         {
             get => 1;
+        }
+
+        public int LaneCount
+        {
+            get => m_BufferInfo->LaneCount;
         }
 
         public UnsafeBuffer(Allocator allocator) : this(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), allocator)
@@ -65,22 +75,23 @@ namespace Anvil.Unity.DOTS.Collections
 
         public UnsafeBuffer(int elementsPerBlock, Allocator allocator)
         {
-            m_Allocator = allocator;
-            m_ElementSize = UnsafeUtility.SizeOf<T>();
-            m_ElementAlignment = UnsafeUtility.AlignOf<T>();
-            m_BlockSize = elementsPerBlock * m_ElementSize;
-            m_LaneCount = JobsUtility.JobWorkerMaximumCount + 1;
-            
+            m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<BufferInfo>(),
+                                                             UnsafeUtility.AlignOf<BufferInfo>(),
+                                                             allocator);
+            m_BufferInfo->Allocator = allocator;
+            m_BufferInfo->ElementSize = UnsafeUtility.SizeOf<T>();
+            m_BufferInfo->ElementAlignment = UnsafeUtility.AlignOf<T>();
+            m_BufferInfo->BlockSize = elementsPerBlock * m_BufferInfo->ElementSize;
+            m_BufferInfo->LaneCount = JobsUtility.JobWorkerMaximumCount + 1;
+
             int laneSize = UnsafeUtility.SizeOf<Lane>();
-            m_Lanes = (Lane*)UnsafeUtility.Malloc(laneSize * m_LaneCount, laneSize, allocator);
-            for (int i = 0; i < m_LaneCount; ++i)
+            m_Lanes = (Lane*)UnsafeUtility.Malloc(laneSize * m_BufferInfo->LaneCount, laneSize, allocator);
+            for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 Lane* lane = m_Lanes + i;
                 lane->FirstBlock = null;
                 lane->CurrentWriterBlock = null;
-                //https://forum.unity.com/threads/looking-for-nativecollection-advice-buffer-of-buffers.1107035/
                 lane->WriterHead = null;
-                lane->WriterHead++;
                 lane->WriterEndOfBlock = null;
                 lane->Count = 0;
             }
@@ -93,7 +104,9 @@ namespace Anvil.Unity.DOTS.Collections
                 return;
             }
 
-            for (int i = 0; i < m_LaneCount; ++i)
+            Allocator allocator = m_BufferInfo->Allocator;
+
+            for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 Lane* lane = m_Lanes + i;
 
@@ -103,13 +116,16 @@ namespace Anvil.Unity.DOTS.Collections
                     Block* currentBlock = block;
                     block = currentBlock->Next;
 
-                    UnsafeUtility.Free(currentBlock->Data, m_Allocator);
-                    UnsafeUtility.Free(currentBlock, m_Allocator);
+                    UnsafeUtility.Free(currentBlock->Data, allocator);
+                    UnsafeUtility.Free(currentBlock, allocator);
                 }
             }
 
-            UnsafeUtility.Free(m_Lanes, m_Allocator);
+            UnsafeUtility.Free(m_Lanes, allocator);
+            UnsafeUtility.Free(m_BufferInfo, allocator);
+            
             m_Lanes = null;
+            m_BufferInfo = null;
         }
 
         public JobHandle Dispose(JobHandle inputDeps)
@@ -124,7 +140,7 @@ namespace Anvil.Unity.DOTS.Collections
         public int Count()
         {
             int count = 0;
-            for (int i = 0; i < m_LaneCount; ++i)
+            for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 Lane* lane = m_Lanes + i;
                 count += lane->Count;
@@ -140,7 +156,7 @@ namespace Anvil.Unity.DOTS.Collections
                 return true;
             }
 
-            for (int i = 0; i < m_LaneCount; ++i)
+            for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 Lane* threadData = m_Lanes + i;
                 if (threadData->Count > 0)
@@ -155,6 +171,14 @@ namespace Anvil.Unity.DOTS.Collections
         public Writer AsWriter()
         {
             return new Writer(ref this);
+        }
+
+        public LaneWriter AsLaneWriter(int laneIndex)
+        {
+            Assert.IsTrue(laneIndex <= m_BufferInfo->LaneCount && laneIndex > 0);
+
+            Lane* lane = m_Lanes + laneIndex - 1;
+            return new LaneWriter(lane, m_BufferInfo);
         }
 
         public Reader AsReader()
@@ -181,12 +205,12 @@ namespace Anvil.Unity.DOTS.Collections
 
             return array;
         }
-
+        
+        [BurstCompatible]
         public struct LaneReader
         {
-            private readonly int m_ElementSize;
-            private readonly int m_BlockSize;
-            private readonly Lane* m_Lane;
+            [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
+            [NativeDisableUnsafePtrRestriction] private readonly Lane* m_Lane;
             
             private Block* m_CurrentReadBlock;
             private byte* m_EndOfCurrentBlock;
@@ -197,17 +221,16 @@ namespace Anvil.Unity.DOTS.Collections
                 get => m_Lane->Count;
             }
             
-            internal LaneReader(Lane* lane, int elementSize, int blockSize)
+            internal LaneReader(Lane* lane, BufferInfo* bufferInfo)
             {
                 m_Lane = lane;
-                m_ElementSize = elementSize;
-                m_BlockSize = blockSize;
+                m_BufferInfo = bufferInfo;
                 
                 m_CurrentReadBlock = m_Lane->FirstBlock;
                 m_ReaderHead = (m_CurrentReadBlock != null) 
                     ? m_CurrentReadBlock->Data
                     : null;
-                m_EndOfCurrentBlock = m_ReaderHead + m_BlockSize;
+                m_EndOfCurrentBlock = m_ReaderHead + m_BufferInfo->BlockSize;
             }
 
             private void CheckForEndOfBlock()
@@ -221,7 +244,7 @@ namespace Anvil.Unity.DOTS.Collections
                 m_ReaderHead = (m_CurrentReadBlock != null) 
                     ? m_CurrentReadBlock->Data
                     : null;
-                m_EndOfCurrentBlock = m_ReaderHead + m_BlockSize;
+                m_EndOfCurrentBlock = m_ReaderHead + m_BufferInfo->BlockSize;
             }
 
             public ref T Read()
@@ -231,7 +254,7 @@ namespace Anvil.Unity.DOTS.Collections
                 Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
 
                 byte* readPointer = m_ReaderHead;
-                m_ReaderHead += m_ElementSize;
+                m_ReaderHead += m_BufferInfo->ElementSize;
                 
                 CheckForEndOfBlock();
                 
@@ -251,97 +274,106 @@ namespace Anvil.Unity.DOTS.Collections
         [BurstCompatible]
         public struct Reader
         {
-            private readonly int m_ElementSize;
-            private readonly int m_BlockSize;
-            private readonly int m_LaneCount;
-            
+            [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
             [NativeDisableUnsafePtrRestriction] private readonly Lane* m_Lanes;
 
             public int LaneCount
             {
-                get => m_LaneCount;
+                get => m_BufferInfo->LaneCount;
             }
             
             public Reader(ref UnsafeBuffer<T> unsafeBuffer)
             {
                 m_Lanes = unsafeBuffer.m_Lanes;
-                m_ElementSize = unsafeBuffer.m_ElementSize;
-                m_BlockSize = unsafeBuffer.m_BlockSize;
-                m_LaneCount = unsafeBuffer.m_LaneCount;
+                m_BufferInfo = unsafeBuffer.m_BufferInfo;
             }
 
             public LaneReader CreateReaderForLane(int laneIndex)
             {
-                Assert.IsTrue(laneIndex <= m_LaneCount && laneIndex > 0);
+                Assert.IsTrue(laneIndex <= m_BufferInfo->LaneCount && laneIndex > 0);
                 
                 Lane* lane = m_Lanes + laneIndex - 1;
-                return new LaneReader(lane, m_ElementSize, m_BlockSize);
+                return new LaneReader(lane, m_BufferInfo);
+            }
+        }
+
+        [BurstCompatible]
+        public struct LaneWriter
+        {
+            [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
+            [NativeDisableUnsafePtrRestriction] private readonly Lane* m_Lane;
+
+            internal LaneWriter(Lane* lane, BufferInfo* bufferInfo)
+            {
+                m_Lane = lane;
+                m_BufferInfo = bufferInfo;
+            }
+            
+            public void Write(T value)
+            {
+                //See if we need to allocate a new block
+                CheckForNewBlock();
+
+                //Finally go ahead and write the struct to our block
+                UnsafeUtility.CopyStructureToPtr(ref value, m_Lane->WriterHead);
+                m_Lane->WriterHead += m_BufferInfo->ElementSize;
+                m_Lane->Count++;
+            }
+
+            private void CheckForNewBlock()
+            {
+                if (m_Lane->WriterHead < m_Lane->WriterEndOfBlock)
+                {
+                    return;
+                }
+                
+                //Create the new block
+                Block* blockPointer = (Block*)UnsafeUtility.Malloc(Block.SIZE, Block.ALIGNMENT, m_BufferInfo->Allocator);
+                blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, m_BufferInfo->ElementAlignment, m_BufferInfo->Allocator);
+                blockPointer->Next = null;
+
+                m_Lane->WriterHead = blockPointer->Data;
+                m_Lane->WriterEndOfBlock = blockPointer->Data + m_BufferInfo->BlockSize;
+
+                //If this is the first block for the thread, we'll assign that
+                if (m_Lane->FirstBlock == null)
+                {
+                    m_Lane->CurrentWriterBlock = m_Lane->FirstBlock = blockPointer;
+                }
+                //Otherwise we'll update our linked list of blocks
+                else
+                {
+                    m_Lane->CurrentWriterBlock->Next = blockPointer;
+                    m_Lane->CurrentWriterBlock = blockPointer;
+                }
             }
         }
 
         [BurstCompatible]
         public readonly struct Writer
         {
-            private readonly int m_BlockSize;
-            private readonly int m_ElementSize;
-            private readonly int m_ElementAlignment;
-            private readonly Allocator m_Allocator;
-            private readonly int m_MaxThreads;
+            [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
+            [NativeDisableUnsafePtrRestriction] private readonly Lane* m_Lanes;
 
-            [NativeSetThreadIndex] private readonly int m_ThreadIndex;
-            [NativeDisableUnsafePtrRestriction] private readonly Lane* m_ThreadData;
-            
-            public int ThreadIndex
+            public int LaneCount
             {
-                get => m_ThreadIndex;
+                get => m_BufferInfo->LaneCount;
             }
-
+            
             public Writer(ref UnsafeBuffer<T> unsafeBuffer)
             {
-                m_ThreadData = unsafeBuffer.m_Lanes;
-                m_BlockSize = unsafeBuffer.m_BlockSize;
-                m_ElementSize = unsafeBuffer.m_ElementSize;
-                m_ElementAlignment = unsafeBuffer.m_ElementAlignment;
-                m_Allocator = unsafeBuffer.m_Allocator;
-                m_MaxThreads = unsafeBuffer.m_LaneCount;
-                m_ThreadIndex = 0;
+                m_Lanes = unsafeBuffer.m_Lanes;
+                m_BufferInfo = unsafeBuffer.m_BufferInfo;
             }
 
-            public void Write(T value, int threadIndex)
+            public LaneWriter CreateWriterForLane(int laneIndex)
             {
-                Assert.IsTrue(threadIndex <= m_MaxThreads && threadIndex > 0);
+                Assert.IsTrue(laneIndex <= m_BufferInfo->LaneCount && laneIndex > 0);
 
-                Lane* threadData = m_ThreadData + threadIndex - 1;
-
-                //Checks if we need a new block to be allocated
-                if (threadData->WriterHead > threadData->WriterEndOfBlock)
-                {
-                    //Creates the new block
-                    Block* blockPointer = (Block*)UnsafeUtility.Malloc(Block.SIZE, Block.ALIGNMENT, m_Allocator);
-                    blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BlockSize, m_ElementAlignment, m_Allocator);
-                    blockPointer->Next = null;
-
-                    threadData->WriterHead = blockPointer->Data;
-                    threadData->WriterEndOfBlock = blockPointer->Data + m_BlockSize - 1;
-
-                    //If this is the first block for the thread, we'll assign that
-                    if (threadData->FirstBlock == null)
-                    {
-                        threadData->CurrentWriterBlock = threadData->FirstBlock = blockPointer;
-                    }
-                    //Otherwise we'll update our linked list of blocks
-                    else
-                    {
-                        threadData->CurrentWriterBlock->Next = blockPointer;
-                        threadData->CurrentWriterBlock = blockPointer;
-                    }
-                }
-
-                //Finally go ahead and write the struct to our block
-                UnsafeUtility.CopyStructureToPtr(ref value, threadData->WriterHead);
-                threadData->WriterHead += m_ElementSize;
-                threadData->Count++;
+                Lane* lane = m_Lanes + laneIndex - 1;
+                return new LaneWriter(lane, m_BufferInfo);
             }
+            
         }
 
 
