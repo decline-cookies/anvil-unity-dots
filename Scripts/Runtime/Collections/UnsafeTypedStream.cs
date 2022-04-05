@@ -116,7 +116,7 @@ namespace Anvil.Unity.DOTS.Collections
             get => m_BufferInfo->BlockSize / ELEMENT_SIZE;
         }
 
-        //TODO: Allow the developer to specify the number of lanes they want to have
+        //TODO: #16 - Allow the developer to specify the number of lanes they want to have
         /// <summary>
         ///     Convenience constructor that fits as many elements into a 16kb block size.
         /// </summary>
@@ -146,7 +146,7 @@ namespace Anvil.Unity.DOTS.Collections
 
             m_Lanes = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
 
-            //TODO: Look into creating an enumerator like NativeArray to allow for foreach - https://github.com/decline-cookies/anvil-unity-dots/pull/14/files#r842968034
+            //TODO: #16 - Look into creating an enumerator like NativeArray to allow for foreach - https://github.com/decline-cookies/anvil-unity-dots/pull/14/files#r842968034
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 LaneInfo* lane = m_Lanes + i;
