@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Collections
         public Allocator Allocator;
     }
 
-    //TODO: Investigate if there's any downfalls to this vs UnsafeStream. Maybe determinism?
+    //TODO: #15 - Investigate if there's any downfalls to this vs UnsafeStream. Maybe determinism?
     /// <summary>
     ///     A collection that allows for parallel reading and writing.
     ///     It looks and behaves somewhat similarly to a <see cref="UnsafeStream" /> but has some key differences that make it
@@ -532,7 +532,7 @@ namespace Anvil.Unity.DOTS.Collections
             public ref T Read()
             {
                 //Otherwise nothing has been written
-                //TODO: Write test for this
+                //TODO: #15 - Write test for this
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
 #endif
@@ -553,7 +553,7 @@ namespace Anvil.Unity.DOTS.Collections
             public ref T Peek()
             {
                 ///Otherwise nothing has been written
-                //TODO: Write test for this
+                //TODO: #15 - Write test for this
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
 #endif
