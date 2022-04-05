@@ -105,6 +105,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
         /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
         /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy to.</param>
+        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
         /// <remarks>Actual copy is performed by <see cref="CopyFromSingletonBuffer{T}" /></remarks>
         protected JobHandle CopyFromSingletonBufferAsync<T>(in JobHandle dependsOn, in NativeArray<T> outputBuffer) where T : struct, IBufferElementData
         {
@@ -137,6 +138,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
         /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
         /// <param name="inputBuffer">The <see cref="NativeArray{T}" /> to copy from.</param>
+        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
         /// <remarks>Actual copy is performed by <see cref="CopyToSingletonBuffer{T}" /></remarks>
         protected JobHandle CopyToSingletonBufferAsync<T>(in JobHandle dependsOn, in NativeArray<T> inputBuffer) where T : struct, IBufferElementData
         {
