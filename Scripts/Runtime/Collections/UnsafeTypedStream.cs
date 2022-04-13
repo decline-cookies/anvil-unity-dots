@@ -10,9 +10,9 @@ using Unity.Mathematics;
 namespace Anvil.Unity.DOTS.Collections
 {
     /// <summary>
-    ///     Information about a "block" of memory in the buffer.
-    ///     Contains the pointer to where the "block" begins and a pointer to another <see cref="BlockInfo" /> instance
-    ///     for the next "block" in the linked list.
+    /// Information about a "block" of memory in the buffer.
+    /// Contains the pointer to where the "block" begins and a pointer to another <see cref="BlockInfo" /> instance
+    /// for the next "block" in the linked list.
     /// </summary>
     [BurstCompatible]
     internal unsafe struct BlockInfo
@@ -25,12 +25,12 @@ namespace Anvil.Unity.DOTS.Collections
     }
 
     /// <summary>
-    ///     Information about a "lane" which is an indexed sub-section of the buffer that can be read from or written to.
-    ///     A lane is commonly used in parallel situations so that each thread stays in its own lane.
-    ///     Lane Info preserves the state of writing so that multiple jobs can write to a buffer over time.
+    /// Information about a "lane" which is an indexed sub-section of the buffer that can be read from or written to.
+    /// A lane is commonly used in parallel situations so that each thread stays in its own lane.
+    /// Lane Info preserves the state of writing so that multiple jobs can write to a buffer over time.
     /// </summary>
     /// <remarks>
-    ///     Unity will refer to this as a "foreachindex" which is a little bit confusing.
+    /// Unity will refer to this as a "foreachindex" which is a little bit confusing.
     /// </remarks>
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential, Size = 64)]
@@ -47,7 +47,7 @@ namespace Anvil.Unity.DOTS.Collections
     }
 
     /// <summary>
-    ///     Information about the <see cref="UnsafeTypedStream{T}" /> itself.
+    /// Information about the <see cref="UnsafeTypedStream{T}" /> itself.
     /// </summary>
     [BurstCompatible]
     internal struct BufferInfo
@@ -59,20 +59,16 @@ namespace Anvil.Unity.DOTS.Collections
 
     //TODO: #15 - Investigate if there's any downfalls to this vs UnsafeStream. Maybe determinism?
     /// <summary>
-    ///     A collection that allows for parallel reading and writing.
-    ///     It looks and behaves somewhat similarly to a <see cref="UnsafeStream" /> but has some key differences that make it
-    ///     more advantageous when different jobs need to write to the container.
-    ///     1. Typed Elements. The <see cref="UnsafeStream" /> can have anything written to it which results in arbitrarily
-    ///     sized and
-    ///     filled "blocks". This <see cref="UnsafeTypedStream{T}" /> is typed and holds an exact amount of the typed elements
-    ///     in its
-    ///     "blocks".
-    ///     2. Multiple writes per thread/lane index. The <see cref="UnsafeStream" /> will only allow for writing to a given
-    ///     index once. You
-    ///     cannot have two jobs where one writes on index 1 and then later on in the frame a different job continues
-    ///     writing on index 1. This <see cref="UnsafeTypedStream{T}" /> allows for that while also allowing multiple jobs to
-    ///     fill
-    ///     up the buffer.
+    /// A collection that allows for parallel reading and writing.
+    /// It looks and behaves somewhat similarly to a <see cref="UnsafeStream" /> but has some key differences that make it
+    /// more advantageous when different jobs need to write to the container.
+    /// 1. Typed Elements. The <see cref="UnsafeStream" /> can have anything written to it which results in arbitrarily
+    /// sized and filled "blocks". This <see cref="UnsafeTypedStream{T}" /> is typed and holds an exact amount of the
+    /// typed elements in its "blocks".
+    /// 2. Multiple writes per thread/lane index. The <see cref="UnsafeStream" /> will only allow for writing to a given
+    /// index once. You cannot have two jobs where one writes on index 1 and then later on in the frame a different job continues
+    /// writing on index 1. This <see cref="UnsafeTypedStream{T}" /> allows for that while also allowing multiple jobs to
+    /// fill up the buffer.
     /// </summary>
     /// <typeparam name="T">The type of elements to store in the collection.</typeparam>
     [BurstCompatible]
@@ -89,11 +85,11 @@ namespace Anvil.Unity.DOTS.Collections
         [NativeDisableUnsafePtrRestriction] private LaneInfo* m_Lanes;
 
         /// <summary>
-        ///     Reports whether memory for the container is allocated.
-        ///     This will be true when the container has had memory allocated AND is not yet disposed.
+        /// Reports whether memory for the container is allocated.
+        /// This will be true when the container has had memory allocated AND is not yet disposed.
         /// </summary>
         /// <remarks>
-        ///     If you use the default constructor, memory will not have been allocated.
+        /// If you use the default constructor, memory will not have been allocated.
         /// </remarks>
         public bool IsCreated
         {
@@ -101,7 +97,7 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     The number of lanes this buffer can read from / write to.
+        /// The number of lanes this buffer can read from / write to.
         /// </summary>
         public int LaneCount
         {
@@ -109,29 +105,42 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     The number of elements contained in each block.
+        /// The number of elements contained in each block.
         /// </summary>
         public int ElementsPerBlock
         {
             get => m_BufferInfo->BlockSize / ELEMENT_SIZE;
         }
 
-        //TODO: #16 - Allow the developer to specify the number of lanes they want to have
+        
         /// <summary>
-        ///     Convenience constructor that fits as many elements into a 16kb block size.
+        /// Convenience constructor that fits as many elements into a 16kb block size and allows you to specify the
+        /// number of lanes.
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
-        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator)
+        /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
+        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, laneCount)
+        {
+        }
+        
+        /// <summary>
+        /// Convenience constructor that fits as many elements into a 16kb block size.
+        /// Sets the number of lanes to be the maximum amount of worker threads available plus the main thread.
+        /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
+        /// </summary>
+        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
+        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, JobsUtility.JobWorkerMaximumCount + 1)
         {
         }
 
         /// <summary>
-        ///     More explicit constructor that allows for specifying how many elements to put into each block. Useful for
-        ///     smaller counts so that large blocks aren't allocated if not needed.
+        /// More explicit constructor that allows for specifying how many elements to put into each block. Useful for
+        /// smaller counts so that large blocks aren't allocated if not needed.
         /// </summary>
         /// <param name="elementsPerBlock">The number of elements to allocate space for in each block.</param>
         /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
-        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator)
+        /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
+        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, int laneCount)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Assert.IsTrue(elementsPerBlock > 0);
@@ -142,7 +151,7 @@ namespace Anvil.Unity.DOTS.Collections
                                                              allocator);
             m_BufferInfo->Allocator = allocator;
             m_BufferInfo->BlockSize = elementsPerBlock * ELEMENT_SIZE;
-            m_BufferInfo->LaneCount = JobsUtility.JobWorkerMaximumCount + 1;
+            m_BufferInfo->LaneCount = laneCount;
 
             m_Lanes = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
 
@@ -159,7 +168,7 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Disposes the collection
+        /// Disposes the collection
         /// </summary>
         public void Dispose()
         {
@@ -193,7 +202,7 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Schedules the disposal of the collection.
+        /// Schedules the disposal of the collection.
         /// </summary>
         /// <param name="inputDeps">The <see cref="JobHandle" /> to wait on before disposing</param>
         /// <returns>A <see cref="JobHandle" /> for when disposal is complete</returns>
@@ -207,8 +216,8 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Calculates the number of elements in the entire collection across all lanes.
-        ///     Note: This will only be accurate if all write jobs have completed before calling this.
+        /// Calculates the number of elements in the entire collection across all lanes.
+        /// Note: This will only be accurate if all write jobs have completed before calling this.
         /// </summary>
         /// <returns>The number of elements</returns>
         public int Count()
@@ -224,8 +233,8 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Whether the collection is empty or not.
-        ///     Note: This will only be accurate if all write jobs have completed before calling this.
+        /// Whether the collection is empty or not.
+        /// Note: This will only be accurate if all write jobs have completed before calling this.
         /// </summary>
         /// <returns>true if empty, false if not</returns>
         public bool IsEmpty()
@@ -248,7 +257,7 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Returns a lightweight <see cref="Writer" /> instance
+        /// Returns a lightweight <see cref="Writer" /> instance
         /// </summary>
         /// <returns>A <see cref="Writer" /> instance.</returns>
         public Writer AsWriter()
@@ -260,9 +269,27 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Returns a lightweight <see cref="LaneWriter" /> instance
+        /// Returns a lightweight <see cref="LaneWriter"/> instance.
         /// </summary>
-        /// <param name="laneIndex">The lane index to lock the lane writer into.</param>
+        /// <param name="threadIndex">The lane index to lock the lane writer into.
+        /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
+        /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
+        /// as the lane to read/write. However most things in programming are 0 indexed so this helper
+        /// function handles allowing you to use thread indexes while keeping the internals consistent with
+        /// 0 indexing.</remarks>
+        /// <returns>A <see cref="LaneWriter" /> instance.</returns>
+        public LaneWriter AsLaneWriterFromNativeThreadIndex(int threadIndex)
+        {
+            return AsLaneWriter(threadIndex - 1);
+        }
+
+        /// <summary>
+        /// Returns a lightweight <see cref="LaneWriter" /> instance
+        /// </summary>
+        /// <param name="laneIndex">The lane index to lock the lane writer into.
+        /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
+        /// See <see cref="AsLaneWriterFromNativeThreadIndex"/> if lanes are based on different threads.
+        /// </param>
         /// <returns>A <see cref="LaneWriter" /> instance.</returns>
         public LaneWriter AsLaneWriter(int laneIndex)
         {
@@ -276,7 +303,7 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Returns a lightweight <see cref="Reader" /> instance
+        /// Returns a lightweight <see cref="Reader" /> instance
         /// </summary>
         /// <returns>A <see cref="Reader" /> instance.</returns>
         public Reader AsReader()
@@ -288,9 +315,26 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Returns a lightweight <see cref="LaneReader" /> instance
+        /// Returns a lightweight <see cref="LaneReader"/> instance.
         /// </summary>
-        /// <param name="laneIndex">The lane index to lock the lane reader into.</param>
+        /// <param name="threadIndex">The lane index to lock the lane reader into.
+        /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
+        /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
+        /// as the lane to read/write. However most things in programming are 0 indexed so this helper
+        /// function handles allowing you to use thread indexes while keeping the internals consistent with
+        /// 0 indexing.</remarks>
+        /// <returns>A <see cref="LaneReader" /> instance.</returns>
+        public LaneReader AsLaneReaderFromNativeThreadIndex(int threadIndex)
+        {
+            return AsLaneReader(threadIndex - 1);
+        }
+
+        /// <summary>
+        /// Returns a lightweight <see cref="LaneReader" /> instance
+        /// </summary>
+        /// <param name="laneIndex">The lane index to lock the lane reader into.
+        /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
+        /// See <see cref="AsLaneReaderFromNativeThreadIndex"/> if lanes are based on different threads.</param>
         /// <returns>A <see cref="LaneWriter" /> instance.</returns>
         public LaneReader AsLaneReader(int laneIndex)
         {
@@ -303,12 +347,12 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     Helper function to convert the collection to a <see cref="NativeArray{T}" />
-        ///     Note: This will only be accurate if all write jobs have completed before calling this.
+        /// Helper function to convert the collection to a <see cref="NativeArray{T}" />
+        /// Note: This will only be accurate if all write jobs have completed before calling this.
         /// </summary>
         /// <param name="allocator">
-        ///     The <see cref="Allocator" /> to allocate the <see cref="NativeArray{T}" /> memory
-        ///     with.
+        /// The <see cref="Allocator" /> to allocate the <see cref="NativeArray{T}" /> memory
+        /// with.
         /// </param>
         /// <returns>A <see cref="NativeArray{T}" /> of the elements</returns>
         public NativeArray<T> ToNativeArray(Allocator allocator)
@@ -335,7 +379,7 @@ namespace Anvil.Unity.DOTS.Collections
         //*************************************************************************************************************
 
         /// <summary>
-        ///     A lightweight struct to allow for writing to the collection
+        /// A lightweight struct to allow for writing to the collection
         /// </summary>
         [BurstCompatible]
         public readonly struct Writer
@@ -344,7 +388,7 @@ namespace Anvil.Unity.DOTS.Collections
             [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lanes;
 
             /// <summary>
-            ///     The number of lanes that can be written to.
+            /// The number of lanes that can be written to.
             /// </summary>
             public int LaneCount
             {
@@ -358,9 +402,27 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            ///     Creates a <see cref="LaneWriter" /> instance for a given lane index.
+            /// Returns a lightweight <see cref="LaneWriter"/> instance.
             /// </summary>
-            /// <param name="laneIndex">The lane index to use</param>
+            /// <param name="threadIndex">The lane index to lock the lane writer into.
+            /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
+            /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
+            /// as the lane to read/write. However most things in programming are 0 indexed so this helper
+            /// function handles allowing you to use thread indexes while keeping the internals consistent with
+            /// 0 indexing.</remarks>
+            /// <returns>A <see cref="LaneWriter" /> instance.</returns>
+            public LaneWriter AsLaneWriterFromNativeThreadIndex(int threadIndex)
+            {
+                return AsLaneWriter(threadIndex - 1);
+            }
+
+            /// <summary>
+            /// Returns a lightweight <see cref="LaneWriter" /> instance
+            /// </summary>
+            /// <param name="laneIndex">The lane index to lock the lane writer into.
+            /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
+            /// See <see cref="AsLaneWriterFromNativeThreadIndex"/> if lanes are based on different threads.
+            /// </param>
             /// <returns>A <see cref="LaneWriter" /> instance.</returns>
             public LaneWriter AsLaneWriter(int laneIndex)
             {
@@ -374,7 +436,7 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     A lightweight writer instance that is locked to a specific lane
+        /// A lightweight writer instance that is locked to a specific lane
         /// </summary>
         [BurstCompatible]
         public readonly struct LaneWriter
@@ -389,7 +451,7 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            ///     Writes the element to the next spot in the lane's current block.
+            /// Writes the element to the next spot in the lane's current block.
             /// </summary>
             /// <param name="value">The element to write</param>
             public void Write(T value)
@@ -438,7 +500,7 @@ namespace Anvil.Unity.DOTS.Collections
         //*************************************************************************************************************
 
         /// <summary>
-        ///     A lightweight struct to allow for reader from the collection
+        /// A lightweight struct to allow for reader from the collection
         /// </summary>
         [BurstCompatible]
         public readonly struct Reader
@@ -447,7 +509,7 @@ namespace Anvil.Unity.DOTS.Collections
             [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lanes;
 
             /// <summary>
-            ///     How many lanes the collection has available to read from
+            /// How many lanes the collection has available to read from
             /// </summary>
             public int LaneCount
             {
@@ -461,10 +523,27 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            ///     Creates a <see cref="LaneReader" /> instance locked to a specific lane index.
+            /// Returns a lightweight <see cref="LaneReader"/> instance.
             /// </summary>
-            /// <param name="laneIndex">The lane index to use</param>
-            /// <returns>A <see cref="LaneReader" /> instance</returns>
+            /// <param name="threadIndex">The lane index to lock the lane reader into.
+            /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
+            /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
+            /// as the lane to read/write. However most things in programming are 0 indexed so this helper
+            /// function handles allowing you to use thread indexes while keeping the internals consistent with
+            /// 0 indexing.</remarks>
+            /// <returns>A <see cref="LaneReader" /> instance.</returns>
+            public LaneReader AsLaneReaderFromNativeThreadIndex(int threadIndex)
+            {
+                return AsLaneReader(threadIndex - 1);
+            }
+
+            /// <summary>
+            /// Returns a lightweight <see cref="LaneReader" /> instance
+            /// </summary>
+            /// <param name="laneIndex">The lane index to lock the lane reader into.
+            /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
+            /// See <see cref="AsLaneReaderFromNativeThreadIndex"/> if lanes are based on different threads.</param>
+            /// <returns>A <see cref="LaneWriter" /> instance.</returns>
             public LaneReader AsLaneReader(int laneIndex)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -477,9 +556,9 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        ///     A lightweight reader instance locked to a specific lane.
-        ///     <see cref="LaneReader" />'s manage their own state so that multiple readers can read from a given lane at
-        ///     the same time.
+        /// A lightweight reader instance locked to a specific lane.
+        /// <see cref="LaneReader" />'s manage their own state so that multiple readers can read from a given lane at
+        /// the same time.
         /// </summary>
         [BurstCompatible]
         public struct LaneReader
@@ -492,7 +571,7 @@ namespace Anvil.Unity.DOTS.Collections
             private byte* m_ReaderHead;
 
             /// <summary>
-            ///     How many elements are available to read on this lane
+            /// How many elements are available to read on this lane
             /// </summary>
             public int Count
             {
@@ -526,7 +605,7 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            ///     Reads the next element from the reader
+            /// Reads the next element from the reader
             /// </summary>
             /// <returns>The next element</returns>
             public ref T Read()
@@ -546,8 +625,8 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            ///     Peeks at what the next elements in the reader is but does not advance the reader head.
-            ///     Will return the same value until <see cref="Read" /> has been called.
+            /// Peeks at what the next elements in the reader is but does not advance the reader head.
+            /// Will return the same value until <see cref="Read" /> has been called.
             /// </summary>
             /// <returns>The next element</returns>
             public ref T Peek()
