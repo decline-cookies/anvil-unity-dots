@@ -130,7 +130,7 @@ namespace Anvil.Unity.DOTS.Collections
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
-        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, ParallelCollectionUtil.CollectionSizeForMaxThreads())
+        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, ParallelCollectionUtil.CollectionSizeForMaxThreads)
         {
         }
 

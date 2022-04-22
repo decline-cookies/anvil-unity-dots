@@ -1,7 +1,11 @@
-using System;
-using System.Reflection;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Linq;
+using Unity.Burst;
 using Unity.Jobs.LowLevel.Unsafe;
+using Unity.Mathematics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Util
 {
@@ -20,23 +24,28 @@ namespace Anvil.Unity.DOTS.Util
         /// and these functions are intended for use inside bursted jobs that run on many different worker threads.
         ///
         /// To avoid this, we have a <see cref="RuntimeInitializeOnLoadMethodAttribute"/> on the
-        /// <see cref="ParallelCollectionUtil.Init"/> method which uses reflection to assign the static readonly
-        /// variable.
+        /// <see cref="ParallelCollectionUtil.Init"/> method which then assigns to a <see cref="SharedStatic{int}"/>
         ///
         /// While a bit hacky, it is ensured to run before any potential jobs execute. The external call is allowed
-        /// and we get the correct value and inject it into the static readonly field. Subsequent bursted jobs are then
-        /// allowed to access it.
+        /// and we get the correct value and we can assign it to the <see cref="SharedStatic{int}"/>.
+        /// Subsequent bursted jobs are then allowed to access it.
+        /// <seealso cref="https://docs.unity3d.com/Packages/com.unity.burst@1.7/manual/docs/AdvancedUsages.html#shared-static"/>
         /// </remarks>
-        private static readonly int JOB_WORKER_MAXIMUM_COUNT = -1;
+        private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<InternalClassJobWorkerMaximumCount>();
+        private class InternalClassJobWorkerMaximumCount
+        {
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
-            Type type = typeof(ParallelCollectionUtil);
-            FieldInfo field = type.GetField(nameof(JOB_WORKER_MAXIMUM_COUNT), BindingFlags.Static | BindingFlags.NonPublic);
-            field.SetValue(null, JobsUtility.JobWorkerMaximumCount);
+            JOB_WORKER_MAXIMUM_COUNT.Data = JobsUtility.JobWorkerMaximumCount;
+            CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 1;
+
+            Debug.Assert(JOB_WORKER_MAXIMUM_COUNT.Data > 0);
         }
 
+    
         /// <summary>
         /// Returns an ideal size for the number of buckets a collection should have
         /// to account for all possible threads that could write to it at once.
@@ -48,10 +57,10 @@ namespace Anvil.Unity.DOTS.Util
         /// etc
         /// It's the number of separate "buckets" that can be written to in parallel.
         /// </remarks>
-        /// <returns>The number of buckets a collection should have.</returns>
-        public static int CollectionSizeForMaxThreads()
+        public static int CollectionSizeForMaxThreads
         {
-            return JOB_WORKER_MAXIMUM_COUNT + 1;
+            get;
+            private set;
         }
 
         /// <summary>
@@ -72,15 +81,15 @@ namespace Anvil.Unity.DOTS.Util
         /// the native thread index you receive will be from 1 to <see cref="JobsUtility.JobWorkerMaximumCount"/>.
         /// There are two special cases.
         /// 1. The scheduler may place your job on the main thread. In this case the native thread index will be
-        /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 2.
-        /// 2. The scheduler may place your job on a profiler thread in the editor. In this case the native thread index
-        /// will also be <see cref="JobsUtility.JobWorkerMaximumCount"/> + 2.
+        /// some value above <see cref="JobsUtility.JobWorkerMaximumCount"/>.
+        /// 2. The scheduler may place your job on a profiler thread in the editor. In this case the native thread
+        /// index will also be some value above <see cref="JobsUtility.JobWorkerMaximumCount"/>
         /// It is unknown why this is. 
         ///
         /// Our goal is to have a tightly packed collection so in the example of an 8 core machine with
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> equal to 15, we would have the following mapping.
         ///
-        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17 
+        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, X 
         /// index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15
         ///
         /// We have a tightly packed collection with index 0 through 15 for a total of 16 buckets.
@@ -92,12 +101,37 @@ namespace Anvil.Unity.DOTS.Util
         /// <returns>The collection index to use</returns>
         public static int CollectionIndexForThread(int nativeThreadIndex)
         {
-            // JobsUtility.JobWorkerMaximumCount = 15
-            // index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15
-            // thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17
-            return (nativeThreadIndex <= JOB_WORKER_MAXIMUM_COUNT)
-                ? nativeThreadIndex - 1
-                : JOB_WORKER_MAXIMUM_COUNT;
+            DetectMultipleXThreads(nativeThreadIndex);
+            Debug.Assert(nativeThreadIndex > 0 && nativeThreadIndex <= JobsUtility.MaxJobThreadCount);
+            return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
+        }
+
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [BurstDiscard]
+        private static void DetectMultipleXThreads(int nativeThreadIndex)
+        {
+            ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
+        }
+    }
+
+    
+    internal static class ThreadHelper
+    {
+        private static readonly ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
+        
+        [BurstDiscard]
+        public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
+        {
+            s_ThreadIndicesSeen.Add(nativeThreadIndex);
+            Debug.Assert(s_ThreadIndicesSeen.Count <= maxSize, $"Seen {s_ThreadIndicesSeen.Count} when we should only have seen {maxSize}. Output is: {GenerateOutput()}");
+        }
+
+        [BurstDiscard]
+        private static string GenerateOutput()
+        {
+            string output = s_ThreadIndicesSeen.Aggregate(string.Empty, (current, index) => current + $"{index},");
+            return output;
         }
     }
 }
