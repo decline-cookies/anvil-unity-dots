@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Util;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
 using Unity.Burst;
@@ -129,7 +130,7 @@ namespace Anvil.Unity.DOTS.Collections
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
-        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, JobsUtility.JobWorkerMaximumCount + 1)
+        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, ParallelCollectionUtil.CollectionSizeForMaxThreads())
         {
         }
 
@@ -269,26 +270,11 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         /// <summary>
-        /// Returns a lightweight <see cref="LaneWriter"/> instance.
-        /// </summary>
-        /// <param name="threadIndex">The lane index to lock the lane writer into.
-        /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
-        /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
-        /// as the lane to read/write. However most things in programming are 0 indexed so this helper
-        /// function handles allowing you to use thread indexes while keeping the internals consistent with
-        /// 0 indexing.</remarks>
-        /// <returns>A <see cref="LaneWriter" /> instance.</returns>
-        public LaneWriter AsLaneWriterFromNativeThreadIndex(int threadIndex)
-        {
-            return AsLaneWriter(threadIndex - 1);
-        }
-
-        /// <summary>
         /// Returns a lightweight <see cref="LaneWriter" /> instance
         /// </summary>
         /// <param name="laneIndex">The lane index to lock the lane writer into.
         /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
-        /// See <see cref="AsLaneWriterFromNativeThreadIndex"/> if lanes are based on different threads.
+        /// See <see cref="ParallelCollectionUtil.CollectionIndexForThread"/> if lanes are based on different threads.
         /// </param>
         /// <returns>A <see cref="LaneWriter" /> instance.</returns>
         public LaneWriter AsLaneWriter(int laneIndex)
@@ -313,28 +299,13 @@ namespace Anvil.Unity.DOTS.Collections
 #endif
             return new Reader(ref this);
         }
-
-        /// <summary>
-        /// Returns a lightweight <see cref="LaneReader"/> instance.
-        /// </summary>
-        /// <param name="threadIndex">The lane index to lock the lane reader into.
-        /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
-        /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
-        /// as the lane to read/write. However most things in programming are 0 indexed so this helper
-        /// function handles allowing you to use thread indexes while keeping the internals consistent with
-        /// 0 indexing.</remarks>
-        /// <returns>A <see cref="LaneReader" /> instance.</returns>
-        public LaneReader AsLaneReaderFromNativeThreadIndex(int threadIndex)
-        {
-            return AsLaneReader(threadIndex - 1);
-        }
-
+        
         /// <summary>
         /// Returns a lightweight <see cref="LaneReader" /> instance
         /// </summary>
         /// <param name="laneIndex">The lane index to lock the lane reader into.
         /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
-        /// See <see cref="AsLaneReaderFromNativeThreadIndex"/> if lanes are based on different threads.</param>
+        /// See <see cref="ParallelCollectionUtil.CollectionIndexForThread"/> if lanes are based on different threads.</param>
         /// <returns>A <see cref="LaneWriter" /> instance.</returns>
         public LaneReader AsLaneReader(int laneIndex)
         {
@@ -402,26 +373,11 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            /// Returns a lightweight <see cref="LaneWriter"/> instance.
-            /// </summary>
-            /// <param name="threadIndex">The lane index to lock the lane writer into.
-            /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
-            /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
-            /// as the lane to read/write. However most things in programming are 0 indexed so this helper
-            /// function handles allowing you to use thread indexes while keeping the internals consistent with
-            /// 0 indexing.</remarks>
-            /// <returns>A <see cref="LaneWriter" /> instance.</returns>
-            public LaneWriter AsLaneWriterFromNativeThreadIndex(int threadIndex)
-            {
-                return AsLaneWriter(threadIndex - 1);
-            }
-
-            /// <summary>
             /// Returns a lightweight <see cref="LaneWriter" /> instance
             /// </summary>
             /// <param name="laneIndex">The lane index to lock the lane writer into.
             /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
-            /// See <see cref="AsLaneWriterFromNativeThreadIndex"/> if lanes are based on different threads.
+            /// See <see cref="ParallelCollectionUtil.CollectionIndexForThread"/> if lanes are based on different threads.
             /// </param>
             /// <returns>A <see cref="LaneWriter" /> instance.</returns>
             public LaneWriter AsLaneWriter(int laneIndex)
@@ -523,26 +479,11 @@ namespace Anvil.Unity.DOTS.Collections
             }
 
             /// <summary>
-            /// Returns a lightweight <see cref="LaneReader"/> instance.
-            /// </summary>
-            /// <param name="threadIndex">The lane index to lock the lane reader into.
-            /// Starts at 1 and goes up to AND including <see cref="LaneCount"/></param>
-            /// <remarks>Unity returns thread indexes starting at 1 and you often want to use the thread index
-            /// as the lane to read/write. However most things in programming are 0 indexed so this helper
-            /// function handles allowing you to use thread indexes while keeping the internals consistent with
-            /// 0 indexing.</remarks>
-            /// <returns>A <see cref="LaneReader" /> instance.</returns>
-            public LaneReader AsLaneReaderFromNativeThreadIndex(int threadIndex)
-            {
-                return AsLaneReader(threadIndex - 1);
-            }
-
-            /// <summary>
             /// Returns a lightweight <see cref="LaneReader" /> instance
             /// </summary>
             /// <param name="laneIndex">The lane index to lock the lane reader into.
             /// Starts at 0 and goes up to but NOT including <see cref="LaneCount"/>
-            /// See <see cref="AsLaneReaderFromNativeThreadIndex"/> if lanes are based on different threads.</param>
+            /// See <see cref="ParallelCollectionUtil.CollectionIndexForThread"/> if lanes are based on different threads.</param>
             /// <returns>A <see cref="LaneWriter" /> instance.</returns>
             public LaneReader AsLaneReader(int laneIndex)
             {
