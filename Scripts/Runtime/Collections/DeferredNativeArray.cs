@@ -26,9 +26,11 @@ namespace Anvil.Unity.DOTS.Collections
         Placeholder,
         Created
     }
-
+    
+    [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("Length = {Length}")]
     [NativeContainer]
+    [BurstCompatible]
     public struct DeferredNativeArray<T> : INativeDisposable
         where T : struct
     {
@@ -79,6 +81,7 @@ namespace Anvil.Unity.DOTS.Collections
             InitStaticSafetyId(ref array.m_Safety);
         }
 
+        // ReSharper disable once StaticMemberInGenericType
         private static int s_StaticSafetyId;
 
         [NativeDisableUnsafePtrRestriction] internal unsafe DeferredNativeArrayBufferInfo* m_BufferInfo;
@@ -236,7 +239,7 @@ namespace Anvil.Unity.DOTS.Collections
         //*************************************************************************************************************
 
         [BurstCompile]
-        private unsafe readonly struct DisposeJob : IJob
+        private readonly unsafe struct DisposeJob : IJob
         {
             [NativeDisableUnsafePtrRestriction] private readonly DeferredNativeArrayBufferInfo* m_BufferInfo;
             private readonly Allocator m_Allocator;
@@ -249,7 +252,8 @@ namespace Anvil.Unity.DOTS.Collections
 
             public void Execute()
             {
-                //Can't just call Dispose on m_DeferredNativeArray because that requires main thread access for DisposeSentinel
+                //This dispose job just handles freeing the memory, the other aspects of the collection were already
+                //when this job was scheduled because it requires main thread access
                 UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
                 UnsafeUtility.Free(m_BufferInfo, m_Allocator);
             }
@@ -275,8 +279,8 @@ namespace Anvil.Unity.DOTS.Collections
         public static void* GetSafetyHandlePointer<T>(ref DeferredNativeArray<T> deferredNativeArray)
             where T : struct
         {
-            AtomicSafetyHandle safetyHandle = GetSafetyHandle(ref deferredNativeArray);
-            return UnsafeUtility.AddressOf(ref safetyHandle);
+            //TODO: Collections checks
+            return UnsafeUtility.AddressOf(ref deferredNativeArray.m_Safety);
         }
     }
 }

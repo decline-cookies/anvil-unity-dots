@@ -1,7 +1,6 @@
 using Anvil.Unity.DOTS.Collections;
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -17,17 +16,14 @@ namespace Anvil.Unity.DOTS.Jobs
     public static class JobDeferredNativeArrayForExtensions
     {
         public static unsafe JobHandle ScheduleParallel<TJob, T>(this TJob jobData,
-                                                                 NativeList<T> deferredNativeArray,
+                                                                 DeferredNativeArray<T> deferredNativeArray,
                                                                  int batchSize,
                                                                  JobHandle dependsOn = default)
             where TJob : struct, IJobDeferredNativeArrayFor
             where T : struct
         {
-            // void* atomicSafetyHandlePtr = DeferredNativeArrayUnsafeUtility.GetSafetyHandlePointer(ref deferredNativeArray);
-
-            void* atomicSafetyHandlePtr = null;
-            AtomicSafetyHandle safety = NativeListUnsafeUtility.GetAtomicSafetyHandle(ref deferredNativeArray);
-            atomicSafetyHandlePtr = UnsafeUtility.AddressOf(ref safety);
+            void* atomicSafetyHandlePtr = DeferredNativeArrayUnsafeUtility.GetSafetyHandlePointer(ref deferredNativeArray);
+            
 
 #if UNITY_2020_2_OR_NEWER
             const ScheduleMode SCHEDULE_MODE = ScheduleMode.Parallel;
@@ -41,7 +37,7 @@ namespace Anvil.Unity.DOTS.Jobs
                                                                                                          SCHEDULE_MODE);
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       batchSize,
-                                                                      NativeListUnsafeUtility.GetInternalListDataPtrUnchecked(ref deferredNativeArray),
+                                                                      DeferredNativeArrayUnsafeUtility.GetBufferInfoUnchecked(ref deferredNativeArray),
                                                                       atomicSafetyHandlePtr);
 
             // dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters, batchSize,);
