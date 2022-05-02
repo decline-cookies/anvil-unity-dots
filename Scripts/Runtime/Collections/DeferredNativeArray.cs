@@ -27,6 +27,14 @@ namespace Anvil.Unity.DOTS.Collections
         Created
     }
     
+    /// <summary>
+    /// A native collection similar to <see cref="NativeArray{T}"/> but intended for use in a deferred context.
+    /// </summary>
+    /// <remarks>
+    /// This could be accomplished using a <see cref="NativeList{T}"/> but this class is more clear about its intent
+    /// and guards against potential misuse.
+    /// </remarks>
+    /// <typeparam name="T">The type to contain in the <see cref="DeferredNativeArray{T}"/></typeparam>
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("Length = {Length}")]
     [NativeContainer]
@@ -56,7 +64,7 @@ namespace Anvil.Unity.DOTS.Collections
                 return;
             }
 
-            throw new InvalidOperationException($"{(object)typeof(T)} used in NativeArray<{(object)typeof(T)}> must be unmanaged (contain no managed types) and cannot itself be a native container type.");
+            throw new InvalidOperationException($"{(object)typeof(T)} used in {nameof(DeferredNativeArray<T>)}<{(object)typeof(T)}> must be unmanaged (contain no managed types) and cannot itself be a native container type.");
         }
 
         private static unsafe void Allocate(Allocator allocator, out DeferredNativeArray<T> array)
@@ -76,7 +84,9 @@ namespace Anvil.Unity.DOTS.Collections
             array.m_BufferInfo->MaxIndex = 0;
             array.m_BufferInfo->Buffer = initialBuffer;
             array.m_BufferInfo->State = DeferredNativeArrayState.Placeholder;
-            array.m_AllocatorLabel = allocator;
+            
+            array.m_Allocator = allocator;
+            
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
             InitStaticSafetyId(ref array.m_Safety);
         }
@@ -89,30 +99,43 @@ namespace Anvil.Unity.DOTS.Collections
         [NativeSetClassTypeToNullOnSchedule] private DisposeSentinel m_DisposeSentinel;
 
         internal AtomicSafetyHandle m_Safety;
-        private Allocator m_AllocatorLabel;
+        private Allocator m_Allocator;
 
+        /// <summary>
+        /// The Length of the array.
+        /// Will always be 0 until <see cref="DeferredCreate"/> is called.
+        /// </summary>
         public unsafe int Length
         {
-            get =>
-                m_BufferInfo != null
+            get => m_BufferInfo != null
                     ? m_BufferInfo->Length
                     : 0;
         }
-
+        
+        /// <summary>
+        /// Whether the collection has been created or not.
+        /// </summary>
         public unsafe bool IsCreated
         {
             get => m_BufferInfo != null && m_BufferInfo->Buffer != null;
         }
 
+        /// <summary>
+        /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
+        /// </summary>
+        /// <param name="allocator">The <see cref="Allocator"/> to use for memory allocation.</param>
         public DeferredNativeArray(Allocator allocator)
         {
             Allocate(allocator, out this);
         }
-
+        
+        /// <summary>
+        /// Disposes the collection
+        /// </summary>
         [WriteAccessRequired]
         public unsafe void Dispose()
         {
-            if (!UnsafeUtility.IsValidAllocator(m_AllocatorLabel))
+            if (!UnsafeUtility.IsValidAllocator(m_Allocator))
             {
                 throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
             }
@@ -124,16 +147,24 @@ namespace Anvil.Unity.DOTS.Collections
                 return;
             }
 
-            UnsafeUtility.Free(m_BufferInfo->Buffer, m_AllocatorLabel);
+            UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
             m_BufferInfo->Buffer = null;
-            UnsafeUtility.Free(m_BufferInfo, m_AllocatorLabel);
+            UnsafeUtility.Free(m_BufferInfo, m_Allocator);
             m_BufferInfo = null;
         }
-
+        
+        /// <summary>
+        /// Disposes the collection by scheduling a job to free the memory.
+        /// NOTE: The collection is considered disposed immediately, only the memory backing the data is freed later on
+        /// in case other jobs are using it still.
+        /// </summary>
+        /// <param name="inputDeps">The <see cref="JobHandle"/> to wait upon before freeing the backing
+        /// memory.</param>
+        /// <returns>A <see cref="JobHandle"/> for when the disposal is complete.</returns>
         public unsafe JobHandle Dispose(JobHandle inputDeps)
         {
             DisposeSentinel.Clear(ref m_DisposeSentinel);
-            DisposeJob disposeJob = new DisposeJob(m_BufferInfo, m_AllocatorLabel);
+            DisposeJob disposeJob = new DisposeJob(m_BufferInfo, m_Allocator);
             JobHandle jobHandle = disposeJob.Schedule(inputDeps);
             AtomicSafetyHandle.Release(m_Safety);
             m_BufferInfo->Buffer = null;
@@ -142,27 +173,31 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private unsafe void CheckElementReadAccess(int index)
+        private unsafe void CheckElementAccess(int index, bool isRead)
         {
+            Debug.Assert(m_BufferInfo->State == DeferredNativeArrayState.Created, $"{nameof(DeferredNativeArray<T>)} is in Placeholder mode and hasn't had {nameof(DeferredCreate)} called yet!");
+            
             if (index < 0
              || index > m_BufferInfo->MaxIndex)
             {
                 FailOutOfRangeError(index);
             }
 
-            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            if (isRead)
+            {
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            }
+            else
+            {
+                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private unsafe void CheckElementWriteAccess(int index)
+        [BurstDiscard]
+        private unsafe void CheckCreateAccess()
         {
-            if (index < 0
-             || index > m_BufferInfo->MaxIndex)
-            {
-                FailOutOfRangeError(index);
-            }
-
-            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            Debug.Assert(m_BufferInfo->State == DeferredNativeArrayState.Placeholder, $"{nameof(DeferredNativeArray<T>)} has already been created! Cannot call {nameof(DeferredCreate)} more than once.");
         }
 
         private unsafe void FailOutOfRangeError(int index)
@@ -175,52 +210,69 @@ namespace Anvil.Unity.DOTS.Collections
 
             throw new IndexOutOfRangeException($"Index {(object)index} is out of range of '{(object)m_BufferInfo->Length}' Length.");
         }
-
+        
+        /// <summary>
+        /// Gets or sets a value at the specified index.
+        /// </summary>
+        /// <param name="index">The index to get or set the value</param>
         public unsafe T this[int index]
         {
             get
             {
-                //TODO: Ensure not in placeholder mode
-                CheckElementReadAccess(index);
+                CheckElementAccess(index, true);
                 return UnsafeUtility.ReadArrayElement<T>(m_BufferInfo->Buffer, index);
             }
-            [WriteAccessRequired] set
+            [WriteAccessRequired] 
+            set
             {
-                //TODO: Ensure not in placeholder mode
-                CheckElementWriteAccess(index);
+                CheckElementAccess(index, false);
                 UnsafeUtility.WriteArrayElement(m_BufferInfo->Buffer, index, value);
             }
         }
-
+        
+        /// <summary>
+        /// Creates the actual array for when you know the length.
+        /// Usually inside a job.
+        /// </summary>
+        /// <param name="newLength">The new length for the array to be.</param>
+        /// <param name="nativeArrayOptions">The <see cref="NativeArrayOptions"/> for initializing the array memory.</param>
         public unsafe void DeferredCreate(int newLength, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
         {
-            //TODO: Ensure not in placeholder mode
+            CheckCreateAccess();
 
             //Allocate the new memory
             long size = SIZE * newLength;
-            void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_AllocatorLabel);
+            void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_Allocator);
             if (nativeArrayOptions == NativeArrayOptions.ClearMemory)
             {
                 UnsafeUtility.MemClear(newMemory, size);
             }
 
             //Free the original memory
-            UnsafeUtility.Free(m_BufferInfo->Buffer, m_AllocatorLabel);
+            UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
             //Update the buffer info
             m_BufferInfo->Length = newLength;
             m_BufferInfo->MaxIndex = newLength - 1;
             m_BufferInfo->Buffer = newMemory;
             m_BufferInfo->State = DeferredNativeArrayState.Created;
         }
-
+        
+        /// <summary>
+        /// Returns a <see cref="NativeArray{T}"/> for use in a job.
+        /// Initially this <see cref="NativeArray{T}"/> will not have anything in it but later on after
+        /// <see cref="DeferredCreate"/> is called, the <see cref="NativeArray{T}"/> instance returned will point to
+        /// the same memory. By scheduling your jobs, you can have a job populate the <see cref="DeferredNativeArray{T}"/>
+        /// and a subsequent job read from this <see cref="NativeArray{T}"/> before you know the full length.
+        /// </summary>
+        /// <returns>A <see cref="NativeArray{T}"/> instance that will be populated in the future.</returns>
         public unsafe NativeArray<T> AsDeferredJobArray()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
 #endif
             byte* buffer = (byte*)m_BufferInfo;
-            // We use the first bit of the pointer to infer that the array is in list mode
-            // Thus the job scheduling code will need to patch it.
+            // Unity uses this as an indicator to the internal Job Scheduling code that it needs to defer scheduling until
+            // the array length is actually known. 
             buffer += 1;
             NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(buffer, 0, Allocator.None);
 
