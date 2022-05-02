@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Util
             Debug.Assert(JOB_WORKER_MAXIMUM_COUNT.Data > 0);
         }
 
-    
+
         /// <summary>
         /// Returns an ideal size for the number of buckets a collection should have
         /// to account for all possible threads that could write to it at once.
@@ -108,21 +108,27 @@ namespace Anvil.Unity.DOTS.Util
             Debug.Assert(nativeThreadIndex > 0 && nativeThreadIndex <= JobsUtility.MaxJobThreadCount);
             return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
         }
-
-
+        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [BurstDiscard]
         private static void DetectMultipleXThreads(int nativeThreadIndex)
         {
             ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
         }
+
     }
 
-    
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
     internal static class ThreadHelper
     {
-        private static readonly ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
-        
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Init()
+        {
+            s_ThreadIndicesSeen = new ConcurrentBag<int>();
+        }
+
+        private static ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
+
         [BurstDiscard]
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
         {
@@ -137,4 +143,5 @@ namespace Anvil.Unity.DOTS.Util
             return output;
         }
     }
+#endif
 }
