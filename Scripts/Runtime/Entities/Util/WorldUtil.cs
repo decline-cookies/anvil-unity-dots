@@ -211,6 +211,9 @@ namespace Anvil.Unity.DOTS.Entities
                 where SrcGroup : ComponentSystemGroup
                 where DestGroup : ComponentSystemGroup
         {
+
+            Debug.Assert(typeof(SrcGroup) != typeof(DestGroup), "Source and destination groups should not be the same.");
+
             ComponentSystemBase system = world.GetExistingSystem<System>();
             ComponentSystemGroup srcGroup = world.GetExistingSystem<SrcGroup>();
             ComponentSystemGroup destGroup = world.GetExistingSystem<DestGroup>();
