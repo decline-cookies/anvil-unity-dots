@@ -31,9 +31,12 @@ namespace Anvil.Unity.DOTS.Util
         /// Subsequent bursted jobs are then allowed to access it.
         /// <seealso cref="https://docs.unity3d.com/Packages/com.unity.burst@1.7/manual/docs/AdvancedUsages.html#shared-static"/>
         /// </remarks>
-        private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<InternalClassJobWorkerMaximumCount>();
-        private class InternalClassJobWorkerMaximumCount
+        private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<JobWorkerMaximumCountKeyContext>();
+        private sealed class JobWorkerMaximumCountKeyContext
         {
+            private JobWorkerMaximumCountKeyContext()
+            {
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
