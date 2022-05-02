@@ -67,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public static class WorldUtil
     {
-        // Not need to reset between play sessions because PlayerLoop systems are stateless and 
+        // No need to reset between play sessions because PlayerLoop systems are stateless and 
         // persist between sessions when domain reloading is disabled.
         private static bool s_AreCustomPlayerLoopPhasesAdded = false;
 
@@ -87,7 +87,7 @@ namespace Anvil.Unity.DOTS.Entities
             List<PlayerLoopSystem> topLevelPhases = playerLoop.subSystemList.ToList();
 
             int initializationPhaseIndex = topLevelPhases.FindIndex((phase) => phase.type == typeof(Initialization));
-            Debug.Assert(initializationPhaseIndex != -1, "Initialization phase not found");
+            Debug.Assert(initializationPhaseIndex != -1, $"{nameof(Initialization)} phase not found");
             Debug.Assert(!topLevelPhases.Any((phase) => phase.type == typeof(PostInitialization)), $"{nameof(PostInitialization)} phase already added");
             topLevelPhases.Insert(initializationPhaseIndex + 1, PostInitialization.PlayerLoopSystem);
 
@@ -127,7 +127,7 @@ namespace Anvil.Unity.DOTS.Entities
                 Debug.Assert(systemGroupType.IsSubclassOf(typeof(ComponentSystemGroup)));
 
                 // If we had access to ScriptBehaviourUpdateOrder.DummyDelegateWrapper we could detect if the system has already been added to the PlayerLoop.
-                Debug.Assert(world.GetExistingSystem(systemGroupType) == null, $"System group cannot already exists in world {world.Name}. There is no way of knowing if a top level group for an individual world has been added to the player loop already.");
+                Debug.Assert(world.GetExistingSystem(systemGroupType) == null, $"System group cannot already exist in world {world.Name}. There is no way of knowing if a top level group for an individual world has been added to the player loop already.");
                 topLevelGroups[i] = (ComponentSystemGroup)world.CreateSystem(systemGroupType);
 
                 ScriptBehaviourUpdateOrder.AppendSystemToPlayerLoopList(topLevelGroups[i], ref playerLoop, playerLoopSystemType);
@@ -146,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities
             // This implementation is a bit overkill since calling ComponentSystemGroup.SortSystems() calls recursively down to subgroups
             // but the way ScriptBehaviourUpdateOrder adds systems to the PlayerLoop prevents us from inspecting instances and any logic 
             // to calculate which systems are top level (check if not a child of other systems) is likely more expensive than just overcalling SortSystems().
-            // SortSystems exits early of no sorting is required.
+            // SortSystems exits early if no sorting is required.
             foreach (ComponentSystemBase system in world.Systems)
             {
                 (system as ComponentSystemGroup)?.SortSystems();
@@ -166,7 +166,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="world">The world instance to optimize.</param>
         /// <remarks>
-        /// This method doesn't move <see cref="EndFixedStepSimulationEntityCommandBufferSystem" because it's embedded in the <see cref="SimulationSystemGroup"/>.
+        /// This method doesn't move <see cref="EndFixedStepSimulationEntityCommandBufferSystem"/> because it's embedded in the <see cref="SimulationSystemGroup"/>.
         /// making it impractical to group with the other worlds. There shouldn't be any expensive work in that command buffer anyway.
         /// </remarks>
         public static void OptimizeWorldForMultiWorldInCurrentPlayerLoop(World world)
