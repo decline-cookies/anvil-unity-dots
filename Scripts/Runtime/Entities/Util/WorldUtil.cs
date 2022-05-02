@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
-    internal class EndInitializationCommandBufferSystemGroup : ComponentSystemGroup { }
+    internal class EndInitializationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
 
     /// <summary>
     /// A system group to house a <see cref="World"/>s <see cref="EndSimulationEntityCommandBufferSystem"/>.
@@ -23,13 +23,13 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
-    internal class EndSimulationCommandBufferSystemGroup : ComponentSystemGroup { }
+    internal class EndSimulationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
 
     /// <summary>
     /// A <see cref="PlayerLoop"/> phase inserted immediately after <see cref="Update"/>.
     /// Add via <see cref="WorldUtil.AddCustomPhasesToCurrentPlayerLoop" />.
     /// </summary>
-    internal class PostUpdate
+    internal class PostUpdate_Anvil
     {
         /// <summary>
         /// Provides a <see cref="PlayerLoopSystem" /> instance to to identify this phase.
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => new PlayerLoopSystem()
             {
-                type = typeof(PostUpdate)
+                type = typeof(PostUpdate_Anvil)
             };
         }
     }
@@ -47,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// A <see cref="PlayerLoop"/> phase inserted immediately after <see cref="Initialization"/>.
     /// Add via <see cref="WorldUtil.AddCustomPhasesToCurrentPlayerLoop" />.
     /// </summary>
-    internal class PostInitialization
+    internal class PostInitialization_Anvil
     {
         /// <summary>
         /// Provides a <see cref="PlayerLoopSystem" /> instance to to identify this phase.
@@ -56,7 +56,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => new PlayerLoopSystem()
             {
-                type = typeof(PostInitialization)
+                type = typeof(PostInitialization_Anvil)
             };
         }
     }
@@ -73,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         /// <summary>
         /// Add custom phases to the <see cref="PlayerLoop"/>.
-        /// <see cref="PostInitialization"/> and <see cref="PostUpdate"/>.
+        /// <see cref="PostInitialization_Anvil"/> and <see cref="PostUpdate_Anvil"/>.
         /// </summary>
         public static void AddCustomPhasesToCurrentPlayerLoop()
         {
@@ -88,13 +88,13 @@ namespace Anvil.Unity.DOTS.Entities
 
             int initializationPhaseIndex = topLevelPhases.FindIndex((phase) => phase.type == typeof(Initialization));
             Debug.Assert(initializationPhaseIndex != -1, $"{nameof(Initialization)} phase not found");
-            Debug.Assert(!topLevelPhases.Any((phase) => phase.type == typeof(PostInitialization)), $"{nameof(PostInitialization)} phase already added");
-            topLevelPhases.Insert(initializationPhaseIndex + 1, PostInitialization.PlayerLoopSystem);
+            Debug.Assert(!topLevelPhases.Any((phase) => phase.type == typeof(PostInitialization_Anvil)), $"{nameof(PostInitialization_Anvil)} phase already added");
+            topLevelPhases.Insert(initializationPhaseIndex + 1, PostInitialization_Anvil.PlayerLoopSystem);
 
             int updatePhaseIndex = topLevelPhases.FindIndex((phase) => phase.type == typeof(Update));
             Debug.Assert(updatePhaseIndex != -1, "Update phase not found");
-            Debug.Assert(!topLevelPhases.Any((phase) => phase.type == typeof(PostUpdate)), $"{nameof(PostUpdate)} phase already added");
-            topLevelPhases.Insert(updatePhaseIndex + 1, PostUpdate.PlayerLoopSystem);
+            Debug.Assert(!topLevelPhases.Any((phase) => phase.type == typeof(PostUpdate_Anvil)), $"{nameof(PostUpdate_Anvil)} phase already added");
+            topLevelPhases.Insert(updatePhaseIndex + 1, PostUpdate_Anvil.PlayerLoopSystem);
 
             playerLoop.subSystemList = topLevelPhases.ToArray();
             PlayerLoop.SetPlayerLoop(playerLoop);
@@ -110,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// A collection of value pairs where the first value is the PlayerLoop phase to place the system in and the second value is the 
         /// system to create.
         /// </param>
-        /// <returns></returns>
+        /// <returns>A collection of the system groups created.</returns>
         /// <remarks>
         /// Groups must not already exist in the world. This is a limitation of our ability to detect whether a system has already been 
         /// added to the palyer loop.
@@ -154,13 +154,13 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private static readonly (Type PlayerLoopSystemType, Type SystemGroupType)[] s_MultiWorldTopLevelGroupTypes = new[]{
-            (typeof(PostInitialization), typeof(EndInitializationCommandBufferSystemGroup)),
-            (typeof(PostUpdate), typeof(EndSimulationCommandBufferSystemGroup)),
+            (typeof(PostInitialization_Anvil), typeof(EndInitializationCommandBufferSystemGroup_Anvil)),
+            (typeof(PostUpdate_Anvil), typeof(EndSimulationCommandBufferSystemGroup_Anvil)),
         };
         /// <summary>
         /// Optimizes a <see cref="World"/>'s <see cref="ComponentSystemGroup"/>s for multi-world applications.
         /// Groups end command buffers into their own <see cref="PlayerLoop"/> phase just after their default phase. 
-        /// (Ex: <see cref="Update"/> -> <see cref="PostUpdate"/>)
+        /// (Ex: <see cref="Update"/> -> <see cref="PostUpdate_Anvil"/>)
         /// This allows end command buffers for all worlds to be evaluated after all worlds have scheduled their work for the phase.
         /// The result is that other worlds can compute their jobified work while one world is executing its end command buffer on the main thread.
         /// </summary>
@@ -174,8 +174,8 @@ namespace Anvil.Unity.DOTS.Entities
             AddCustomPhasesToCurrentPlayerLoop();
             AddTopLevelGroupsToCurrentPlayerLoop(world, s_MultiWorldTopLevelGroupTypes);
 
-            MoveSystemFromToGroup<EndInitializationEntityCommandBufferSystem, InitializationSystemGroup, EndInitializationCommandBufferSystemGroup>(world);
-            MoveSystemFromToGroup<EndSimulationEntityCommandBufferSystem, SimulationSystemGroup, EndSimulationCommandBufferSystemGroup>(world);
+            MoveSystemFromToGroup<EndInitializationEntityCommandBufferSystem, InitializationSystemGroup, EndInitializationCommandBufferSystemGroup_Anvil>(world);
+            MoveSystemFromToGroup<EndSimulationEntityCommandBufferSystem, SimulationSystemGroup, EndSimulationCommandBufferSystemGroup_Anvil>(world);
 
             // Suppress the logging during sort so we don't see complaints about systems that position themselves based on
             // the systems that we're moving. So far, the configured above are at the end of the group and don't cause issues
