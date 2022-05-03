@@ -119,13 +119,13 @@ namespace Anvil.Unity.DOTS.Util
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
     internal static class ThreadHelper
     {
+        private static ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
+        
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
             s_ThreadIndicesSeen = new ConcurrentBag<int>();
         }
-
-        private static ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
 
         [BurstDiscard]
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
