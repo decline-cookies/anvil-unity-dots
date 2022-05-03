@@ -16,12 +16,14 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - Multiple different systems want to write to the collection.
     /// - They call <see cref="Acquire"/> with access type of <see cref="AccessType.SharedWrite"/>.
     /// - This means that all those jobs can start at the same time.
+    /// - NOTE: You as the developer must ensure that your jobs write safely during a <see cref="AccessType.SharedWrite"/>. Typically this is done by using the <see cref="NativeSetThreadIndex"/> attribute to guarantee unique writing.
     /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TContext, TKey}"/> know that there is parallel writing going on. We cannot read or exclusive write until this done.
     ///
     /// ----- INTERNAL WRITE PHASE -----
     /// - A managing system now needs to do some work where it reads from and writes to the collection.
     /// - It schedules it's job to do that using <see cref="Acquire"/> with access type of <see cref="AccessType.ExclusiveWrite"/>
     /// - This means that it can do it's work once all the previous external writers and/or readers have completed.
+    /// - NOTE: Typically this means that one thread is reading/writing to more than one (up to all) possible buckets in a collection.
     /// - This job then uses <see cref="Release"/> to the let the <see cref="CollectionAccessController{TContext, TKey}"/> know that there an exclusive write going on that cannot be interrupted by parallel writes or reads.
     ///
     /// ----- EXTERNAL READ PHASE -----
@@ -34,6 +36,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - The collection used above needs to be disposed but we need to ensure all reading and writing are complete.
     /// - The collection disposes using <see cref="Acquire"/> with access type of <see cref="AccessType.ForDisposal"/>
     /// - This means that all reading and writing from the collection has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="Acquire"/> will fail unless <see cref="Reset"/> is called.
+    /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
     /// </remarks>
     public class CollectionAccessController<TContext, TKey> : AbstractAnvilBase
     {
@@ -45,11 +48,6 @@ namespace Anvil.Unity.DOTS.Jobs
             SharedRead,
             Disposing
         }
-
-        /// <summary>
-        /// Dispatched when this <see cref="CollectionAccessController{TContext,TKey}"/> is disposed.
-        /// </summary>
-        public Action<CollectionAccessController<TContext, TKey>> OnDisposed;
 
         private JobHandle m_ExclusiveWriteDependency;
         private JobHandle m_SharedWriteDependency;
@@ -87,8 +85,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
 
-            OnDisposed?.Invoke(this);
-            OnDisposed = null;
+            CollectionAccessControl<TContext, TKey>.RemoveAndDispose(Key);
 
             base.DisposeSelf();
         }
@@ -165,9 +162,11 @@ namespace Anvil.Unity.DOTS.Jobs
         /// for a specific <see cref="AccessType"/>. You must call <see cref="Release"/> after any call to <see cref="Acquire"/>
         /// before you call <see cref="Acquire"/> again.
         /// </summary>
-        /// <param name="releaseAccessDependency">The <see cref="JobHandle"/> to the job that is doing the reading or
+        /// <param name="releaseAccessDependency">
+        /// The <see cref="JobHandle"/> to the job that is doing the reading or
         /// writing from/to the underlying collection this <see cref="CollectionAccessController{TContext,TKey}"/>
-        /// is gating access to.</param>
+        /// is gating access to.
+        /// </param>
         public void Release(JobHandle releaseAccessDependency)
         {
             Debug.Assert(!IsDisposed);
@@ -175,25 +174,29 @@ namespace Anvil.Unity.DOTS.Jobs
 
             switch (m_State)
             {
-                case AcquisitionState.Disposing:
                 case AcquisitionState.ExclusiveWrite:
                     //If you were exclusively writing, then no one else can do any writing or reading until you're done
-                    //In the disposing case, we set to the same dependencies but gate in the checks
-                    m_ExclusiveWriteDependency = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
-                    m_SharedWriteDependency = m_ExclusiveWriteDependency;
-                    m_SharedReadDependency = m_ExclusiveWriteDependency;
+                    m_ExclusiveWriteDependency
+                        = m_SharedWriteDependency
+                            = m_SharedReadDependency
+                                = releaseAccessDependency;
                     break;
                 case AcquisitionState.SharedWrite:
                     //If you were shared writing, then no one else can exclusive write or read until you're done
-                    m_ExclusiveWriteDependency = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
-                    m_SharedReadDependency = m_ExclusiveWriteDependency;
+                    m_ExclusiveWriteDependency
+                        = m_SharedReadDependency
+                            = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
                 case AcquisitionState.SharedRead:
                     //If you were reading, then no one else can do any writing until your reading is done
-                    m_ExclusiveWriteDependency = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
-                    m_SharedWriteDependency = m_ExclusiveWriteDependency;
+                    m_ExclusiveWriteDependency
+                        = m_SharedWriteDependency
+                            = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
+                case AcquisitionState.Disposing:
+                    throw new Exception($"Current state was {m_State}, no need to call {nameof(Release)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
                 case AcquisitionState.Unacquired:
+                    throw new Exception($"Current state was {m_State}, {nameof(Release)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(m_State), m_State, $"Tried to release but {nameof(m_State)} was {m_State} and no code path satisfies!");
             }

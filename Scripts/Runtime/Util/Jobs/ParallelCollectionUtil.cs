@@ -121,18 +121,18 @@ namespace Anvil.Unity.DOTS.Util
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
     internal static class ThreadHelper
     {
-        private static ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
-        
+        private static readonly ConcurrentDictionary<int, bool> s_ThreadIndicesSeen = new ConcurrentDictionary<int, bool>();
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
-            s_ThreadIndicesSeen = new ConcurrentBag<int>();
+            s_ThreadIndicesSeen.Clear();
         }
 
         [BurstDiscard]
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
         {
-            s_ThreadIndicesSeen.Add(nativeThreadIndex);
+            s_ThreadIndicesSeen.TryAdd(nativeThreadIndex, true);
             Debug.Assert(s_ThreadIndicesSeen.Count <= maxSize, $"Seen {s_ThreadIndicesSeen.Count} when we should only have seen {maxSize}. Output is: {GenerateOutput()}");
         }
 

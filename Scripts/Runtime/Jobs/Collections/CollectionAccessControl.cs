@@ -39,7 +39,6 @@ namespace Anvil.Unity.DOTS.Jobs
             if (!s_Controllers.TryGetValue(key, out CollectionAccessController<TContext, TKey> accessController))
             {
                 accessController = new CollectionAccessController<TContext, TKey>(key);
-                accessController.OnDisposed += CollectionAccessController_OnDisposed;
                 s_Controllers.Add(key, accessController);
             }
 
@@ -66,7 +65,6 @@ namespace Anvil.Unity.DOTS.Jobs
                 return true;
             }
             
-            accessController.OnDisposed -= CollectionAccessController_OnDisposed;
             accessController.Dispose();
 
             return true;
@@ -80,15 +78,9 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             foreach (CollectionAccessController<TContext, TKey> accessController in s_Controllers.Values)
             {
-                accessController.OnDisposed -= CollectionAccessController_OnDisposed;
                 accessController.Dispose();
             }
             s_Controllers.Clear();
-        }
-
-        private static void CollectionAccessController_OnDisposed(CollectionAccessController<TContext, TKey> controller)
-        {
-            RemoveAndDispose(controller.Key);
         }
     }
 }
