@@ -17,20 +17,20 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - They call <see cref="Acquire"/> with access type of <see cref="AccessType.SharedWrite"/>.
     /// - This means that all those jobs can start at the same time.
     /// - NOTE: You as the developer must ensure that your jobs write safely during a <see cref="AccessType.SharedWrite"/>. Typically this is done by using the <see cref="NativeSetThreadIndex"/> attribute to guarantee unique writing.
-    /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TContext, TKey}"/> know that there is parallel writing going on. We cannot read or exclusive write until this done.
+    /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TKey}"/> know that there is parallel writing going on. We cannot read or exclusive write until this done.
     ///
     /// ----- INTERNAL WRITE PHASE -----
     /// - A managing system now needs to do some work where it reads from and writes to the collection.
     /// - It schedules it's job to do that using <see cref="Acquire"/> with access type of <see cref="AccessType.ExclusiveWrite"/>
     /// - This means that it can do it's work once all the previous external writers and/or readers have completed.
     /// - NOTE: Typically this means that one thread is reading/writing to more than one (up to all) possible buckets in a collection.
-    /// - This job then uses <see cref="Release"/> to the let the <see cref="CollectionAccessController{TContext, TKey}"/> know that there an exclusive write going on that cannot be interrupted by parallel writes or reads.
+    /// - This job then uses <see cref="Release"/> to the let the <see cref="CollectionAccessController{TKey}"/> know that there an exclusive write going on that cannot be interrupted by parallel writes or reads.
     ///
     /// ----- EXTERNAL READ PHASE -----
     /// - Multiple different systems want to read from the collection.
     /// - They schedule their reading jobs using <see cref="Acquire"/> with access type of <see cref="AccessType.SharedRead"/>
     /// - This means that all those reading jobs can start at the same time.
-    /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TContext, TKey}"/> know that there is reading going on. We cannot write again until this is done.
+    /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TKey}"/> know that there is reading going on. We cannot write again until this is done.
     ///
     /// ----- CLEAN UP PHASE -----
     /// - The collection used above needs to be disposed but we need to ensure all reading and writing are complete.
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - This means that all reading and writing from the collection has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="Acquire"/> will fail unless <see cref="Reset"/> is called.
     /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
     /// </remarks>
-    public class CollectionAccessController<TContext, TKey> : AbstractAnvilBase
+    public class CollectionAccessController<TKey> : AbstractAnvilBase
     {
         private enum AcquisitionState
         {
@@ -48,6 +48,8 @@ namespace Anvil.Unity.DOTS.Jobs
             SharedRead,
             Disposing
         }
+
+        private readonly CollectionAccessControl.ICollectionAccessControl<TKey> m_CollectionAccessControl;
 
         private JobHandle m_ExclusiveWriteDependency;
         private JobHandle m_SharedWriteDependency;
@@ -61,20 +63,14 @@ namespace Anvil.Unity.DOTS.Jobs
         private JobHandle m_LastHandleAcquired;
 #endif
 
-        /// <summary>
-        /// The key used for lookup in the <see cref="CollectionAccessControl{TContext,TKey}"/> lookup.
-        /// </summary>
         public TKey Key
         {
             get;
         }
 
-        /// <summary>
-        /// Creates a new instance of a <see cref="CollectionAccessController{TContext,TKey}"/>
-        /// </summary>
-        /// <param name="key">The key to use for looking up this <see cref="CollectionAccessController{TContext,TKey}"/></param>
-        internal CollectionAccessController(TKey key)
+        internal CollectionAccessController(CollectionAccessControl.ICollectionAccessControl<TKey> collectionAccessControl, TKey key)
         {
+            m_CollectionAccessControl = collectionAccessControl;
             Key = key;
         }
 
@@ -85,23 +81,23 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
 
-            CollectionAccessControl<TContext, TKey>.RemoveAndDispose(Key);
+            m_CollectionAccessControl.Remove(this);
 
             base.DisposeSelf();
         }
 
         /// <summary>
-        /// Resets the internal state of this <see cref="CollectionAccessController{TContext,TKey}"/> so that it can
+        /// Resets the internal state of this <see cref="CollectionAccessController{TKey}"/> so that it can
         /// be used again. 
         /// </summary>
         /// <remarks>
         /// Typically this is used in cases where the underlying collection that you are using the
-        /// <see cref="CollectionAccessController{TContext,TKey}"/> to gate access to is created/destroyed each frame
+        /// <see cref="CollectionAccessController{TKey}"/> to gate access to is created/destroyed each frame
         /// or is being double buffered. The collection itself needs to be disposed and recreated but from the higher
         /// level point of view of reading and writing to "data" we want to use the same access controller.
         ///
         /// You would <see cref="Acquire"/> with <see cref="AccessType.ForDisposal"/> and then dispose the old
-        /// collection and then call <see cref="Reset"/> on the <see cref="CollectionAccessController{TContext,TKey}"/>
+        /// collection and then call <see cref="Reset"/> on the <see cref="CollectionAccessController{TKey}"/>
         /// to reflect that there is a new collection to read from/write to.
         /// </remarks>
         /// <param name="initialDependency">Optional initial dependency to set access to.</param>
@@ -158,13 +154,13 @@ namespace Anvil.Unity.DOTS.Jobs
         }
 
         /// <summary>
-        /// Allows the <see cref="CollectionAccessController{TContext,TKey}"/> to be aware of the work that you are doing
+        /// Allows the <see cref="CollectionAccessController{TKey}"/> to be aware of the work that you are doing
         /// for a specific <see cref="AccessType"/>. You must call <see cref="Release"/> after any call to <see cref="Acquire"/>
         /// before you call <see cref="Acquire"/> again.
         /// </summary>
         /// <param name="releaseAccessDependency">
         /// The <see cref="JobHandle"/> to the job that is doing the reading or
-        /// writing from/to the underlying collection this <see cref="CollectionAccessController{TContext,TKey}"/>
+        /// writing from/to the underlying collection this <see cref="CollectionAccessController{TKey}"/>
         /// is gating access to.
         /// </param>
         public void Release(JobHandle releaseAccessDependency)
@@ -207,7 +203,7 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateAcquireState()
         {
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(CollectionAccessController<TContext, TKey>)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
+            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(CollectionAccessController<TKey>)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
             Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(Release)} must be called before {nameof(Acquire)} is called again. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
             StackFrame frame = new StackFrame(2, true);
             m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
@@ -217,7 +213,7 @@ namespace Anvil.Unity.DOTS.Jobs
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
             Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(Release)} was called multiple times. Last {nameof(Release)} was called from: {m_ReleaseCallerInfo}");
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(Release)} was called but the {nameof(CollectionAccessController<TContext, TKey>)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
+            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(Release)} was called but the {nameof(CollectionAccessController<TKey>)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
             StackFrame frame = new StackFrame(2, true);
             m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
 
