@@ -102,17 +102,6 @@ namespace Anvil.Unity.DOTS.Collections
         private Allocator m_Allocator;
 
         /// <summary>
-        /// The Length of the array.
-        /// Will always be 0 until <see cref="DeferredCreate"/> is called.
-        /// </summary>
-        public unsafe int Length
-        {
-            get => m_BufferInfo != null
-                    ? m_BufferInfo->Length
-                    : 0;
-        }
-        
-        /// <summary>
         /// Whether the collection has been created or not.
         /// </summary>
         public unsafe bool IsCreated
@@ -173,29 +162,8 @@ namespace Anvil.Unity.DOTS.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private unsafe void CheckElementAccess(int index, bool isRead)
-        {
-            Debug.Assert(m_BufferInfo->State == DeferredNativeArrayState.Created, $"{nameof(DeferredNativeArray<T>)} is in Placeholder mode and hasn't had {nameof(DeferredCreate)} called yet!");
-            
-            if (index < 0
-             || index > m_BufferInfo->MaxIndex)
-            {
-                FailOutOfRangeError(index);
-            }
-
-            if (isRead)
-            {
-                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
-            }
-            else
-            {
-                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [BurstDiscard]
-        private unsafe void CheckCreateAccess()
+        private unsafe void AssertForDeferredCreate()
         {
             Debug.Assert(m_BufferInfo->State == DeferredNativeArrayState.Placeholder, $"{nameof(DeferredNativeArray<T>)} has already been created! Cannot call {nameof(DeferredCreate)} more than once.");
         }
@@ -210,35 +178,16 @@ namespace Anvil.Unity.DOTS.Collections
 
             throw new IndexOutOfRangeException($"Index {(object)index} is out of range of '{(object)m_BufferInfo->Length}' Length.");
         }
-        
-        /// <summary>
-        /// Gets or sets a value at the specified index.
-        /// </summary>
-        /// <param name="index">The index to get or set the value</param>
-        public unsafe T this[int index]
-        {
-            get
-            {
-                CheckElementAccess(index, true);
-                return UnsafeUtility.ReadArrayElement<T>(m_BufferInfo->Buffer, index);
-            }
-            [WriteAccessRequired] 
-            set
-            {
-                CheckElementAccess(index, false);
-                UnsafeUtility.WriteArrayElement(m_BufferInfo->Buffer, index, value);
-            }
-        }
-        
+
         /// <summary>
         /// Creates the actual array for when you know the length.
         /// Usually inside a job.
         /// </summary>
         /// <param name="newLength">The new length for the array to be.</param>
         /// <param name="nativeArrayOptions">The <see cref="NativeArrayOptions"/> for initializing the array memory.</param>
-        public unsafe void DeferredCreate(int newLength, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
+        public unsafe NativeArray<T> DeferredCreate(int newLength, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
         {
-            CheckCreateAccess();
+            AssertForDeferredCreate();
 
             //Allocate the new memory
             long size = SIZE * newLength;
@@ -255,6 +204,8 @@ namespace Anvil.Unity.DOTS.Collections
             m_BufferInfo->MaxIndex = newLength - 1;
             m_BufferInfo->Buffer = newMemory;
             m_BufferInfo->State = DeferredNativeArrayState.Created;
+
+            return m_InternalNativeArray;
         }
         
         /// <summary>
@@ -267,6 +218,12 @@ namespace Anvil.Unity.DOTS.Collections
         /// <returns>A <see cref="NativeArray{T}"/> instance that will be populated in the future.</returns>
         public unsafe NativeArray<T> AsDeferredJobArray()
         {
+            if (m_InternalNativeArray.IsCreated
+             && m_InternalNativeArray.Length > 0)
+            {
+                return m_InternalNativeArray;
+            }
+            
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
 #endif
@@ -274,13 +231,13 @@ namespace Anvil.Unity.DOTS.Collections
             // Unity uses this as an indicator to the internal Job Scheduling code that it needs to defer scheduling until
             // the array length is actually known. 
             buffer += 1;
-            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(buffer, 0, Allocator.None);
+            m_InternalNativeArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(buffer, 0, Allocator.None);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref m_InternalNativeArray, m_Safety);
 #endif
 
-            return array;
+            return m_InternalNativeArray;
         }
 
         //TODO: Implement copies and other helper functions if needed
