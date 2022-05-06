@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// Adds some convenience functionality non-release safety checks for 
     /// <see cref="SystemBase"/> implementations.
     /// </summary>
-    public abstract class AbstractAnvilSystemBase : SystemBase
+    public abstract partial class AbstractAnvilSystemBase : SystemBase
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         /// <inheritdoc/>
