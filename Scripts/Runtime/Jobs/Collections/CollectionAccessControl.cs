@@ -84,7 +84,8 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // PUBLIC STATIC API
         //*************************************************************************************************************
-
+        
+        //TODO: Need to segment on World
         private static readonly Dictionary<Type, ICollectionAccessControl> s_AccessControls = new Dictionary<Type, ICollectionAccessControl>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

@@ -32,6 +32,8 @@ namespace Anvil.Unity.DOTS.Util
         /// <seealso cref="https://docs.unity3d.com/Packages/com.unity.burst@1.7/manual/docs/AdvancedUsages.html#shared-static"/>
         /// </remarks>
         private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<JobWorkerMaximumCountKeyContext>();
+        // ReSharper disable once ConvertToStaticClass
+        // ReSharper disable once ClassNeverInstantiated.Local
         private sealed class JobWorkerMaximumCountKeyContext
         {
             private JobWorkerMaximumCountKeyContext()

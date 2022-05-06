@@ -1,6 +1,9 @@
 using Anvil.CSharp.Core;
+using Anvil.Unity.DOTS.Util;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Entities;
 using Unity.Jobs;
 using Debug = UnityEngine.Debug;
 
@@ -112,51 +115,7 @@ namespace Anvil.Unity.DOTS.Jobs
             m_LastHandleAcquired = default;
 #endif
         }
-
-        public void BeginSyncToSystem(JobHandle systemDependency)
-        {
-            Debug.Assert(!IsDisposed);
-            //TODO: Ensure state is unacquired
-
-            //The system's incoming dependency represents the next chance to use the collection by Unity's view.
-            //Either reading or writing
-            //So just move our ability to read or write up to this dependency
-            m_ExclusiveWriteDependency 
-                = m_SharedReadDependency 
-                    = systemDependency;
-            
-            //If our internal model for a shared write says it's done
-            if (m_SharedWriteDependency.IsCompleted)
-            {
-                //Then we can start a shared write here too
-                m_SharedWriteDependency = systemDependency;
-            }
-            //If we're currently still shared writing, then let's check to see if this new system dependency is part of our current chain for exclusive writes.
-            else if (!JobHandle.CheckFenceIsDependencyOrDidSyncFence(m_SharedWriteDependency, systemDependency))
-            {
-                //If it's not, then this represents a new starting point for shared writing. 
-                m_SharedWriteDependency = systemDependency;
-            }
-        }
-
-        // private JobHandle m_PossibleSharedWriteStartPoint;
-        // public JobHandle BeginSharedWrite(JobHandle possibleStartPoint)
-        // {
-        //     if (m_PossibleSharedWriteStartPoint.IsCompleted)
-        //     {
-        //         m_PossibleSharedWriteStartPoint = possibleStartPoint;
-        //         return m_PossibleSharedWriteStartPoint;
-        //     }
-        //     
-        //     if (JobHandle.CheckFenceIsDependencyOrDidSyncFence(m_PossibleSharedWriteStartPoint, possibleStartPoint))
-        //     {
-        //         return m_PossibleSharedWriteStartPoint;
-        //     }
-        //
-        //     m_PossibleSharedWriteStartPoint = possibleStartPoint;
-        //     return m_PossibleSharedWriteStartPoint;
-        // }
-
+        
         /// <summary>
         /// Returns a <see cref="JobHandle"/> to schedule a job off of based on the desired <see cref="AccessType"/>.
         /// </summary>
