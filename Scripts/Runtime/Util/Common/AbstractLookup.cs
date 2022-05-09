@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Util
     {
         private readonly Dictionary<TKey, TValue> m_Lookup = new Dictionary<TKey, TValue>();
 
-        internal TContext Context
+        protected TContext Context
         {
             get;
         }
@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Util
             base.DisposeSelf();
         }
 
-        protected TValue GetOrCreate(TKey key, Func<TKey, TValue> creationFunction)
+        protected TValue LookupGetOrCreate(TKey key, Func<TKey, TValue> creationFunction)
         { 
             if (!m_Lookup.TryGetValue(key, out TValue value))
             {

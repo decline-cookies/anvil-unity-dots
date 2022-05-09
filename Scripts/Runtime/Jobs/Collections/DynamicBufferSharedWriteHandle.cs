@@ -23,14 +23,25 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private int m_TotalNumberOfSystems;
 
-        internal DynamicBufferSharedWriteHandle(World world)
+        public ComponentType ComponentType
         {
+            get;
+        }
+
+        internal DynamicBufferSharedWriteHandle(ComponentType type, World world)
+        {
+            ComponentType = type;
             m_World = world;
             m_ComponentTypes = new HashSet<ComponentType>
             {
                 ComponentType.ReadWrite<T>(),
                 ComponentType.ReadOnly<T>()
             };
+        }
+
+        protected override void DisposeSelf()
+        {
+            base.DisposeSelf();
         }
 
         public void RegisterSystemForSharedWrite(ComponentSystemBase system)

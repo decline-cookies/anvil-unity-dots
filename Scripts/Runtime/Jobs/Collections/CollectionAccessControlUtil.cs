@@ -1,8 +1,5 @@
-using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Util;
 using System;
-using System.Collections.Generic;
-using System.Net;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
@@ -29,35 +26,49 @@ namespace Anvil.Unity.DOTS.Jobs
         {
         }
 
-        internal interface IContextLookup : IDisposable
+        private interface IContextLookup : IDisposable
         {
-            
         }
-        
-        
+
+
         //*************************************************************************************************************
         // INTERNAL HELPER
         //*************************************************************************************************************
 
-        private class WorldLookup : AbstractLookup<World, Type, IContextLookup>
+        private class WorldLookup : AbstractLookup<Type, World, TypeLookup>
+        {
+            private static TypeLookup CreationFunction(World world)
+            {
+                return new TypeLookup(world);
+            }
+
+            public WorldLookup() : base(typeof(WorldLookup))
+            {
+            }
+
+            internal TypeLookup GetOrCreate(World world)
+            {
+                return LookupGetOrCreate(world, CreationFunction);
+            }
+        }
+
+        private class TypeLookup : AbstractLookup<World, Type, IContextLookup>
         {
             private static IContextLookup CreationFunction(Type type)
             {
                 return new ContextLookup<Type>(type);
             }
-            
-            internal WorldLookup(World world) : base(world)
+
+            internal TypeLookup(World world) : base(world)
             {
             }
 
             internal CollectionAccessController<TContext> GetOrCreateCollectionAccessController<TContext>(TContext context)
             {
                 Type contextType = typeof(TContext);
-                ContextLookup<TContext> contextLookup = (ContextLookup<TContext>)GetOrCreate(contextType, CreationFunction);
+                ContextLookup<TContext> contextLookup = (ContextLookup<TContext>)LookupGetOrCreate(contextType, CreationFunction);
                 return contextLookup.GetOrCreateCollectionAccessController(context);
             }
-
-            
         }
 
         private class ContextLookup<TContext> : AbstractLookup<Type, TContext, ICollectionAccessController>,
@@ -74,9 +85,8 @@ namespace Anvil.Unity.DOTS.Jobs
 
             internal CollectionAccessController<TContext> GetOrCreateCollectionAccessController(TContext context)
             {
-                return (CollectionAccessController<TContext>)GetOrCreate(context, CreationFunction);
+                return (CollectionAccessController<TContext>)LookupGetOrCreate(context, CreationFunction);
             }
-            
         }
 
 
@@ -84,16 +94,27 @@ namespace Anvil.Unity.DOTS.Jobs
         // PUBLIC STATIC API
         //*************************************************************************************************************
 
-        private static readonly Dictionary<World, WorldLookup> s_WorldLookups = new Dictionary<World, WorldLookup>();
+        private static WorldLookup s_WorldLookup = new WorldLookup();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
             Dispose();
+            s_WorldLookup = new WorldLookup();
         }
         
+        /// <summary>
+        /// High level dispose to be used when exiting from an ECS/DOTS mode into another part of the application
+        /// that doesn't used ECS/DOTS. All controllers will be removed from the lookup and disposed.
+        /// </summary>
+        public static void Dispose()
+        {
+            s_WorldLookup.Dispose();
+        }
+
         //TODO: SystemBase extension method
         //TODO: World extension method
+        //TODO: Remove method
         /// <summary>
         /// Returns an instance of an <see cref="CollectionAccessController{TKey}"/> for a given key.
         /// Will create a new one if it doesn't already exist.
@@ -105,33 +126,10 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <returns>The <see cref="CollectionAccessController{TKey}"/> instance.</returns>
         public static CollectionAccessController<TContext> GetOrCreate<TContext>(World world, TContext context)
         {
-            WorldLookup worldLookup = GetOrCreateWorldLookup(world);
-            return worldLookup.GetOrCreateCollectionAccessController(context);
+            TypeLookup typeLookup = s_WorldLookup.GetOrCreate(world);
+            return typeLookup.GetOrCreateCollectionAccessController(context);
         }
 
-        /// <summary>
-        /// High level dispose to be used when exiting from an ECS/DOTS mode into another part of the application
-        /// that doesn't used ECS/DOTS. All controllers will be removed from the lookup and disposed.
-        /// </summary>
-        public static void Dispose()
-        {
-            foreach (WorldLookup worldLookup in s_WorldLookups.Values)
-            {
-                worldLookup.Dispose();
-            }
-
-            s_WorldLookups.Clear();
-        }
         
-        private static WorldLookup GetOrCreateWorldLookup(World world)
-        {
-            if (!s_WorldLookups.TryGetValue(world, out WorldLookup worldLookup))
-            {
-                worldLookup = new WorldLookup(world);
-                s_WorldLookups.Add(world, worldLookup);
-            }
-
-            return worldLookup;
-        }
     }
 }

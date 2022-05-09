@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using Anvil.Unity.DOTS.Util;
+using System;
 using Unity.Entities;
 using UnityEngine;
 
@@ -10,80 +11,80 @@ namespace Anvil.Unity.DOTS.Jobs
         // INTERNAL INTERFACES
         //*************************************************************************************************************
 
-        internal interface IDynamicBufferSharedWriteHandle
+        internal interface IDynamicBufferSharedWriteHandle : IDisposable
         {
             void RegisterSystemForSharedWrite(ComponentSystemBase system);
         }
-        
-        
+
+
         //*************************************************************************************************************
         // INTERNAL HELPER
         //*************************************************************************************************************
 
-        private class WorldLookup
+        private class WorldLookup : AbstractLookup<Type, World, ComponentTypeLookup>
         {
-            private readonly Dictionary<ComponentType, IDynamicBufferSharedWriteHandle> m_Lookup = new Dictionary<ComponentType, IDynamicBufferSharedWriteHandle>();
-
-            public World World
+            private static ComponentTypeLookup CreationFunction(World world)
             {
-                get;
+                return new ComponentTypeLookup(world);
             }
 
-            public WorldLookup(World world)
+            public WorldLookup() : base(typeof(WorldLookup))
             {
-                World = world;
+            }
+
+            internal ComponentTypeLookup GetOrCreate(World world)
+            {
+                return LookupGetOrCreate(world, CreationFunction);
+            }
+        }
+
+        private class ComponentTypeLookup : AbstractLookup<World, ComponentType, IDynamicBufferSharedWriteHandle>
+        {
+            public ComponentTypeLookup(World context) : base(context)
+            {
             }
 
             public DynamicBufferSharedWriteHandle<T> GetOrCreate<T>(ComponentSystemBase systemBase)
                 where T : IBufferElementData
             {
                 ComponentType componentType = ComponentType.ReadWrite<T>();
-                if (!m_Lookup.TryGetValue(componentType, out IDynamicBufferSharedWriteHandle handle))
-                {
-                    handle = new DynamicBufferSharedWriteHandle<T>(World);
-                    m_Lookup.Add(componentType, handle);
-                }
-          
+
+                IDynamicBufferSharedWriteHandle handle = LookupGetOrCreate(componentType, CreationFunction<T>);
                 handle.RegisterSystemForSharedWrite(systemBase);
 
                 return (DynamicBufferSharedWriteHandle<T>)handle;
             }
 
+            private IDynamicBufferSharedWriteHandle CreationFunction<T>(ComponentType componentType)
+                where T : IBufferElementData
+            {
+                return new DynamicBufferSharedWriteHandle<T>(componentType, Context);
+            }
         }
 
         //*************************************************************************************************************
         // PUBLIC STATIC API
         //*************************************************************************************************************
 
-        private static readonly Dictionary<World, WorldLookup> s_WorldLookups = new Dictionary<World, WorldLookup>();
-        
+        private static WorldLookup s_WorldLookup = new WorldLookup();
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
-            //TODO: Disposal?
-            s_WorldLookups.Clear();
+            Dispose();
+            s_WorldLookup = new WorldLookup();
         }
 
+        public static void Dispose()
+        {
+            s_WorldLookup.Dispose();
+        }
 
         public static DynamicBufferSharedWriteHandle<T> RegisterForSharedWrite<T>(SystemBase systemBase)
             where T : IBufferElementData
         {
-            WorldLookup worldLookup = GetOrCreateWorldLookup(systemBase.World);
-            return worldLookup.GetOrCreate<T>(systemBase);
+            ComponentTypeLookup componentTypeLookup = s_WorldLookup.GetOrCreate(systemBase.World);
+            return componentTypeLookup.GetOrCreate<T>(systemBase);
         }
-
-        private static WorldLookup GetOrCreateWorldLookup(World world)
-        {
-            if (!s_WorldLookups.TryGetValue(world, out WorldLookup worldLookup))
-            {
-                worldLookup = new WorldLookup(world);
-                s_WorldLookups.Add(world, worldLookup);
-            }
-
-            return worldLookup;
-        }
-
     }
-
-    
 }
