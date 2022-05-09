@@ -30,15 +30,30 @@ namespace Anvil.Unity.DOTS.Util
             base.DisposeSelf();
         }
 
+        internal bool ContainsKey(TKey key)
+        {
+            return m_Lookup.ContainsKey(key);
+        }
+
+        internal bool TryGet(TKey key, out TValue value)
+        {
+            return m_Lookup.TryGetValue(key, out value);
+        }
+
         protected TValue LookupGetOrCreate(TKey key, Func<TKey, TValue> creationFunction)
         { 
-            if (!m_Lookup.TryGetValue(key, out TValue value))
+            if (!TryGet(key, out TValue value))
             {
                 value = creationFunction(key);
                 m_Lookup.Add(key, value);
             }
 
             return value;
+        }
+
+        protected void LookupRemove(TKey key)
+        {
+            m_Lookup.Remove(key);
         }
     }
 }
