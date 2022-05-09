@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Util
 {
     public static class EntityQueryExtensions
     {
-        private static readonly MethodInfo s_QueryGetReadAndWriteTypesMethodInfo = typeof(EntityQuery).GetMethod("GetReadAndWriteTypes", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly MethodInfo s_EntityQuery_GetReadAndWriteTypes_MethodInfo = typeof(EntityQuery).GetMethod("GetReadAndWriteTypes", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static readonly Dictionary<EntityQuery, HashSet<ComponentType>> m_EntityQueryComponentsLookup = new Dictionary<EntityQuery, HashSet<ComponentType>>();
 
@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Util
         {
             if (!m_EntityQueryComponentsLookup.TryGetValue(entityQuery, out HashSet<ComponentType> queryTypes))
             {
-                ComponentType[] componentTypes = (ComponentType[])s_QueryGetReadAndWriteTypesMethodInfo.Invoke(entityQuery, null);
+                ComponentType[] componentTypes = (ComponentType[])s_EntityQuery_GetReadAndWriteTypes_MethodInfo.Invoke(entityQuery, null);
                 queryTypes = new HashSet<ComponentType>();
                 foreach (ComponentType componentType in componentTypes)
                 {

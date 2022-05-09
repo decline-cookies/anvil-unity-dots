@@ -1,9 +1,6 @@
 using Anvil.CSharp.Core;
-using Anvil.Unity.DOTS.Util;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Entities;
 using Unity.Jobs;
 using Debug = UnityEngine.Debug;
 
@@ -41,7 +38,8 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - This means that all reading and writing from the collection has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="Acquire"/> will fail unless <see cref="Reset"/> is called.
     /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
     /// </remarks>
-    public class CollectionAccessController<TKey> : AbstractAnvilBase
+    public class CollectionAccessController<TContext> : AbstractAnvilBase,
+                                                        CollectionAccessControlUtil.ICollectionAccessController
     {
         private enum AcquisitionState
         {
@@ -51,8 +49,6 @@ namespace Anvil.Unity.DOTS.Jobs
             SharedRead,
             Disposing
         }
-
-        private readonly CollectionAccessControl.ICollectionAccessControl<TKey> m_CollectionAccessControl;
 
         private JobHandle m_ExclusiveWriteDependency;
         private JobHandle m_SharedWriteDependency;
@@ -66,15 +62,14 @@ namespace Anvil.Unity.DOTS.Jobs
         private JobHandle m_LastHandleAcquired;
 #endif
 
-        public TKey Key
+        public TContext Context
         {
             get;
         }
-
-        internal CollectionAccessController(CollectionAccessControl.ICollectionAccessControl<TKey> collectionAccessControl, TKey key)
+        
+        internal CollectionAccessController(TContext context)
         {
-            m_CollectionAccessControl = collectionAccessControl;
-            Key = key;
+            Context = context;
         }
 
         protected override void DisposeSelf()
@@ -83,9 +78,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_ExclusiveWriteDependency.IsCompleted, "The exclusive write access dependency is not completed");
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
-
-            m_CollectionAccessControl.Remove(this);
-
+            
             base.DisposeSelf();
         }
 
@@ -206,7 +199,7 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateAcquireState()
         {
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(CollectionAccessController<TKey>)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
+            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(CollectionAccessController<TContext>)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
             Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(Release)} must be called before {nameof(Acquire)} is called again. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
             StackFrame frame = new StackFrame(2, true);
             m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
@@ -216,7 +209,7 @@ namespace Anvil.Unity.DOTS.Jobs
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
             Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(Release)} was called multiple times. Last {nameof(Release)} was called from: {m_ReleaseCallerInfo}");
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(Release)} was called but the {nameof(CollectionAccessController<TKey>)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
+            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(Release)} was called but the {nameof(CollectionAccessController<TContext>)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
             StackFrame frame = new StackFrame(2, true);
             m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
 
