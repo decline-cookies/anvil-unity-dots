@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 using System.Reflection;
 using Unity.Entities;
 
@@ -6,41 +6,16 @@ namespace Anvil.Unity.DOTS.Util
 {
     public static class EntityQueryExtensions
     {
+        private delegate ComponentType[] GetReadAndWriteTypesDelegate(ref EntityQuery entityQuery);
+        
         private static readonly MethodInfo s_EntityQuery_GetReadAndWriteTypes_MethodInfo = typeof(EntityQuery).GetMethod("GetReadAndWriteTypes", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private static readonly Dictionary<EntityQuery, HashSet<ComponentType>> m_EntityQueryComponentsLookup = new Dictionary<EntityQuery, HashSet<ComponentType>>();
-
-
-        public static HashSet<ComponentType> GetAllComponentTypesForQuery(this EntityQuery entityQuery)
-        {
-            if (!m_EntityQueryComponentsLookup.TryGetValue(entityQuery, out HashSet<ComponentType> queryTypes))
-            {
-                ComponentType[] componentTypes = (ComponentType[])s_EntityQuery_GetReadAndWriteTypes_MethodInfo.Invoke(entityQuery, null);
-                queryTypes = new HashSet<ComponentType>();
-                foreach (ComponentType componentType in componentTypes)
-                {
-                    queryTypes.Add(componentType);
-                }
-                m_EntityQueryComponentsLookup.Add(entityQuery, queryTypes);
-            }
-
-            return queryTypes;
-        }
+        private static readonly GetReadAndWriteTypesDelegate s_GetReadAndWriteTypes = (GetReadAndWriteTypesDelegate)Delegate.CreateDelegate(typeof(GetReadAndWriteTypesDelegate), s_EntityQuery_GetReadAndWriteTypes_MethodInfo);
         
-        
-        public static bool ContainsAny(this EntityQuery entityQuery, HashSet<ComponentType> typesToCheck)
+
+        public static ComponentType[] GetReadWriteComponentTypes(this EntityQuery entityQuery)
         {
-            HashSet<ComponentType> queryTypes = entityQuery.GetAllComponentTypesForQuery();
-
-            foreach (ComponentType componentType in typesToCheck)
-            {
-                if (queryTypes.Contains(componentType))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            ComponentType[] componentTypes = s_GetReadAndWriteTypes(ref entityQuery);
+            return componentTypes;
         }
     }
 }

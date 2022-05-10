@@ -83,6 +83,8 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
             
+            //TODO: If we get disposed outside, we need to remove ourselves up the chain
+            
             base.DisposeSelf();
         }
 

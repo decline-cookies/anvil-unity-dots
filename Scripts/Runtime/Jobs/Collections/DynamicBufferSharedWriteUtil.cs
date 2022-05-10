@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Jobs
         // PUBLIC STATIC API
         //*************************************************************************************************************
 
-        private static WorldLookup s_WorldLookup = new WorldLookup();
+        private static WorldLookup s_WorldLookup;
 
         private static WorldLookup Lookup
         {
@@ -121,7 +121,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// </summary>
         public static void Dispose()
         {
-            s_WorldLookup.Dispose();
+            s_WorldLookup?.Dispose();
             s_WorldLookup = null;
         }
         

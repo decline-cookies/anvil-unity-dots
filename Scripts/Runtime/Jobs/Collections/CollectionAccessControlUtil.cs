@@ -53,19 +53,19 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private class TypeLookup : AbstractLookup<World, Type, IContextLookup>
         {
-            private static IContextLookup CreationFunction(Type type)
+            private static IContextLookup CreationFunction<TContext>(Type context)
             {
-                return new ContextLookup<Type>(type);
+                return new ContextLookup<TContext>(context);
             }
 
-            internal TypeLookup(World world) : base(world)
+            internal TypeLookup(World context) : base(context)
             {
             }
 
             internal CollectionAccessController<TContext> GetOrCreate<TContext>(TContext context)
             {
                 Type contextType = typeof(TContext);
-                ContextLookup<TContext> contextLookup = (ContextLookup<TContext>)LookupGetOrCreate(contextType, CreationFunction);
+                ContextLookup<TContext> contextLookup = (ContextLookup<TContext>)LookupGetOrCreate(contextType, CreationFunction<TContext>);
                 return contextLookup.GetOrCreate(context);
             }
 
@@ -133,7 +133,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// </summary>
         public static void Dispose()
         {
-            s_WorldLookup.Dispose();
+            s_WorldLookup?.Dispose();
             s_WorldLookup = null;
         }
         
