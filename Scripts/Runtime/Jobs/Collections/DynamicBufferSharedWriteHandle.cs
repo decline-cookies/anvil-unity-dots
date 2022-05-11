@@ -1,8 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Util;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
@@ -24,12 +22,71 @@ namespace Anvil.Unity.DOTS.Jobs
                                                      DynamicBufferSharedWriteUtil.IDynamicBufferSharedWriteHandle
         where T : IBufferElementData
     {
+        private class LocalCache : AbstractCache
+        {
+            private readonly WorldCache m_WorldCache;
+            private readonly HashSet<ComponentType> m_QueryComponentTypes;
+            private readonly List<ComponentSystemBase> m_OrderedSystems = new List<ComponentSystemBase>();
+            private readonly Dictionary<ComponentSystemBase, int> m_OrderedSystemsLookup = new Dictionary<ComponentSystemBase, int>();
+
+
+            public LocalCache(WorldCache worldCache,
+                              ComponentType componentType)
+            {
+                m_WorldCache = worldCache;
+                m_QueryComponentTypes = new HashSet<ComponentType>
+                {
+                    componentType
+                };
+            }
+
+            public int GetExecutionOrderOf(ComponentSystemBase callingSystem)
+            {
+                Debug.Assert(m_OrderedSystemsLookup.ContainsKey(callingSystem), $"{nameof(m_OrderedSystemsLookup)} does not contain {callingSystem}!");
+                return m_OrderedSystemsLookup[callingSystem];
+            }
+
+            public ComponentSystemBase GetSystemAtExecutionOrder(int executionOrder)
+            {
+                Debug.Assert(executionOrder >= 0 && executionOrder < m_OrderedSystems.Count, $"Invalid execution order of {executionOrder}.{nameof(m_OrderedSystems)} Count is {m_OrderedSystems.Count}");
+                return m_OrderedSystems[executionOrder];
+            }
+
+            public void RebuildIfNeeded()
+            {
+                //TODO: Frame check?
+                
+                //Rebuild the world cache if it needs to be
+                m_WorldCache.RebuildIfNeeded();
+
+                //If our local cache doesn't match the latest world cache, we need to update
+                if (Version != m_WorldCache.Version)
+                {
+                    Rebuild();
+                }
+            }
+
+            private void Rebuild()
+            {
+                m_WorldCache.RefreshSystemsWithQueriesFor(m_QueryComponentTypes, m_OrderedSystems);
+                
+                //Build Lookup
+                m_OrderedSystemsLookup.Clear();
+                for (int i = 0; i < m_OrderedSystems.Count; ++i)
+                {
+                    m_OrderedSystemsLookup[m_OrderedSystems[i]] = i;
+                }
+                Version++;
+            }
+        }
+        
+        
         private readonly HashSet<ComponentSystemBase> m_SharedWriteSystems = new HashSet<ComponentSystemBase>();
-        private readonly List<ComponentSystemBase> m_OrderedSystems = new List<ComponentSystemBase>();
-        private readonly Dictionary<ComponentSystemBase, int> m_OrderedSystemsLookup = new Dictionary<ComponentSystemBase, int>();
-        private readonly HashSet<ComponentType> m_QueryComponentTypes;
+        
         private readonly World m_World;
-        private readonly WorldSystemState m_WorldSystemState;
+        private readonly WorldCache m_WorldCache;
+        private readonly LocalCache m_LocalCache;
+        
 
         private JobHandle m_SharedWriteDependency;
 
@@ -45,11 +102,9 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             ComponentType = type;
             m_World = world;
-            m_WorldSystemState = WorldSystemStateUtil.GetOrCreate(m_World);
-            m_QueryComponentTypes = new HashSet<ComponentType>
-            {
-                ComponentType
-            };
+            m_WorldCache = WorldCacheUtil.GetOrCreate(m_World);
+            m_LocalCache = new LocalCache(m_WorldCache, ComponentType);
+            
         }
 
         protected override void DisposeSelf()
@@ -83,33 +138,6 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteHandle<T>)}");
             m_SharedWriteSystems.Remove(system);
         }
-
-        private void RebuildWorldSystemState()
-        {
-            m_WorldSystemState.RebuildSystemStates();
-            RebuildQueryOrders();
-        }
-
-        private void RebuildWorldSystemStateForCurrentGroup(ComponentSystemGroup systemGroup)
-        {
-            //TODO: What if we (callingSystem) are the one that changed groups?
-            //TODO: Need to make sure this works as we expect
-            m_WorldSystemState.RebuildSystemStatesForGroup(systemGroup);
-            RebuildQueryOrders();
-        }
-
-        private void RebuildQueryOrders()
-        {
-            //We want to cache all the systems that deal with our component in the order they execute
-            m_WorldSystemState.RefreshSystemsWithQueriesFor(m_QueryComponentTypes, m_OrderedSystems);
-            
-            //Build Lookup
-            m_OrderedSystemsLookup.Clear();
-            for (int i = 0; i < m_OrderedSystems.Count; ++i)
-            {
-                m_OrderedSystemsLookup[m_OrderedSystems[i]] = i;
-            }
-        }
         
         /// <summary>
         /// Gets a <see cref="JobHandle"/> to be used to schedule the jobs that will shared writing to the
@@ -121,23 +149,12 @@ namespace Anvil.Unity.DOTS.Jobs
         public JobHandle GetSharedWriteJobHandle(SystemBase callingSystem, JobHandle callingSystemDependency)
         {
             Debug.Assert(m_SharedWriteSystems.Contains(callingSystem), $"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
-
-            //If this world state has never been built, we need to do a full build
-            if (!m_WorldSystemState.HasBuiltSystemStatesOnce)
-            {
-                RebuildWorldSystemState();
-            }
-
-            ComponentSystemGroup callingGroup = m_WorldSystemState.GetSystemGroupForSystem(callingSystem);
-            if (m_WorldSystemState.HasSystemCountInGroupChanged(callingGroup))
-            {
-                RebuildWorldSystemStateForCurrentGroup(callingGroup);
-            }
-
-            Debug.Assert(m_OrderedSystemsLookup.ContainsKey(callingSystem), $"{nameof(m_OrderedSystemsLookup)} does not contain {callingSystem}!");
             
-            int callingSystemOrder = m_OrderedSystemsLookup[callingSystem];
-            
+            //Rebuild our local cache if we need to. Will trigger a world cache rebuild if necessary too.
+            m_LocalCache.RebuildIfNeeded();
+
+            int callingSystemOrder = m_LocalCache.GetExecutionOrderOf(callingSystem);
+
             //If we're the first system to go in a frame, we're the first start point for shared writing.
             if (callingSystemOrder == 0)
             {
@@ -149,7 +166,7 @@ namespace Anvil.Unity.DOTS.Jobs
                 
                 //Otherwise if the previous system is NOT a shared write system, then we need to move up
                 //our dependency because the previous system did an exclusive write or shared read
-                ComponentSystemBase previousSystem = m_OrderedSystems[callingSystemOrder - 1];
+                ComponentSystemBase previousSystem = m_LocalCache.GetSystemAtExecutionOrder(callingSystemOrder - 1);
                 
                 //We can check the versioning on the system to see if it was updated this frame
                 

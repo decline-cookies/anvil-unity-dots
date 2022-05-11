@@ -7,6 +7,8 @@ namespace Anvil.Unity.DOTS.Util
 {
     public static class PlayerLoopUtil
     {
+        private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
+        
         private delegate bool IsDelegateForWorldSystemDelegate(World world, PlayerLoopSystem playerLoopSystem);
     
         private static readonly MethodInfo s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo = typeof(ScriptBehaviourUpdateOrder).GetMethod("IsDelegateForWorldSystem", BindingFlags.Static | BindingFlags.NonPublic);
@@ -14,23 +16,39 @@ namespace Anvil.Unity.DOTS.Util
         private static PropertyInfo s_DummyDelegateWrapper_System;
         
         
-        public static bool IsPlayerLoopSystemPartOfWorld(PlayerLoopSystem playerLoopSystem, World world)
+        public static bool IsPlayerLoopSystemPartOfWorld(ref PlayerLoopSystem playerLoopSystem, World world)
         {
-            if (playerLoopSystem.updateDelegate == null || playerLoopSystem.updateDelegate.Target == null)
-            {
-                return false;
-            }
-
-            return s_IsDelegateForWorldSystem(world, playerLoopSystem);
+            return playerLoopSystem.updateDelegate?.Target != null && s_IsDelegateForWorldSystem(world, playerLoopSystem);
         }
 
-        public static ComponentSystemBase GetSystemFromPlayerLoopSystem(PlayerLoopSystem playerLoopSystem)
+        public static ComponentSystemGroup GetSystemGroupFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem)
         {
-            if (playerLoopSystem.updateDelegate == null || playerLoopSystem.updateDelegate.Target == null)
+            if (playerLoopSystem.updateDelegate?.Target == null
+             || !COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type))
             {
                 return null;
             }
 
+            return GetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
+        }
+
+        public static ComponentSystemGroup GetSystemGroupFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem)
+        {
+            return (ComponentSystemGroup)GetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
+        }
+
+        public static ComponentSystemBase GetSystemFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem)
+        {
+            if (playerLoopSystem.updateDelegate?.Target == null)
+            {
+                return null;
+            }
+
+            return GetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
+        }
+
+        public static ComponentSystemBase GetSystemFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem)
+        {
             object wrapper = playerLoopSystem.updateDelegate.Target;
             
             if (s_DummyDelegateWrapper_System == null)

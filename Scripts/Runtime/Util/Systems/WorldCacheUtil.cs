@@ -4,17 +4,17 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Util
 {
-    public static class WorldSystemStateUtil
+    public static class WorldCacheUtil
     {
         //*************************************************************************************************************
         // INTERNAL HELPER
         //*************************************************************************************************************
 
-        private class WorldLookup : AbstractLookup<Type, World, WorldSystemState>
+        private class WorldLookup : AbstractLookup<Type, World, WorldCache>
         {
-            private static WorldSystemState CreationFunction(World world)
+            private static WorldCache CreationFunction(World world)
             {
-                return new WorldSystemState(world);
+                return new WorldCache(world);
             }
 
             public WorldLookup() : base(typeof(WorldLookup))
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Util
             }
 
             // ReSharper disable once MemberHidesStaticFromOuterClass
-            public WorldSystemState GetOrCreate(World world)
+            public WorldCache GetOrCreate(World world)
             {
                 return LookupGetOrCreate(world, CreationFunction);
             }
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Util
         }
         //TODO: Extensions
 
-        public static WorldSystemState GetOrCreate(World world)
+        public static WorldCache GetOrCreate(World world)
         {
             return Lookup.GetOrCreate(world);
         }
