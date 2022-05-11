@@ -27,8 +27,12 @@ namespace Anvil.Unity.DOTS.Jobs
             private readonly WorldCache m_WorldCache;
             private readonly HashSet<ComponentType> m_QueryComponentTypes;
             private readonly List<ComponentSystemBase> m_OrderedSystems = new List<ComponentSystemBase>();
-            private readonly Dictionary<ComponentSystemBase, int> m_OrderedSystemsLookup = new Dictionary<ComponentSystemBase, int>();
+            private readonly List<ComponentSystemBase> m_ExecutedOrderedSystems = new List<ComponentSystemBase>();
+            private readonly Dictionary<ComponentSystemBase, int> m_ExecutedOrderedSystemsLookup = new Dictionary<ComponentSystemBase, int>();
+            private readonly Dictionary<ComponentSystemBase, uint> m_OrderedSystemsVersions = new Dictionary<ComponentSystemBase, uint>();
 
+            private int m_OrderedSystemsIndexForExecution;
+            private int m_LastRebuildCheckFrameCount;
 
             public LocalCache(WorldCache worldCache,
                               ComponentType componentType)
@@ -42,41 +46,81 @@ namespace Anvil.Unity.DOTS.Jobs
 
             public int GetExecutionOrderOf(ComponentSystemBase callingSystem)
             {
-                Debug.Assert(m_OrderedSystemsLookup.ContainsKey(callingSystem), $"{nameof(m_OrderedSystemsLookup)} does not contain {callingSystem}!");
-                return m_OrderedSystemsLookup[callingSystem];
+                return !m_ExecutedOrderedSystemsLookup.TryGetValue(callingSystem, out int order)
+                    ? m_ExecutedOrderedSystems.Count
+                    : order;
             }
 
             public ComponentSystemBase GetSystemAtExecutionOrder(int executionOrder)
             {
-                Debug.Assert(executionOrder >= 0 && executionOrder < m_OrderedSystems.Count, $"Invalid execution order of {executionOrder}.{nameof(m_OrderedSystems)} Count is {m_OrderedSystems.Count}");
-                return m_OrderedSystems[executionOrder];
+                Debug.Assert(executionOrder >= 0 && executionOrder < m_ExecutedOrderedSystems.Count, $"Invalid execution order of {executionOrder}.{nameof(m_ExecutedOrderedSystems)} Count is {m_ExecutedOrderedSystems.Count}");
+                return m_ExecutedOrderedSystems[executionOrder];
             }
 
             public void RebuildIfNeeded()
             {
-                //TODO: Frame check?
+                //This might be called many times a frame by many different callers.
+                //We only want to do this check once per frame.
+                int currentFrameCount = UnityEngine.Time.frameCount;
+                if (m_LastRebuildCheckFrameCount == currentFrameCount)
+                {
+                    return;
+                }
+                m_LastRebuildCheckFrameCount = currentFrameCount;
+
+                ResetExecutionOrder();
                 
                 //Rebuild the world cache if it needs to be
                 m_WorldCache.RebuildIfNeeded();
 
                 //If our local cache doesn't match the latest world cache, we need to update
-                if (Version != m_WorldCache.Version)
+                if (Version == m_WorldCache.Version)
                 {
-                    Rebuild();
+                    return;
+                }
+
+                RebuildMatchingSystems();
+                Version = m_WorldCache.Version;
+            }
+
+            private void RebuildMatchingSystems()
+            {
+                m_OrderedSystemsVersions.Clear();
+                m_WorldCache.RefreshSystemsWithQueriesFor(m_QueryComponentTypes, m_OrderedSystems);
+                foreach (ComponentSystemBase system in m_OrderedSystems)
+                {
+                    m_OrderedSystemsVersions[system] = system.LastSystemVersion;
                 }
             }
 
-            private void Rebuild()
+            private void ResetExecutionOrder()
             {
-                m_WorldCache.RefreshSystemsWithQueriesFor(m_QueryComponentTypes, m_OrderedSystems);
-                
-                //Build Lookup
-                m_OrderedSystemsLookup.Clear();
-                for (int i = 0; i < m_OrderedSystems.Count; ++i)
+                m_OrderedSystemsIndexForExecution = 0;
+                m_ExecutedOrderedSystems.Clear();
+                m_ExecutedOrderedSystemsLookup.Clear();
+            }
+
+            public void UpdateExecutedSystems(ComponentSystemBase callingSystem)
+            {
+                for (; m_OrderedSystemsIndexForExecution < m_OrderedSystems.Count; ++m_OrderedSystemsIndexForExecution)
                 {
-                    m_OrderedSystemsLookup[m_OrderedSystems[i]] = i;
+                    ComponentSystemBase system = m_OrderedSystems[m_OrderedSystemsIndexForExecution];
+                    
+                    if (callingSystem == system)
+                    {
+                        break;
+                    }
+                    
+                    uint cachedSystemVersion = m_OrderedSystemsVersions[system];
+                    if (system.LastSystemVersion <= cachedSystemVersion)
+                    {
+                        continue;
+                    }
+
+                    m_OrderedSystemsVersions[system] = system.LastSystemVersion;
+                    m_ExecutedOrderedSystems.Add(system);
+                    m_ExecutedOrderedSystemsLookup[system] = m_OrderedSystemsIndexForExecution;
                 }
-                Version++;
             }
         }
         
@@ -104,7 +148,6 @@ namespace Anvil.Unity.DOTS.Jobs
             m_World = world;
             m_WorldCache = WorldCacheUtil.GetOrCreate(m_World);
             m_LocalCache = new LocalCache(m_WorldCache, ComponentType);
-            
         }
 
         protected override void DisposeSelf()
@@ -152,7 +195,9 @@ namespace Anvil.Unity.DOTS.Jobs
             
             //Rebuild our local cache if we need to. Will trigger a world cache rebuild if necessary too.
             m_LocalCache.RebuildIfNeeded();
-
+            
+            m_LocalCache.UpdateExecutedSystems(callingSystem);
+            
             int callingSystemOrder = m_LocalCache.GetExecutionOrderOf(callingSystem);
 
             //If we're the first system to go in a frame, we're the first start point for shared writing.
