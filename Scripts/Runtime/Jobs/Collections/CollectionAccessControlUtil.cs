@@ -34,6 +34,10 @@ namespace Anvil.Unity.DOTS.Jobs
         // INTERNAL HELPER
         //*************************************************************************************************************
 
+        /// <summary>
+        /// Lookup based on World's.
+        /// We don't want to have <see cref="CollectionAccessController{TContext}"/>'s operating across worlds.
+        /// </summary>
         private class WorldLookup : AbstractLookup<Type, World, TypeLookup>
         {
             private static TypeLookup CreationFunction(World world)
@@ -51,6 +55,12 @@ namespace Anvil.Unity.DOTS.Jobs
             }
         }
 
+        /// <summary>
+        /// Lookup based on a Type
+        /// Allows an <see cref="CollectionAccessController{TContext}"/> to be created using different app specific
+        /// enums for example.
+        /// This is a child of <see cref="WorldLookup"/>
+        /// </summary>
         private class TypeLookup : AbstractLookup<World, Type, IContextLookup>
         {
             private static IContextLookup CreationFunction<TContext>(Type context)
@@ -81,14 +91,14 @@ namespace Anvil.Unity.DOTS.Jobs
             }
         }
 
-        private class ContextLookup<TContext> : AbstractLookup<Type, TContext, ICollectionAccessController>,
-                                                IContextLookup
+        /// <summary>
+        /// Lookup based on a specific value of a <see cref="Type"/> from the parent <see cref="TypeLookup"/>
+        /// Allows for a <see cref="CollectionAccessController{TContext}"/> to be specific to a value of an enum for
+        /// example.
+        /// </summary>
+        internal class ContextLookup<TContext> : AbstractLookup<Type, TContext, ICollectionAccessController>,
+                                                 IContextLookup
         {
-            private static ICollectionAccessController CreationFunction(TContext context)
-            {
-                return new CollectionAccessController<TContext>(context);
-            }
-
             internal ContextLookup(Type context) : base(context)
             {
             }
@@ -97,7 +107,12 @@ namespace Anvil.Unity.DOTS.Jobs
             {
                 return (CollectionAccessController<TContext>)LookupGetOrCreate(context, CreationFunction);
             }
-            
+
+            private ICollectionAccessController CreationFunction(TContext context)
+            {
+                return new CollectionAccessController<TContext>(context, this);
+            }
+
             internal void Remove(TContext context)
             {
                 if (!ContainsKey(context))
@@ -115,17 +130,19 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
 
         private static WorldLookup s_WorldLookup;
+
         private static WorldLookup Lookup
         {
             get => s_WorldLookup ?? (s_WorldLookup = new WorldLookup());
         }
 
+        //Ensures the proper state with DomainReloading turned off in the Editor
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
             Dispose();
         }
-        
+
         /// <summary>
         /// High level dispose to be used when exiting from an ECS/DOTS mode into another part of the application
         /// that doesn't use ECS/DOTS. All <see cref="CollectionAccessController{TContext}"/> will be removed
@@ -136,14 +153,15 @@ namespace Anvil.Unity.DOTS.Jobs
             s_WorldLookup?.Dispose();
             s_WorldLookup = null;
         }
-        
+
         /// <summary>
         /// Removes an instance of an <see cref="CollectionAccessController{TContext}"/> for a given key.
         /// Will gracefully do nothing if it doesn't exist.
         ///
         /// NOTE: You are responsible for disposing the instance if necessary.
+        /// <seealso cref="Dispose"/> for a full cleanup of all instances.
         /// </summary>
-        /// <param name="world">The world to associate this instance with.</param>
+        /// <param name="world">The world this instance is associated with.</param>
         /// <param name="context">The key to use to lookup the instance.</param>
         /// <typeparam name="TContext">The type of key to use to get an instance of an <see cref="CollectionAccessController{TContext}"/></typeparam>
         public static void Remove<TContext>(World world, TContext context)
@@ -152,22 +170,10 @@ namespace Anvil.Unity.DOTS.Jobs
             {
                 return;
             }
+
             typeLookup.Remove(context);
         }
-        
-        /// <inheritdoc cref="Remove{TContext}"/>
-        public static void RemoveCollectionAccessController<TContext>(this World world, TContext context)
-        {
-            Remove(world, context);
-        }
 
-        /// <inheritdoc cref="Remove{TContext}"/>
-        /// <param name="systemBase">A <see cref="SystemBase"/> to get the <paramref name="world"/> for association</param>
-        public static void RemoveCollectionAccessController<TContext>(this SystemBase systemBase, TContext context)
-        {
-            Remove(systemBase.World, context);
-        }
-        
         /// <summary>
         /// Returns an instance of an <see cref="CollectionAccessController{TContext}"/> for a given key.
         /// Will create a new one if it doesn't already exist.
@@ -181,20 +187,5 @@ namespace Anvil.Unity.DOTS.Jobs
             TypeLookup typeLookup = Lookup.GetOrCreate(world);
             return typeLookup.GetOrCreate(context);
         }
-        
-        /// <inheritdoc cref="GetOrCreate{TContext}"/>
-        public static CollectionAccessController<TContext> GetOrCreateCollectionAccessController<TContext>(this World world, TContext context)
-        {
-            return GetOrCreate(world, context);
-        }
-        
-        /// <inheritdoc cref="GetOrCreate{TContext}"/>
-        /// <param name="systemBase">A <see cref="SystemBase"/> to get the <paramref name="world"/> for association</param>
-        public static CollectionAccessController<TContext> GetOrCreateCollectionAccessController<TContext>(this SystemBase systemBase, TContext context)
-        {
-            return GetOrCreate(systemBase.World, context);
-        }
-
-
     }
 }

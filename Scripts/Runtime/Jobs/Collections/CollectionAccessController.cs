@@ -57,12 +57,14 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
+        private readonly CollectionAccessControlUtil.ContextLookup<TContext> m_ContextLookup;
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private string m_AcquireCallerInfo;
         private string m_ReleaseCallerInfo;
         private JobHandle m_LastHandleAcquired;
 #endif
-        
+
         /// <summary>
         /// The Context this <see cref="CollectionAccessController{TContext}"/> was created with.
         /// </summary>
@@ -70,10 +72,11 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             get;
         }
-        
-        internal CollectionAccessController(TContext context)
+
+        internal CollectionAccessController(TContext context, CollectionAccessControlUtil.ContextLookup<TContext> contextLookup)
         {
             Context = context;
+            m_ContextLookup = contextLookup;
         }
 
         protected override void DisposeSelf()
@@ -82,9 +85,10 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_ExclusiveWriteDependency.IsCompleted, "The exclusive write access dependency is not completed");
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
-            
-            //TODO: If we get disposed outside, we need to remove ourselves up the chain
-            
+
+            //Remove ourselves from the chain
+            m_ContextLookup.Remove(Context);
+
             base.DisposeSelf();
         }
 
@@ -114,7 +118,7 @@ namespace Anvil.Unity.DOTS.Jobs
             m_LastHandleAcquired = default;
 #endif
         }
-        
+
         /// <summary>
         /// Returns a <see cref="JobHandle"/> to schedule a job off of based on the desired <see cref="AccessType"/>.
         /// </summary>
@@ -218,7 +222,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(Release)} was called but the {nameof(CollectionAccessController<TContext>)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
             StackFrame frame = new StackFrame(2, true);
             m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
-            
+
             Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(Release)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(Acquire)}. Check to ensure your ordering of {nameof(Acquire)} and {nameof(Release)} match.");
         }
     }

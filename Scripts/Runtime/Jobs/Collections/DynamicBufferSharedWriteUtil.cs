@@ -39,12 +39,15 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             void RegisterSystemForSharedWrite(ComponentSystemBase system);
         }
-
-
+        
         //*************************************************************************************************************
         // INTERNAL HELPER
         //*************************************************************************************************************
-
+        
+        /// <summary>
+        /// Lookup based on World's.
+        /// We don't want to have <see cref="DynamicBufferSharedWriteHandle{T}"/>'s operating across worlds.
+        /// </summary>
         private class WorldLookup : AbstractLookup<Type, World, ComponentTypeLookup>
         {
             private static ComponentTypeLookup CreationFunction(World world)
@@ -61,8 +64,12 @@ namespace Anvil.Unity.DOTS.Jobs
                 return LookupGetOrCreate(world, CreationFunction);
             }
         }
-
-        private class ComponentTypeLookup : AbstractLookup<World, ComponentType, IDynamicBufferSharedWriteHandle>
+        
+        /// <summary>
+        /// Lookup based on a specific <see cref="IBufferElementData"/>
+        /// This is a child of <see cref="WorldLookup"/>
+        /// </summary>
+        internal class ComponentTypeLookup : AbstractLookup<World, ComponentType, IDynamicBufferSharedWriteHandle>
         {
             internal ComponentTypeLookup(World context) : base(context)
             {
@@ -93,7 +100,7 @@ namespace Anvil.Unity.DOTS.Jobs
             private IDynamicBufferSharedWriteHandle CreationFunction<T>(ComponentType componentType)
                 where T : IBufferElementData
             {
-                return new DynamicBufferSharedWriteHandle<T>(componentType, Context);
+                return new DynamicBufferSharedWriteHandle<T>(componentType, Context, this);
             }
         }
 
@@ -107,7 +114,8 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             get => s_WorldLookup ?? (s_WorldLookup = new WorldLookup());
         }
-
+        
+        //Ensures the proper state with DomainReloading turned off in the Editor
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
@@ -129,6 +137,9 @@ namespace Anvil.Unity.DOTS.Jobs
         /// Removes an instance of an <see cref="DynamicBufferSharedWriteHandle{T}"/> for a given
         /// <see cref="IBufferElementData"/> type.
         /// Will gracefully do nothing if it doesn't exist.
+        ///
+        /// NOTE: You are responsible for disposing the instance if necessary.
+        /// <seealso cref="Dispose"/> for a full cleanup of all instances.
         /// </summary>
         /// <param name="world">The world that the instance is associated with.</param>
         /// <typeparam name="T">The <see cref="IBufferElementData"/> type the instance is associated with.</typeparam>
@@ -142,22 +153,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
             componentTypeLookup.Remove<T>();
         }
-        
-        /// <inheritdoc cref="Remove{T}"/>
-        public static void RemoveDynamicBufferSharedWriteHandle<T>(this World world)
-            where T : IBufferElementData
-        {
-            Remove<T>(world);
-        }
-        
-        /// <inheritdoc cref="Remove{T}"/>
-        /// <param name="systemBase">A <see cref="SystemBase"/> to get the <paramref name="world"/> for association</param>
-        public static void RemoveDynamicBufferSharedWriteHandle<T>(this SystemBase systemBase)
-            where T : IBufferElementData
-        {
-            Remove<T>(systemBase.World);
-        }
-        
+
         /// <summary>
         /// Returns an instance of an <see cref="DynamicBufferSharedWriteHandle{T}"/> for a given
         /// <see cref="IBufferElementData"/> type.
@@ -170,21 +166,6 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             ComponentTypeLookup componentTypeLookup = Lookup.GetOrCreate(world);
             return componentTypeLookup.GetOrCreate<T>(world);
-        }
-        
-        /// <inheritdoc cref="GetOrCreate{T}"/>
-        public static DynamicBufferSharedWriteHandle<T> GetOrCreateDynamicBufferSharedWriteHandle<T>(this World world)
-            where T : IBufferElementData
-        {
-            return GetOrCreate<T>(world);
-        }
-        
-        /// <inheritdoc cref="GetOrCreate{T}"/>
-        /// <param name="systemBase">A <see cref="SystemBase"/> to get the <paramref name="world"/> for association</param>
-        public static DynamicBufferSharedWriteHandle<T> GetOrCreateDynamicBufferSharedWriteHandle<T>(this SystemBase systemBase)
-            where T : IBufferElementData
-        {
-            return GetOrCreate<T>(systemBase.World);
         }
     }
 }

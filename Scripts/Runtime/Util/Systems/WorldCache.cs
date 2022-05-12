@@ -5,6 +5,9 @@ using UnityEngine.LowLevel;
 
 namespace Anvil.Unity.DOTS.Util
 {
+    /// <summary>
+    /// Represents the cached state of a <see cref="World"/>
+    /// </summary>
     public class WorldCache : AbstractCache
     {
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
@@ -15,16 +18,26 @@ namespace Anvil.Unity.DOTS.Util
 
         private int m_LastRebuildCheckFrameCount;
         
+        /// <summary>
+        /// The <see cref="World"/> this represents.
+        /// </summary>
         public World World
         {
             get;
         }
         
-        public WorldCache(World world)
+        internal WorldCache(World world)
         {
             World = world;
         }
         
+        /// <summary>
+        /// Given a set of <see cref="ComponentType"/>s, populate a list with all systems
+        /// that have <see cref="EntityQuery"/>s that will write/read to any <see cref="ComponentType"/>
+        /// in the set.
+        /// </summary>
+        /// <param name="componentTypes">Set of <see cref="ComponentType"/>s to find matching systems for.</param>
+        /// <param name="matchingSystems">A list that will be populated with the matching systems</param>
         public void RefreshSystemsWithQueriesFor(HashSet<ComponentType> componentTypes, List<ComponentSystemBase> matchingSystems)
         {
             matchingSystems.Clear();
@@ -42,7 +55,19 @@ namespace Anvil.Unity.DOTS.Util
                 }
             }
         }
+        
+        /// <summary>
+        /// Forces a rebuild of the cache
+        /// </summary>
+        public void ManualRebuild()
+        {
+            m_LastRebuildCheckFrameCount = UnityEngine.Time.frameCount;
+            Rebuild();
+        }
 
+        /// <summary>
+        /// Rebuilds the cache if needed.
+        /// </summary>
         public void RebuildIfNeeded()
         {
             //This might be called many times a frame by many different callers.
