@@ -108,7 +108,7 @@ namespace Anvil.Unity.DOTS.Util
                 s_DummyDelegateWrapper_System = wrapper.GetType().GetProperty("System", BindingFlags.Instance | BindingFlags.NonPublic);
             }
             
-            //TODO: We can speed the reflected call up by using Expression Trees to create a strongly typed delegate
+            //TODO: #28 We can speed the reflected call up by using Expression Trees to create a strongly typed delegate
             //We should be able to call with the params we have access to and pass in "object" for the param we don't.
             //In the expression lambda, we do a convert to the internal type defined on the method info.
             return (ComponentSystemBase)s_DummyDelegateWrapper_System.GetMethod.Invoke(wrapper, null);
