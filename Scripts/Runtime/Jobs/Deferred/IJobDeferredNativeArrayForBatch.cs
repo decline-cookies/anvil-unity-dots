@@ -8,26 +8,27 @@ using Unity.Jobs.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Jobs
 {
     /// <summary>
-    /// A replacement for <see cref="IJobFor"/> when the number of work items is not known at Schedule time
-    /// and you are using a <see cref="DeferredNativeArray{T}"/>
+    /// A replacement for <see cref="IJobParallelForBatch"/> when the number of work items is not known
+    /// at Schedule time and you are using a <see cref="DeferredNativeArray{T}"/>
     /// </summary>
-    [JobProducerType(typeof(JobDeferredNativeArrayForExtensions.JobDeferredNativeArrayForProducer<>))]
-    public interface IJobDeferredNativeArrayFor
+    [JobProducerType(typeof(JobDeferredNativeArrayForBatchExtensions.JobDeferredNativeArrayForBatchProducer<>))]
+    public interface IJobDeferredNativeArrayForBatch
     {
         /// <summary>
-        /// Implement this method to perform work against a specific iteration index.
+        /// Implement this method to perform work against a batch
         /// </summary>
-        /// <param name="index">The index of the <see cref="NativeArray{T}"/> from a <see cref="DeferredNativeArray{T}"/></param>
-        void Execute(int index);
+        /// <param name="startIndex">The start index of the <see cref="NativeArray{T}"/> from a <see cref="DeferredNativeArray{T}"/></param>
+        /// <param name="count">The number of elements in this batch</param>
+        void Execute(int startIndex, int count);
     }
 
-    public static class JobDeferredNativeArrayForExtensions
+    public static class JobDeferredNativeArrayForBatchExtensions
     {
-        public static unsafe JobHandle ScheduleParallel<TJob, T>(this TJob jobData,
+        public static unsafe JobHandle ScheduleBatch<TJob, T>(this TJob jobData,
                                                                  DeferredNativeArray<T> deferredNativeArray,
                                                                  int batchSize,
                                                                  JobHandle dependsOn = default)
-            where TJob : struct, IJobDeferredNativeArrayFor
+            where TJob : struct, IJobDeferredNativeArrayForBatch
             where T : struct
         {
             void* atomicSafetyHandlePtr = null;
@@ -43,7 +44,7 @@ namespace Anvil.Unity.DOTS.Jobs
 #endif
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData),
-                                                                                                         JobDeferredNativeArrayForProducer<TJob>.Initialize(),
+                                                                                                         JobDeferredNativeArrayForBatchProducer<TJob>.Initialize(),
                                                                                                          dependsOn,
                                                                                                          SCHEDULE_MODE);
 
@@ -56,8 +57,8 @@ namespace Anvil.Unity.DOTS.Jobs
         }
 
 
-        internal struct JobDeferredNativeArrayForProducer<TJob>
-            where TJob : struct, IJobDeferredNativeArrayFor
+        internal struct JobDeferredNativeArrayForBatchProducer<TJob>
+            where TJob : struct, IJobDeferredNativeArrayForBatch
         {
             // ReSharper disable once StaticMemberInGenericType
             private static IntPtr s_JobReflectionData;
@@ -106,10 +107,7 @@ namespace Anvil.Unity.DOTS.Jobs
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
 
-                    for (int index = beginIndex; index < endIndex; ++index)
-                    {
-                        jobData.Execute(index);
-                    }
+                    jobData.Execute(beginIndex, endIndex - beginIndex);
                 }
             }
         }
