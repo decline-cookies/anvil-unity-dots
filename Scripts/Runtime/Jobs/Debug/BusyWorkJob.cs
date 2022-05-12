@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// Useful for artificially increasing the time a job takes to help with debugging scheduling or profiling.
     /// <seealso cref="DebugUtil.FindPrimeNumber"/>
     /// </summary>
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     public struct BusyWorkJob : IJobFor
     {
         private readonly int m_NthPrimeNumberToFind;

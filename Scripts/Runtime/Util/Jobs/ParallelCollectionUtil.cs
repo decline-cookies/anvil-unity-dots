@@ -31,9 +31,14 @@ namespace Anvil.Unity.DOTS.Util
         /// Subsequent bursted jobs are then allowed to access it.
         /// <seealso cref="https://docs.unity3d.com/Packages/com.unity.burst@1.7/manual/docs/AdvancedUsages.html#shared-static"/>
         /// </remarks>
-        private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<InternalClassJobWorkerMaximumCount>();
-        private class InternalClassJobWorkerMaximumCount
+        private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<JobWorkerMaximumCountKeyContext>();
+        // ReSharper disable once ConvertToStaticClass
+        // ReSharper disable once ClassNeverInstantiated.Local
+        private sealed class JobWorkerMaximumCountKeyContext
         {
+            private JobWorkerMaximumCountKeyContext()
+            {
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -45,7 +50,7 @@ namespace Anvil.Unity.DOTS.Util
             Debug.Assert(JOB_WORKER_MAXIMUM_COUNT.Data > 0);
         }
 
-    
+
         /// <summary>
         /// Returns an ideal size for the number of buckets a collection should have
         /// to account for all possible threads that could write to it at once.
@@ -105,25 +110,31 @@ namespace Anvil.Unity.DOTS.Util
             Debug.Assert(nativeThreadIndex > 0 && nativeThreadIndex <= JobsUtility.MaxJobThreadCount);
             return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
         }
-
-
+        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [BurstDiscard]
         private static void DetectMultipleXThreads(int nativeThreadIndex)
         {
             ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
         }
+
     }
 
-    
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
     internal static class ThreadHelper
     {
-        private static readonly ConcurrentBag<int> s_ThreadIndicesSeen = new ConcurrentBag<int>();
-        
+        private static readonly ConcurrentDictionary<int, bool> s_ThreadIndicesSeen = new ConcurrentDictionary<int, bool>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Init()
+        {
+            s_ThreadIndicesSeen.Clear();
+        }
+
         [BurstDiscard]
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
         {
-            s_ThreadIndicesSeen.Add(nativeThreadIndex);
+            s_ThreadIndicesSeen.TryAdd(nativeThreadIndex, true);
             Debug.Assert(s_ThreadIndicesSeen.Count <= maxSize, $"Seen {s_ThreadIndicesSeen.Count} when we should only have seen {maxSize}. Output is: {GenerateOutput()}");
         }
 
@@ -134,4 +145,5 @@ namespace Anvil.Unity.DOTS.Util
             return output;
         }
     }
+#endif
 }

@@ -58,7 +58,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// After the work with the value is scheduled <see cref="ReleaseAsync"/> must be called before any other calls to 
         /// <see cref="AcquireAsync" /> or <see cref="Acquire" /> are made for this value.
         /// </summary>
-        /// <param name="isReadOnly">The access level rquired for the value. Accessing readonly will tend to require less waiting.</param>
+        /// <param name="isReadOnly">The access level required for the value. Accessing readonly will tend to require less waiting.</param>
         /// <param name="value">The value of the <see cref="AbstractValueAccessController{T}"/>.</param>
         /// <returns>A <see cref="JobHandle"/> to wait on before consuming the value.</returns>
         public JobHandle AcquireAsync(bool isReadOnly, out T value)
