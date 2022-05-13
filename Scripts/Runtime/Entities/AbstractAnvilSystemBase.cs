@@ -2,6 +2,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
+using Anvil.CSharp.Logging;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -12,6 +13,17 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractAnvilSystemBase : SystemBase
     {
+        private Log.Logger? m_Logger;
+        /// <summary>
+        /// Returns a <see cref="Log.Logger"/> for this instance to emit log messages with.
+        /// Lazy instantiated.
+        /// </summary>
+        protected Log.Logger Logger
+        {
+            get => m_Logger ?? (m_Logger = Log.GetLogger(this)).Value;
+            set => m_Logger = value;
+        }
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         /// <inheritdoc/>
         protected new JobHandle Dependency
