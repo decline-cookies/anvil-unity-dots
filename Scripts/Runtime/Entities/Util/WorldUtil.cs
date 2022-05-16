@@ -130,7 +130,7 @@ namespace Anvil.Unity.DOTS.Entities
                 Debug.Assert(world.GetExistingSystem(systemGroupType) == null, $"System group cannot already exist in world {world.Name}. There is no way of knowing if a top level group for an individual world has been added to the player loop already.");
                 topLevelGroups[i] = (ComponentSystemGroup)world.CreateSystem(systemGroupType);
 
-                ScriptBehaviourUpdateOrder.AppendSystemToPlayerLoopList(topLevelGroups[i], ref playerLoop, playerLoopSystemType);
+                ScriptBehaviourUpdateOrder.AppendSystemToPlayerLoop(topLevelGroups[i], ref playerLoop, playerLoopSystemType);
             }
 
             PlayerLoop.SetPlayerLoop(playerLoop);
