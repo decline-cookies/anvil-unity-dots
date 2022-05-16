@@ -1,9 +1,13 @@
 using Anvil.Unity.DOTS.Collections;
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Unity.Burst;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Scripting;
 
 namespace Anvil.Unity.DOTS.Jobs
 {
@@ -25,9 +29,9 @@ namespace Anvil.Unity.DOTS.Jobs
     public static class JobDeferredNativeArrayForBatchExtensions
     {
         public static unsafe JobHandle ScheduleBatch<TJob, T>(this TJob jobData,
-                                                                 DeferredNativeArray<T> deferredNativeArray,
-                                                                 int batchSize,
-                                                                 JobHandle dependsOn = default)
+                                                              DeferredNativeArray<T> deferredNativeArray,
+                                                              int batchSize,
+                                                              JobHandle dependsOn = default)
             where TJob : struct, IJobDeferredNativeArrayForBatch
             where T : struct
         {
@@ -37,6 +41,9 @@ namespace Anvil.Unity.DOTS.Jobs
             atomicSafetyHandlePtr = DeferredNativeArrayUnsafeUtility.GetSafetyHandlePointer(ref deferredNativeArray);
 #endif
 
+            IntPtr reflectionData = JobDeferredNativeArrayForBatchProducer<TJob>.s_JobReflectionData.Data;
+            CheckReflectionDataCorrect(reflectionData);
+
 #if UNITY_2020_2_OR_NEWER
             const ScheduleMode SCHEDULE_MODE = ScheduleMode.Parallel;
 #else
@@ -44,7 +51,7 @@ namespace Anvil.Unity.DOTS.Jobs
 #endif
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData),
-                                                                                                         JobDeferredNativeArrayForBatchProducer<TJob>.Initialize(),
+                                                                                                         reflectionData,
                                                                                                          dependsOn,
                                                                                                          SCHEDULE_MODE);
 
@@ -61,25 +68,24 @@ namespace Anvil.Unity.DOTS.Jobs
             where TJob : struct, IJobDeferredNativeArrayForBatch
         {
             // ReSharper disable once StaticMemberInGenericType
-            private static IntPtr s_JobReflectionData;
+            internal static readonly SharedStatic<IntPtr> s_JobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobDeferredNativeArrayForBatchProducer<TJob>>();
 
-            public static IntPtr Initialize()
+            [Preserve]
+            internal static void Initialize()
             {
-                if (s_JobReflectionData == IntPtr.Zero)
+                if (s_JobReflectionData.Data == IntPtr.Zero)
                 {
 #if UNITY_2020_2_OR_NEWER
-                    s_JobReflectionData = JobsUtility.CreateJobReflectionData(typeof(JobDeferredNativeArrayProducer<TJob, T>),
-                                                                              typeof(TJob),
-                                                                              (ExecuteJobFunction)Execute);
+                    s_JobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(TJob),
+                                                                                   typeof(TJob),
+                                                                                   (ExecuteJobFunction)Execute);
 #else
-                    s_JobReflectionData = JobsUtility.CreateJobReflectionData(typeof(TJob),
+                    s_JobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(TJob),
                                                                               typeof(TJob),
                                                                               JobType.ParallelFor,
                                                                               (ExecuteJobFunction)Execute);
 #endif
                 }
-
-                return s_JobReflectionData;
             }
 
             private delegate void ExecuteJobFunction(ref TJob jobData,
@@ -109,6 +115,25 @@ namespace Anvil.Unity.DOTS.Jobs
 
                     jobData.Execute(beginIndex, endIndex - beginIndex);
                 }
+            }
+        }
+
+        /// <summary>
+        /// This method is only to be called by automatically generated setup code.
+        /// </summary>
+        /// <typeparam name="TJob"></typeparam>
+        public static void EarlyJobInit<TJob>()
+            where TJob : struct, IJobDeferredNativeArrayForBatch
+        {
+            JobDeferredNativeArrayForBatchProducer<TJob>.Initialize();
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckReflectionDataCorrect(IntPtr reflectionData)
+        {
+            if (reflectionData == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("Reflection data was not set up by a call to Initialize()");
             }
         }
     }

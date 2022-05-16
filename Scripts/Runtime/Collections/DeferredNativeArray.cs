@@ -241,7 +241,7 @@ namespace Anvil.Unity.DOTS.Collections
             // Unity uses this as an indicator to the internal Job Scheduling code that it needs to defer scheduling until
             // the array length is actually known. 
             buffer += 1;
-            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(buffer, 0, Allocator.None);
+            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(buffer, 0, Allocator.Invalid);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
