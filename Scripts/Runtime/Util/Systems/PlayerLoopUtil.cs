@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Util
         private static readonly IsDelegateForWorldSystemDelegate s_IsDelegateForWorldSystem = (IsDelegateForWorldSystemDelegate)Delegate.CreateDelegate(typeof(IsDelegateForWorldSystemDelegate), s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo);
         private static PropertyInfo s_DummyDelegateWrapper_System;
         
-        private delegate bool IsDelegateForWorldSystemDelegate(World world, PlayerLoopSystem playerLoopSystem);
+        private delegate bool IsDelegateForWorldSystemDelegate(World world, ref PlayerLoopSystem playerLoopSystem);
         
         /// <summary>
         /// Checks if a <see cref="PlayerLoopSystem"/> is part of a given <see cref="World"/>
@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Util
         /// </returns>
         public static bool IsPlayerLoopSystemPartOfWorld(ref PlayerLoopSystem playerLoopSystem, World world)
         {
-            return playerLoopSystem.updateDelegate?.Target != null && s_IsDelegateForWorldSystem(world, playerLoopSystem);
+            return playerLoopSystem.updateDelegate?.Target != null && s_IsDelegateForWorldSystem(world, ref playerLoopSystem);
         }
 
         /// <summary>
@@ -113,7 +113,5 @@ namespace Anvil.Unity.DOTS.Util
             //In the expression lambda, we do a convert to the internal type defined on the method info.
             return (ComponentSystemBase)s_DummyDelegateWrapper_System.GetMethod.Invoke(wrapper, null);
         }
-        
-        
     }
 }
