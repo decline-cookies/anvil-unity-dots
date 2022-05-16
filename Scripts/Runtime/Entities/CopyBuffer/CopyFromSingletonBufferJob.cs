@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             BufferAccessor<T> buffers = batchInChunk.GetBufferAccessor(InputBufferTypeHandle);
             Debug.Assert(buffers.Length == 1, "Expected singleton buffer");
-            // Could be modified to support mismatched lengths usign `NativeArray<T>.Copy()` but it's not
+            // Could be modified to support mismatched lengths using `NativeArray<T>.Copy()` but it's not
             // necessary for the indended use case and adds complexity. Add support if the need arises.
             Debug.Assert(buffers[0].Length == OutputBuffer.Length, "Output buffer must be the same size as the singleton buffer");
             OutputBuffer.CopyFrom(buffers[0].AsNativeArray());
