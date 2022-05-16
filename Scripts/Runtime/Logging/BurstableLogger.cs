@@ -1,6 +1,7 @@
 using System;
 using Anvil.CSharp.Logging;
 using Unity.Collections;
+using Anvil.Unity.Logging;
 
 namespace Anvil.Unity.DOTS.Logging
 {
@@ -35,33 +36,42 @@ namespace Anvil.Unity.DOTS.Logging
             MessagePrefix = messagePrefix;
         }
 
+        [UnityLogListener.Exclude]
         public void Debug(in FixedString64Bytes message)
         {
-            Debug<FixedString64Bytes>(message);
+            AssertMessageLength(message);
+            UnityEngine.Debug.Log($"{MessagePrefix}{message}");
         }
 
+        [UnityLogListener.Exclude]
         public void Debug<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
         {
             AssertMessageLength(message);
             UnityEngine.Debug.Log($"{MessagePrefix}{message}");
         }
 
+        [UnityLogListener.Exclude]
         public void Warning(in FixedString64Bytes message)
         {
-            Warning<FixedString64Bytes>(message);
+            AssertMessageLength(message);
+            UnityEngine.Debug.LogWarning($"{MessagePrefix}{message}");
         }
 
+        [UnityLogListener.Exclude]
         public void Warning<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
         {
             AssertMessageLength(message);
             UnityEngine.Debug.LogWarning($"{MessagePrefix}{message}");
         }
 
+        [UnityLogListener.Exclude]
         public void Error(in FixedString64Bytes message)
         {
-            Error<FixedString64Bytes>(message);
+            AssertMessageLength(message);
+            UnityEngine.Debug.LogError($"{MessagePrefix}{message}");
         }
 
+        [UnityLogListener.Exclude]
         public void Error<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
         {
             AssertMessageLength(message);
