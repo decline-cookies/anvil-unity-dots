@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Util;
+using Anvil.CSharp.Mathematics;
 using Unity.Burst;
 using Unity.Jobs;
 
@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         public void Execute(int index)
         {
-            DebugUtil.FindPrimeNumber(m_NthPrimeNumberToFind);
+            MathUtil.FindPrimeNumber(m_NthPrimeNumberToFind);
         }
     }
 }

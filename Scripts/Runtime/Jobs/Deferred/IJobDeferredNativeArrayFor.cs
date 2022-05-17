@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Collections;
+using Anvil.Unity.DOTS.Data;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
