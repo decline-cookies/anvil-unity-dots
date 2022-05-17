@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
     /// </remarks>
     public class CollectionAccessController<TContext> : AbstractAnvilBase,
-                                                        CollectionAccessManager.ICollectionAccessController
+                                                        CollectionAccessDataSystem.ICollectionAccessController
     {
         private enum AcquisitionState
         {
@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
-        private readonly CollectionAccessManager.LookupByContext<TContext> m_LookupByContext;
+        private readonly CollectionAccessDataSystem.LookupByContext<TContext> m_LookupByContext;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private string m_AcquireCallerInfo;
@@ -73,7 +73,7 @@ namespace Anvil.Unity.DOTS.Jobs
             get;
         }
 
-        internal CollectionAccessController(TContext context, CollectionAccessManager.LookupByContext<TContext> lookupByContext)
+        internal CollectionAccessController(TContext context, CollectionAccessDataSystem.LookupByContext<TContext> lookupByContext)
         {
             Context = context;
             m_LookupByContext = lookupByContext;
