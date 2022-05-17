@@ -13,13 +13,21 @@ namespace Anvil.Unity.DOTS.Util
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
         private static readonly MethodInfo s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo = typeof(ScriptBehaviourUpdateOrder).GetMethod("IsDelegateForWorldSystem", BindingFlags.Static | BindingFlags.NonPublic);
         private static readonly IsDelegateForWorldSystemDelegate s_IsDelegateForWorldSystem = (IsDelegateForWorldSystemDelegate)Delegate.CreateDelegate(typeof(IsDelegateForWorldSystemDelegate), s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo);
-        private static PropertyInfo s_DummyDelegateWrapper_System;
-        
+        private static MethodInfo s_DummyDelegateWrapper_System;
+
         private delegate bool IsDelegateForWorldSystemDelegate(World world, ref PlayerLoopSystem playerLoopSystem);
-        
+
         /// <summary>
         /// Checks if a <see cref="PlayerLoopSystem"/> is part of a given <see cref="World"/>
         /// </summary>
+        /// <remarks>
+        /// This is very similar to <see cref="ScriptBehaviourUpdateOrder.IsWorldInPlayerLoop"/> except
+        /// that it pertains to just the instance of <see cref="PlayerLoopSystem"/> passed in and not
+        /// the children of it. This function is useful for building a mapping of <see cref="PlayerLoopSystem"/>'s
+        /// to worlds where as <see cref="ScriptBehaviourUpdateOrder.IsWorldInPlayerLoop"/> is useful for
+        /// seeing if a world has been added to the Player Loop in general and is usually used for the top level
+        /// <see cref="PlayerLoopSystem"/> from <see cref="PlayerLoop.GetCurrentPlayerLoop"/>.
+        /// </remarks>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to check.</param>
         /// <param name="world">The <see cref="World"/> that may contain the <see cref="PlayerLoopSystem"/></param>
         /// <returns>
@@ -38,34 +46,40 @@ namespace Anvil.Unity.DOTS.Util
         /// and may return null.
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
+        /// <param name="systemGroup">The <see cref="ComponentSystemGroup"/> if it exists.</param>
         /// <returns>
-        /// The <see cref="ComponentSystemGroup"/> if it exists.
-        /// null if this <see cref="PlayerLoopSystem"/> is a phase
-        /// null if this <see cref="PlayerLoopSystem"/> does not have a <see cref="ComponentSystemGroup"/>
+        /// True if a system group exists
+        /// False if this <see cref="PlayerLoopSystem"/> is a phase
+        /// False if this <see cref="PlayerLoopSystem"/> does not have a <see cref="ComponentSystemGroup"/>
         /// </returns>
-        public static ComponentSystemGroup GetSystemGroupFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem)
+        public static bool TryGetSystemGroupFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemGroup systemGroup)
         {
+            systemGroup = null;
             if (playerLoopSystem.updateDelegate?.Target == null
              || !COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type))
             {
-                return null;
+                return false;
             }
 
-            return GetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
+            return TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out systemGroup);
         }
-        
+
         /// <summary>
         /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemGroup"/> associated.
         /// This method has no checks and assumes that you are certain the <see cref="PlayerLoopSystem"/>
         /// does contain a <see cref="ComponentSystemGroup"/>. 
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
+        /// <param name="systemGroup">The <see cref="ComponentSystemGroup"/> associated.</param>
         /// <returns>
-        /// The <see cref="ComponentSystemGroup"/> associated.
+        /// True if there is a system group
+        /// False if not
         /// </returns>
-        public static ComponentSystemGroup GetSystemGroupFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem)
+        public static bool TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemGroup systemGroup)
         {
-            return (ComponentSystemGroup)GetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
+            bool result = TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemBase system);
+            systemGroup = (ComponentSystemGroup)system;
+            return result;
         }
 
         /// <summary>
@@ -74,19 +88,16 @@ namespace Anvil.Unity.DOTS.Util
         /// and may return null.
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
+        /// <param name="system">The <see cref="ComponentSystemBase"/> if it exists.</param>
         /// <returns>
-        /// The <see cref="ComponentSystemBase"/> if it exists.
-        /// null if this <see cref="PlayerLoopSystem"/> is a phase
-        /// null if this <see cref="PlayerLoopSystem"/> does not have a <see cref="ComponentSystemBase"/>
+        /// True if there is a system
+        /// False if this <see cref="PlayerLoopSystem"/> is a phase or if this <see cref="PlayerLoopSystem"/> does
+        /// not have a <see cref="ComponentSystemBase"/>
         /// </returns>
-        public static ComponentSystemBase GetSystemFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem)
+        public static bool TryGetSystemFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemBase system)
         {
-            if (playerLoopSystem.updateDelegate?.Target == null)
-            {
-                return null;
-            }
-
-            return GetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
+            system = null;
+            return playerLoopSystem.updateDelegate?.Target != null && TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out system);
         }
 
         /// <summary>
@@ -95,23 +106,27 @@ namespace Anvil.Unity.DOTS.Util
         /// does contain a <see cref="ComponentSystemBase"/>. 
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
+        /// <param name="system">The <see cref="ComponentSystemBase"/> associated.</param>
         /// <returns>
-        /// The <see cref="ComponentSystemBase"/> associated.
+        /// True if there is a system
+        /// False if not
         /// </returns>
-        public static ComponentSystemBase GetSystemFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem)
+        public static bool TryGetSystemFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemBase system)
         {
             object wrapper = playerLoopSystem.updateDelegate.Target;
-            
+
             //We have to lazy create this because we don't have access to the wrapper's type until we see it at runtime.
             if (s_DummyDelegateWrapper_System == null)
             {
-                s_DummyDelegateWrapper_System = wrapper.GetType().GetProperty("System", BindingFlags.Instance | BindingFlags.NonPublic);
+                s_DummyDelegateWrapper_System = wrapper.GetType().GetProperty("System", BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
             }
-            
+
             //TODO: #28 We can speed the reflected call up by using Expression Trees to create a strongly typed delegate
             //We should be able to call with the params we have access to and pass in "object" for the param we don't.
             //In the expression lambda, we do a convert to the internal type defined on the method info.
-            return (ComponentSystemBase)s_DummyDelegateWrapper_System.GetMethod.Invoke(wrapper, null);
+            system = (ComponentSystemBase)s_DummyDelegateWrapper_System.Invoke(wrapper, null);
+
+            return system != null;
         }
     }
 }

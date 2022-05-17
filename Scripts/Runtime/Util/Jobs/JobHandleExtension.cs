@@ -2,7 +2,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Util
 {
-    public static class JobHandleExtensions
+    public static class JobHandleExtension
     {
         /// <summary>
         /// Checks if a <see cref="JobHandle"/> depends on another to be complete before starting.

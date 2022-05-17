@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Util
     /// <summary>
     /// Helper class for managing a cached view of a <see cref="World"/>
     /// </summary>
-    public static class WorldCacheUtil
+    public static class WorldCacheManager
     {
         //*************************************************************************************************************
         // INTERNAL HELPER
@@ -16,14 +16,14 @@ namespace Anvil.Unity.DOTS.Util
         /// <summary>
         /// Lookup based on World's
         /// </summary>
-        private class WorldLookup : AbstractLookup<Type, World, WorldCache>
+        private class LookupByWorld : AbstractLookup<Type, World, WorldCache>
         {
             private static WorldCache CreationFunction(World world)
             {
                 return new WorldCache(world);
             }
 
-            public WorldLookup() : base(typeof(WorldLookup))
+            public LookupByWorld() : base(typeof(LookupByWorld))
             {
             }
 
@@ -49,11 +49,11 @@ namespace Anvil.Unity.DOTS.Util
         // PUBLIC STATIC API
         //*************************************************************************************************************
 
-        private static WorldLookup s_WorldLookup;
+        private static LookupByWorld s_LookupByWorld;
 
-        private static WorldLookup Lookup
+        private static LookupByWorld Lookup
         {
-            get => s_WorldLookup ?? (s_WorldLookup = new WorldLookup());
+            get => s_LookupByWorld ?? (s_LookupByWorld = new LookupByWorld());
         }
 
         //Ensures the proper state with DomainReloading turned off in the Editor
@@ -69,13 +69,13 @@ namespace Anvil.Unity.DOTS.Util
         /// </summary>
         public static void Dispose()
         {
-            s_WorldLookup?.Dispose();
-            s_WorldLookup = null;
+            s_LookupByWorld?.Dispose();
+            s_LookupByWorld = null;
         }
         
         /// <summary>
         /// Removes an instance of a <see cref="WorldCache"/> for a given <see cref="World"/>
-        /// Will gracefully do nothing if it doesn't exist.
+        /// Will do nothing if it doesn't exist.
         ///
         /// NOTE: You are responsible for disposing the instance if necessary.
         /// <seealso cref="Dispose"/> for a full cleanup of all instances.

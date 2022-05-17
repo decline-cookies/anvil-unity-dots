@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// ALL systems in the project who touch the <see cref="DynamicBuffer{T}"/> in question to use the
     /// <see cref="CollectionAccessController{TContext}"/> which isn't always feasible.
     /// </remarks>
-    public static class DynamicBufferSharedWriteUtil
+    public static class DynamicBufferSharedWriteManager
     {
         //*************************************************************************************************************
         // INTERNAL INTERFACES
@@ -37,41 +37,40 @@ namespace Anvil.Unity.DOTS.Jobs
 
         internal interface IDynamicBufferSharedWriteHandle : IDisposable
         {
-            void RegisterSystemForSharedWrite(ComponentSystemBase system);
         }
-        
+
         //*************************************************************************************************************
         // INTERNAL HELPER
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Lookup based on World's.
         /// We don't want to have <see cref="DynamicBufferSharedWriteHandle{T}"/>'s operating across worlds.
         /// </summary>
-        private class WorldLookup : AbstractLookup<Type, World, ComponentTypeLookup>
+        private class LookupByWorld : AbstractLookup<Type, World, LookupByComponentType>
         {
-            private static ComponentTypeLookup CreationFunction(World world)
+            private static LookupByComponentType CreationFunction(World world)
             {
-                return new ComponentTypeLookup(world);
+                return new LookupByComponentType(world);
             }
 
-            internal WorldLookup() : base(typeof(WorldLookup))
+            internal LookupByWorld() : base(typeof(LookupByWorld))
             {
             }
 
-            internal ComponentTypeLookup GetOrCreate(World world)
+            internal LookupByComponentType GetOrCreate(World world)
             {
                 return LookupGetOrCreate(world, CreationFunction);
             }
         }
-        
+
         /// <summary>
         /// Lookup based on a specific <see cref="IBufferElementData"/>
-        /// This is a child of <see cref="WorldLookup"/>
+        /// This is a child of <see cref="LookupByWorld"/>
         /// </summary>
-        internal class ComponentTypeLookup : AbstractLookup<World, ComponentType, IDynamicBufferSharedWriteHandle>
+        internal class LookupByComponentType : AbstractLookup<World, ComponentType, IDynamicBufferSharedWriteHandle>
         {
-            internal ComponentTypeLookup(World context) : base(context)
+            internal LookupByComponentType(World context) : base(context)
             {
             }
 
@@ -88,7 +87,7 @@ namespace Anvil.Unity.DOTS.Jobs
             }
 
             // ReSharper disable once MemberHidesStaticFromOuterClass
-            internal DynamicBufferSharedWriteHandle<T> GetOrCreate<T>(World world)
+            internal DynamicBufferSharedWriteHandle<T> GetOrCreate<T>()
                 where T : IBufferElementData
             {
                 ComponentType componentType = ComponentType.ReadWrite<T>();
@@ -108,13 +107,13 @@ namespace Anvil.Unity.DOTS.Jobs
         // PUBLIC STATIC API
         //*************************************************************************************************************
 
-        private static WorldLookup s_WorldLookup;
+        private static LookupByWorld s_LookupByWorld;
 
-        private static WorldLookup Lookup
+        private static LookupByWorld Lookup
         {
-            get => s_WorldLookup ?? (s_WorldLookup = new WorldLookup());
+            get => s_LookupByWorld ?? (s_LookupByWorld = new LookupByWorld());
         }
-        
+
         //Ensures the proper state with DomainReloading turned off in the Editor
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
@@ -129,14 +128,14 @@ namespace Anvil.Unity.DOTS.Jobs
         /// </summary>
         public static void Dispose()
         {
-            s_WorldLookup?.Dispose();
-            s_WorldLookup = null;
+            s_LookupByWorld?.Dispose();
+            s_LookupByWorld = null;
         }
-        
+
         /// <summary>
         /// Removes an instance of an <see cref="DynamicBufferSharedWriteHandle{T}"/> for a given
         /// <see cref="IBufferElementData"/> type.
-        /// Will gracefully do nothing if it doesn't exist.
+        /// Will do nothing if it doesn't exist.
         ///
         /// NOTE: You are responsible for disposing the instance if necessary.
         /// <seealso cref="Dispose"/> for a full cleanup of all instances.
@@ -146,12 +145,12 @@ namespace Anvil.Unity.DOTS.Jobs
         public static void Remove<T>(World world)
             where T : IBufferElementData
         {
-            if (!Lookup.TryGet(world, out ComponentTypeLookup componentTypeLookup))
+            if (!Lookup.TryGet(world, out LookupByComponentType lookupByComponentType))
             {
                 return;
             }
 
-            componentTypeLookup.Remove<T>();
+            lookupByComponentType.Remove<T>();
         }
 
         /// <summary>
@@ -164,8 +163,8 @@ namespace Anvil.Unity.DOTS.Jobs
         public static DynamicBufferSharedWriteHandle<T> GetOrCreate<T>(World world)
             where T : IBufferElementData
         {
-            ComponentTypeLookup componentTypeLookup = Lookup.GetOrCreate(world);
-            return componentTypeLookup.GetOrCreate<T>(world);
+            LookupByComponentType lookupByComponentType = Lookup.GetOrCreate(world);
+            return lookupByComponentType.GetOrCreate<T>();
         }
     }
 }

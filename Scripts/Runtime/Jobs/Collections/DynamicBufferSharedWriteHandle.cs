@@ -13,32 +13,39 @@ namespace Anvil.Unity.DOTS.Jobs
     ///
     /// ****IMPORTANT NOTE****
     /// Using this class is very helpful for the specific task of writing to a <see cref="DynamicBuffer{T}"/> in
-    /// parallel from multiple job types and if you're doing that you should already know what you are doing.
-    /// However, there are ways that you won't get the results you expect. They have been listed to aid in debugging
-    /// if needed.
+    /// parallel from multiple job types. This class DOES NOT prevent multiple threads from writing to the same element.
+    /// Typically, this means that the use case should guarantee that there is no overlap in buffer element access.
+    /// For example, element ranges (1-n) are dedicated to specific worker indices.
+    /// (Worker 0 writes to element 0, Worker 3 writes to element 3, etc...)
+    ///
+    /// In order to achieve this functionality the class tracks the World's system order to the best of its ability.
+    /// There are cases where this isn't perfect and your won't get the results you expect.
+    /// These cases are outlined below to aid in debugging if needed.
     ///
     /// ALL OF THESE SHOULD BE VERY RARE
     ///
     /// - If you are adding/removing/reordering Systems and SystemGroups and messing with the PlayerLoop on a frequent
     /// basis. Ex: Per frame. The <see cref="WorldCache"/> may not update properly and you will have to update manually
-    /// via <see cref="WorldCache.ManualRebuild"/>
+    /// via <see cref="WorldCache.ForceRebuild"/>
     ///
     /// - If you are using <see cref="EntityQuery"/>s that your Systems aren't aware of.
-    /// Ex. <see cref="EntityManager.CreateEntityQuery"/> then we may not detect jobs that touch your
+    /// Ex. Queries created with <see cref="EntityManager.CreateEntityQuery"/> will not detect jobs that touch your
     /// <see cref="IBufferElementData"/>. Always use the <see cref="SystemBase.GetEntityQuery"/> function.
     ///
-    /// - If you are scheduling jobs outside of a System that operate on <see cref="IBufferElementData"/> we will not
-    /// be aware of it.
+    /// - If you are scheduling jobs outside of a System that operate on <see cref="IBufferElementData"/> this class
+    /// will not be aware of it and may lead to a dependency conflict. Consider using a
+    /// <see cref="CollectionAccessController{TContext}"/> to handle this instead.
     ///
-    /// - If you are scheduling more than one job in a System that operates on the <see cref="IBufferElementData"/> and
+    /// - If you are scheduling multiple jobs in a System that operates on the <see cref="IBufferElementData"/> where
     /// one uses the Shared Write handle and the other(s) try and do an exclusive write or read, we treat that
     /// System as only using the Shared Write handle.
     ///
-    /// - If you are dynamically turning on and off queries (create and/or destroy or the system runs for a while until
-    /// it passes an if check and only THEN you call the <see cref="SystemBase.GetEntityQuery"/> function that operates
-    /// on your <see cref="IBufferElementData"/>, then we will likely not know about it until the
-    /// <see cref="WorldCache"/> is rebuilt. You should do this manually. Better yet, create all possible queries in
-    /// your <see cref="SystemBase.OnCreate"/> so we're aware even if you don't use them until later.
+    /// - If you are calling <see cref="SystemBase.GetEntityQuery"/> that operates on the
+    /// <see cref="IBufferElementData"/> outside of your <see cref="SystemBase.OnCreate"/>, this
+    /// class may not be aware of the query until the <see cref="WorldCache"/> is rebuilt.
+    /// This means that a write or read operation may sneak in between two shared writes which would lead to a
+    /// dependency conflict. It is best practice to create all queries in the <see cref="SystemBase.OnCreate"/> or
+    /// if you must create the query later, manually rebuild the <see cref="WorldCache"/>.
     ///
     /// - You may get a false positive if you have a System that has two or more queries in it. One that operates on 
     /// your <see cref="IBufferElementData"/> (QueryA) and one that doesn't (QueryB). If the logic has the QueryB
@@ -48,19 +55,18 @@ namespace Anvil.Unity.DOTS.Jobs
     /// </summary>
     /// <remarks>
     /// This is similar to the <see cref="CollectionAccessController{TContext}"/> but for specific use with a
-    /// <see cref="DynamicBuffer{T}"/> that other systems are also using for reading and/or writing but might
-    /// not be aware of the access pattern for shared writing.
-    /// <seealso cref="DynamicBufferSharedWriteUtil"/>
+    /// <see cref="DynamicBuffer{T}"/> where shared writing is desired.
+    /// <seealso cref="DynamicBufferSharedWriteManager"/>
     /// </remarks>
     /// <typeparam name="T">The <see cref="IBufferElementData"/> type this instance is associated with.</typeparam>
     public class DynamicBufferSharedWriteHandle<T> : AbstractAnvilBase,
-                                                     DynamicBufferSharedWriteUtil.IDynamicBufferSharedWriteHandle
+                                                     DynamicBufferSharedWriteManager.IDynamicBufferSharedWriteHandle
         where T : IBufferElementData
     {
         //*************************************************************************************************************
         // INTERNAL HELPER
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Handles our specific cached view of the <see cref="World"/>
         /// </summary>
@@ -77,7 +83,7 @@ namespace Anvil.Unity.DOTS.Jobs
             private int m_LastRebuildCheckFrameCount;
 
             internal LocalCache(WorldCache worldCache,
-                              ComponentType componentType)
+                                ComponentType componentType)
             {
                 m_WorldCache = worldCache;
                 m_QueryComponentTypes = new HashSet<ComponentType>
@@ -85,7 +91,7 @@ namespace Anvil.Unity.DOTS.Jobs
                     componentType
                 };
             }
-            
+
             internal int GetExecutionOrderOf(ComponentSystemBase callingSystem)
             {
                 return !m_ExecutedOrderedSystemsLookup.TryGetValue(callingSystem, out int order)
@@ -104,16 +110,17 @@ namespace Anvil.Unity.DOTS.Jobs
                 //TODO: #27 Move to AbstractCache?
                 //This might be called many times a frame by many different callers.
                 //We only want to do this check once per frame.
-                int currentFrameCount = UnityEngine.Time.frameCount;
+                int currentFrameCount = Time.frameCount;
                 if (m_LastRebuildCheckFrameCount == currentFrameCount)
                 {
                     return;
                 }
+
                 m_LastRebuildCheckFrameCount = currentFrameCount;
-                
+
                 //Once per frame we want to reset our execution order since some systems may not have executed.
                 ResetExecutionOrder();
-                
+
                 //Rebuild the world cache if it needs to be
                 m_WorldCache.RebuildIfNeeded();
 
@@ -122,10 +129,10 @@ namespace Anvil.Unity.DOTS.Jobs
                 {
                     return;
                 }
-                
+
                 //Find all the systems that have queries that match our IBufferElementData
                 RebuildMatchingSystems();
-                
+
                 //Ensure we're not going to do this again until the World changes.
                 Version = m_WorldCache.Version;
             }
@@ -157,13 +164,13 @@ namespace Anvil.Unity.DOTS.Jobs
                 for (; m_OrderedSystemsIndexForExecution < m_OrderedSystems.Count; ++m_OrderedSystemsIndexForExecution)
                 {
                     ComponentSystemBase system = m_OrderedSystems[m_OrderedSystemsIndexForExecution];
-                    
+
                     //If we're the calling system, the loop is done, we should exit.
                     if (callingSystem == system)
                     {
                         break;
                     }
-                    
+
                     //Internally, Systems will execute if they are enabled, set to AlwaysUpdate or have any queries
                     //that will return entities. The systems do this check via ShouldRunSystem and Enabled.
                     //While we could reflect and call that again, it seems inefficient to do so especially since it 
@@ -171,8 +178,7 @@ namespace Anvil.Unity.DOTS.Jobs
                     //LastSystemVersion with our cached version. If the versions are the same, the system didn't run
                     //for any number of reasons and we can exclude it from our order. If it is enabled the next frame
                     //the versions won't match and we'll add it back to our executed list.
-                    uint cachedSystemVersion = m_OrderedSystemsVersions[system];
-                    if (system.LastSystemVersion <= cachedSystemVersion)
+                    if (!DidSystemExecuteSinceLastCheck(system))
                     {
                         continue;
                     }
@@ -182,19 +188,27 @@ namespace Anvil.Unity.DOTS.Jobs
                     m_ExecutedOrderedSystemsLookup[system] = m_OrderedSystemsIndexForExecution;
                 }
             }
+
+            private bool DidSystemExecuteSinceLastCheck(ComponentSystemBase system)
+            {
+                uint cachedSystemVersion = m_OrderedSystemsVersions[system];
+                Debug.Assert(cachedSystemVersion <= system.LastSystemVersion, $"Investigate. Cached System Version {cachedSystemVersion} is larger than the last recorded version {system.LastSystemVersion}");
+                return system.LastSystemVersion > cachedSystemVersion;
+            }
         }
-        
+
+
         //*************************************************************************************************************
         // PUBLIC CLASS
         //*************************************************************************************************************
-        
+
         private readonly HashSet<ComponentSystemBase> m_SharedWriteSystems = new HashSet<ComponentSystemBase>();
-        
+
         private readonly World m_World;
         private readonly WorldCache m_WorldCache;
         private readonly LocalCache m_LocalCache;
-        private readonly DynamicBufferSharedWriteUtil.ComponentTypeLookup m_ComponentTypeLookup;
-        
+        private readonly DynamicBufferSharedWriteManager.LookupByComponentType m_LookupByComponentType;
+
         private JobHandle m_SharedWriteDependency;
 
         /// <summary>
@@ -205,14 +219,14 @@ namespace Anvil.Unity.DOTS.Jobs
             get;
         }
 
-        internal DynamicBufferSharedWriteHandle(ComponentType type, 
-                                                World world, 
-                                                DynamicBufferSharedWriteUtil.ComponentTypeLookup componentTypeLookup)
+        internal DynamicBufferSharedWriteHandle(ComponentType type,
+                                                World world,
+                                                DynamicBufferSharedWriteManager.LookupByComponentType lookupByComponentType)
         {
             ComponentType = type;
             m_World = world;
-            m_ComponentTypeLookup = componentTypeLookup;
-            m_WorldCache = WorldCacheUtil.GetOrCreate(m_World);
+            m_LookupByComponentType = lookupByComponentType;
+            m_WorldCache = WorldCacheManager.GetOrCreate(m_World);
             m_LocalCache = new LocalCache(m_WorldCache, ComponentType);
         }
 
@@ -220,13 +234,13 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
-            
+
             //Remove ourselves from the chain
-            m_ComponentTypeLookup.Remove<T>();
-            
+            m_LookupByComponentType.Remove<T>();
+
             base.DisposeSelf();
         }
-        
+
         /// <summary>
         /// Registers a <see cref="ComponentSystemBase"/> as a system that will shared write to
         /// the <see cref="DynamicBuffer{T}"/>.
@@ -237,7 +251,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteHandle<T>)}");
             m_SharedWriteSystems.Add(system);
         }
-        
+
         /// <summary>
         /// Unregisters a <see cref="ComponentSystemBase"/> as a system that will shared write to
         /// the <see cref="DynamicBuffer{T}"/>.
@@ -248,7 +262,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteHandle<T>)}");
             m_SharedWriteSystems.Remove(system);
         }
-        
+
         /// <summary>
         /// Gets a <see cref="JobHandle"/> to be used to schedule the jobs that will shared writing to the
         /// <see cref="DynamicBuffer{T}"/>.
@@ -259,13 +273,13 @@ namespace Anvil.Unity.DOTS.Jobs
         public JobHandle GetSharedWriteJobHandle(SystemBase callingSystem, JobHandle callingSystemDependency)
         {
             Debug.Assert(m_SharedWriteSystems.Contains(callingSystem), $"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
-            
+
             //Rebuild our local cache if we need to. Will trigger a world cache rebuild if necessary too.
             m_LocalCache.RebuildIfNeeded();
-            
+
             //Ensure our local cache has the right order of systems that actually executed this frame
             m_LocalCache.UpdateExecutedSystems(callingSystem);
-            
+
             //Find out when our system executed in the order
             int callingSystemOrder = m_LocalCache.GetExecutionOrderOf(callingSystem);
 
@@ -279,7 +293,7 @@ namespace Anvil.Unity.DOTS.Jobs
             else
             {
                 ComponentSystemBase previousSystem = m_LocalCache.GetSystemAtExecutionOrder(callingSystemOrder - 1);
-                
+
                 //If that system was a shared writable system, we don't want to move our dependency up so that we 
                 //can also share the write. If not, we move it up.
                 if (!m_SharedWriteSystems.Contains(previousSystem))
@@ -287,7 +301,7 @@ namespace Anvil.Unity.DOTS.Jobs
                     m_SharedWriteDependency = callingSystemDependency;
                 }
             }
-            
+
             return m_SharedWriteDependency;
         }
     }

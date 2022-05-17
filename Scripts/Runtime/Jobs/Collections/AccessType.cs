@@ -8,6 +8,6 @@ namespace Anvil.Unity.DOTS.Jobs
         ExclusiveWrite,
         SharedWrite,
         SharedRead,
-        ForDisposal
+        Disposal
     }
 }

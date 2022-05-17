@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Util;
 using System;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Jobs;
 using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Jobs
@@ -10,13 +10,16 @@ namespace Anvil.Unity.DOTS.Jobs
     /// Helper class for managing access control to collections across multiple jobs.
     /// </summary>
     /// <remarks>
-    /// Unity will handle this for you if you're dealing with <see cref="EntityQuery"/> or <see cref="IComponentData"/>
+    /// Unity will handle this for you if you're dealing with <see cref="EntityQuery"/>
     /// but if it's just a native collection, you will have to manage your read/write access.
     ///
-    /// The <see cref="IJob"/> safety system will throw errors if you handle it incorrectly but that's not a very
-    /// efficient way to develop and correct.
+    /// The safety system
+    /// - <see cref="SystemDependencySafetyUtility"/>
+    /// - <see cref="AtomicSafetyHandle"/>
+    /// - <see cref="ComponentDependencyManager"/>)
+    /// will throw errors if you handle it incorrectly but manually managing dependencies is messy and error prone.
     /// </remarks>
-    public static class CollectionAccessControlUtil
+    public static class CollectionAccessManager
     {
         //*************************************************************************************************************
         // INTERNAL INTERFACES
@@ -38,18 +41,18 @@ namespace Anvil.Unity.DOTS.Jobs
         /// Lookup based on World's.
         /// We don't want to have <see cref="CollectionAccessController{TContext}"/>'s operating across worlds.
         /// </summary>
-        private class WorldLookup : AbstractLookup<Type, World, TypeLookup>
+        private class LookupByWorld : AbstractLookup<Type, World, LookupByType>
         {
-            private static TypeLookup CreationFunction(World world)
+            private static LookupByType CreationFunction(World world)
             {
-                return new TypeLookup(world);
+                return new LookupByType(world);
             }
 
-            public WorldLookup() : base(typeof(WorldLookup))
+            public LookupByWorld() : base(typeof(LookupByWorld))
             {
             }
 
-            internal TypeLookup GetOrCreate(World world)
+            internal LookupByType GetOrCreate(World world)
             {
                 return LookupGetOrCreate(world, CreationFunction);
             }
@@ -59,24 +62,24 @@ namespace Anvil.Unity.DOTS.Jobs
         /// Lookup based on a Type
         /// Allows an <see cref="CollectionAccessController{TContext}"/> to be created using different app specific
         /// enums for example.
-        /// This is a child of <see cref="WorldLookup"/>
+        /// This is a child of <see cref="LookupByWorld"/>
         /// </summary>
-        private class TypeLookup : AbstractLookup<World, Type, IContextLookup>
+        private class LookupByType : AbstractLookup<World, Type, IContextLookup>
         {
             private static IContextLookup CreationFunction<TContext>(Type context)
             {
-                return new ContextLookup<TContext>(context);
+                return new LookupByContext<TContext>(context);
             }
 
-            internal TypeLookup(World context) : base(context)
+            internal LookupByType(World context) : base(context)
             {
             }
 
             internal CollectionAccessController<TContext> GetOrCreate<TContext>(TContext context)
             {
                 Type contextType = typeof(TContext);
-                ContextLookup<TContext> contextLookup = (ContextLookup<TContext>)LookupGetOrCreate(contextType, CreationFunction<TContext>);
-                return contextLookup.GetOrCreate(context);
+                LookupByContext<TContext> lookupByContext = (LookupByContext<TContext>)LookupGetOrCreate(contextType, CreationFunction<TContext>);
+                return lookupByContext.GetOrCreate(context);
             }
 
             internal void Remove<TContext>(TContext context)
@@ -87,19 +90,19 @@ namespace Anvil.Unity.DOTS.Jobs
                     return;
                 }
 
-                ((ContextLookup<TContext>)contextLookup).Remove(context);
+                ((LookupByContext<TContext>)contextLookup).Remove(context);
             }
         }
 
         /// <summary>
-        /// Lookup based on a specific value of a <see cref="Type"/> from the parent <see cref="TypeLookup"/>
+        /// Lookup based on a specific value of a <see cref="Type"/> from the parent <see cref="LookupByType"/>
         /// Allows for a <see cref="CollectionAccessController{TContext}"/> to be specific to a value of an enum for
         /// example.
         /// </summary>
-        internal class ContextLookup<TContext> : AbstractLookup<Type, TContext, ICollectionAccessController>,
-                                                 IContextLookup
+        internal class LookupByContext<TContext> : AbstractLookup<Type, TContext, ICollectionAccessController>,
+                                                   IContextLookup
         {
-            internal ContextLookup(Type context) : base(context)
+            internal LookupByContext(Type context) : base(context)
             {
             }
 
@@ -129,11 +132,11 @@ namespace Anvil.Unity.DOTS.Jobs
         // PUBLIC STATIC API
         //*************************************************************************************************************
 
-        private static WorldLookup s_WorldLookup;
+        private static LookupByWorld s_LookupByWorld;
 
-        private static WorldLookup Lookup
+        private static LookupByWorld Lookup
         {
-            get => s_WorldLookup ?? (s_WorldLookup = new WorldLookup());
+            get => s_LookupByWorld ?? (s_LookupByWorld = new LookupByWorld());
         }
 
         //Ensures the proper state with DomainReloading turned off in the Editor
@@ -150,13 +153,13 @@ namespace Anvil.Unity.DOTS.Jobs
         /// </summary>
         public static void Dispose()
         {
-            s_WorldLookup?.Dispose();
-            s_WorldLookup = null;
+            s_LookupByWorld?.Dispose();
+            s_LookupByWorld = null;
         }
 
         /// <summary>
-        /// Removes an instance of an <see cref="CollectionAccessController{TContext}"/> for a given key.
-        /// Will gracefully do nothing if it doesn't exist.
+        /// Removes an instance of a <see cref="CollectionAccessController{TContext}"/> for a given key.
+        /// Will do nothing if it doesn't exist.
         ///
         /// NOTE: You are responsible for disposing the instance if necessary.
         /// <seealso cref="Dispose"/> for a full cleanup of all instances.
@@ -166,12 +169,12 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <typeparam name="TContext">The type of key to use to get an instance of an <see cref="CollectionAccessController{TContext}"/></typeparam>
         public static void Remove<TContext>(World world, TContext context)
         {
-            if (!Lookup.TryGet(world, out TypeLookup typeLookup))
+            if (!Lookup.TryGet(world, out LookupByType lookupByType))
             {
                 return;
             }
 
-            typeLookup.Remove(context);
+            lookupByType.Remove(context);
         }
 
         /// <summary>
@@ -184,8 +187,8 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <returns>The <see cref="CollectionAccessController{TKey}"/> instance.</returns>
         public static CollectionAccessController<TContext> GetOrCreate<TContext>(World world, TContext context)
         {
-            TypeLookup typeLookup = Lookup.GetOrCreate(world);
-            return typeLookup.GetOrCreate(context);
+            LookupByType lookupByType = Lookup.GetOrCreate(world);
+            return lookupByType.GetOrCreate(context);
         }
     }
 }

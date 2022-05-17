@@ -35,12 +35,12 @@ namespace Anvil.Unity.DOTS.Jobs
     ///
     /// ----- CLEAN UP PHASE -----
     /// - The collection used above needs to be disposed but we need to ensure all reading and writing are complete.
-    /// - The collection disposes using <see cref="Acquire"/> with access type of <see cref="AccessType.ForDisposal"/>
+    /// - The collection disposes using <see cref="Acquire"/> with access type of <see cref="AccessType.Disposal"/>
     /// - This means that all reading and writing from the collection has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="Acquire"/> will fail unless <see cref="Reset"/> is called.
     /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
     /// </remarks>
     public class CollectionAccessController<TContext> : AbstractAnvilBase,
-                                                        CollectionAccessControlUtil.ICollectionAccessController
+                                                        CollectionAccessManager.ICollectionAccessController
     {
         private enum AcquisitionState
         {
@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
-        private readonly CollectionAccessControlUtil.ContextLookup<TContext> m_ContextLookup;
+        private readonly CollectionAccessManager.LookupByContext<TContext> m_LookupByContext;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private string m_AcquireCallerInfo;
@@ -73,10 +73,10 @@ namespace Anvil.Unity.DOTS.Jobs
             get;
         }
 
-        internal CollectionAccessController(TContext context, CollectionAccessControlUtil.ContextLookup<TContext> contextLookup)
+        internal CollectionAccessController(TContext context, CollectionAccessManager.LookupByContext<TContext> lookupByContext)
         {
             Context = context;
-            m_ContextLookup = contextLookup;
+            m_LookupByContext = lookupByContext;
         }
 
         protected override void DisposeSelf()
@@ -87,7 +87,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
 
             //Remove ourselves from the chain
-            m_ContextLookup.Remove(Context);
+            m_LookupByContext.Remove(Context);
 
             base.DisposeSelf();
         }
@@ -102,7 +102,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// or is being double buffered. The collection itself needs to be disposed and recreated but from the higher
         /// level point of view of reading and writing to "data" we want to use the same access controller.
         ///
-        /// You would <see cref="Acquire"/> with <see cref="AccessType.ForDisposal"/> and then dispose the old
+        /// You would <see cref="Acquire"/> with <see cref="AccessType.Disposal"/> and then dispose the old
         /// collection and then call <see cref="Reset"/> on the <see cref="CollectionAccessController{TContext}"/>
         /// to reflect that there is a new collection to read from/write to.
         /// </remarks>
@@ -132,7 +132,7 @@ namespace Anvil.Unity.DOTS.Jobs
             JobHandle acquiredHandle = default;
             switch (accessType)
             {
-                case AccessType.ForDisposal:
+                case AccessType.Disposal:
                     m_State = AcquisitionState.Disposing;
                     acquiredHandle = m_ExclusiveWriteDependency;
                     break;
