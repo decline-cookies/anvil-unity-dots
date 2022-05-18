@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Systems;
 using Anvil.Unity.DOTS.Util;
 using Unity.Entities;
 
@@ -27,8 +28,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// ALL systems in the project who touch the <see cref="DynamicBuffer{T}"/> in question to use the
     /// <see cref="CollectionAccessController{TContext}"/> which isn't always feasible.
     /// </remarks>
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
-    public partial class DynamicBufferSharedWriteDataSystem : SystemBase
+    public partial class DynamicBufferSharedWriteDataSystem : AbstractDataSystem
     {
         private LookupByComponentType m_LookupByComponentType;
 
@@ -38,9 +38,8 @@ namespace Anvil.Unity.DOTS.Jobs
             return m_LookupByComponentType.GetOrCreate<T>();
         }
 
-        protected override void OnCreate()
+        protected override void Init()
         {
-            base.OnCreate();
             m_LookupByComponentType = new LookupByComponentType(World);
         }
 
@@ -48,10 +47,6 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             m_LookupByComponentType.Dispose();
             base.OnDestroy();
-        }
-
-        protected override void OnUpdate()
-        {
         }
 
 

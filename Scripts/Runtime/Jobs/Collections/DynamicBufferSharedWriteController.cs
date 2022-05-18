@@ -58,10 +58,10 @@ namespace Anvil.Unity.DOTS.Jobs
     /// ALL OF THESE SHOULD BE VERY RARE
     ///
     /// - The <see cref="WorldCache"/> checks to see if it should be rebuilt by the number of systems in each
-    /// <see cref="ComponentSystemGroup"/>. It could be possible to reorder systems that touch your
-    /// <see cref="IBufferElementData"/> or have a combination of add/removes that keeps the count the same and thus
-    /// the <see cref="WorldCache"/> may not update properly and you will have to update manually
-    /// via <see cref="WorldCache.ForceRebuild"/>.
+    /// <see cref="ComponentSystemGroup"/>. If the system count between checks does not change
+    /// (system reorder or balanced adds/removes) the <see cref="WorldCache" /> will not get automatically updated
+    /// and therefore is unable to correctly infer system dependencies. To work around this limitation
+    /// call <see cref="WorldCache.ForceRebuild"/> after adding, removing or re-ordering systems.
     ///
     /// - If you are using <see cref="EntityQuery"/>s that your Systems aren't aware of.
     /// Ex. Queries created with <see cref="EntityManager.CreateEntityQuery"/> will not detect jobs that touch your
@@ -244,6 +244,7 @@ namespace Anvil.Unity.DOTS.Jobs
         private readonly DynamicBufferSharedWriteDataSystem.LookupByComponentType m_LookupByComponentType;
 
         private JobHandle m_SharedWriteDependency;
+        private int m_ExecutionOrderOfLastSharedWriteDepedency;
 
         /// <summary>
         /// The <see cref="ComponentType"/> of <see cref="IBufferElementData"/> this instance is associated with.
@@ -308,22 +309,36 @@ namespace Anvil.Unity.DOTS.Jobs
             if (callingSystemOrder == 0)
             {
                 m_SharedWriteDependency = callingSystemDependency;
+                m_ExecutionOrderOfLastSharedWriteDepedency = callingSystemOrder;
             }
-            //Otherwise we want to check the system that executed before us to see what kind of lock they had 
+            //Otherwise we want to check the system(s) that executed before us to see what kind of lock they had 
             //on our IBufferElementData
             else
             {
-                ComponentSystemBase previousSystem = m_LocalCache.GetSystemAtExecutionOrder(callingSystemOrder - 1);
-
-                //If that system was a shared writable system, we don't want to move our dependency up so that we 
-                //can also share the write. If not, we move it up.
-                if (!m_SharedWriteSystems.Contains(previousSystem))
+                //We want to loop backwards to see if an exclusive write or shared read was inserted
+                //in the case where a shared write system DOESN'T call this GetSharedWriteDependency
+                for (int i = callingSystemOrder - 1; i > m_ExecutionOrderOfLastSharedWriteDepedency; --i)
                 {
+                    //If that system was a shared writable system, we don't want to move our dependency up so that we 
+                    //can also share the write. If not, we move it up.
+                    if (IsSystemAtExecutionOrderSharedWritable(i))
+                    {
+                        continue;
+                    }
+
                     m_SharedWriteDependency = callingSystemDependency;
+                    m_ExecutionOrderOfLastSharedWriteDepedency = callingSystemOrder;
+                    break;
                 }
             }
 
             return m_SharedWriteDependency;
+        }
+
+        private bool IsSystemAtExecutionOrderSharedWritable(int executionOrder)
+        {
+            ComponentSystemBase system = m_LocalCache.GetSystemAtExecutionOrder(executionOrder);
+            return m_SharedWriteSystems.Contains(system);
         }
         
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.ForceSetSharedWriteDependency"/>

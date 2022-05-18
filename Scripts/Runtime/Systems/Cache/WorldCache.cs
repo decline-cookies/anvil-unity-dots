@@ -108,6 +108,12 @@ namespace Anvil.Unity.DOTS.Systems
             Version++;
             m_OrderedSystemCaches.Clear();
             m_OrderedSystemGroupCaches.Clear();
+            //Because a system instance can be part of multiple groups, we need to clear the groups in case
+            //we were removed from one of the groups. We'll get properly added to all groups in the rebuild process.
+            foreach (SystemCache systemCache in m_SystemCacheLookup.Values)
+            {
+                systemCache.ClearGroups();
+            }
 
             PlayerLoopSystem rootPlayerLoopSystem = PlayerLoop.GetCurrentPlayerLoop();
             ParsePlayerLoopSystem(ref rootPlayerLoopSystem);
@@ -159,6 +165,8 @@ namespace Anvil.Unity.DOTS.Systems
         private void ParseSystemGroup(SystemGroupCache parentGroupCache, ComponentSystemGroup group)
         {
             SystemGroupCache systemGroupCache = (SystemGroupCache)GetOrCreateSystemCache(parentGroupCache, group);
+            //Ensure systems are sorted properly
+            group.SortSystems();
             m_OrderedSystemGroupCaches.Add(systemGroupCache);
             m_OrderedSystemCaches.Add(systemGroupCache);
             systemGroupCache.RebuildIfNeeded(parentGroupCache);
