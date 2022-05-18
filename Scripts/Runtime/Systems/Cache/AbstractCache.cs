@@ -1,6 +1,6 @@
 using Anvil.CSharp.Core;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Helper class to aid with caching

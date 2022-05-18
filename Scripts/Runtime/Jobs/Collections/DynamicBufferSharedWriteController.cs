@@ -1,5 +1,5 @@
 using Anvil.CSharp.Core;
-using Anvil.Unity.DOTS.Util;
+using Anvil.Unity.DOTS.Systems;
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -31,7 +31,13 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="callingSystem">The <see cref="SystemBase"/> that is doing the shared writing.</param>
         /// <param name="callingSystemDependency">The incoming Dependency <see cref="JobHandle"/> for the <paramref name="callingSystem"/></param>
         /// <returns>The <see cref="JobHandle"/> to schedule shared writing jobs</returns>
-        JobHandle GetSharedWriteJobHandle(SystemBase callingSystem, JobHandle callingSystemDependency);
+        JobHandle GetSharedWriteDependency(SystemBase callingSystem, JobHandle callingSystemDependency);
+
+        /// <summary>
+        /// Sets the shared write dependency to the passed in <see cref="JobHandle"/>
+        /// </summary>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> to set to</param>
+        void ForceSetSharedWriteDependency(JobHandle dependsOn);
     }
 
     /// <summary>
@@ -284,8 +290,8 @@ namespace Anvil.Unity.DOTS.Jobs
             m_SharedWriteSystems.Remove(system);
         }
 
-        /// <inheritdoc cref="IDynamicBufferSharedWriteController.GetSharedWriteJobHandle"/>
-        public JobHandle GetSharedWriteJobHandle(SystemBase callingSystem, JobHandle callingSystemDependency)
+        /// <inheritdoc cref="IDynamicBufferSharedWriteController.GetSharedWriteDependency"/>
+        public JobHandle GetSharedWriteDependency(SystemBase callingSystem, JobHandle callingSystemDependency)
         {
             Debug.Assert(m_SharedWriteSystems.Contains(callingSystem), $"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
 
@@ -318,6 +324,12 @@ namespace Anvil.Unity.DOTS.Jobs
             }
 
             return m_SharedWriteDependency;
+        }
+        
+        /// <inheritdoc cref="IDynamicBufferSharedWriteController.ForceSetSharedWriteDependency"/>
+        public void ForceSetSharedWriteDependency(JobHandle dependsOn)
+        {
+            m_SharedWriteDependency = dependsOn;
         }
     }
 }

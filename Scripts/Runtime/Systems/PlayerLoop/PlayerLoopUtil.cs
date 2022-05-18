@@ -3,7 +3,7 @@ using System.Reflection;
 using Unity.Entities;
 using UnityEngine.LowLevel;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Helper class for exposing and dealing with some <see cref="PlayerLoopSystem"/> internals.
