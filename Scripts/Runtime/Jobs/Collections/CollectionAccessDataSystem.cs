@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Systems;
 using Anvil.Unity.DOTS.Util;
 using System;
 using Unity.Collections.LowLevel.Unsafe;
@@ -18,8 +19,7 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - <see cref="ComponentDependencyManager"/>)
     /// will throw errors if you handle it incorrectly but manually managing dependencies is messy and error prone.
     /// </remarks>
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
-    public partial class CollectionAccessDataSystem : SystemBase
+    public partial class CollectionAccessDataSystem : AbstractDataSystem
     {
         private LookupByType m_LookupByType;
 
@@ -48,9 +48,8 @@ namespace Anvil.Unity.DOTS.Jobs
             m_LookupByType.Remove(context);
         }
 
-        protected override void OnCreate()
+        protected override void Init()
         {
-            base.OnCreate();
             m_LookupByType = new LookupByType(World);
         }
 
@@ -58,10 +57,6 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             m_LookupByType.Dispose();
             base.OnDestroy();
-        }
-
-        protected override void OnUpdate()
-        {
         }
 
         //*************************************************************************************************************

@@ -11,15 +11,6 @@ namespace Anvil.Unity.DOTS.Systems
     public class SystemCache
     {
         /// <summary>
-        /// The <see cref="SystemGroupCache"/> this is part of.
-        /// </summary>
-        public SystemGroupCache GroupCache
-        {
-            get;
-            private set;
-        }
-        
-        /// <summary>
         /// The <see cref="ComponentSystemBase"/> this cache represents
         /// </summary>
         public ComponentSystemBase System
@@ -44,17 +35,24 @@ namespace Anvil.Unity.DOTS.Systems
             get;
             private set;
         }
-        
+
+        private readonly HashSet<SystemGroupCache> m_GroupCaches = new HashSet<SystemGroupCache>();
+
         internal SystemCache(SystemGroupCache groupCache, ComponentSystemBase system)
         {
-            GroupCache = groupCache;
+            m_GroupCaches.Add(groupCache);
             System = system;
+        }
+
+        internal void ClearGroups()
+        {
+            m_GroupCaches.Clear();
         }
 
         internal virtual void RebuildIfNeeded(SystemGroupCache parentGroupCache)
         {
-            //No need to check if we're different, just assign
-            GroupCache = parentGroupCache;
+            //Will ignore if already added
+            m_GroupCaches.Add(parentGroupCache);
             int currentQueryCount = System.EntityQueries.Length;
             Debug.Assert(currentQueryCount >= QueryCount, $"System queries decreased!");
             if (currentQueryCount > QueryCount)
