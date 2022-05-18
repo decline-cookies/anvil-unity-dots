@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Systems;
+using Anvil.Unity.DOTS.Util;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
 using Unity.Burst;

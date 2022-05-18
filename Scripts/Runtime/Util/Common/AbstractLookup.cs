@@ -2,7 +2,7 @@ using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
 
-namespace Anvil.Unity.DOTS.Systems
+namespace Anvil.Unity.DOTS.Util
 {
     /// <summary>
     /// Helper class used to make static lookups a little nicer to use and not entering

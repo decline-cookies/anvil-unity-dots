@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Systems
+namespace Anvil.Unity.DOTS.Util
 {
     /// <summary>
     /// Helper extensions when working with <see cref="EntityQuery"/>s.

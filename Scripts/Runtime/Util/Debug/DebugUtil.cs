@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Systems
+namespace Anvil.Unity.DOTS.Util
 {
     /// <summary>
     /// Useful helpers to aid in debugging
