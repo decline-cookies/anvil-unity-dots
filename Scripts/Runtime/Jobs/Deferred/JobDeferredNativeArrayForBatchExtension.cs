@@ -25,8 +25,7 @@ namespace Anvil.Unity.DOTS.Jobs
             atomicSafetyHandlePtr = DeferredNativeArrayUnsafeUtility.GetSafetyHandlePointer(ref deferredNativeArray);
 #endif
 
-            IntPtr reflectionData = JobDeferredNativeArrayForBatchProducer<TJob>.s_JobReflectionData.Data;
-            CheckReflectionDataCorrect(reflectionData);
+            IntPtr reflectionData = JobDeferredNativeArrayForBatchProducer<TJob>.GetReflectionData();
 
 #if UNITY_2020_2_OR_NEWER
             const ScheduleMode SCHEDULE_MODE = ScheduleMode.Parallel;
@@ -52,7 +51,23 @@ namespace Anvil.Unity.DOTS.Jobs
             where TJob : struct, IJobDeferredNativeArrayForBatch
         {
             // ReSharper disable once StaticMemberInGenericType
-            internal static readonly SharedStatic<IntPtr> s_JobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobDeferredNativeArrayForBatchProducer<TJob>>();
+            private static readonly SharedStatic<IntPtr> s_JobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobDeferredNativeArrayForBatchProducer<TJob>>();
+
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            private static void CheckReflectionDataCorrect(IntPtr reflectionData)
+            {
+                if (reflectionData == IntPtr.Zero)
+                {
+                    throw new InvalidOperationException("Reflection data was not set up by a call to Initialize()");
+                }
+            }
+
+            internal static IntPtr GetReflectionData()
+            {
+                IntPtr reflectionData = s_JobReflectionData.Data;
+                CheckReflectionDataCorrect(reflectionData);
+                return reflectionData;
+            }
 
             [Preserve]
             internal static void Initialize()
@@ -111,15 +126,6 @@ namespace Anvil.Unity.DOTS.Jobs
             where TJob : struct, IJobDeferredNativeArrayForBatch
         {
             JobDeferredNativeArrayForBatchProducer<TJob>.Initialize();
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckReflectionDataCorrect(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-            {
-                throw new InvalidOperationException("Reflection data was not set up by a call to Initialize()");
-            }
         }
     }
 }

@@ -20,7 +20,8 @@ namespace Anvil.Unity.DOTS.Collections
     /// <see cref="DeferredCreate"/> when the length of the array is known. This will allocate the right
     /// size of <see cref="NativeArray{T}"/> to act on in your job and populate.
     ///
-    /// In your later jobs that used <see cref="AsDeferredJobArray"/> it will be populated properly.
+    /// In your later jobs that were provided references using <see cref="AsDeferredJobArray"/> the collection
+    /// will be populated properly.
     /// </summary>
     /// <remarks>
     /// This could be accomplished using a <see cref="NativeList{T}"/> but this class is more clear about its intent
@@ -125,13 +126,12 @@ namespace Anvil.Unity.DOTS.Collections
         }
         
         /// <summary>
-        /// If <see cref="DeferredCreate"/> has NOT yet been called. (Length is 0)
-        /// This will return true.
-        /// False if the array was properly sized and Length is greater than 0.
+        /// True if <see cref="DeferredCreate"/> has NOT yet been called
+        /// False if it was called.
         /// </summary>
         public unsafe bool IsPendingDeferredCreate
         {
-            get => m_BufferInfo->Length == 0;
+            get => m_BufferInfo != null && m_BufferInfo->Buffer == null;
         }
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace Anvil.Unity.DOTS.Collections
         [BurstDiscard]
         private unsafe void AssertForDeferredCreate()
         {
-            Debug.Assert(m_BufferInfo->Length == 0, $"{nameof(DeferredNativeArray<T>)} has already been created! Cannot call {nameof(DeferredCreate)} more than once.");
+            Debug.Assert(!IsPendingDeferredCreate, $"{nameof(DeferredNativeArray<T>)} has already been created! Cannot call {nameof(DeferredCreate)} more than once.");
         }
         
         /// <summary>
@@ -258,7 +258,7 @@ namespace Anvil.Unity.DOTS.Collections
         [BurstDiscard]
         private unsafe void AssertForAsDeferredJobArray()
         {
-            Debug.Assert(m_BufferInfo->Length > 0, $"You are trying to call {nameof(AsDeferredJobArray)} after {nameof(DeferredCreate)} has already been called which is not allowed.");
+            Debug.Assert(IsPendingDeferredCreate, $"You are trying to call {nameof(AsDeferredJobArray)} after {nameof(DeferredCreate)} has already been called which is not allowed.");
         }
 
         //*************************************************************************************************************
