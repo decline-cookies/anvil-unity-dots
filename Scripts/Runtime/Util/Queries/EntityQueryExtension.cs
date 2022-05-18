@@ -2,12 +2,12 @@ using System;
 using System.Reflection;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Helper extensions when working with <see cref="EntityQuery"/>s.
     /// </summary>
-    public static class EntityQueryExtensions
+    public static class EntityQueryExtension
     {
         private delegate ComponentType[] GetReadAndWriteTypesDelegate(ref EntityQuery entityQuery);
         

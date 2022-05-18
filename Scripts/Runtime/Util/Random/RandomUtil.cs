@@ -3,7 +3,7 @@ using Unity.Mathematics;
 using DateTime = System.DateTime;
 using RuntimeInitializeLoadType = UnityEngine.RuntimeInitializeLoadType;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Utility class for simplifying getting access to a <see cref="Random"/> instance.

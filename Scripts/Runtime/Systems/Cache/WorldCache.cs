@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
+using UnityEngine;
 using UnityEngine.LowLevel;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Represents the cached state of a <see cref="World"/>
@@ -17,7 +18,7 @@ namespace Anvil.Unity.DOTS.Util
         private readonly List<SystemGroupCache> m_OrderedSystemGroupCaches = new List<SystemGroupCache>();
 
         private int m_LastRebuildCheckFrameCount;
-        
+
         /// <summary>
         /// The <see cref="World"/> this represents.
         /// </summary>
@@ -25,12 +26,12 @@ namespace Anvil.Unity.DOTS.Util
         {
             get;
         }
-        
+
         internal WorldCache(World world)
         {
             World = world;
         }
-        
+
         /// <summary>
         /// Given a set of <see cref="ComponentType"/>s, populate a list with all systems
         /// that have <see cref="EntityQuery"/>s that will write/read to any <see cref="ComponentType"/>
@@ -46,22 +47,21 @@ namespace Anvil.Unity.DOTS.Util
             {
                 foreach (ComponentType componentType in componentTypes)
                 {
-                    if (!systemCache.QueryComponentTypes.Contains(componentType))
+                    if (systemCache.QueryComponentTypes.Contains(componentType))
                     {
-                        continue;
+                        matchingSystems.Add(systemCache.System);
+                        break;
                     }
-                    matchingSystems.Add(systemCache.System);
-                    break;
                 }
             }
         }
-        
+
         /// <summary>
         /// Forces a rebuild of the cache
         /// </summary>
-        public void ManualRebuild()
+        public void ForceRebuild()
         {
-            m_LastRebuildCheckFrameCount = UnityEngine.Time.frameCount;
+            m_LastRebuildCheckFrameCount = Time.frameCount;
             Rebuild();
         }
 
@@ -72,21 +72,22 @@ namespace Anvil.Unity.DOTS.Util
         {
             //This might be called many times a frame by many different callers.
             //We only want to do this check once per frame.
-            int currentFrameCount = UnityEngine.Time.frameCount;
+            int currentFrameCount = Time.frameCount;
             if (m_LastRebuildCheckFrameCount == currentFrameCount)
             {
                 return;
             }
+
             m_LastRebuildCheckFrameCount = currentFrameCount;
-            
-            
+
+
             //If we've never been built before
             if (Version == INITIAL_VERSION)
             {
                 Rebuild();
                 return;
             }
-            
+
             //If any of our groups have a different system count from the last time we built
             //Someone added a new system or removed a system
             //We can't tell if a new group was added or removed though
@@ -101,7 +102,7 @@ namespace Anvil.Unity.DOTS.Util
                 return;
             }
         }
-        
+
         private void Rebuild()
         {
             Version++;
@@ -116,18 +117,18 @@ namespace Anvil.Unity.DOTS.Util
         {
             if (playerLoopSystem.updateDelegate != null
              && COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type)
-             && PlayerLoopUtil.IsPlayerLoopSystemPartOfWorld(ref playerLoopSystem, World))
+             && PlayerLoopUtil.IsPlayerLoopSystemPartOfWorld(ref playerLoopSystem, World)
+             && PlayerLoopUtil.TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemGroup group))
             {
-                ComponentSystemGroup group = PlayerLoopUtil.GetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem);
                 ParseSystemGroup(null, group);
             }
-            
+
             //Phases won't have subsystems
             if (playerLoopSystem.subSystemList == null)
             {
                 return;
             }
-            
+
             //Loop through all children
             for (int i = 0; i < playerLoopSystem.subSystemList.Length; ++i)
             {
@@ -135,22 +136,22 @@ namespace Anvil.Unity.DOTS.Util
             }
         }
 
-        private SystemCache GetOrCreateSystemCache(SystemGroupCache groupCache, ComponentSystemBase system)
+        private SystemCache GetOrCreateSystemCache(SystemGroupCache parentGroupCache, ComponentSystemBase system)
         {
             //See if we've ever created this SystemCache before and create if not
             if (!m_SystemCacheLookup.TryGetValue(system, out SystemCache systemCache))
             {
                 if (system is ComponentSystemGroup group)
                 {
-                    systemCache = new SystemGroupCache(groupCache, group);
+                    systemCache = new SystemGroupCache(parentGroupCache, group);
                 }
                 else
                 {
-                    systemCache = new SystemCache(groupCache, system);
+                    systemCache = new SystemCache(parentGroupCache, system);
                 }
+
                 m_SystemCacheLookup.Add(system, systemCache);
             }
-            m_OrderedSystemCaches.Add(systemCache);
 
             return systemCache;
         }
@@ -159,6 +160,7 @@ namespace Anvil.Unity.DOTS.Util
         {
             SystemGroupCache systemGroupCache = (SystemGroupCache)GetOrCreateSystemCache(parentGroupCache, group);
             m_OrderedSystemGroupCaches.Add(systemGroupCache);
+            m_OrderedSystemCaches.Add(systemGroupCache);
             systemGroupCache.RebuildIfNeeded(parentGroupCache);
 
             IReadOnlyList<ComponentSystemBase> groupSystems = systemGroupCache.SystemGroup.Systems;
@@ -180,8 +182,8 @@ namespace Anvil.Unity.DOTS.Util
         private void ParseSystem(SystemGroupCache parentGroupCache, ComponentSystemBase system)
         {
             SystemCache systemCache = GetOrCreateSystemCache(parentGroupCache, system);
+            m_OrderedSystemCaches.Add(systemCache);
             systemCache.RebuildIfNeeded(parentGroupCache);
         }
-
     }
 }

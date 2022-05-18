@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Represents a cached state of a <see cref="ComponentSystemGroup"/>

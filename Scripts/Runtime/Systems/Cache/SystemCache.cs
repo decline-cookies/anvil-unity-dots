@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using Unity.Entities;
+using UnityEngine;
 
-namespace Anvil.Unity.DOTS.Util
+namespace Anvil.Unity.DOTS.Systems
 {
     /// <summary>
     /// Represents a cached state of a <see cref="ComponentSystemBase"/>
@@ -53,8 +54,9 @@ namespace Anvil.Unity.DOTS.Util
         {
             //No need to check if we're different, just assign
             GroupCache = parentGroupCache;
-            
-            if (QueryCount != System.EntityQueries.Length)
+            int currentQueryCount = System.EntityQueries.Length;
+            Debug.Assert(currentQueryCount >= QueryCount, $"System queries decreased!");
+            if (currentQueryCount > QueryCount)
             {
                 RebuildQueries();
             }
