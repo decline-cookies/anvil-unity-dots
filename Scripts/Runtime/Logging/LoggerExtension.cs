@@ -27,16 +27,16 @@ namespace Anvil.Unity.DOTS.Logging
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from the
         /// <see cref="Log.Logger" /> instance.
         /// </summary>
-        /// <typeparam name="PrefixStringType"></typeparam>
+        /// <typeparam name="TPrefixStringType"></typeparam>
         /// <param name="logger">The <see cref="Log.Logger" /> to copy configuration from.</param>
         /// <param name="appendToMessagePrefix">
         /// A string to append to the <see cref="Log.Logger" />'s existing prefix.
         /// (max length: <see cref="PrefixStringType.Capacity"/>)
         /// </param>
         /// <returns>A <see cref="BurstableLogger{PrefixStringType}" /> instance.</returns>
-        public static BurstableLogger<PrefixStringType> AsBurstable<PrefixStringType>(this in Log.Logger logger, string appendToMessagePrefix = null) where PrefixStringType : struct, INativeList<byte>, IUTF8Bytes
+        public static BurstableLogger<TPrefixStringType> AsBurstable<TPrefixStringType>(this in Log.Logger logger, string appendToMessagePrefix = null) where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
         {
-            return new BurstableLogger<PrefixStringType>(logger, appendToMessagePrefix);
+            return new BurstableLogger<TPrefixStringType>(logger, appendToMessagePrefix);
         }
     }
 }

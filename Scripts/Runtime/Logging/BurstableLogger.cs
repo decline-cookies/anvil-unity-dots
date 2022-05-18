@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Logging
     /// Automatically decorates log messages with contextual information including:
     ///  - Optional, per instance, message prefix
     /// </summary>
-    /// <typeparam name="PrefixStringType">
+    /// <typeparam name="TPrefixStringType">
     /// The FixedString type to use for the message prefix
     /// Select the shortest fixed string that will fit the prefix length.
     /// (usually <see cref="FixedString32Bytes" />)
@@ -25,12 +25,12 @@ namespace Anvil.Unity.DOTS.Logging
     /// This is a Burst limitation.
     /// </remarks>
     [BurstCompatible]
-    public readonly struct BurstableLogger<PrefixStringType> where PrefixStringType : struct, INativeList<byte>, IUTF8Bytes
+    public readonly struct BurstableLogger<TPrefixStringType> where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
     {
         /// <summary>
         /// The custom prefix to prepend to all messages sent through this instance.
         /// </summary>
-        public readonly PrefixStringType MessagePrefix;
+        public readonly TPrefixStringType MessagePrefix;
 
         /// <summary>
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from a 
@@ -56,7 +56,7 @@ namespace Anvil.Unity.DOTS.Logging
                     break;
 
                 case CopyError.Truncation:
-                    logger.Error($"The message prefix is too long for this {nameof(BurstableLogger<PrefixStringType>)} and will be truncated (MaxLength:{MessagePrefix.Capacity} PrefixLength:{managedMessagePrefix.Length}). Select a different larger prefix string type for this logger.");
+                    logger.Error($"The message prefix is too long for this {nameof(BurstableLogger<TPrefixStringType>)} and will be truncated (MaxLength:{MessagePrefix.Capacity} PrefixLength:{managedMessagePrefix.Length}). Select a different larger prefix string type for this logger.");
                     break;
 
                 default:
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/>.
         /// </summary>
         /// <param name="messagePrefix">The custom prefix to prepend to all messages sent through this instance.</param>
-        public BurstableLogger(in PrefixStringType messagePrefix)
+        public BurstableLogger(in TPrefixStringType messagePrefix)
         {
             MessagePrefix = messagePrefix;
         }
