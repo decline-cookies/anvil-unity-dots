@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Systems;
+using Anvil.Unity.DOTS.Util;
 using System;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;

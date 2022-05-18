@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Anvil.Unity.DOTS.Systems
+namespace Anvil.Unity.DOTS.Util
 {
     /// <summary>
     /// Utility methods for working with Native Collections in a parallel manner.

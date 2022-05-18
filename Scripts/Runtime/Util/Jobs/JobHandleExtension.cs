@@ -1,6 +1,6 @@
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Systems
+namespace Anvil.Unity.DOTS.Util
 {
     public static class JobHandleExtension
     {

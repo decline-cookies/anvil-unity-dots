@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Systems;
+using Anvil.Unity.DOTS.Util;
 using Unity.Burst;
 using Unity.Jobs;
 
