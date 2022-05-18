@@ -2,6 +2,7 @@ using System;
 using Anvil.CSharp.Logging;
 using Unity.Collections;
 using Anvil.Unity.Logging;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Logging
 {
@@ -27,10 +28,15 @@ namespace Anvil.Unity.DOTS.Logging
     [BurstCompatible]
     public readonly struct BurstableLogger<TPrefixStringType> where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
     {
+        private const int UNSET_THREAD_INDEX = -1;
+
         /// <summary>
         /// The custom prefix to prepend to all messages sent through this instance.
         /// </summary>
         public readonly TPrefixStringType MessagePrefix;
+
+        [NativeSetThreadIndex]
+        private readonly int m_ThreadIndex;
 
         /// <summary>
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from a 
@@ -46,6 +52,7 @@ namespace Anvil.Unity.DOTS.Logging
         [NotBurstCompatible]
         public BurstableLogger(Log.Logger logger, string appendToMessagePrefix)
         {
+            m_ThreadIndex = UNSET_THREAD_INDEX;
             string managedMessagePrefix = logger.MessagePrefix + appendToMessagePrefix;
             MessagePrefix = default;
             CopyError error = FixedStringMethods.CopyFrom(ref MessagePrefix, managedMessagePrefix);
@@ -70,6 +77,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// <param name="messagePrefix">The custom prefix to prepend to all messages sent through this instance.</param>
         public BurstableLogger(in TPrefixStringType messagePrefix)
         {
+            m_ThreadIndex = UNSET_THREAD_INDEX;
             MessagePrefix = messagePrefix;
         }
 
@@ -82,8 +90,7 @@ namespace Anvil.Unity.DOTS.Logging
         [UnityLogListener.Exclude]
         public void Debug(in FixedString64Bytes message)
         {
-            AssertMessageLength(message);
-            UnityEngine.Debug.Log($"{MessagePrefix}{message}");
+            Debug<FixedString64Bytes>(message);
         }
 
         /// <summary>
@@ -100,7 +107,14 @@ namespace Anvil.Unity.DOTS.Logging
         public void Debug<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
         {
             AssertMessageLength(message);
-            UnityEngine.Debug.Log($"{MessagePrefix}{message}");
+            if (m_ThreadIndex == UNSET_THREAD_INDEX)
+            {
+                UnityEngine.Debug.Log($"{MessagePrefix}{message}");
+            }
+            else
+            {
+                UnityEngine.Debug.Log($"(Thread:{m_ThreadIndex}) {MessagePrefix}{message}");
+            }
         }
 
         /// <summary>
@@ -112,8 +126,7 @@ namespace Anvil.Unity.DOTS.Logging
         [UnityLogListener.Exclude]
         public void Warning(in FixedString64Bytes message)
         {
-            AssertMessageLength(message);
-            UnityEngine.Debug.LogWarning($"{MessagePrefix}{message}");
+            Warning<FixedString64Bytes>(message);
         }
 
         /// <summary>
@@ -130,7 +143,14 @@ namespace Anvil.Unity.DOTS.Logging
         public void Warning<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
         {
             AssertMessageLength(message);
-            UnityEngine.Debug.LogWarning($"{MessagePrefix}{message}");
+            if (m_ThreadIndex == UNSET_THREAD_INDEX)
+            {
+                UnityEngine.Debug.LogWarning($"{MessagePrefix}{message}");
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning($"(Thread:{m_ThreadIndex}) {MessagePrefix}{message}");
+            }
         }
 
         /// <summary>
@@ -142,8 +162,7 @@ namespace Anvil.Unity.DOTS.Logging
         [UnityLogListener.Exclude]
         public void Error(in FixedString64Bytes message)
         {
-            AssertMessageLength(message);
-            UnityEngine.Debug.LogError($"{MessagePrefix}{message}");
+            Error<FixedString64Bytes>(message);
         }
 
         /// <summary>
@@ -160,7 +179,14 @@ namespace Anvil.Unity.DOTS.Logging
         public void Error<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
         {
             AssertMessageLength(message);
-            UnityEngine.Debug.LogError($"{MessagePrefix}{message}");
+            if (m_ThreadIndex == UNSET_THREAD_INDEX)
+            {
+                UnityEngine.Debug.LogError($"{MessagePrefix}{message}");
+            }
+            else
+            {
+                UnityEngine.Debug.LogError($"(Thread:{m_ThreadIndex}) {MessagePrefix}{message}");
+            }
         }
 
         private void AssertMessageLength<T>(in T message) where T : struct, INativeList<byte>, IUTF8Bytes
