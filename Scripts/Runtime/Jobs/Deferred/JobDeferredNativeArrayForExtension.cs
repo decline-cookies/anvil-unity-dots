@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Collections;
+using Anvil.Unity.DOTS.Data;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
