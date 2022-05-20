@@ -171,6 +171,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// Disposes the collection
         /// </summary>
+        [WriteAccessRequired]
         public void Dispose()
         {
             if (!IsCreated)
@@ -180,10 +181,32 @@ namespace Anvil.Unity.DOTS.Data
 
             Allocator allocator = m_BufferInfo->Allocator;
 
+            Clear();
+
+            UnsafeUtility.Free(m_Lanes, allocator);
+            UnsafeUtility.Free(m_BufferInfo, allocator);
+
+            m_Lanes = null;
+            m_BufferInfo = null;
+        }
+        
+        /// <summary>
+        /// Clears all data in the collection
+        /// </summary>
+        [WriteAccessRequired]
+        public void Clear()
+        {
+            if (!IsCreated)
+            {
+                return;
+            }
+
+            Allocator allocator = m_BufferInfo->Allocator;
+            
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 LaneInfo* lane = m_Lanes + i;
-
+                
                 BlockInfo* block = lane->FirstBlock;
                 while (block != null)
                 {
@@ -193,20 +216,20 @@ namespace Anvil.Unity.DOTS.Data
                     UnsafeUtility.Free(currentBlock->Data, allocator);
                     UnsafeUtility.Free(currentBlock, allocator);
                 }
+                
+                lane->FirstBlock = null;
+                lane->CurrentWriterBlock = null;
+                lane->WriterHead = null;
+                lane->WriterEndOfBlock = null;
+                lane->Count = 0;
             }
-
-            UnsafeUtility.Free(m_Lanes, allocator);
-            UnsafeUtility.Free(m_BufferInfo, allocator);
-
-            m_Lanes = null;
-            m_BufferInfo = null;
         }
 
         /// <summary>
         /// Schedules the disposal of the collection.
         /// </summary>
         /// <param name="inputDeps">The <see cref="JobHandle" /> to wait on before disposing</param>
-        /// <returns>A <see cref="JobHandle" /> for when disposal is complete</returns>
+        /// <returns>A <see cref="JobHandle"/> for when disposal is complete</returns>
         public JobHandle Dispose(JobHandle inputDeps)
         {
             DisposeJob disposeJob = new DisposeJob(this);
@@ -214,6 +237,17 @@ namespace Anvil.Unity.DOTS.Data
             m_Lanes = null;
 
             return disposeJobHandle;
+        }
+        
+        /// <summary>
+        /// Schedules the clearing of the collection.
+        /// </summary>
+        /// <param name="inputDeps">The <see cref="JobHandle"/> to wait on before clearing.</param>
+        /// <returns>A <see cref="JobHandle"/> for when clearing is complete</returns>
+        public JobHandle Clear(JobHandle inputDeps)
+        {
+            ClearJob clearJob = new ClearJob(this);
+            return clearJob.Schedule(inputDeps);
         }
 
         /// <summary>
@@ -615,6 +649,22 @@ namespace Anvil.Unity.DOTS.Data
             public void Execute()
             {
                 m_UnsafeTypedStream.Dispose();
+            }
+        }
+
+        [BurstCompile]
+        private struct ClearJob : IJob
+        {
+            private UnsafeTypedStream<T> m_UnsafeTypedStream;
+
+            public ClearJob(UnsafeTypedStream<T> unsafeTypedStream)
+            {
+                m_UnsafeTypedStream = unsafeTypedStream;
+            }
+
+            public void Execute()
+            {
+                m_UnsafeTypedStream.Clear();
             }
         }
     }

@@ -223,7 +223,7 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
             Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
-            StackFrame frame = new StackFrame(2, true);
+            StackFrame frame = new StackFrame(3, true);
             m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
         }
 
@@ -232,7 +232,7 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} was called multiple times. Last {nameof(ReleaseAsync)} was called from: {m_ReleaseCallerInfo}");
             Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(ReleaseAsync)} was called but the {nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
-            StackFrame frame = new StackFrame(2, true);
+            StackFrame frame = new StackFrame(3, true);
             m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
 
             Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");

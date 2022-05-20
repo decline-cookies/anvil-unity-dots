@@ -110,6 +110,13 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(nativeThreadIndex > 0 && nativeThreadIndex <= JobsUtility.MaxJobThreadCount);
             return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
         }
+        
+        public static int CollectionIndexForMainThread()
+        {
+            int mainThreadIndex = JOB_WORKER_MAXIMUM_COUNT.Data;
+            DetectMultipleXThreads(mainThreadIndex);
+            return mainThreadIndex;
+        }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [BurstDiscard]
