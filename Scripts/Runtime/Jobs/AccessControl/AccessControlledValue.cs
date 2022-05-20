@@ -11,13 +11,9 @@ namespace Anvil.Unity.DOTS.Jobs
     /// <typeparam name="T">The type of data to wrap access control to</typeparam>
     public class AccessControlledValue<T> : AbstractAnvilBase
     {
-        protected T Value
-        {
-            get;
-            set;
-        }
-
         private readonly AccessController m_AccessController;
+        
+        protected T m_Value;
 
         /// <summary>
         /// Creates a new instance of <see cref="AccessControlledValue{T}"/> for the passed in
@@ -26,14 +22,14 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="value">The data instance to wrap access control around.</param>
         public AccessControlledValue(T value)
         {
-            Value = value;
+            m_Value = value;
             m_AccessController = new AccessController();
         }
 
         protected override void DisposeSelf()
         {
             m_AccessController.Dispose();
-            (Value as IDisposable)?.Dispose();
+            (m_Value as IDisposable)?.Dispose();
             base.DisposeSelf();
         }
 
@@ -49,7 +45,7 @@ namespace Anvil.Unity.DOTS.Jobs
         public T Acquire(AccessType accessType)
         {
             m_AccessController.Acquire(accessType);
-            return Value;
+            return m_Value;
         }
 
         /// <summary>
@@ -66,7 +62,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <returns>A <see cref="JobHandle"/> to wait on before accessing the data</returns>
         public JobHandle AcquireAsync(AccessType accessType, out T value)
         {
-            value = Value;
+            value = m_Value;
             return m_AccessController.AcquireAsync(accessType);
         }
 
