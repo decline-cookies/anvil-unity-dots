@@ -37,6 +37,7 @@ namespace Anvil.Unity.DOTS.Data
             public int BlockSize;
             public int LaneCount;
             public Allocator Allocator;
+            public Allocator BlockAllocator;
         }
 
         /// <summary>
@@ -112,15 +113,36 @@ namespace Anvil.Unity.DOTS.Data
         {
             get => m_BufferInfo->BlockSize / ELEMENT_SIZE;
         }
+        
+        /// <summary>
+        /// Convenience constructor that fits as many elements into a 16kb block size and allows you to specify the
+        /// number of lanes.
+        /// </summary>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
+        /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
+        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, allocator, laneCount)
+        {
+        }
 
 
         /// <summary>
         /// Convenience constructor that fits as many elements into a 16kb block size and allows you to specify the
         /// number of lanes.
         /// </summary>
-        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
+        /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
         /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
-        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, laneCount)
+        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, blockAllocator, laneCount)
+        {
+        }
+        
+        /// <summary>
+        /// Convenience constructor that fits as many elements into a 16kb block size.
+        /// Sets the number of lanes to be the maximum amount of worker threads available plus the main thread.
+        /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
+        /// </summary>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
+        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, allocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
         {
         }
 
@@ -129,8 +151,9 @@ namespace Anvil.Unity.DOTS.Data
         /// Sets the number of lanes to be the maximum amount of worker threads available plus the main thread.
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
         /// </summary>
-        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
-        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
+        /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
+        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, blockAllocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
         {
         }
 
@@ -139,9 +162,21 @@ namespace Anvil.Unity.DOTS.Data
         /// smaller counts so that large blocks aren't allocated if not needed.
         /// </summary>
         /// <param name="elementsPerBlock">The number of elements to allocate space for in each block.</param>
-        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
         /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
-        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, int laneCount)
+        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, int laneCount) : this (elementsPerBlock, allocator,allocator, laneCount)
+        {
+        }
+
+        /// <summary>
+        /// More explicit constructor that allows for specifying how many elements to put into each block. Useful for
+        /// smaller counts so that large blocks aren't allocated if not needed.
+        /// </summary>
+        /// <param name="elementsPerBlock">The number of elements to allocate space for in each block.</param>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
+        /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
+        /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
+        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, Allocator blockAllocator, int laneCount)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Assert.IsTrue(elementsPerBlock > 0);
@@ -151,6 +186,7 @@ namespace Anvil.Unity.DOTS.Data
                                                              UnsafeUtility.AlignOf<BufferInfo>(),
                                                              allocator);
             m_BufferInfo->Allocator = allocator;
+            m_BufferInfo->BlockAllocator = blockAllocator;
             m_BufferInfo->BlockSize = elementsPerBlock * ELEMENT_SIZE;
             m_BufferInfo->LaneCount = laneCount;
 
@@ -201,7 +237,7 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
-            Allocator allocator = m_BufferInfo->Allocator;
+            Allocator blockAllocator = m_BufferInfo->BlockAllocator;
             
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
@@ -213,8 +249,8 @@ namespace Anvil.Unity.DOTS.Data
                     BlockInfo* currentBlock = block;
                     block = currentBlock->Next;
 
-                    UnsafeUtility.Free(currentBlock->Data, allocator);
-                    UnsafeUtility.Free(currentBlock, allocator);
+                    UnsafeUtility.Free(currentBlock->Data, blockAllocator);
+                    UnsafeUtility.Free(currentBlock, blockAllocator);
                 }
                 
                 lane->FirstBlock = null;
@@ -463,8 +499,8 @@ namespace Anvil.Unity.DOTS.Data
                 }
 
                 //Create the new block
-                BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->Allocator);
-                blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->Allocator);
+                BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->BlockAllocator);
+                blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->BlockAllocator);
                 blockPointer->Next = null;
 
                 //Update lane writing info
