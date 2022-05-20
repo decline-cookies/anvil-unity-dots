@@ -1,5 +1,4 @@
 using Anvil.CSharp.Core;
-using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Diagnostics;
 using Unity.Jobs;
@@ -14,33 +13,32 @@ namespace Anvil.Unity.DOTS.Jobs
     /// This can be a little bit complicated to wrap your head around so here is an example
     ///
     /// ----- EXTERNAL WRITE PHASE -----
-    /// - Multiple different systems want to write to the collection.
-    /// - They call <see cref="Acquire"/> with access type of <see cref="AccessType.SharedWrite"/>.
+    /// - Multiple different systems want to write to the data.
+    /// - They call <see cref="AcquireAsync"/> with access type of <see cref="AccessType.SharedWrite"/>.
     /// - This means that all those jobs can start at the same time.
     /// - NOTE: You as the developer must ensure that your jobs write safely during a <see cref="AccessType.SharedWrite"/>. Typically this is done by using the <see cref="NativeSetThreadIndex"/> attribute to guarantee unique writing.
-    /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TContext}"/> know that there is parallel writing going on. We cannot read or exclusive write until this done.
+    /// - All of those jobs use <see cref="ReleaseAsync"/> to let the <see cref="AccessController"/> know that there is parallel writing going on. We cannot read or exclusive write until this done.
     ///
     /// ----- INTERNAL WRITE PHASE -----
-    /// - A managing system now needs to do some work where it reads from and writes to the collection.
-    /// - It schedules it's job to do that using <see cref="Acquire"/> with access type of <see cref="AccessType.ExclusiveWrite"/>
+    /// - A managing system now needs to do some work where it reads from and writes to the data.
+    /// - It schedules it's job to do that using <see cref="AcquireAsync"/> with access type of <see cref="AccessType.ExclusiveWrite"/>
     /// - This means that it can do it's work once all the previous external writers and/or readers have completed.
-    /// - NOTE: Typically this means that one thread is reading/writing to more than one (up to all) possible buckets in a collection.
-    /// - This job then uses <see cref="Release"/> to the let the <see cref="CollectionAccessController{TContext}"/> know that there an exclusive write going on that cannot be interrupted by parallel writes or reads.
+    /// - NOTE: Typically this means that one thread is reading/writing to more than one (up to all) possible buckets in the data.
+    /// - This job then uses <see cref="ReleaseAsync"/> to the let the <see cref="AccessController"/> know that there an exclusive write going on that cannot be interrupted by parallel writes or reads.
     ///
     /// ----- EXTERNAL READ PHASE -----
-    /// - Multiple different systems want to read from the collection.
-    /// - They schedule their reading jobs using <see cref="Acquire"/> with access type of <see cref="AccessType.SharedRead"/>
+    /// - Multiple different systems want to read from the data.
+    /// - They schedule their reading jobs using <see cref="AcquireAsync"/> with access type of <see cref="AccessType.SharedRead"/>
     /// - This means that all those reading jobs can start at the same time.
-    /// - All of those jobs use <see cref="Release"/> to let the <see cref="CollectionAccessController{TContext}"/> know that there is reading going on. We cannot write again until this is done.
+    /// - All of those jobs use <see cref="ReleaseAsync"/> to let the <see cref="AccessController"/> know that there is reading going on. We cannot write again until this is done.
     ///
     /// ----- CLEAN UP PHASE -----
-    /// - The collection used above needs to be disposed but we need to ensure all reading and writing are complete.
-    /// - The collection disposes using <see cref="Acquire"/> with access type of <see cref="AccessType.Disposal"/>
-    /// - This means that all reading and writing from the collection has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="Acquire"/> will fail unless <see cref="Reset"/> is called.
+    /// - The data used above needs to be disposed but we need to ensure all reading and writing are complete.
+    /// - The data disposes using <see cref="AcquireAsync"/> with access type of <see cref="AccessType.Disposal"/>
+    /// - This means that all reading and writing from the data has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="AcquireAsync"/> will fail unless <see cref="Reset"/> is called.
     /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
     /// </remarks>
-    public class CollectionAccessController<TContext> : AbstractAnvilBase,
-                                                        CollectionAccessDataSystem.ICollectionAccessController
+    public class AccessController : AbstractAnvilBase
     {
         private enum AcquisitionState
         {
@@ -54,29 +52,17 @@ namespace Anvil.Unity.DOTS.Jobs
         private JobHandle m_ExclusiveWriteDependency;
         private JobHandle m_SharedWriteDependency;
         private JobHandle m_SharedReadDependency;
+        private JobHandle m_LastHandleAcquired;
 
         private AcquisitionState m_State;
-
-        private readonly CollectionAccessDataSystem.LookupByContext<TContext> m_LookupByContext;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private string m_AcquireCallerInfo;
         private string m_ReleaseCallerInfo;
-        private JobHandle m_LastHandleAcquired;
 #endif
 
-        /// <summary>
-        /// The Context this <see cref="CollectionAccessController{TContext}"/> was created with.
-        /// </summary>
-        public TContext Context
+        public AccessController()
         {
-            get;
-        }
-
-        internal CollectionAccessController(TContext context, CollectionAccessDataSystem.LookupByContext<TContext> lookupByContext)
-        {
-            Context = context;
-            m_LookupByContext = lookupByContext;
         }
 
         protected override void DisposeSelf()
@@ -86,45 +72,62 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
             Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
 
-            //Remove ourselves from the chain
-            m_LookupByContext.Remove(Context);
-
             base.DisposeSelf();
         }
 
         /// <summary>
-        /// Resets the internal state of this <see cref="CollectionAccessController{TContext}"/> so that it can
+        /// Resets the internal state of this <see cref="AccessController"/> so that it can
         /// be used again. 
         /// </summary>
         /// <remarks>
-        /// Typically this is used in cases where the underlying collection that you are using the
-        /// <see cref="CollectionAccessController{TContext}"/> to gate access to is created/destroyed each frame
-        /// or is being double buffered. The collection itself needs to be disposed and recreated but from the higher
-        /// level point of view of reading and writing to "data" we want to use the same access controller.
+        /// Typically this is used in cases where the underlying data that you are using the
+        /// <see cref="AccessController"/> to gate access to is created/destroyed each frame
+        /// or is being double buffered. The data itself needs to be disposed and recreated but from the higher
+        /// level point of view of reading and writing to the concept of the data we want to use the same
+        /// access controller.
         ///
-        /// You would <see cref="Acquire"/> with <see cref="AccessType.Disposal"/> and then dispose the old
-        /// collection and then call <see cref="Reset"/> on the <see cref="CollectionAccessController{TContext}"/>
-        /// to reflect that there is a new collection to read from/write to.
+        /// You would <see cref="AcquireAsync"/> with <see cref="AccessType.Disposal"/> and then dispose the old
+        /// data and then call <see cref="Reset"/> on the <see cref="AccessController"/>
+        /// to reflect that there is a new data to read from/write to.
         /// </remarks>
         /// <param name="initialDependency">Optional initial dependency to set access to.</param>
         public void Reset(JobHandle initialDependency = default)
         {
             m_State = AcquisitionState.Unacquired;
             m_ExclusiveWriteDependency = m_SharedWriteDependency = m_SharedReadDependency = initialDependency;
+            m_LastHandleAcquired = default;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_AcquireCallerInfo = string.Empty;
             m_ReleaseCallerInfo = string.Empty;
-            m_LastHandleAcquired = default;
 #endif
         }
 
         /// <summary>
-        /// Returns a <see cref="JobHandle"/> to schedule a job off of based on the desired <see cref="AccessType"/>.
+        /// Acquires access synchronously for a given <see cref="AccessType"/>
+        /// Will block on the calling thread if there are any jobs that need to complete before this
+        /// can be used.
+        ///
+        /// Typically this is used when wanting to perform main thread work on data.
         /// </summary>
-        /// <param name="accessType">The type of access to schedule the job off of.</param>
-        /// <returns>The <see cref="JobHandle"/> to wait upon.</returns>
-        public JobHandle Acquire(AccessType accessType)
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        public void Acquire(AccessType accessType)
+        {
+            JobHandle acquireDependency = AcquireAsync(accessType);
+            acquireDependency.Complete();
+        }
+
+        /// <summary>
+        /// Acquires access asynchronously for a given <see cref="AccessType"/>
+        /// A <see cref="JobHandle"/> will be returned to schedule jobs that require this access.
+        ///
+        /// Not respecting the <see cref="JobHandle"/> could lead to dependency errors.
+        ///
+        /// Typically this is used when wanting to perform work on data in a job to be scheduled.
+        /// </summary>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>A <see cref="JobHandle"/> to wait on before accessing</returns>
+        public JobHandle AcquireAsync(AccessType accessType)
         {
             Debug.Assert(!IsDisposed);
             ValidateAcquireState();
@@ -152,24 +155,33 @@ namespace Anvil.Unity.DOTS.Jobs
                     throw new ArgumentOutOfRangeException(nameof(accessType), accessType, $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
             }
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_LastHandleAcquired = acquiredHandle;
-#endif
 
             return acquiredHandle;
         }
 
         /// <summary>
-        /// Allows the <see cref="CollectionAccessController{TContext}"/> to be aware of the work that you are doing
-        /// for a specific <see cref="AccessType"/>. You must call <see cref="Release"/> after any call to <see cref="Acquire"/>
-        /// before you call <see cref="Acquire"/> again.
+        /// Releases access so other callers can use it.
+        /// Could potentially block on the calling thread if <see cref="AcquireAsync"/> was called first and the
+        /// dependency returned has not yet been completed.
+        ///
+        /// Typically this is used when main thread work on data is complete.
         /// </summary>
-        /// <param name="releaseAccessDependency">
-        /// The <see cref="JobHandle"/> to the job that is doing the reading or
-        /// writing from/to the underlying collection this <see cref="CollectionAccessController{TContext}"/>
-        /// is gating access to.
-        /// </param>
-        public void Release(JobHandle releaseAccessDependency)
+        public void Release()
+        {
+            ReleaseAsync(m_LastHandleAcquired);
+            m_LastHandleAcquired.Complete();
+        }
+
+        /// <summary>
+        /// Releases access so other callers can use it once the <paramref name="releaseAccessDependency"/>
+        /// is complete.
+        ///
+        /// Typically this used when job work on data needs to be completed before other callers can use that data
+        /// again.
+        /// </summary>
+        /// <param name="releaseAccessDependency">The <see cref="JobHandle"/> to wait upon</param>
+        public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             Debug.Assert(!IsDisposed);
             ValidateReleaseState(releaseAccessDependency);
@@ -196,9 +208,9 @@ namespace Anvil.Unity.DOTS.Jobs
                             = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
                 case AcquisitionState.Disposing:
-                    throw new Exception($"Current state was {m_State}, no need to call {nameof(Release)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new Exception($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
                 case AcquisitionState.Unacquired:
-                    throw new Exception($"Current state was {m_State}, {nameof(Release)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new Exception($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(m_State), m_State, $"Tried to release but {nameof(m_State)} was {m_State} and no code path satisfies!");
             }
@@ -209,8 +221,8 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateAcquireState()
         {
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(CollectionAccessController<TContext>)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
-            Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(Release)} must be called before {nameof(Acquire)} is called again. Last {nameof(Acquire)} was called from: {m_AcquireCallerInfo}");
+            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
+            Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
             StackFrame frame = new StackFrame(2, true);
             m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
         }
@@ -218,12 +230,12 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
-            Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(Release)} was called multiple times. Last {nameof(Release)} was called from: {m_ReleaseCallerInfo}");
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(Release)} was called but the {nameof(CollectionAccessController<TContext>)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
+            Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} was called multiple times. Last {nameof(ReleaseAsync)} was called from: {m_ReleaseCallerInfo}");
+            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(ReleaseAsync)} was called but the {nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
             StackFrame frame = new StackFrame(2, true);
             m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
 
-            Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(Release)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(Acquire)}. Check to ensure your ordering of {nameof(Acquire)} and {nameof(Release)} match.");
+            Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
         }
     }
 }
