@@ -34,10 +34,14 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompatible]
         internal struct BufferInfo
         {
+            public static readonly int SIZE = UnsafeUtility.SizeOf<BufferInfo>();
+            public static readonly int ALIGNMENT = UnsafeUtility.AlignOf<BufferInfo>();
+            
             public int BlockSize;
             public int LaneCount;
             public Allocator Allocator;
             public Allocator BlockAllocator;
+            [NativeDisableUnsafePtrRestriction] public LaneInfo* LanesInfo;
         }
 
         /// <summary>
@@ -84,7 +88,7 @@ namespace Anvil.Unity.DOTS.Data
         private static readonly int ELEMENT_ALIGNMENT = UnsafeUtility.AlignOf<T>();
 
         [NativeDisableUnsafePtrRestriction] private BufferInfo* m_BufferInfo;
-        [NativeDisableUnsafePtrRestriction] private LaneInfo* m_Lanes;
+        
 
         /// <summary>
         /// Reports whether memory for the container is allocated.
@@ -95,7 +99,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </remarks>
         public bool IsCreated
         {
-            get => m_Lanes != null;
+            get => m_BufferInfo != null;
         }
 
         /// <summary>
@@ -182,20 +186,20 @@ namespace Anvil.Unity.DOTS.Data
             Assert.IsTrue(elementsPerBlock > 0);
 #endif
 
-            m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<BufferInfo>(),
-                                                             UnsafeUtility.AlignOf<BufferInfo>(),
+            m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(BufferInfo.SIZE,
+                                                             BufferInfo.ALIGNMENT,
                                                              allocator);
             m_BufferInfo->Allocator = allocator;
             m_BufferInfo->BlockAllocator = blockAllocator;
             m_BufferInfo->BlockSize = elementsPerBlock * ELEMENT_SIZE;
             m_BufferInfo->LaneCount = laneCount;
 
-            m_Lanes = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
+            m_BufferInfo->LanesInfo = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
 
             //TODO: #16 - Look into creating an enumerator like NativeArray to allow for foreach - https://github.com/decline-cookies/anvil-unity-dots/pull/14/files#r842968034
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* lane = m_Lanes + i;
+                LaneInfo* lane = m_BufferInfo->LanesInfo + i;
                 lane->FirstBlock = null;
                 lane->CurrentWriterBlock = null;
                 lane->WriterHead = null;
@@ -214,15 +218,14 @@ namespace Anvil.Unity.DOTS.Data
             {
                 return;
             }
-
-            Allocator allocator = m_BufferInfo->Allocator;
-
+            
             Clear();
-
-            UnsafeUtility.Free(m_Lanes, allocator);
+            
+            Allocator allocator = m_BufferInfo->Allocator;
+            UnsafeUtility.Free(m_BufferInfo->LanesInfo, allocator);
             UnsafeUtility.Free(m_BufferInfo, allocator);
 
-            m_Lanes = null;
+            m_BufferInfo->LanesInfo = null;
             m_BufferInfo = null;
         }
         
@@ -241,7 +244,7 @@ namespace Anvil.Unity.DOTS.Data
             
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* lane = m_Lanes + i;
+                LaneInfo* lane = m_BufferInfo->LanesInfo + i;
                 
                 BlockInfo* block = lane->FirstBlock;
                 while (block != null)
@@ -270,8 +273,9 @@ namespace Anvil.Unity.DOTS.Data
         {
             DisposeJob disposeJob = new DisposeJob(this);
             JobHandle disposeJobHandle = disposeJob.Schedule(inputDeps);
-            m_Lanes = null;
 
+            m_BufferInfo = null;
+            
             return disposeJobHandle;
         }
         
@@ -296,7 +300,7 @@ namespace Anvil.Unity.DOTS.Data
             int count = 0;
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* lane = m_Lanes + i;
+                LaneInfo* lane = m_BufferInfo->LanesInfo + i;
                 count += lane->Count;
             }
 
@@ -317,7 +321,7 @@ namespace Anvil.Unity.DOTS.Data
 
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* threadData = m_Lanes + i;
+                LaneInfo* threadData = m_BufferInfo->LanesInfo + i;
                 if (threadData->Count > 0)
                 {
                     return false;
@@ -353,9 +357,8 @@ namespace Anvil.Unity.DOTS.Data
             Assert.IsTrue(IsCreated);
             Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
-
-            LaneInfo* lane = m_Lanes + laneIndex;
-            return new LaneWriter(lane, m_BufferInfo);
+            
+            return new LaneWriter(m_BufferInfo, laneIndex);
         }
 
         /// <summary>
@@ -367,7 +370,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Assert.IsTrue(IsCreated);
 #endif
-            return new Reader(ref this);
+            return new Reader(m_BufferInfo);
         }
 
         /// <summary>
@@ -382,9 +385,8 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
-
-            LaneInfo* lane = m_Lanes + laneIndex;
-            return new LaneReader(lane, m_BufferInfo);
+            
+            return new LaneReader(m_BufferInfo, laneIndex);
         }
 
         /// <summary>
@@ -426,7 +428,6 @@ namespace Anvil.Unity.DOTS.Data
         public readonly struct Writer
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
-            [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lanes;
 
             /// <summary>
             /// The number of lanes that can be written to.
@@ -438,7 +439,6 @@ namespace Anvil.Unity.DOTS.Data
 
             internal Writer(ref UnsafeTypedStream<T> unsafeTypedStream)
             {
-                m_Lanes = unsafeTypedStream.m_Lanes;
                 m_BufferInfo = unsafeTypedStream.m_BufferInfo;
             }
 
@@ -455,9 +455,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
-
-                LaneInfo* lane = m_Lanes + laneIndex;
-                return new LaneWriter(lane, m_BufferInfo);
+                return new LaneWriter(m_BufferInfo, laneIndex);
             }
         }
 
@@ -470,10 +468,10 @@ namespace Anvil.Unity.DOTS.Data
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
             [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lane;
 
-            internal LaneWriter(LaneInfo* lane, BufferInfo* bufferInfo)
+            internal LaneWriter(BufferInfo* bufferInfo, int laneIndex)
             {
-                m_Lane = lane;
                 m_BufferInfo = bufferInfo;
+                m_Lane = m_BufferInfo->LanesInfo + laneIndex;
             }
 
             /// <summary>
@@ -532,7 +530,6 @@ namespace Anvil.Unity.DOTS.Data
         public readonly struct Reader
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
-            [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lanes;
 
             /// <summary>
             /// How many lanes the collection has available to read from
@@ -542,10 +539,9 @@ namespace Anvil.Unity.DOTS.Data
                 get => m_BufferInfo->LaneCount;
             }
 
-            internal Reader(ref UnsafeTypedStream<T> unsafeTypedStream)
+            internal Reader(BufferInfo* bufferInfo)
             {
-                m_Lanes = unsafeTypedStream.m_Lanes;
-                m_BufferInfo = unsafeTypedStream.m_BufferInfo;
+                m_BufferInfo = bufferInfo;
             }
 
             /// <summary>
@@ -560,9 +556,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
-
-                LaneInfo* lane = m_Lanes + laneIndex;
-                return new LaneReader(lane, m_BufferInfo);
+                return new LaneReader(m_BufferInfo, laneIndex);
             }
 
             /// <summary>
@@ -574,7 +568,7 @@ namespace Anvil.Unity.DOTS.Data
                 int count = 0;
                 for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
                 {
-                    LaneInfo* lane = m_Lanes + i;
+                    LaneInfo* lane = m_BufferInfo->LanesInfo + i;
                     count += lane->Count;
                 }
 
@@ -604,11 +598,11 @@ namespace Anvil.Unity.DOTS.Data
             {
                 get => m_Lane->Count;
             }
-
-            internal LaneReader(LaneInfo* lane, BufferInfo* bufferInfo)
+            
+            internal LaneReader(BufferInfo* bufferInfo, int laneIndex)
             {
-                m_Lane = lane;
                 m_BufferInfo = bufferInfo;
+                m_Lane = m_BufferInfo->LanesInfo + laneIndex;
 
                 m_CurrentReadBlock = m_Lane->FirstBlock;
                 m_ReaderHead = m_CurrentReadBlock != null
