@@ -436,6 +436,14 @@ namespace Anvil.Unity.DOTS.Data
             {
                 get => m_BufferInfo->LaneCount;
             }
+            
+            /// <summary>
+            /// Reports if this <see cref="Writer"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
 
             internal Writer(ref UnsafeTypedStream<T> unsafeTypedStream)
             {
@@ -468,6 +476,14 @@ namespace Anvil.Unity.DOTS.Data
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
             [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lane;
 
+            /// <summary>
+            /// Reports if this <see cref="LaneWriter"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
+            
             internal LaneWriter(BufferInfo* bufferInfo, int laneIndex)
             {
                 m_BufferInfo = bufferInfo;
@@ -530,7 +546,15 @@ namespace Anvil.Unity.DOTS.Data
         public readonly struct Reader
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
-
+            
+            /// <summary>
+            /// Reports if this <see cref="Reader"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
+            
             /// <summary>
             /// How many lanes the collection has available to read from
             /// </summary>
@@ -590,6 +614,14 @@ namespace Anvil.Unity.DOTS.Data
             private BlockInfo* m_CurrentReadBlock;
             private byte* m_EndOfCurrentBlock;
             private byte* m_ReaderHead;
+            
+            /// <summary>
+            /// Reports if this <see cref="LaneReader"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
 
             /// <summary>
             /// How many elements are available to read on this lane
