@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
@@ -6,7 +7,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
-using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -81,9 +81,6 @@ namespace Anvil.Unity.DOTS.Data
             public BlockInfo* Next;
         }
 
-        //See Chunk.kChunkSize (Can't access here so we redefine)
-        private const int CHUNK_SIZE = 16 * 1024;
-
         private static readonly int ELEMENT_SIZE = UnsafeUtility.SizeOf<T>();
         private static readonly int ELEMENT_ALIGNMENT = UnsafeUtility.AlignOf<T>();
 
@@ -124,7 +121,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
         /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
-        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, allocator, laneCount)
+        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, allocator, laneCount)
         {
         }
 
@@ -136,7 +133,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
         /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
         /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
-        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, blockAllocator, laneCount)
+        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator, int laneCount) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, blockAllocator, laneCount)
         {
         }
         
@@ -146,7 +143,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
-        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, allocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
+        public UnsafeTypedStream(Allocator allocator) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, allocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
         {
         }
 
@@ -157,7 +154,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
         /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
-        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, blockAllocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
+        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, blockAllocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
         {
         }
 
