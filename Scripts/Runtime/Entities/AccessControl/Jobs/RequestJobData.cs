@@ -6,8 +6,8 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public struct DataRequestJobStruct<T>
-        where T : struct, ICompleteData<T>
+    public struct RequestJobData<T>
+        where T : struct
     {
         [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
         private UnsafeTypedStream<T>.Writer m_NewWriter;
@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<T>.LaneWriter m_NewLaneWriter;
         private int m_LaneIndex;
 
-        public DataRequestJobStruct(UnsafeTypedStream<T>.Writer newWriter)
+        public RequestJobData(UnsafeTypedStream<T>.Writer newWriter)
         {
             m_NewWriter = newWriter;
 

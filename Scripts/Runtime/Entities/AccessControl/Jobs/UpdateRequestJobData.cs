@@ -1,4 +1,3 @@
-
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
@@ -6,19 +5,20 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public struct DataOwnerJobStruct<T>
-        where T : struct, ICompleteData<T>
+    public struct UpdateRequestJobData<TRequest, TResponse>
+        where TRequest : struct, IRequestData<TResponse>
+        where TResponse : struct
     {
         [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
 
-        private readonly NativeArray<T> m_Current;
-        private UnsafeTypedStream<T>.Writer m_ContinueWriter;
+        private readonly NativeArray<TRequest> m_Current;
+        private UnsafeTypedStream<TRequest>.Writer m_ContinueWriter;
 
-        private UnsafeTypedStream<T>.LaneWriter m_ContinueLaneWriter;
+        private UnsafeTypedStream<TRequest>.LaneWriter m_ContinueLaneWriter;
         private int m_LaneIndex;
 
-        public DataOwnerJobStruct(NativeArray<T> current,
-                                  UnsafeTypedStream<T>.Writer continueWriter)
+        public UpdateRequestJobData(NativeArray<TRequest> current,
+                                    UnsafeTypedStream<TRequest>.Writer continueWriter)
         {
             m_Current = current;
             m_ContinueWriter = continueWriter;
@@ -35,26 +35,27 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return;
             }
+
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
         }
-        
-        public T this[int index]
+
+        public TRequest this[int index]
         {
             get => m_Current[index];
         }
 
-        public void Continue(ref T value)
+        public void Continue(ref TRequest value)
         {
             //TODO: Collection checks
             m_ContinueLaneWriter.Write(ref value);
         }
-
-        //TODO: This may not be T, it may be a different result
-        public void Complete(ref T value)
+        
+        public void Complete(ref TRequest request, ref TResponse response)
         {
             //TODO: Collection checks
-            value.CompletedWriter.AsLaneWriter(m_LaneIndex).Write(ref value);
+            request.ResponseWriter.InitForThread();
+            request.ResponseWriter.Add(ref response);
         }
     }
 }
