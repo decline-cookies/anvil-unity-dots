@@ -1,10 +1,9 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System.Collections.Generic;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -16,74 +15,51 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
     }
-
-    public struct SystemJobDataWithUpdate<T>
-        where T : struct, ICompleteData<T>
-    {
-        [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
-
-        private readonly NativeArray<T> m_Current;
-        private UnsafeTypedStream<T>.Writer m_ContinueWriter;
-
-        private UnsafeTypedStream<T>.LaneWriter m_ContinueLaneWriter;
-        private int m_LaneIndex;
-
-        public int Length
-        {
-            get => m_Current.Length;
-        }
-
-        public SystemJobDataWithUpdate(NativeArray<T> current, UnsafeTypedStream<T>.Writer continueWriter)
-        {
-            m_Current = current;
-            m_ContinueWriter = continueWriter;
-            m_ContinueLaneWriter = default;
-
-            m_LaneIndex = -1;
-            m_NativeThreadIndex = -1;
-        }
-
-        public void InitForThread()
-        {
-            if (!m_ContinueLaneWriter.IsCreated)
-            {
-                m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
-                m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
-            }
-        }
-
-        public T this[int index]
-        {
-            get => m_Current[index];
-        }
-
-        public void Continue(T value)
-        {
-            m_ContinueLaneWriter.Write(value);
-        }
-
-        public void Complete(T value)
-        {
-            value.CompletedWriter.AsLaneWriter(m_LaneIndex).Write(value);
-        }
-    }
-
-    public interface ISystemDataCompleteContext<T>
-        where T : struct, ICompleteData<T>
-    {
-        
-    }
-
-    public class SystemData<T> : AbstractAnvilBase
+    
+    public class SystemData<T> : AbstractAnvilBase,
+                                 IDataRequest<T>,
+                                 IDataResponse<T>,
+                                 IDataOwner<T>,
+                                 IDataSchedulable<T>
         where T : struct, ICompleteData<T>
     {
         private readonly AccessController m_AccessController;
+        private readonly HashSet<IDataRequest<T>> m_RequestSources;
+        private readonly HashSet<IDataResponse<T>> m_ResponseChannels;
         
-        private UnsafeTypedStream<T> m_New;
+        private UnsafeTypedStream<T> m_Pending;
         private DeferredNativeArray<T> m_Current;
         
+        public SystemData()
+        {
+            m_AccessController = new AccessController();
+            m_RequestSources = new HashSet<IDataRequest<T>>();
+            m_ResponseChannels = new HashSet<IDataResponse<T>>();
+            m_Pending = new UnsafeTypedStream<T>(Allocator.Persistent, Allocator.TempJob);
+
+            BatchSize = ChunkUtil.MaxElementsPerChunk<T>();
+        }
+
+        protected override void DisposeSelf()
+        {
+            foreach (IDataRequest<T> dataRequest in m_RequestSources)
+            {
+                dataRequest.UnregisterResponseChannel(this);
+            }
+
+            m_RequestSources.Clear();
+            m_ResponseChannels.Clear();
+            m_AccessController.Dispose();
+            m_Pending.Dispose();
+            m_Current.Dispose();
+
+            base.DisposeSelf();
+        }
+
+        //*************************************************************************************************************
+        // IDataSchedulable
+        //*************************************************************************************************************
         
-        //SCHEDULING - IJobDeferredNativeArrayForBatch
         public DeferredNativeArray<T> ArrayForScheduling
         {
             get => m_Current;
@@ -93,76 +69,123 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        //END SCHEDULING
+        
+        //*************************************************************************************************************
+        // IDataRequest
+        //*************************************************************************************************************
 
-        public SystemData()
+        public void RegisterResponseChannel(IDataResponse<T> responseChannel)
         {
-            m_AccessController = new AccessController();
-            m_New = new UnsafeTypedStream<T>(Allocator.Persistent, Allocator.TempJob);
-
-            BatchSize = ChunkUtil.MaxElementsPerChunk<T>();
+            m_ResponseChannels.Add(responseChannel);
         }
 
-        protected override void DisposeSelf()
+        public void UnregisterResponseChannel(IDataResponse<T> responseChannel)
         {
-            m_AccessController.Dispose();
-            m_New.Dispose();
-            m_Current.Dispose();
-
-            base.DisposeSelf();
+            m_ResponseChannels.Remove(responseChannel);
         }
-
-        public UnsafeTypedStream<T>.Writer GetCompleteWriter()
+        
+        public JobHandle AcquireForNew(out DataRequestJobStruct<T> jobData)
         {
-            return m_New.AsWriter();
-        }
-
-        public JobHandle AcquireForComplete()
-        {
-            return m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-        }
-
-        public void ReleaseFromComplete(JobHandle releaseAccessDependency)
-        {
-            m_AccessController.ReleaseAsync(releaseAccessDependency);
-        }
-
-
-        public JobHandle AcquireForNewAsync(out UnsafeTypedStream<T>.Writer newWriter)
-        {
-            newWriter = m_New.AsWriter();
+            jobData = new DataRequestJobStruct<T>(m_Pending.AsWriter());
             return m_AccessController.AcquireAsync(AccessType.SharedWrite);
         }
 
-        public void ReleaseForNewAsync(JobHandle releaseAccessDependency)
+        public void ReleaseForNew(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
-        public JobHandle AcquireForUpdate(JobHandle dependsOn, out SystemJobDataWithUpdate<T> systemJobDataWithUpdate)
+        //*************************************************************************************************************
+        // IDataResponse
+        //*************************************************************************************************************
+        
+        public JobHandle AcquireForResponse()
         {
-            JobHandle updateHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-
-            m_Current = new DeferredNativeArray<T>(Allocator.TempJob);
-
-
-            ConsolidateToNativeArrayJob<T> consolidateJob = new ConsolidateToNativeArrayJob<T>(m_New.AsReader(),
-                                                                                               m_Current);
-            JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn,
-                                                                                                updateHandle));
-
-            JobHandle clearHandle = m_New.Clear(consolidateHandle);
-            m_AccessController.ReleaseAsync(clearHandle);
-
-            systemJobDataWithUpdate = new SystemJobDataWithUpdate<T>(m_Current.AsDeferredJobArray(),
-                                                                     m_New.AsWriter());
-
-            return clearHandle;
+            return m_AccessController.AcquireAsync(AccessType.SharedWrite);
         }
 
-        public void ReleaseFromUpdate(JobHandle releaseAccessDependency)
+        public void ReleaseForResponse(JobHandle releaseAccessDependency)
         {
+            m_AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+        
+        public UnsafeTypedStream<T>.Writer GetResponseChannel()
+        {
+            return m_Pending.AsWriter();
+        }
+        
+        //*************************************************************************************************************
+        // IDataOwner
+        //*************************************************************************************************************
+
+        public JobHandle AcquireForUpdate(JobHandle dependsOn, out DataOwnerJobStruct<T> jobData)
+        {
+            //Get access to be able to write exclusively, we need to update everything
+            JobHandle exclusiveWrite = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+            
+            //Create a new DeferredNativeArray to hold everything we need this frame
+            //TODO: Investigate reusing a DeferredNativeArray
+            m_Current = new DeferredNativeArray<T>(Allocator.TempJob);
+            
+            //Consolidate everything in pending into current so it can be balanced across threads
+            ConsolidateToNativeArrayJob<T> consolidateJob = new ConsolidateToNativeArrayJob<T>(m_Pending.AsReader(),
+                                                                                               m_Current);
+            JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWrite));
+            
+            //Clear pending so we can use it again
+            JobHandle clearHandle = m_Pending.Clear(consolidateHandle);
+            
+            //Create the job struct to be used by whoever is processing the data
+            jobData = new DataOwnerJobStruct<T>(m_Current.AsDeferredJobArray(),
+                                                m_Pending.AsWriter());
+            
+            //If we have any channels that we might be writing responses out to, we need make sure we get access to them
+            return AcquireResponseChannelsForUpdate(clearHandle);
+        }
+
+        private JobHandle AcquireResponseChannelsForUpdate(JobHandle dependsOn)
+        {
+            if (m_ResponseChannels.Count == 0)
+            {
+                return dependsOn;
+            }
+            
+            //Get write access to all possible channels that we can write a response to.
+            //+1 to include our incoming dependency
+            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResponseChannels.Count + 1, Allocator.Temp);
+            allDependencies[0] = dependsOn;
+            int index = 1;
+            foreach (IDataResponse<T> responseChannel in m_ResponseChannels)
+            {
+                allDependencies[index] = responseChannel.AcquireForResponse();
+                index++;
+            }
+                
+            return JobHandle.CombineDependencies(allDependencies);
+        }
+        
+        public void ReleaseForUpdate(JobHandle releaseAccessDependency)
+        {
+            //The native array of current values has been read from this frame, we can dispose it.
+            //TODO: Look at clearing instead.
             m_Current.Dispose(releaseAccessDependency);
+            //Others can use this again
+            m_AccessController.ReleaseAsync(releaseAccessDependency);
+            //Release all response channels as well
+            ReleaseResponseChannelsForUpdate(releaseAccessDependency);
+        }
+
+        private void ReleaseResponseChannelsForUpdate(JobHandle releaseAccessDependency)
+        {
+            if (m_ResponseChannels.Count == 0)
+            {
+                return;
+            }
+            
+            foreach (IDataResponse<T> responseChannel in m_ResponseChannels)
+            {
+                responseChannel.ReleaseForResponse(releaseAccessDependency);
+            }
         }
     }
 }

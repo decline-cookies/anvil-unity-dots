@@ -73,9 +73,9 @@ namespace Anvil.Unity.DOTS.Entities
             return HandledIndices.ContainsKey(index);
         }
 
-        public void Retry(T value)
+        public void Retry(ref T value)
         {
-            RetryLaneWriter.Write(value);
+            RetryLaneWriter.Write(ref value);
         }
 
         public void MarkAsHandled(int index)
@@ -91,7 +91,8 @@ namespace Anvil.Unity.DOTS.Entities
                 {
                     continue;
                 }
-                Retry(m_ReaderData[i]);
+                T data = m_ReaderData[i];
+                Retry(ref data);
             }
         }
     }
