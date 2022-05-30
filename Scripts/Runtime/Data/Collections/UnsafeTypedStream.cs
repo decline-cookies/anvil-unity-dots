@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
+using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -595,13 +596,19 @@ namespace Anvil.Unity.DOTS.Data
             public void ReadInto(ref NativeArray<T> array)
             {
                 byte* arrayPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array);
+                int elementsPerLaneBlock = m_BufferInfo->BlockSize / ELEMENT_SIZE;
                 int arrayIndex = 0;
                 for (int laneIndex = 0; laneIndex < LaneCount; ++laneIndex)
                 {
                     LaneReader laneReader = AsLaneReader(laneIndex);
-                    while (laneReader.ReadBlock(arrayPtr, arrayIndex, out int indicesWritten))
+                    int laneElementsRemaining = laneReader.Count;
+
+                    while (laneElementsRemaining > 0)
                     {
-                        arrayIndex += indicesWritten;
+                        int numElementsToRead = math.min(elementsPerLaneBlock, laneElementsRemaining);
+                        laneReader.ReadBlock(arrayPtr, arrayIndex, numElementsToRead);
+                        arrayIndex += numElementsToRead;
+                        laneElementsRemaining -= numElementsToRead;
                     }
                 }
             }
@@ -684,23 +691,19 @@ namespace Anvil.Unity.DOTS.Data
                 return ref UnsafeUtility.AsRef<T>(readPointer);
             }
 
-            internal bool ReadBlock(byte* dstStart, int dstStartIndex, out int indicesWritten)
+            internal void ReadBlock(byte* dstStart, int dstStartIndex, int elementsToRead)
             {
-                if (m_ReaderHead == null)
-                {
-                    indicesWritten = 0;
-                    return false;
-                }
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
+#endif
 
-                indicesWritten = (int)(m_EndOfCurrentBlock - m_ReaderHead);
-
+                long length = elementsToRead * ELEMENT_SIZE;
+                
                 byte* dstPtr = dstStart + dstStartIndex;
-                UnsafeUtility.MemCpy(dstPtr, m_ReaderHead, indicesWritten);
+                UnsafeUtility.MemCpy(dstPtr, m_ReaderHead, length);
 
-                m_ReaderHead += indicesWritten;
+                m_ReaderHead += length;
                 CheckForEndOfBlock();
-
-                return m_ReaderHead != null;
             }
 
             /// <summary>
