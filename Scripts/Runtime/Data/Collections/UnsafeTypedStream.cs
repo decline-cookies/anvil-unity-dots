@@ -307,6 +307,17 @@ namespace Anvil.Unity.DOTS.Data
 
             return count;
         }
+        
+        /// <summary>
+        /// Reads everything from this <see cref="UnsafeTypedStream{T}"/> into a <see cref="NativeArray{T}"/>
+        /// through optimized memory copying of the blocks. 
+        /// </summary>
+        /// <param name="array">The array to populate</param>
+        public void ReadInto(ref NativeArray<T> array)
+        {
+            Reader reader = AsReader();
+            reader.ReadInto(ref array);
+        }
 
         /// <summary>
         /// Whether the collection is empty or not.
@@ -403,8 +414,7 @@ namespace Anvil.Unity.DOTS.Data
         public NativeArray<T> ToNativeArray(Allocator allocator)
         {
             NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
-            Reader reader = AsReader();
-            reader.ReadInto(ref array);
+            ReadInto(ref array);
 
             return array;
         }
@@ -592,7 +602,8 @@ namespace Anvil.Unity.DOTS.Data
 
                 return count;
             }
-
+            
+            /// <inheritdoc cref="UnsafeTypedStream{T}.ReadInto"/>
             public void ReadInto(ref NativeArray<T> array)
             {
                 byte* arrayPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array);
@@ -693,16 +704,17 @@ namespace Anvil.Unity.DOTS.Data
 
             internal void ReadBlock(byte* dstStart, int dstStartIndex, int elementsToRead)
             {
+                long bytesToRead = elementsToRead * ELEMENT_SIZE;
+                
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
+                Assert.IsTrue(m_ReaderHead + bytesToRead <= m_EndOfCurrentBlock);
 #endif
 
-                long length = elementsToRead * ELEMENT_SIZE;
-                
                 byte* dstPtr = dstStart + dstStartIndex;
-                UnsafeUtility.MemCpy(dstPtr, m_ReaderHead, length);
+                UnsafeUtility.MemCpy(dstPtr, m_ReaderHead, bytesToRead);
 
-                m_ReaderHead += length;
+                m_ReaderHead += bytesToRead;
                 CheckForEndOfBlock();
             }
 
