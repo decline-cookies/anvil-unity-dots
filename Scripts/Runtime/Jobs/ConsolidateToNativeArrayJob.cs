@@ -36,18 +36,7 @@ namespace Anvil.Unity.DOTS.Jobs
             }
 
             NativeArray<T> array = m_DeferredNativeArray.DeferredCreate(newLength);
-
-            int arrayIndex = 0;
-            for (int laneIndex = 0; laneIndex < m_Reader.LaneCount; ++laneIndex)
-            {
-                UnsafeTypedStream<T>.LaneReader laneReader = m_Reader.AsLaneReader(laneIndex);
-                int elementCount = laneReader.Count;
-                for (int elementIndex = 0; elementIndex < elementCount; ++elementIndex)
-                {
-                    array[arrayIndex] = laneReader.Read();
-                    arrayIndex++;
-                }
-            }
+            m_Reader.ReadInto(ref array);
         }
     }
 }
