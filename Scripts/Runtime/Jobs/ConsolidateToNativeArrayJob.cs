@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Jobs
             }
 
             NativeArray<T> array = m_DeferredNativeArray.DeferredCreate(newLength);
-            m_Reader.CopyInto(ref array);
+            m_Reader.CopyTo(ref array);
         }
     }
 }

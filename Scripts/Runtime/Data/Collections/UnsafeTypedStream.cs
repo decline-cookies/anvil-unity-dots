@@ -313,10 +313,10 @@ namespace Anvil.Unity.DOTS.Data
         /// through optimized memory copying of the blocks. 
         /// </summary>
         /// <param name="array">The array to populate</param>
-        public void CopyInto(ref NativeArray<T> array)
+        public void CopyTo(ref NativeArray<T> array)
         {
             Reader reader = AsReader();
-            reader.CopyInto(ref array);
+            reader.CopyTo(ref array);
         }
 
         /// <summary>
@@ -414,7 +414,7 @@ namespace Anvil.Unity.DOTS.Data
         public NativeArray<T> ToNativeArray(Allocator allocator)
         {
             NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
-            CopyInto(ref array);
+            CopyTo(ref array);
 
             return array;
         }
@@ -603,8 +603,8 @@ namespace Anvil.Unity.DOTS.Data
                 return count;
             }
             
-            /// <inheritdoc cref="UnsafeTypedStream{T}.CopyInto"/>
-            public void CopyInto(ref NativeArray<T> array)
+            /// <inheritdoc cref="UnsafeTypedStream{T}.CopyTo"/>
+            public void CopyTo(ref NativeArray<T> array)
             {
                 byte* arrayPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array);
                 int elementsPerLaneBlock = m_BufferInfo->BlockSize / ELEMENT_SIZE;
