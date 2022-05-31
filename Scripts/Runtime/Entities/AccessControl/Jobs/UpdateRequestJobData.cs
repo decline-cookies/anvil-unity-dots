@@ -54,8 +54,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void Complete(ref TRequest request, ref TResponse response)
         {
             //TODO: Collection checks
-            request.ResponseWriter.InitForThread();
-            request.ResponseWriter.Add(ref response);
+            request.ResponseWriter.Add(ref response, m_LaneIndex);
         }
     }
 }

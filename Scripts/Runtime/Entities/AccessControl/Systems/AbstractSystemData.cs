@@ -39,7 +39,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             AccessController.Dispose();
             Pending.Dispose();
-            Current.Dispose();
 
             base.DisposeSelf();
         }
