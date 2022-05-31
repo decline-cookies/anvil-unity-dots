@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
         private const int CHUNK_SIZE = 16 * 1024;
         
         /// <summary>
-        /// Gets the maximum number of elements that would fit into a chunk of memory.
+        /// Gets the maximum number of elements that will fit into a chunk of memory.
         /// At minimum it will return 1 if the element is larger than a chunk.
         /// </summary>
         /// <typeparam name="T">The type of element</typeparam>
