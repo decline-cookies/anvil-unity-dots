@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
@@ -34,9 +35,14 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompatible]
         internal struct BufferInfo
         {
+            public static readonly int SIZE = UnsafeUtility.SizeOf<BufferInfo>();
+            public static readonly int ALIGNMENT = UnsafeUtility.AlignOf<BufferInfo>();
+
             public int BlockSize;
             public int LaneCount;
             public Allocator Allocator;
+            public Allocator BlockAllocator;
+            [NativeDisableUnsafePtrRestriction] public LaneInfo* LaneInfos;
         }
 
         /// <summary>
@@ -76,14 +82,11 @@ namespace Anvil.Unity.DOTS.Data
             public BlockInfo* Next;
         }
 
-        //See Chunk.kChunkSize (Can't access here so we redefine)
-        private const int CHUNK_SIZE = 16 * 1024;
-
         private static readonly int ELEMENT_SIZE = UnsafeUtility.SizeOf<T>();
         private static readonly int ELEMENT_ALIGNMENT = UnsafeUtility.AlignOf<T>();
 
         [NativeDisableUnsafePtrRestriction] private BufferInfo* m_BufferInfo;
-        [NativeDisableUnsafePtrRestriction] private LaneInfo* m_Lanes;
+
 
         /// <summary>
         /// Reports whether memory for the container is allocated.
@@ -94,7 +97,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </remarks>
         public bool IsCreated
         {
-            get => m_Lanes != null;
+            get => m_BufferInfo != null;
         }
 
         /// <summary>
@@ -113,24 +116,46 @@ namespace Anvil.Unity.DOTS.Data
             get => m_BufferInfo->BlockSize / ELEMENT_SIZE;
         }
 
+        /// <summary>
+        /// Convenience constructor that fits as many elements into a 16kb block size as possible and allows you to
+        /// specify the number of lanes.
+        /// </summary>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
+        /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
+        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, allocator, laneCount)
+        {
+        }
+
 
         /// <summary>
-        /// Convenience constructor that fits as many elements into a 16kb block size and allows you to specify the
-        /// number of lanes.
+        /// Convenience constructor that fits as many elements into a 16kb block size as possible and allows you to
+        /// specify the number of lanes.
         /// </summary>
-        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
+        /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
         /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
-        public UnsafeTypedStream(Allocator allocator, int laneCount) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, laneCount)
+        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator, int laneCount) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, blockAllocator, laneCount)
         {
         }
 
         /// <summary>
-        /// Convenience constructor that fits as many elements into a 16kb block size.
+        /// Convenience constructor that fits as many elements into a 16kb block size as possible.
         /// Sets the number of lanes to be the maximum amount of worker threads available plus the main thread.
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
         /// </summary>
-        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
-        public UnsafeTypedStream(Allocator allocator) : this(math.max(CHUNK_SIZE / UnsafeUtility.SizeOf<T>(), 1), allocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
+        public UnsafeTypedStream(Allocator allocator) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, allocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
+        {
+        }
+
+        /// <summary>
+        /// Convenience constructor that fits as many elements into a 16kb block size as possible.
+        /// Sets the number of lanes to be the maximum amount of worker threads available plus the main thread.
+        /// <see cref="JobsUtility.JobWorkerMaximumCount"/> + 1
+        /// </summary>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
+        /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
+        public UnsafeTypedStream(Allocator allocator, Allocator blockAllocator) : this(ChunkUtil.MaxElementsPerChunk<T>(), allocator, blockAllocator, ParallelAccessUtil.CollectionSizeForMaxThreads)
         {
         }
 
@@ -139,27 +164,43 @@ namespace Anvil.Unity.DOTS.Data
         /// smaller counts so that large blocks aren't allocated if not needed.
         /// </summary>
         /// <param name="elementsPerBlock">The number of elements to allocate space for in each block.</param>
-        /// <param name="allocator">The <see cref="Allocator" /> to use when allocating memory.</param>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection and the content</param>
         /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
-        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, int laneCount)
+        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, int laneCount) : this(elementsPerBlock, allocator, allocator, laneCount)
+        {
+        }
+
+        /// <summary>
+        /// More explicit constructor that allows for specifying how many elements to put into each block. Useful for
+        /// smaller counts so that large blocks aren't allocated if not needed.
+        /// </summary>
+        /// <param name="elementsPerBlock">The number of elements to allocate space for in each block.</param>
+        /// <param name="allocator">The <see cref="Allocator"/> to use when allocating memory for the collection but not the content</param>
+        /// <param name="blockAllocator">The <see cref="Allocator"/> to use when allocating memory for the content in the collection.</param>
+        /// <param name="laneCount">The number of lanes to allow reading from/writing to.</param>
+        public UnsafeTypedStream(int elementsPerBlock, Allocator allocator, Allocator blockAllocator, int laneCount)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Assert.IsTrue(elementsPerBlock > 0);
+            //Ensures that block allocator can only be Temp, TempJob or Persistent and that the allocator is at the same or higher level.
+            //Can't have a block allocator that is persistent and a temp allocator.
+            Assert.IsTrue(blockAllocator <= allocator && blockAllocator > Allocator.None);
 #endif
 
-            m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<BufferInfo>(),
-                                                             UnsafeUtility.AlignOf<BufferInfo>(),
+            m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(BufferInfo.SIZE,
+                                                             BufferInfo.ALIGNMENT,
                                                              allocator);
             m_BufferInfo->Allocator = allocator;
+            m_BufferInfo->BlockAllocator = blockAllocator;
             m_BufferInfo->BlockSize = elementsPerBlock * ELEMENT_SIZE;
             m_BufferInfo->LaneCount = laneCount;
 
-            m_Lanes = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
+            m_BufferInfo->LaneInfos = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
 
             //TODO: #16 - Look into creating an enumerator like NativeArray to allow for foreach - https://github.com/decline-cookies/anvil-unity-dots/pull/14/files#r842968034
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* lane = m_Lanes + i;
+                LaneInfo* lane = m_BufferInfo->LaneInfos + i;
                 lane->FirstBlock = null;
                 lane->CurrentWriterBlock = null;
                 lane->WriterHead = null;
@@ -171,6 +212,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// Disposes the collection
         /// </summary>
+        [WriteAccessRequired]
         public void Dispose()
         {
             if (!IsCreated)
@@ -178,11 +220,32 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
+            Clear();
+
             Allocator allocator = m_BufferInfo->Allocator;
+            UnsafeUtility.Free(m_BufferInfo->LaneInfos, allocator);
+            UnsafeUtility.Free(m_BufferInfo, allocator);
+
+            m_BufferInfo->LaneInfos = null;
+            m_BufferInfo = null;
+        }
+
+        /// <summary>
+        /// Clears all data in the collection
+        /// </summary>
+        [WriteAccessRequired]
+        public void Clear()
+        {
+            if (!IsCreated)
+            {
+                return;
+            }
+
+            Allocator blockAllocator = m_BufferInfo->BlockAllocator;
 
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* lane = m_Lanes + i;
+                LaneInfo* lane = m_BufferInfo->LaneInfos + i;
 
                 BlockInfo* block = lane->FirstBlock;
                 while (block != null)
@@ -190,30 +253,42 @@ namespace Anvil.Unity.DOTS.Data
                     BlockInfo* currentBlock = block;
                     block = currentBlock->Next;
 
-                    UnsafeUtility.Free(currentBlock->Data, allocator);
-                    UnsafeUtility.Free(currentBlock, allocator);
+                    UnsafeUtility.Free(currentBlock->Data, blockAllocator);
+                    UnsafeUtility.Free(currentBlock, blockAllocator);
                 }
+
+                lane->FirstBlock = null;
+                lane->CurrentWriterBlock = null;
+                lane->WriterHead = null;
+                lane->WriterEndOfBlock = null;
+                lane->Count = 0;
             }
-
-            UnsafeUtility.Free(m_Lanes, allocator);
-            UnsafeUtility.Free(m_BufferInfo, allocator);
-
-            m_Lanes = null;
-            m_BufferInfo = null;
         }
 
         /// <summary>
         /// Schedules the disposal of the collection.
         /// </summary>
         /// <param name="inputDeps">The <see cref="JobHandle" /> to wait on before disposing</param>
-        /// <returns>A <see cref="JobHandle" /> for when disposal is complete</returns>
+        /// <returns>A <see cref="JobHandle"/> for when disposal is complete</returns>
         public JobHandle Dispose(JobHandle inputDeps)
         {
             DisposeJob disposeJob = new DisposeJob(this);
             JobHandle disposeJobHandle = disposeJob.Schedule(inputDeps);
-            m_Lanes = null;
+
+            m_BufferInfo = null;
 
             return disposeJobHandle;
+        }
+
+        /// <summary>
+        /// Schedules the clearing of the collection.
+        /// </summary>
+        /// <param name="inputDeps">The <see cref="JobHandle"/> to wait on before clearing.</param>
+        /// <returns>A <see cref="JobHandle"/> for when clearing is complete</returns>
+        public JobHandle Clear(JobHandle inputDeps)
+        {
+            ClearJob clearJob = new ClearJob(this);
+            return clearJob.Schedule(inputDeps);
         }
 
         /// <summary>
@@ -226,11 +301,22 @@ namespace Anvil.Unity.DOTS.Data
             int count = 0;
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* lane = m_Lanes + i;
+                LaneInfo* lane = m_BufferInfo->LaneInfos + i;
                 count += lane->Count;
             }
 
             return count;
+        }
+        
+        /// <summary>
+        /// Copies everything from this <see cref="UnsafeTypedStream{T}"/> into a <see cref="NativeArray{T}"/>
+        /// through optimized memory copying of the blocks. 
+        /// </summary>
+        /// <param name="array">The array to populate</param>
+        public void CopyTo(ref NativeArray<T> array)
+        {
+            Reader reader = AsReader();
+            reader.CopyTo(ref array);
         }
 
         /// <summary>
@@ -247,7 +333,7 @@ namespace Anvil.Unity.DOTS.Data
 
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
-                LaneInfo* threadData = m_Lanes + i;
+                LaneInfo* threadData = m_BufferInfo->LaneInfos + i;
                 if (threadData->Count > 0)
                 {
                     return false;
@@ -284,8 +370,7 @@ namespace Anvil.Unity.DOTS.Data
             Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
 
-            LaneInfo* lane = m_Lanes + laneIndex;
-            return new LaneWriter(lane, m_BufferInfo);
+            return new LaneWriter(m_BufferInfo, laneIndex);
         }
 
         /// <summary>
@@ -297,7 +382,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Assert.IsTrue(IsCreated);
 #endif
-            return new Reader(ref this);
+            return new Reader(m_BufferInfo);
         }
 
         /// <summary>
@@ -310,11 +395,11 @@ namespace Anvil.Unity.DOTS.Data
         public LaneReader AsLaneReader(int laneIndex)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Assert.IsTrue(IsCreated);
             Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
 
-            LaneInfo* lane = m_Lanes + laneIndex;
-            return new LaneReader(lane, m_BufferInfo);
+            return new LaneReader(m_BufferInfo, laneIndex);
         }
 
         /// <summary>
@@ -329,18 +414,7 @@ namespace Anvil.Unity.DOTS.Data
         public NativeArray<T> ToNativeArray(Allocator allocator)
         {
             NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
-            Reader reader = AsReader();
-            int arrayIndex = 0;
-            for (int i = 0; i < reader.LaneCount; ++i)
-            {
-                LaneReader laneReader = reader.AsLaneReader(i);
-                int len = laneReader.Count;
-                for (int j = 0; j < len; ++j)
-                {
-                    array[arrayIndex] = laneReader.Read();
-                    arrayIndex++;
-                }
-            }
+            CopyTo(ref array);
 
             return array;
         }
@@ -356,7 +430,6 @@ namespace Anvil.Unity.DOTS.Data
         public readonly struct Writer
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
-            [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lanes;
 
             /// <summary>
             /// The number of lanes that can be written to.
@@ -366,9 +439,16 @@ namespace Anvil.Unity.DOTS.Data
                 get => m_BufferInfo->LaneCount;
             }
 
+            /// <summary>
+            /// Reports if this <see cref="Writer"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
+
             internal Writer(ref UnsafeTypedStream<T> unsafeTypedStream)
             {
-                m_Lanes = unsafeTypedStream.m_Lanes;
                 m_BufferInfo = unsafeTypedStream.m_BufferInfo;
             }
 
@@ -383,11 +463,10 @@ namespace Anvil.Unity.DOTS.Data
             public LaneWriter AsLaneWriter(int laneIndex)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+                Assert.IsTrue(IsCreated);
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
-
-                LaneInfo* lane = m_Lanes + laneIndex;
-                return new LaneWriter(lane, m_BufferInfo);
+                return new LaneWriter(m_BufferInfo, laneIndex);
             }
         }
 
@@ -400,10 +479,18 @@ namespace Anvil.Unity.DOTS.Data
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
             [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lane;
 
-            internal LaneWriter(LaneInfo* lane, BufferInfo* bufferInfo)
+            /// <summary>
+            /// Reports if this <see cref="LaneWriter"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
             {
-                m_Lane = lane;
+                get => m_BufferInfo != null;
+            }
+
+            internal LaneWriter(BufferInfo* bufferInfo, int laneIndex)
+            {
                 m_BufferInfo = bufferInfo;
+                m_Lane = m_BufferInfo->LaneInfos + laneIndex;
             }
 
             /// <summary>
@@ -429,8 +516,8 @@ namespace Anvil.Unity.DOTS.Data
                 }
 
                 //Create the new block
-                BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->Allocator);
-                blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->Allocator);
+                BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->BlockAllocator);
+                blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->BlockAllocator);
                 blockPointer->Next = null;
 
                 //Update lane writing info
@@ -462,7 +549,14 @@ namespace Anvil.Unity.DOTS.Data
         public readonly struct Reader
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
-            [NativeDisableUnsafePtrRestriction] private readonly LaneInfo* m_Lanes;
+
+            /// <summary>
+            /// Reports if this <see cref="Reader"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
 
             /// <summary>
             /// How many lanes the collection has available to read from
@@ -472,10 +566,9 @@ namespace Anvil.Unity.DOTS.Data
                 get => m_BufferInfo->LaneCount;
             }
 
-            internal Reader(ref UnsafeTypedStream<T> unsafeTypedStream)
+            internal Reader(BufferInfo* bufferInfo)
             {
-                m_Lanes = unsafeTypedStream.m_Lanes;
-                m_BufferInfo = unsafeTypedStream.m_BufferInfo;
+                m_BufferInfo = bufferInfo;
             }
 
             /// <summary>
@@ -488,11 +581,10 @@ namespace Anvil.Unity.DOTS.Data
             public LaneReader AsLaneReader(int laneIndex)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+                Assert.IsTrue(IsCreated);
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
-
-                LaneInfo* lane = m_Lanes + laneIndex;
-                return new LaneReader(lane, m_BufferInfo);
+                return new LaneReader(m_BufferInfo, laneIndex);
             }
 
             /// <summary>
@@ -504,11 +596,32 @@ namespace Anvil.Unity.DOTS.Data
                 int count = 0;
                 for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
                 {
-                    LaneInfo* lane = m_Lanes + i;
+                    LaneInfo* lane = m_BufferInfo->LaneInfos + i;
                     count += lane->Count;
                 }
 
                 return count;
+            }
+            
+            /// <inheritdoc cref="UnsafeTypedStream{T}.CopyTo"/>
+            public void CopyTo(ref NativeArray<T> array)
+            {
+                byte* arrayPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array);
+                int elementsPerLaneBlock = m_BufferInfo->BlockSize / ELEMENT_SIZE;
+                int arrayIndex = 0;
+                for (int laneIndex = 0; laneIndex < LaneCount; ++laneIndex)
+                {
+                    LaneReader laneReader = AsLaneReader(laneIndex);
+                    int laneElementsRemaining = laneReader.Count;
+
+                    while (laneElementsRemaining > 0)
+                    {
+                        int numElementsToRead = math.min(elementsPerLaneBlock, laneElementsRemaining);
+                        laneReader.ReadBlock(arrayPtr, arrayIndex, numElementsToRead);
+                        arrayIndex += numElementsToRead;
+                        laneElementsRemaining -= numElementsToRead;
+                    }
+                }
             }
         }
 
@@ -528,6 +641,14 @@ namespace Anvil.Unity.DOTS.Data
             private byte* m_ReaderHead;
 
             /// <summary>
+            /// Reports if this <see cref="LaneReader"/> has been created and is valid to use.
+            /// </summary>
+            public bool IsCreated
+            {
+                get => m_BufferInfo != null;
+            }
+
+            /// <summary>
             /// How many elements are available to read on this lane
             /// </summary>
             public int Count
@@ -535,10 +656,10 @@ namespace Anvil.Unity.DOTS.Data
                 get => m_Lane->Count;
             }
 
-            internal LaneReader(LaneInfo* lane, BufferInfo* bufferInfo)
+            internal LaneReader(BufferInfo* bufferInfo, int laneIndex)
             {
-                m_Lane = lane;
                 m_BufferInfo = bufferInfo;
+                m_Lane = m_BufferInfo->LaneInfos + laneIndex;
 
                 m_CurrentReadBlock = m_Lane->FirstBlock;
                 m_ReaderHead = m_CurrentReadBlock != null
@@ -581,6 +702,23 @@ namespace Anvil.Unity.DOTS.Data
                 return ref UnsafeUtility.AsRef<T>(readPointer);
             }
 
+            internal void ReadBlock(byte* dstStart, int dstStartIndex, int elementsToRead)
+            {
+                long bytesToRead = elementsToRead * ELEMENT_SIZE;
+                long bytesToOffset = dstStartIndex * ELEMENT_SIZE;
+                
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
+                Assert.IsTrue(m_ReaderHead + bytesToRead <= m_EndOfCurrentBlock);
+#endif
+
+                byte* dstPtr = dstStart + bytesToOffset;
+                UnsafeUtility.MemCpy(dstPtr, m_ReaderHead, bytesToRead);
+
+                m_ReaderHead += bytesToRead;
+                CheckForEndOfBlock();
+            }
+
             /// <summary>
             /// Peeks at what the next elements in the reader is but does not advance the reader head.
             /// Will return the same value until <see cref="Read" /> has been called.
@@ -605,7 +743,7 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct DisposeJob : IJob
         {
-            private UnsafeTypedStream<T> m_UnsafeTypedStream;
+            [WriteOnly] private UnsafeTypedStream<T> m_UnsafeTypedStream;
 
             public DisposeJob(UnsafeTypedStream<T> unsafeTypedStream)
             {
@@ -615,6 +753,22 @@ namespace Anvil.Unity.DOTS.Data
             public void Execute()
             {
                 m_UnsafeTypedStream.Dispose();
+            }
+        }
+
+        [BurstCompile]
+        private struct ClearJob : IJob
+        {
+            [WriteOnly] private UnsafeTypedStream<T> m_UnsafeTypedStream;
+
+            public ClearJob(UnsafeTypedStream<T> unsafeTypedStream)
+            {
+                m_UnsafeTypedStream = unsafeTypedStream;
+            }
+
+            public void Execute()
+            {
+                m_UnsafeTypedStream.Clear();
             }
         }
     }

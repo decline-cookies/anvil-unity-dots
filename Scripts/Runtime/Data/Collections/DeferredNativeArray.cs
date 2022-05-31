@@ -160,6 +160,7 @@ namespace Anvil.Unity.DOTS.Data
                 UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
                 m_BufferInfo->Buffer = null;
             }
+
             UnsafeUtility.Free(m_BufferInfo, m_Allocator);
             m_BufferInfo = null;
         }
@@ -178,6 +179,7 @@ namespace Anvil.Unity.DOTS.Data
             {
                 return default;
             }
+
             DisposeSentinel.Clear(ref m_DisposeSentinel);
             DisposeJob disposeJob = new DisposeJob(m_BufferInfo, m_Allocator);
             JobHandle jobHandle = disposeJob.Schedule(inputDeps);
@@ -285,6 +287,7 @@ namespace Anvil.Unity.DOTS.Data
                 {
                     UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
                 }
+
                 UnsafeUtility.Free(m_BufferInfo, m_Allocator);
             }
         }
