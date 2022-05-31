@@ -309,14 +309,14 @@ namespace Anvil.Unity.DOTS.Data
         }
         
         /// <summary>
-        /// Reads everything from this <see cref="UnsafeTypedStream{T}"/> into a <see cref="NativeArray{T}"/>
+        /// Copies everything from this <see cref="UnsafeTypedStream{T}"/> into a <see cref="NativeArray{T}"/>
         /// through optimized memory copying of the blocks. 
         /// </summary>
         /// <param name="array">The array to populate</param>
-        public void ReadInto(ref NativeArray<T> array)
+        public void CopyInto(ref NativeArray<T> array)
         {
             Reader reader = AsReader();
-            reader.ReadInto(ref array);
+            reader.CopyInto(ref array);
         }
 
         /// <summary>
@@ -414,7 +414,7 @@ namespace Anvil.Unity.DOTS.Data
         public NativeArray<T> ToNativeArray(Allocator allocator)
         {
             NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
-            ReadInto(ref array);
+            CopyInto(ref array);
 
             return array;
         }
@@ -603,8 +603,8 @@ namespace Anvil.Unity.DOTS.Data
                 return count;
             }
             
-            /// <inheritdoc cref="UnsafeTypedStream{T}.ReadInto"/>
-            public void ReadInto(ref NativeArray<T> array)
+            /// <inheritdoc cref="UnsafeTypedStream{T}.CopyInto"/>
+            public void CopyInto(ref NativeArray<T> array)
             {
                 byte* arrayPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array);
                 int elementsPerLaneBlock = m_BufferInfo->BlockSize / ELEMENT_SIZE;
