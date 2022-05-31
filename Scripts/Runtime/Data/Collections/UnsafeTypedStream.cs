@@ -705,13 +705,14 @@ namespace Anvil.Unity.DOTS.Data
             internal void ReadBlock(byte* dstStart, int dstStartIndex, int elementsToRead)
             {
                 long bytesToRead = elementsToRead * ELEMENT_SIZE;
+                long bytesToOffset = dstStartIndex * ELEMENT_SIZE;
                 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Assert.IsTrue(Count > 0 && m_CurrentReadBlock != null && m_ReaderHead != null);
                 Assert.IsTrue(m_ReaderHead + bytesToRead <= m_EndOfCurrentBlock);
 #endif
 
-                byte* dstPtr = dstStart + dstStartIndex;
+                byte* dstPtr = dstStart + bytesToOffset;
                 UnsafeUtility.MemCpy(dstPtr, m_ReaderHead, bytesToRead);
 
                 m_ReaderHead += bytesToRead;
