@@ -12,13 +12,11 @@ namespace Anvil.Unity.DOTS.Entities
         protected AccessController AccessController
         {
             get;
-            private set;
         }
 
         protected UnsafeTypedStream<T> Pending
         {
             get;
-            private set;
         }
 
         protected DeferredNativeArray<T> Current
@@ -51,7 +49,8 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => Current;
         }
-
+        
+        //TODO: Balanced batch across X threads
         public int BatchSize
         {
             get;
@@ -62,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities
         // IDataOwner
         //*************************************************************************************************************
 
-        protected JobHandle AcquireForUpdate(JobHandle dependsOn)
+        protected virtual JobHandle InternalAcquireProcessorAsync(JobHandle dependsOn)
         {
             //Get access to be able to write exclusively, we need to update everything
             JobHandle exclusiveWrite = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
@@ -78,29 +77,60 @@ namespace Anvil.Unity.DOTS.Entities
 
             //Clear pending so we can use it again
             JobHandle clearHandle = Pending.Clear(consolidateHandle);
-            
-            //If we have any channels that we might be writing responses out to, we need make sure we get access to them
-            return AcquireResponseChannelsForUpdate(clearHandle);
+
+            return clearHandle;
         }
 
-        protected virtual JobHandle AcquireResponseChannelsForUpdate(JobHandle dependsOn)
-        {
-            return dependsOn;
-        }
-
-        public void ReleaseForUpdate(JobHandle releaseAccessDependency)
+        public virtual void ReleaseProcessorAsync(JobHandle releaseAccessDependency)
         {
             //The native array of current values has been read from this frame, we can dispose it.
             //TODO: Look at clearing instead.
             Current.Dispose(releaseAccessDependency);
             //Others can use this again
             AccessController.ReleaseAsync(releaseAccessDependency);
-            //Release all response channels as well
-            ReleaseResponseChannelsForUpdate(releaseAccessDependency);
         }
 
-        protected virtual void ReleaseResponseChannelsForUpdate(JobHandle releaseAccessDependency)
+
+        protected UnsafeTypedStream<T>.Writer AcquirePending(AccessType accessType)
         {
+            //TODO: Collections Checks
+            AccessController.Acquire(accessType);
+            return Pending.AsWriter();
         }
+
+        protected JobHandle AcquirePendingAsync(AccessType accessType, out UnsafeTypedStream<T>.Writer pendingWriter)
+        {
+            //TODO: Collections Checks
+            pendingWriter = Pending.AsWriter();
+            return AccessController.AcquireAsync(accessType);
+        }
+
+        protected void ReleasePending()
+        {
+            //TODO: Collections Checks
+            AccessController.Release();
+        }
+
+        protected void ReleasePendingAsync(JobHandle releaseAccessDependency)
+        {
+            //TODO: Collections Checks
+            AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
+        protected JobHandle AcquireAllAsync(AccessType accessType, out UnsafeTypedStream<T>.Writer pendingWriter, out NativeArray<T> current)
+        {
+            //TODO: Collections Checks
+            pendingWriter = Pending.AsWriter();
+            current = Current.AsDeferredJobArray();
+            return AccessController.AcquireAsync(accessType);
+        }
+
+        protected void ReleaseAllAsync(JobHandle releaseAccessDependency)
+        {
+            //TODO: Collections Checks
+            AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+        
+        
     }
 }

@@ -10,19 +10,19 @@ namespace Anvil.Unity.DOTS.Entities
         where TResponse : struct
     {
         //TODO: Could there ever be more than one?
-        private readonly HashSet<RequestSystemData<TRequest, TResponse>> m_RequestSources;
+        private readonly HashSet<RequestResponseSystemData<TRequest, TResponse>> m_RequestSources;
         
-        public ResponseSystemData(RequestSystemData<TRequest, TResponse> requestSystemData)
+        public ResponseSystemData(RequestResponseSystemData<TRequest, TResponse> requestResponseSystemData)
         {
-            m_RequestSources = new HashSet<RequestSystemData<TRequest, TResponse>>
+            m_RequestSources = new HashSet<RequestResponseSystemData<TRequest, TResponse>>
             {
-                requestSystemData
+                requestResponseSystemData
             };
         }
 
         protected override void DisposeSelf()
         {
-            foreach (RequestSystemData<TRequest, TResponse> dataRequest in m_RequestSources)
+            foreach (RequestResponseSystemData<TRequest, TResponse> dataRequest in m_RequestSources)
             {
                 dataRequest.UnregisterResponseChannel(this);
             }
@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobHandle AcquireForUpdate(JobHandle dependsOn, out UpdateResponseJobData<TResponse> jobData)
         {
-            JobHandle dependency = AcquireForUpdate(dependsOn);
+            JobHandle dependency = InternalAcquireProcessorAsync(dependsOn);
             //Create the job struct to be used by whoever is processing the data
             jobData = new UpdateResponseJobData<TResponse>(Current.AsDeferredJobArray());
             return dependency;
