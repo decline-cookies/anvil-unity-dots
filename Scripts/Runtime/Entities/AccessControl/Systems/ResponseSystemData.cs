@@ -1,39 +1,37 @@
-using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System.Collections.Generic;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class ResponseSystemData<TRequest, TResponse> : AbstractSystemData<TResponse>
-        where TRequest : struct, IRequestData<TResponse>
+    public interface IResponseSystemData<TRequest, TResponse>
+        where TRequest : struct, IRequest<TResponse>
+        where TResponse : struct
+    {
+        ResponseJobWriter<TResponse> GetResponseJobWriter();
+    }
+    
+    public class ResponseSystemData<TRequest, TResponse> : AbstractSystemData<TResponse>,
+                                                           IResponseSystemData<TRequest, TResponse>
+        where TRequest : struct, IRequest<TResponse>
         where TResponse : struct
     {
         //TODO: Could there ever be more than one?
-        private readonly HashSet<RequestResponseSystemData<TRequest, TResponse>> m_RequestSources;
+        private readonly RequestResponseSystemData<TRequest, TResponse> m_RequestSource;
         
-        public ResponseSystemData(RequestResponseSystemData<TRequest, TResponse> requestResponseSystemData)
+        internal ResponseSystemData(RequestResponseSystemData<TRequest, TResponse> requestResponseSystemData)
         {
-            m_RequestSources = new HashSet<RequestResponseSystemData<TRequest, TResponse>>
-            {
-                requestResponseSystemData
-            };
+            m_RequestSource = requestResponseSystemData;
         }
 
         protected override void DisposeSelf()
         {
-            foreach (RequestResponseSystemData<TRequest, TResponse> dataRequest in m_RequestSources)
-            {
-                dataRequest.UnregisterResponseChannel(this);
-            }
+            m_RequestSource.UnregisterResponseChannel(this);
 
-            m_RequestSources.Clear();
-            
             base.DisposeSelf();
         }
         
         //*************************************************************************************************************
-        // Response
+        // IResponseSystemData
         //*************************************************************************************************************
 
         public JobHandle AcquireForResponse()
@@ -46,21 +44,29 @@ namespace Anvil.Unity.DOTS.Entities
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
-        public ResponseJobData<TResponse> GetResponseChannel()
+        public ResponseJobWriter<TResponse> GetResponseJobWriter()
         {
-            return new ResponseJobData<TResponse>(Pending.AsWriter());
+            return new ResponseJobWriter<TResponse>(Pending.AsWriter());
         }
         
         //*************************************************************************************************************
-        // Update
+        // Owner
         //*************************************************************************************************************
 
-        public JobHandle AcquireForUpdate(JobHandle dependsOn, out UpdateResponseJobData<TResponse> jobData)
+        public JobHandle AcquireResponseJobReaderAsync(JobHandle dependsOn, out ResponseJobReader<TResponse> responseJobReader)
         {
+            //TODO: Collections checks
             JobHandle dependency = InternalAcquireProcessorAsync(dependsOn);
             //Create the job struct to be used by whoever is processing the data
-            jobData = new UpdateResponseJobData<TResponse>(Current.AsDeferredJobArray());
+            responseJobReader = new ResponseJobReader<TResponse>(Current.AsDeferredJobArray());
+            
             return dependency;
+        }
+
+        public void ReleaseResponseJobReaderAsync(JobHandle releaseAccessDependency)
+        {
+            //TODO: Collections checks
+            ReleaseProcessorAsync(releaseAccessDependency);
         }
     }
 }

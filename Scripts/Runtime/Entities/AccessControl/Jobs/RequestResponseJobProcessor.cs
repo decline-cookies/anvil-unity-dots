@@ -6,7 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Entities
 {
     public struct RequestResponseJobProcessor<TRequest, TResponse> : ISystemDataJobProcessor<TRequest, TResponse>
-        where TRequest : struct, IRequestData<TResponse>
+        where TRequest : struct, IRequest<TResponse>
         where TResponse : struct
     {
         private const int DEFAULT_THREAD_INDEX = -1;

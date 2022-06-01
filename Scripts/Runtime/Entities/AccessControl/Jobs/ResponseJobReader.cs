@@ -2,12 +2,17 @@ using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public readonly struct UpdateResponseJobData<TResponse>
+    public readonly struct ResponseJobReader<TResponse>
         where TResponse : struct
     {
         private readonly NativeArray<TResponse> m_Current;
 
-        public UpdateResponseJobData(NativeArray<TResponse> current)
+        public int Length
+        {
+            get => m_Current.Length;
+        }
+        
+        public ResponseJobReader(NativeArray<TResponse> current)
         {
             m_Current = current;
         }

@@ -6,19 +6,22 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IRequestWriter<TRequest>
-        where TRequest : struct
+    public interface IRequestSystemData<TRequest, TResponse>
+        where TRequest : struct, IRequest<TResponse>
+        where TResponse : struct
     {
         RequestJobWriter<TRequest> AcquireRequestJobWriter();
         void ReleaseRequestJobWriter();
 
         JobHandle AcquireRequestJobWriterAsync(out RequestJobWriter<TRequest> writer);
         void ReleaseRequestJobWriterAsync(JobHandle releaseAccessDependency);
+
+        ResponseSystemData<TRequest, TResponse> CreateResponseSystemData();
     }
     
     public class RequestResponseSystemData<TRequest, TResponse> : AbstractSystemData<TRequest>,
-                                                                  IRequestWriter<TRequest>
-        where TRequest : struct, IRequestData<TResponse>
+                                                                  IRequestSystemData<TRequest, TResponse>
+        where TRequest : struct, IRequest<TResponse>
         where TResponse : struct
     {
         private readonly HashSet<ResponseSystemData<TRequest, TResponse>> m_ResponseChannels;
@@ -36,17 +39,17 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         //*************************************************************************************************************
-        // Request
+        // IRequestSystemData
         //*************************************************************************************************************
 
-        public ResponseSystemData<TRequest, TResponse> CreateResponseChannel()
+        public ResponseSystemData<TRequest, TResponse> CreateResponseSystemData()
         {
             ResponseSystemData<TRequest, TResponse> responseSystemData = new ResponseSystemData<TRequest, TResponse>(this);
             m_ResponseChannels.Add(responseSystemData);
             return responseSystemData;
         }
 
-        public void UnregisterResponseChannel(ResponseSystemData<TRequest, TResponse> responseSystemData)
+        internal void UnregisterResponseChannel(ResponseSystemData<TRequest, TResponse> responseSystemData)
         {
             m_ResponseChannels.Remove(responseSystemData);
         }
@@ -80,11 +83,12 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         //*************************************************************************************************************
-        // Update
+        // Owner
         //*************************************************************************************************************
 
         public JobHandle AcquireProcessorAsync(JobHandle dependsOn, out RequestResponseJobProcessor<TRequest, TResponse> responseJobProcessor)
         {
+            //TODO: Collections checks
             JobHandle dependency = InternalAcquireProcessorAsync(dependsOn);
             //Create the job struct to be used by whoever is processing the data
             responseJobProcessor = new RequestResponseJobProcessor<TRequest, TResponse>(Pending.AsWriter(),
@@ -122,6 +126,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public sealed override void ReleaseProcessorAsync(JobHandle releaseAccessDependency)
         {
+            //TODO: Collections checks
             base.ReleaseProcessorAsync(releaseAccessDependency);
             //Release all response channels as well
             ReleaseResponseChannelsForUpdate(releaseAccessDependency);

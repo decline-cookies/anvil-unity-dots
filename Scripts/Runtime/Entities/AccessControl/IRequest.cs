@@ -1,9 +1,9 @@
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IRequestData<TResponse>
+    public interface IRequest<TResponse>
         where TResponse : struct
     {
-        public ResponseJobData<TResponse> ResponseWriter
+        public ResponseJobWriter<TResponse> ResponseWriter
         {
             get;
         }
