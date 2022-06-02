@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
     public interface IRequest<TResponse>
         where TResponse : struct

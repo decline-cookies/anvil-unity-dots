@@ -1,12 +1,11 @@
-using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
-    public interface IRequestSystemData<TRequest, TResponse>
+    public interface IRequestVirtualData<TRequest, TResponse> : IRequestVirtualData<TResponse>
         where TRequest : struct, IRequest<TResponse>
         where TResponse : struct
     {
@@ -15,20 +14,25 @@ namespace Anvil.Unity.DOTS.Entities
 
         JobHandle AcquireRequestJobWriterAsync(out RequestJobWriter<TRequest> writer);
         void ReleaseRequestJobWriterAsync(JobHandle releaseAccessDependency);
-
-        ResponseSystemData<TRequest, TResponse> CreateResponseSystemData();
     }
-    
-    public class RequestResponseSystemData<TRequest, TResponse> : AbstractSystemData<TRequest>,
-                                                                  IRequestSystemData<TRequest, TResponse>
+
+    public interface IRequestVirtualData<TResponse>
+        where TResponse : struct
+    {
+        ResponseVirtualData<TResponse> CreateResponseVirtualData();
+        void UnregisterResponseChannel(ResponseVirtualData<TResponse> responseVirtualData);
+    }
+
+    public class RequestResponseVirtualData<TRequest, TResponse> : AbstractVirtualData<TRequest>,
+                                                                   IRequestVirtualData<TRequest, TResponse>
         where TRequest : struct, IRequest<TResponse>
         where TResponse : struct
     {
-        private readonly HashSet<ResponseSystemData<TRequest, TResponse>> m_ResponseChannels;
+        private readonly HashSet<ResponseVirtualData<TResponse>> m_ResponseChannels;
 
-        public RequestResponseSystemData()
+        public RequestResponseVirtualData()
         {
-            m_ResponseChannels = new HashSet<ResponseSystemData<TRequest, TResponse>>();
+            m_ResponseChannels = new HashSet<ResponseVirtualData<TResponse>>();
         }
 
         protected override void DisposeSelf()
@@ -42,16 +46,16 @@ namespace Anvil.Unity.DOTS.Entities
         // IRequestSystemData
         //*************************************************************************************************************
 
-        public ResponseSystemData<TRequest, TResponse> CreateResponseSystemData()
+        public ResponseVirtualData<TResponse> CreateResponseVirtualData()
         {
-            ResponseSystemData<TRequest, TResponse> responseSystemData = new ResponseSystemData<TRequest, TResponse>(this);
-            m_ResponseChannels.Add(responseSystemData);
-            return responseSystemData;
+            ResponseVirtualData<TResponse> responseVirtualData = new ResponseVirtualData<TResponse>(this);
+            m_ResponseChannels.Add(responseVirtualData);
+            return responseVirtualData;
         }
 
-        internal void UnregisterResponseChannel(ResponseSystemData<TRequest, TResponse> responseSystemData)
+        public void UnregisterResponseChannel(ResponseVirtualData<TResponse> responseVirtualData)
         {
-            m_ResponseChannels.Remove(responseSystemData);
+            m_ResponseChannels.Remove(responseVirtualData);
         }
 
         public RequestJobWriter<TRequest> AcquireRequestJobWriter()
@@ -115,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities
             NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResponseChannels.Count + 1, Allocator.Temp);
             allDependencies[0] = dependsOn;
             int index = 1;
-            foreach (ResponseSystemData<TRequest, TResponse> responseChannel in m_ResponseChannels)
+            foreach (ResponseVirtualData<TResponse> responseChannel in m_ResponseChannels)
             {
                 allDependencies[index] = responseChannel.AcquireForResponse();
                 index++;
@@ -139,7 +143,7 @@ namespace Anvil.Unity.DOTS.Entities
                 return;
             }
 
-            foreach (ResponseSystemData<TRequest, TResponse> responseChannel in m_ResponseChannels)
+            foreach (ResponseVirtualData<TResponse> responseChannel in m_ResponseChannels)
             {
                 responseChannel.ReleaseForResponse(releaseAccessDependency);
             }

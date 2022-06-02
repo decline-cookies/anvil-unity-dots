@@ -1,26 +1,29 @@
+using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
-    public interface IResponseSystemData<TRequest, TResponse>
-        where TRequest : struct, IRequest<TResponse>
+    public interface IResponseVirtualData<TResponse> : IResponseVirtualData
         where TResponse : struct
     {
         ResponseJobWriter<TResponse> GetResponseJobWriter();
     }
-    
-    public class ResponseSystemData<TRequest, TResponse> : AbstractSystemData<TResponse>,
-                                                           IResponseSystemData<TRequest, TResponse>
-        where TRequest : struct, IRequest<TResponse>
+
+    public interface IResponseVirtualData : IAnvilDisposable
+    {
+    }
+
+    public class ResponseVirtualData<TResponse> : AbstractVirtualData<TResponse>,
+                                                  IResponseVirtualData<TResponse>
         where TResponse : struct
     {
         //TODO: Could there ever be more than one?
-        private readonly RequestResponseSystemData<TRequest, TResponse> m_RequestSource;
-        
-        internal ResponseSystemData(RequestResponseSystemData<TRequest, TResponse> requestResponseSystemData)
+        private readonly IRequestVirtualData<TResponse> m_RequestSource;
+
+        internal ResponseVirtualData(IRequestVirtualData<TResponse> requestResponseVirtualData)
         {
-            m_RequestSource = requestResponseSystemData;
+            m_RequestSource = requestResponseVirtualData;
         }
 
         protected override void DisposeSelf()
@@ -29,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.DisposeSelf();
         }
-        
+
         //*************************************************************************************************************
         // IResponseSystemData
         //*************************************************************************************************************
@@ -48,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return new ResponseJobWriter<TResponse>(Pending.AsWriter());
         }
-        
+
         //*************************************************************************************************************
         // Owner
         //*************************************************************************************************************
@@ -59,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle dependency = InternalAcquireProcessorAsync(dependsOn);
             //Create the job struct to be used by whoever is processing the data
             responseJobReader = new ResponseJobReader<TResponse>(Current.AsDeferredJobArray());
-            
+
             return dependency;
         }
 

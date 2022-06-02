@@ -3,9 +3,9 @@ using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
-    public struct StateJobWriter<TState> : ISystemDataJobWriter<TState>
+    public struct StateJobAddWriter<TState>
         where TState : struct
     {
         private const int DEFAULT_THREAD_INDEX = -1;
@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly UnsafeTypedStream<TState>.Writer m_Writer;
         private UnsafeTypedStream<TState>.LaneWriter m_LaneWriter;
 
-        internal StateJobWriter(UnsafeTypedStream<TState>.Writer writer, bool isMainThread = false)
+        internal StateJobAddWriter(UnsafeTypedStream<TState>.Writer writer, bool isMainThread = false)
         {
             m_Writer = writer;
             m_NativeThreadIndex = DEFAULT_THREAD_INDEX;

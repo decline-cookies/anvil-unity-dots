@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
     public struct RequestResponseJobProcessor<TRequest, TResponse> : ISystemDataJobProcessor<TRequest, TResponse>
         where TRequest : struct, IRequest<TResponse>

@@ -1,9 +1,8 @@
-using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
     public struct RequestJobWriter<TRequest> : ISystemDataJobWriter<TRequest>
         where TRequest : struct

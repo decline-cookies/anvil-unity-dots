@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
     public interface ISystemDataJobProcessor<TRequest, TResponse> : ISystemDataJobReader<TRequest>
         where TRequest : struct, IRequest<TResponse>

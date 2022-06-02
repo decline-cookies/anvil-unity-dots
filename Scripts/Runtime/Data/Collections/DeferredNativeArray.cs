@@ -29,7 +29,6 @@ namespace Anvil.Unity.DOTS.Data
     /// </remarks>
     /// <typeparam name="T">The type to contain in the <see cref="DeferredNativeArray{T}"/></typeparam>
     [StructLayout(LayoutKind.Sequential)]
-    [DebuggerDisplay("Length = {Length}")]
     [NativeContainer]
     [BurstCompatible]
     public struct DeferredNativeArray<T> : INativeDisposable
@@ -184,7 +183,6 @@ namespace Anvil.Unity.DOTS.Data
             DisposeJob disposeJob = new DisposeJob(m_BufferInfo, m_Allocator);
             JobHandle jobHandle = disposeJob.Schedule(inputDeps);
             AtomicSafetyHandle.Release(m_Safety);
-            m_BufferInfo->Buffer = null;
             m_BufferInfo = null;
             return jobHandle;
         }
@@ -286,6 +284,7 @@ namespace Anvil.Unity.DOTS.Data
                 if (m_BufferInfo->Buffer != null)
                 {
                     UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
+                    m_BufferInfo->Buffer = null;
                 }
 
                 UnsafeUtility.Free(m_BufferInfo, m_Allocator);

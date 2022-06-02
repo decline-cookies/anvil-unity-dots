@@ -1,6 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
     public readonly struct ResponseJobWriter<TResponse>
         where TResponse : struct

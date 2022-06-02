@@ -1,6 +1,6 @@
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
     public readonly struct ResponseJobReader<TResponse>
         where TResponse : struct

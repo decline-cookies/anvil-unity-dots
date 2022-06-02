@@ -1,14 +1,15 @@
 using Anvil.CSharp.Core;
-using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Data
 {
-    public abstract class AbstractSystemData<T> : AbstractAnvilBase
+    public abstract class AbstractVirtualData<T> : AbstractAnvilBase
         where T : struct
     {
+
         protected AccessController AccessController
         {
             get;
@@ -25,11 +26,12 @@ namespace Anvil.Unity.DOTS.Entities
             private set;
         }
 
-        protected AbstractSystemData()
+        protected AbstractVirtualData()
         {
             AccessController = new AccessController();
             Pending = new UnsafeTypedStream<T>(Allocator.Persistent, Allocator.TempJob);
 
+            //TODO: Allow for better batching rules - Spread evenly across X threads, maximizing chunk
             BatchSize = ChunkUtil.MaxElementsPerChunk<T>();
         }
 
@@ -49,13 +51,12 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => Current;
         }
-        
+
         //TODO: Balanced batch across X threads
         public int BatchSize
         {
             get;
         }
-
 
         //*************************************************************************************************************
         // IDataOwner
@@ -130,7 +131,5 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: Collections Checks
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
-        
-        
     }
 }
