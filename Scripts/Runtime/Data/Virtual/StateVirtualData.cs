@@ -36,7 +36,8 @@ namespace Anvil.Unity.DOTS.Data
         where TState : struct, IState<TKey>
     {
         private readonly AccessController m_AccessController;
-
+        
+        //TODO: Could combine the add/remove to one modify lookup
         private UnsafeTypedStream<TState> m_PendingAdd;
         private UnsafeTypedStream<TKey> m_PendingRemove;
         private DeferredNativeArray<TState> m_ActiveStates;
@@ -56,6 +57,7 @@ namespace Anvil.Unity.DOTS.Data
             m_PendingAdd.Dispose();
             m_PendingRemove.Dispose();
             m_ActiveStatesLookup.Dispose();
+            m_ActiveStates.Dispose();
             base.DisposeSelf();
         }
 
@@ -107,6 +109,20 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         public void ReleaseStateJobReaderAsync(JobHandle releaseAccessDependency)
+        {
+            //TODO: Collections checks
+            m_AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
+        public JobHandle AcquireStateJobLookupReaderAsync(out StateJobLookupReader<TKey, TState> stateJobLookupReader)
+        {
+            //TODO: Collections checks
+            JobHandle readerHandle = m_AccessController.AcquireAsync(AccessType.SharedRead);
+            stateJobLookupReader = new StateJobLookupReader<TKey, TState>(m_ActiveStatesLookup);
+            return readerHandle;
+        }
+
+        public void ReleaseStateJobLookupReaderAsync(JobHandle releaseAccessDependency)
         {
             //TODO: Collections checks
             m_AccessController.ReleaseAsync(releaseAccessDependency);

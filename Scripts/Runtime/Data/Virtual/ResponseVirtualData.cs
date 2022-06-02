@@ -56,6 +56,7 @@ namespace Anvil.Unity.DOTS.Data
         // Owner
         //*************************************************************************************************************
 
+        //TODO: Do we need the jobhandle to be passed in? 
         public JobHandle AcquireResponseJobReaderAsync(JobHandle dependsOn, out ResponseJobReader<TResponse> responseJobReader)
         {
             //TODO: Collections checks
