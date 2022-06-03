@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Data
         void ReleaseStateJobReaderAsync(JobHandle releaseAccessDependency);
     }
 
-
+    //TODO: Serialization and Deserialization
     public class StateVirtualData<TKey, TState> : AbstractAnvilBase,
                                                   IStateWriterVirtualData<TState>,
                                                   IStateReaderVirtualData<TKey, TState>

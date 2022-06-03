@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Jobs
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
-
+                    //TODO: Look at passing in the thread index here
                     jobData.Execute(beginIndex, endIndex - beginIndex);
                 }
             }
