@@ -106,6 +106,8 @@ namespace Anvil.Unity.DOTS.Jobs
                                               int jobIndex)
             {
                 ref TJob jobData = ref wrapperData.m_JobData;
+                jobData.InitForThread(wrapperData.m_NativeThreadIndex);
+                
                 while (true)
                 {
                     if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
@@ -113,9 +115,6 @@ namespace Anvil.Unity.DOTS.Jobs
                         return;
                     }
                     
-                    //We'll try to call the init method for the thread here because we only want to do so if we actually have work
-                    wrapperData.TryInitForThread(ref jobData);
-
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
@@ -132,24 +131,10 @@ namespace Anvil.Unity.DOTS.Jobs
             private TJob m_JobData;
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
-            private bool m_HasInitializedForThread;
-
             public JobDeferredNativeArrayForProducer(ref TJob jobData)
             {
                 m_JobData = jobData;
                 m_NativeThreadIndex = DEFAULT_NATIVE_THREAD_INDEX;
-                m_HasInitializedForThread = false;
-            }
-
-            private void TryInitForThread(ref TJob jobData)
-            {
-                if (m_HasInitializedForThread)
-                {
-                    return;
-                }
-
-                m_HasInitializedForThread = true;
-                jobData.InitForThread(m_NativeThreadIndex);
             }
         }
 
