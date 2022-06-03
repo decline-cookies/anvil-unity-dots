@@ -49,6 +49,7 @@ namespace Anvil.Unity.DOTS.Data
             m_PendingAdd = new UnsafeTypedStream<TState>(Allocator.Persistent, Allocator.TempJob);
             m_PendingRemove = new UnsafeTypedStream<TKey>(Allocator.Persistent, Allocator.TempJob);
             m_ActiveStatesLookup = new NativeHashMap<TKey, TState>(initialCapacity, Allocator.Persistent);
+            m_ActiveStates = new DeferredNativeArray<TState>(Allocator.Persistent, Allocator.TempJob);
         }
 
         protected override void DisposeSelf()
@@ -137,14 +138,13 @@ namespace Anvil.Unity.DOTS.Data
             JobHandle exclusiveWriter = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
             //TODO: Investigate reusing a DeferredNativeArray and Clearing instead
-            JobHandle disposeOldActiveStatesHandle = m_ActiveStates.Dispose(exclusiveWriter);
-            m_ActiveStates = new DeferredNativeArray<TState>(Allocator.TempJob);
+            JobHandle clearHandle = m_ActiveStates.Clear(exclusiveWriter);
 
             UpdateActiveStatesJob updateActiveStatesJob = new UpdateActiveStatesJob(m_PendingAdd.AsReader(),
                                                                                     m_PendingRemove.AsReader(),
                                                                                     m_ActiveStatesLookup,
                                                                                     m_ActiveStates);
-            JobHandle updateHandle = updateActiveStatesJob.Schedule(JobHandle.CombineDependencies(dependsOn, disposeOldActiveStatesHandle));
+            JobHandle updateHandle = updateActiveStatesJob.Schedule(JobHandle.CombineDependencies(dependsOn, clearHandle));
 
             JobHandle clearAddHandle = m_PendingAdd.Clear(updateHandle);
             JobHandle clearRemoveHandle = m_PendingRemove.Clear(updateHandle);

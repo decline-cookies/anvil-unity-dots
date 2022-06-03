@@ -23,13 +23,13 @@ namespace Anvil.Unity.DOTS.Data
         protected DeferredNativeArray<T> Current
         {
             get;
-            private set;
         }
 
         protected AbstractVirtualData()
         {
             AccessController = new AccessController();
             Pending = new UnsafeTypedStream<T>(Allocator.Persistent, Allocator.TempJob);
+            Current = new DeferredNativeArray<T>(Allocator.Persistent, Allocator.TempJob);
 
             //TODO: Allow for better batching rules - Spread evenly across X threads, maximizing chunk
             BatchSize = ChunkUtil.MaxElementsPerChunk<T>();
@@ -39,6 +39,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Dispose();
             Pending.Dispose();
+            Current.Dispose();
 
             base.DisposeSelf();
         }
@@ -67,10 +68,6 @@ namespace Anvil.Unity.DOTS.Data
             //Get access to be able to write exclusively, we need to update everything
             JobHandle exclusiveWrite = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
-            //Create a new DeferredNativeArray to hold everything we need this frame
-            //TODO: Investigate reusing a DeferredNativeArray
-            Current = new DeferredNativeArray<T>(Allocator.TempJob);
-
             //Consolidate everything in pending into current so it can be balanced across threads
             ConsolidateToNativeArrayJob<T> consolidateJob = new ConsolidateToNativeArrayJob<T>(Pending.AsReader(),
                                                                                                Current);
@@ -84,11 +81,10 @@ namespace Anvil.Unity.DOTS.Data
 
         public virtual void ReleaseProcessorAsync(JobHandle releaseAccessDependency)
         {
-            //The native array of current values has been read from this frame, we can dispose it.
-            //TODO: Look at clearing instead.
-            Current.Dispose(releaseAccessDependency);
+            //The native array of current values has been read from this frame, we can clear it.
+            JobHandle clearHandle = Current.Clear(releaseAccessDependency);
             //Others can use this again
-            AccessController.ReleaseAsync(releaseAccessDependency);
+            AccessController.ReleaseAsync(JobHandle.CombineDependencies(releaseAccessDependency, clearHandle));
         }
 
 
