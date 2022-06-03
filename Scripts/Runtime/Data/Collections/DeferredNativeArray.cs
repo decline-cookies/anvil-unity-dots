@@ -138,11 +138,23 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
         /// </summary>
-        /// <param name="allocator">The <see cref="Allocator"/> to use for memory allocation.</param>
+        /// <param name="allocator">
+        /// The <see cref="Allocator"/> to use for memory allocation of the collection and
+        /// the deferred data.
+        /// </param>
         public DeferredNativeArray(Allocator allocator) : this(allocator, allocator)
         {
         }
-
+        
+        /// <summary>
+        /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
+        /// </summary>
+        /// <param name="allocator">
+        /// The <see cref="Allocator"/> to use for memory allocation of the collection only.
+        /// </param>
+        /// <param name="deferredAllocator">
+        /// The <see cref="Allocator"/> to use for memory allocation of the deferred data.
+        /// </param>
         public DeferredNativeArray(Allocator allocator, Allocator deferredAllocator)
         {
             Allocate(allocator, deferredAllocator, out this);
