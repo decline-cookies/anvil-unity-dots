@@ -2,6 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -34,11 +35,6 @@ namespace Anvil.Unity.DOTS.Data
 
         public void InitForThread(int nativeThreadIndex)
         {
-            if (m_ContinueLaneWriter.IsCreated)
-            {
-                float a = 5.0f;
-            }
-            
             //TODO: Collection checks - Ensure this is called before anything else is called
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
