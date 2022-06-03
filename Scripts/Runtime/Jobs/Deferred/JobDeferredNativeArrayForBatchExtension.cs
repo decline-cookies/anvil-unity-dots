@@ -117,10 +117,7 @@ namespace Anvil.Unity.DOTS.Jobs
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
-                    for (int i = beginIndex; i < endIndex; ++i)
-                    {
-                        jobData.Execute(i);
-                    }
+                    jobData.Execute(beginIndex, endIndex - beginIndex);
                 }
             }
 

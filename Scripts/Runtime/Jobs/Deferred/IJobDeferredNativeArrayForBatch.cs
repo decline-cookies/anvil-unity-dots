@@ -19,9 +19,10 @@ namespace Anvil.Unity.DOTS.Jobs
         void InitForThread(int nativeThreadIndex);
         
         /// <summary>
-        /// Implement this method to perform work against a specific iteration index.
+        /// Implement this method to perform work against a batch
         /// </summary>
-        /// <param name="index">The index of the <see cref="NativeArray{T}"/> from a <see cref="DeferredNativeArray{T}"/></param>
-        void Execute(int index);
+        /// <param name="startIndex">The start index of the <see cref="NativeArray{T}"/> from a <see cref="DeferredNativeArray{T}"/></param>
+        /// <param name="count">The number of elements in this batch</param>
+        void Execute(int startIndex, int count);
     }
 }
