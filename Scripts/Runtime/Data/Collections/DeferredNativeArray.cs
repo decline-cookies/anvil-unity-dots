@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Unity.Assertions;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -29,7 +30,6 @@ namespace Anvil.Unity.DOTS.Data
     /// </remarks>
     /// <typeparam name="T">The type to contain in the <see cref="DeferredNativeArray{T}"/></typeparam>
     [StructLayout(LayoutKind.Sequential)]
-    [DebuggerDisplay("Length = {Length}")]
     [NativeContainer]
     [BurstCompatible]
     public struct DeferredNativeArray<T> : INativeDisposable
@@ -51,6 +51,7 @@ namespace Anvil.Unity.DOTS.Data
 
             [NativeDisableUnsafePtrRestriction] public void* Buffer;
             public int Length;
+            public Allocator DeferredAllocator;
         }
 
         //*************************************************************************************************************
@@ -85,12 +86,11 @@ namespace Anvil.Unity.DOTS.Data
             throw new InvalidOperationException($"{(object)typeof(T)} used in {nameof(DeferredNativeArray<T>)}<{(object)typeof(T)}> must be unmanaged (contain no managed types) and cannot itself be a native container type.");
         }
 
-        private static unsafe void Allocate(Allocator allocator, out DeferredNativeArray<T> array)
+        private static unsafe void Allocate(Allocator allocator, Allocator deferredAllocator, out DeferredNativeArray<T> array)
         {
-            if (allocator <= Allocator.None)
-            {
-                throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
-            }
+            //Ensures that deferred allocator can only be Temp, TempJob or Persistent and that the allocator is at the same or higher level.
+            //Can't have a deferred allocator that is persistent and a temp allocator.
+            Assert.IsTrue(deferredAllocator <= allocator && deferredAllocator > Allocator.None);
 
             AssertValidElementType();
             array = new DeferredNativeArray<T>();
@@ -99,6 +99,7 @@ namespace Anvil.Unity.DOTS.Data
                                                                    allocator);
             array.m_BufferInfo->Length = 0;
             array.m_BufferInfo->Buffer = null;
+            array.m_BufferInfo->DeferredAllocator = deferredAllocator;
 
             array.m_Allocator = allocator;
 
@@ -138,9 +139,13 @@ namespace Anvil.Unity.DOTS.Data
         /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
         /// </summary>
         /// <param name="allocator">The <see cref="Allocator"/> to use for memory allocation.</param>
-        public DeferredNativeArray(Allocator allocator)
+        public DeferredNativeArray(Allocator allocator) : this(allocator, allocator)
         {
-            Allocate(allocator, out this);
+        }
+
+        public DeferredNativeArray(Allocator allocator, Allocator deferredAllocator)
+        {
+            Allocate(allocator, deferredAllocator, out this);
         }
 
         /// <summary>
@@ -155,14 +160,27 @@ namespace Anvil.Unity.DOTS.Data
             }
 
             DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
-            if (m_BufferInfo->Buffer != null)
-            {
-                UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
-                m_BufferInfo->Buffer = null;
-            }
+            Clear();
 
             UnsafeUtility.Free(m_BufferInfo, m_Allocator);
             m_BufferInfo = null;
+        }
+
+        /// <summary>
+        /// Clears all data in the collection
+        /// </summary>
+        [WriteAccessRequired]
+        public unsafe void Clear()
+        {
+            if (!IsCreated
+             || m_BufferInfo->Buffer == null)
+            {
+                return;
+            }
+
+            UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
+            m_BufferInfo->Buffer = null;
+            m_BufferInfo->Length = 0;
         }
 
         /// <summary>
@@ -184,8 +202,24 @@ namespace Anvil.Unity.DOTS.Data
             DisposeJob disposeJob = new DisposeJob(m_BufferInfo, m_Allocator);
             JobHandle jobHandle = disposeJob.Schedule(inputDeps);
             AtomicSafetyHandle.Release(m_Safety);
-            m_BufferInfo->Buffer = null;
             m_BufferInfo = null;
+            return jobHandle;
+        }
+
+        /// <summary>
+        /// Schedules the clearing of the collections
+        /// </summary>
+        /// <param name="inputDeps">The <see cref="JobHandle"/> to wait on before clearing.</param>
+        /// <returns>A <see cref="JobHandle"/> for when clearing is complete</returns>
+        public unsafe JobHandle Clear(JobHandle inputDeps)
+        {
+            if (!IsCreated)
+            {
+                return default;
+            }
+
+            ClearJob clearJob = new ClearJob(m_BufferInfo);
+            JobHandle jobHandle = clearJob.Schedule(inputDeps);
             return jobHandle;
         }
 
@@ -201,7 +235,7 @@ namespace Anvil.Unity.DOTS.Data
 
             //Allocate the new memory
             long size = SIZE * newLength;
-            void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_Allocator);
+            void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_BufferInfo->DeferredAllocator);
             if (nativeArrayOptions == NativeArrayOptions.ClearMemory)
             {
                 UnsafeUtility.MemClear(newMemory, size);
@@ -212,7 +246,7 @@ namespace Anvil.Unity.DOTS.Data
             m_BufferInfo->Buffer = newMemory;
 
             //Return an actual NativeArray so it's familiar to use and we don't have to reimplement the same api and functionality
-            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, newLength, m_Allocator);
+            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, newLength, m_BufferInfo->DeferredAllocator);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
@@ -285,10 +319,35 @@ namespace Anvil.Unity.DOTS.Data
                 //when this job was scheduled because it requires main thread access
                 if (m_BufferInfo->Buffer != null)
                 {
-                    UnsafeUtility.Free(m_BufferInfo->Buffer, m_Allocator);
+                    UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
+                    m_BufferInfo->Buffer = null;
                 }
 
                 UnsafeUtility.Free(m_BufferInfo, m_Allocator);
+            }
+        }
+
+        [BurstCompile]
+        private readonly unsafe struct ClearJob : IJob
+        {
+            [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
+
+            public ClearJob(BufferInfo* bufferInfo)
+            {
+                m_BufferInfo = bufferInfo;
+            }
+
+            public void Execute()
+            {
+                if (m_BufferInfo->Buffer == null)
+                {
+                    return;
+                }
+
+                //Just clears the memory internally, the structure memory is still intact
+                UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
+                m_BufferInfo->Buffer = null;
+                m_BufferInfo->Length = 0;
             }
         }
     }
