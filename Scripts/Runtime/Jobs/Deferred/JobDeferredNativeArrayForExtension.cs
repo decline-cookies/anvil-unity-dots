@@ -26,6 +26,8 @@ namespace Anvil.Unity.DOTS.Jobs
 #endif
 
             IntPtr reflectionData = JobDeferredNativeArrayForProducer<TJob>.GetReflectionData();
+            
+            JobDeferredNativeArrayForProducer<TJob> wrapperData = new JobDeferredNativeArrayForProducer<TJob>(ref jobData);
 
 #if UNITY_2020_2_OR_NEWER
             const ScheduleMode SCHEDULE_MODE = ScheduleMode.Parallel;
@@ -33,11 +35,13 @@ namespace Anvil.Unity.DOTS.Jobs
             const ScheduleMode SCHEDULE_MODE = ScheduleMode.Batched;
 #endif
 
-            JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData),
+            JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
                                                                                                          dependsOn,
                                                                                                          SCHEDULE_MODE);
 
+            
+            
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       batchSize,
                                                                       DeferredNativeArrayUnsafeUtility.GetBufferInfoUnchecked(ref deferredNativeArray),
@@ -75,11 +79,11 @@ namespace Anvil.Unity.DOTS.Jobs
                 if (s_JobReflectionData.Data == IntPtr.Zero)
                 {
 #if UNITY_2020_2_OR_NEWER
-                    s_JobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(TJob),
+                    s_JobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(JobDeferredNativeArrayForProducer<TJob>),
                                                                                    typeof(TJob),
                                                                                    (ExecuteJobFunction)Execute);
 #else
-                    s_JobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(TJob),
+                    s_JobReflectionData.Data = JobsUtility.CreateJobReflectionData(typeof(JobDeferredNativeArrayForProducer<TJob>),
                                                                               typeof(TJob),
                                                                               JobType.ParallelFor,
                                                                               (ExecuteJobFunction)Execute);
@@ -87,7 +91,7 @@ namespace Anvil.Unity.DOTS.Jobs
                 }
             }
 
-            private delegate void ExecuteJobFunction(ref TJob jobData,
+            private delegate void ExecuteJobFunction(ref JobDeferredNativeArrayForProducer<TJob> jobData,
                                                      IntPtr additionalPtr,
                                                      IntPtr bufferRangePatchData,
                                                      ref JobRanges ranges,
@@ -95,28 +99,57 @@ namespace Anvil.Unity.DOTS.Jobs
 
 
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Required by Burst.")]
-            public static unsafe void Execute(ref TJob jobData,
+            public static unsafe void Execute(ref JobDeferredNativeArrayForProducer<TJob> wrapperData,
                                               IntPtr additionalPtr,
                                               IntPtr bufferRangePatchData,
                                               ref JobRanges ranges,
                                               int jobIndex)
             {
+                ref TJob jobData = ref wrapperData.m_JobData;
                 while (true)
                 {
                     if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                     {
                         return;
                     }
+                    
+                    //We'll try to call the init method for the thread here because we only want to do so if we actually have work
+                    wrapperData.TryInitForThread(ref jobData);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
 
-                    for (int index = beginIndex; index < endIndex; ++index)
+                    for (int i = beginIndex; i < endIndex; ++i)
                     {
-                        jobData.Execute(index);
+                        jobData.Execute(i);
                     }
                 }
+            }
+            
+            private const int DEFAULT_NATIVE_THREAD_INDEX = -1;
+
+            private TJob m_JobData;
+            [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
+
+            private bool m_HasInitializedForThread;
+
+            public JobDeferredNativeArrayForProducer(ref TJob jobData)
+            {
+                m_JobData = jobData;
+                m_NativeThreadIndex = DEFAULT_NATIVE_THREAD_INDEX;
+                m_HasInitializedForThread = false;
+            }
+
+            private void TryInitForThread(ref TJob jobData)
+            {
+                if (m_HasInitializedForThread)
+                {
+                    return;
+                }
+
+                m_HasInitializedForThread = true;
+                jobData.InitForThread(m_NativeThreadIndex);
             }
         }
 
