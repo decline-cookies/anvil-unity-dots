@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Data
         where T : struct
     {
         //TODO: Docs
-        void InitForThread();
+        void InitForThread(int nativeThreadIndex);
         T this[int index] { get; }
         void Continue(ref T value);
         int Length { get; }

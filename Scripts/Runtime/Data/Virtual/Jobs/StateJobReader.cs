@@ -33,14 +33,9 @@ namespace Anvil.Unity.DOTS.Data
             m_NativeThreadIndex = DEFAULT_THREAD_INDEX;
         }
 
-        public void InitForThread()
+        public void InitForThread(int nativeThreadIndex)
         {
             //TODO: Collection checks - Ensure this is called before anything else is called
-            if (m_RemovalLaneWriter.IsCreated)
-            {
-                return;
-            }
-
             m_RemovalLaneWriter = m_RemovalWriter.AsLaneWriter(ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex));
         }
 

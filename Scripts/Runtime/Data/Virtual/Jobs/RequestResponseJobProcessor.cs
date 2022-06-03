@@ -9,10 +9,7 @@ namespace Anvil.Unity.DOTS.Data
         where TRequest : struct, IRequest<TResponse>
         where TResponse : struct
     {
-        private const int DEFAULT_THREAD_INDEX = -1;
         private const int DEFAULT_LANE_INDEX = -1;
-        
-        [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
 
         private readonly UnsafeTypedStream<TRequest>.Writer m_ContinueWriter;
         private readonly NativeArray<TRequest> m_Current;
@@ -32,19 +29,18 @@ namespace Anvil.Unity.DOTS.Data
             m_Current = current;
             
             m_ContinueLaneWriter = default;
-            m_NativeThreadIndex = DEFAULT_THREAD_INDEX;
             m_LaneIndex = DEFAULT_LANE_INDEX;
         }
 
-        public void InitForThread()
+        public void InitForThread(int nativeThreadIndex)
         {
-            //TODO: Collection checks - Ensure this is called before anything else is called
             if (m_ContinueLaneWriter.IsCreated)
             {
-                return;
+                float a = 5.0f;
             }
-
-            m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
+            
+            //TODO: Collection checks - Ensure this is called before anything else is called
+            m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
         }
 
