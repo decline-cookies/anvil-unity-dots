@@ -134,15 +134,27 @@ namespace Anvil.Unity.DOTS.Data
         {
             get => m_BufferInfo != null && m_BufferInfo->Buffer == null;
         }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
+        /// </summary>
+        /// <param name="allocator">
+        /// The <see cref="Allocator"/> to use for memory allocation of the collection and
+        /// the deferred data.
+        /// </param>
+        public DeferredNativeArray(Allocator allocator) : this(allocator, allocator)
+        {
+        }
         
         /// <summary>
         /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
         /// </summary>
-        /// <param name="allocator">The <see cref="Allocator"/> to use for memory allocation.</param>
-        public DeferredNativeArray(Allocator allocator) : this (allocator, allocator)
-        {
-        }
-        
+        /// <param name="allocator">
+        /// The <see cref="Allocator"/> to use for memory allocation of the collection only.
+        /// </param>
+        /// <param name="deferredAllocator">
+        /// The <see cref="Allocator"/> to use for memory allocation of the deferred data.
+        /// </param>
         public DeferredNativeArray(Allocator allocator, Allocator deferredAllocator)
         {
             Allocate(allocator, deferredAllocator, out this);
@@ -172,7 +184,8 @@ namespace Anvil.Unity.DOTS.Data
         [WriteAccessRequired]
         public unsafe void Clear()
         {
-            if (!IsCreated || m_BufferInfo->Buffer == null)
+            if (!IsCreated
+             || m_BufferInfo->Buffer == null)
             {
                 return;
             }
@@ -204,7 +217,7 @@ namespace Anvil.Unity.DOTS.Data
             m_BufferInfo = null;
             return jobHandle;
         }
-        
+
         /// <summary>
         /// Schedules the clearing of the collections
         /// </summary>
@@ -342,7 +355,7 @@ namespace Anvil.Unity.DOTS.Data
                 {
                     return;
                 }
-                
+
                 //Just clears the memory internally, the structure memory is still intact
                 UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
                 m_BufferInfo->Buffer = null;
