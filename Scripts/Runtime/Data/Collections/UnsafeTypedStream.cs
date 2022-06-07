@@ -413,10 +413,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <returns>A <see cref="NativeArray{T}" /> of the elements</returns>
         public NativeArray<T> ToNativeArray(Allocator allocator)
         {
-            NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
-            CopyTo(ref array);
-
-            return array;
+            return AsReader().ToNativeArray(allocator);
         }
 
         //*************************************************************************************************************
@@ -628,6 +625,15 @@ namespace Anvil.Unity.DOTS.Data
                         laneElementsRemaining -= numElementsToRead;
                     }
                 }
+            }
+            
+            /// <inheritdoc cref="UnsafeTypedStream{T}.ToNativeArray"/>
+            public NativeArray<T> ToNativeArray(Allocator allocator)
+            {
+                NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
+                CopyTo(ref array);
+
+                return array;
             }
         }
 

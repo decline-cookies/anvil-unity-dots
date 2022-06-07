@@ -1,6 +1,8 @@
 using Anvil.CSharp.Core;
+using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -8,40 +10,35 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public interface IStateWriterVirtualData<TState>
-        where TState : struct
-    {
-        StateJobAddWriter<TState> AcquireStateJobAddWriter();
-        void ReleaseStateJobAddWriter();
 
-        JobHandle AcquireStateJobAddWriterAsync(out StateJobAddWriter<TState> writer);
-        void ReleaseStateJobAddWriterAsync(JobHandle releaseAccessDependency);
-        
-        //TODO: Add Removes
-    }
 
-    public interface IStateReaderVirtualData<TKey, TState>
-        where TKey : struct, IEquatable<TKey>
-        where TState : struct, IState<TKey>
+    public interface IStateVirtualData
     {
-        JobHandle AcquireStateJobReaderAsync(out StateJobReader<TKey, TState> stateJobReader);
-        void ReleaseStateJobReaderAsync(JobHandle releaseAccessDependency);
+        void UnregisterResponseChannel(IStateVirtualData virtualData);
+        JobHandle AcquireForResponse();
+        void ReleaseForResponse(JobHandle releaseAccessDependency);
     }
 
     //TODO: Serialization and Deserialization
     public class StateVirtualData<TKey, TState> : AbstractAnvilBase,
-                                                  IStateWriterVirtualData<TState>,
-                                                  IStateReaderVirtualData<TKey, TState>
+                                                  IStateVirtualData
         where TKey : struct, IEquatable<TKey>
         where TState : struct, IState<TKey>
     {
+        private static readonly int STATE_SIZE = UnsafeUtility.SizeOf<TState>();
+        
         private readonly AccessController m_AccessController;
         
-        //TODO: Could combine the add/remove to one modify lookup
+        //We could combine the add and remove into one but then we lose out on being pre-sorted
+        //and the NativeHashMap could grow only to then fall back to an already allocated size
         private UnsafeTypedStream<TState> m_PendingAdd;
         private UnsafeTypedStream<TKey> m_PendingRemove;
         private DeferredNativeArray<TState> m_ActiveStates;
         private NativeHashMap<TKey, TState> m_ActiveStatesLookup;
+        
+        private readonly HashSet<IStateVirtualData> m_ResponseChannels;
+
+        private IStateVirtualData m_Parent;
 
         public StateVirtualData(int initialCapacity)
         {
@@ -50,10 +47,18 @@ namespace Anvil.Unity.DOTS.Data
             m_PendingRemove = new UnsafeTypedStream<TKey>(Allocator.Persistent, Allocator.TempJob);
             m_ActiveStatesLookup = new NativeHashMap<TKey, TState>(initialCapacity, Allocator.Persistent);
             m_ActiveStates = new DeferredNativeArray<TState>(Allocator.Persistent, Allocator.TempJob);
+            
+            m_ResponseChannels = new HashSet<IStateVirtualData>();
+            
+            //TODO: Allow for better batching rules - Spread evenly across X threads, maximizing chunk
+            BatchSize = ChunkUtil.MaxElementsPerChunk<TState>();
         }
 
         protected override void DisposeSelf()
         {
+            m_ResponseChannels.Clear();
+            m_Parent?.UnregisterResponseChannel(this);
+
             m_AccessController.Dispose();
             m_PendingAdd.Dispose();
             m_PendingRemove.Dispose();
@@ -61,11 +66,46 @@ namespace Anvil.Unity.DOTS.Data
             m_ActiveStates.Dispose();
             base.DisposeSelf();
         }
+        
+        public DeferredNativeArray<TState> ArrayForScheduling
+        {
+            get => m_ActiveStates;
+        }
+
+        //TODO: Balanced batch across X threads
+        public int BatchSize
+        {
+            get;
+        }
+
+        public StateVirtualData<RKey, RState> CreateResponseChannel<RKey, RState>(int initialCapacity)
+            where RKey : struct, IEquatable<RKey>
+            where RState : struct, IState<RKey>
+        {
+            StateVirtualData<RKey, RState> virtualData = new StateVirtualData<RKey, RState>(initialCapacity);
+            m_ResponseChannels.Add(virtualData);
+            virtualData.AddParent(this);
+            return virtualData;
+        }
+
+        public void UnregisterResponseChannel(IStateVirtualData virtualData)
+        {
+            m_ResponseChannels.Remove(virtualData);
+        }
+
+        private void AddParent(IStateVirtualData parentVirtualData)
+        {
+            m_Parent = parentVirtualData;
+        }
 
         //*************************************************************************************************************
         // IStateWriter
         //*************************************************************************************************************
-        
+
+        public StateJobAddWriter<TState> GetStateJobAddWriter()
+        {
+            return new StateJobAddWriter<TState>(m_PendingAdd.AsWriter());
+        }
 
         public StateJobAddWriter<TState> AcquireStateJobAddWriter()
         {
@@ -100,12 +140,13 @@ namespace Anvil.Unity.DOTS.Data
         // IStateReader
         //*************************************************************************************************************
 
-        public JobHandle AcquireStateJobReaderAsync(out StateJobReader<TKey, TState> stateJobReader)
+        public JobHandle AcquireStateJobReaderAsync(out StateJobUpdater<TKey, TState> stateJobReader)
         {
             //TODO: Collections checks
             JobHandle readerHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-            stateJobReader = new StateJobReader<TKey, TState>(m_PendingRemove.AsWriter(), 
-                                                              m_ActiveStates.AsDeferredJobArray());
+            // stateJobReader = new StateJobUpdater<TKey, TState>(m_PendingRemove.AsWriter(), 
+            //                                                       m_ActiveStates.AsDeferredJobArray());
+            stateJobReader = default;
             return readerHandle;
         }
 
@@ -132,28 +173,66 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // IStateOwner
         //*************************************************************************************************************
-
-        public JobHandle RefreshStates(JobHandle dependsOn)
+        public JobHandle AcquireForResponse()
+        {
+            return m_AccessController.AcquireAsync(AccessType.SharedWrite);
+        }
+        
+        public void ReleaseForResponse(JobHandle releaseAccessDependency)
+        {
+           m_AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+        
+        //TODO: Bad name
+        public JobHandle AcquireRefreshStates(JobHandle dependsOn, out StateJobUpdater<TKey, TState> stateJobReader)
         {
             JobHandle exclusiveWriter = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-
-            //TODO: Investigate reusing a DeferredNativeArray and Clearing instead
-            JobHandle clearHandle = m_ActiveStates.Clear(exclusiveWriter);
 
             UpdateActiveStatesJob updateActiveStatesJob = new UpdateActiveStatesJob(m_PendingAdd.AsReader(),
                                                                                     m_PendingRemove.AsReader(),
                                                                                     m_ActiveStatesLookup,
                                                                                     m_ActiveStates);
-            JobHandle updateHandle = updateActiveStatesJob.Schedule(JobHandle.CombineDependencies(dependsOn, clearHandle));
+            JobHandle updateHandle = updateActiveStatesJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriter));
 
             JobHandle clearAddHandle = m_PendingAdd.Clear(updateHandle);
             JobHandle clearRemoveHandle = m_PendingRemove.Clear(updateHandle);
 
             JobHandle clearCompleteHandle = JobHandle.CombineDependencies(clearAddHandle, clearRemoveHandle);
 
-            m_AccessController.ReleaseAsync(clearCompleteHandle);
+            // stateJobReader = new StateJobUpdater<TKey, TState>(m_PendingRemove.AsWriter(), m_ActiveStates.AsDeferredJobArray());
+            stateJobReader = default;
 
-            return clearCompleteHandle;
+            if (m_ResponseChannels.Count == 0)
+            {
+                return clearCompleteHandle;
+            }
+
+            //Get write access to all possible channels that we can write a response to.
+            //+1 to include our incoming dependency
+            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResponseChannels.Count + 1, Allocator.Temp);
+            allDependencies[0] = clearCompleteHandle;
+            int index = 1;
+            foreach (IStateVirtualData responseChannel in m_ResponseChannels)
+            {
+                allDependencies[index] = responseChannel.AcquireForResponse();
+                index++;
+            }
+
+            return JobHandle.CombineDependencies(allDependencies);
+        }
+
+        public void ReleaseRefreshStates(JobHandle releaseAccessDependency)
+        {
+            m_AccessController.ReleaseAsync(releaseAccessDependency);
+            if (m_ResponseChannels.Count == 0)
+            {
+                return;
+            }
+
+            foreach (IStateVirtualData responseChannel in m_ResponseChannels)
+            {
+                responseChannel.ReleaseForResponse(releaseAccessDependency);
+            }
         }
 
         //*************************************************************************************************************
@@ -181,25 +260,19 @@ namespace Anvil.Unity.DOTS.Data
 
             public void Execute()
             {
-                NativeArray<TKey> pendingRemove = new NativeArray<TKey>(m_PendingRemoveReader.Count(), Allocator.Temp);
-                m_PendingRemoveReader.CopyTo(ref pendingRemove);
+                NativeArray<TKey> pendingRemove = m_PendingRemoveReader.ToNativeArray(Allocator.Temp);
+                NativeArray<TState> pendingAdd = m_PendingAddReader.ToNativeArray(Allocator.Temp);
                 
-                NativeArray<TState> pendingAdd = new NativeArray<TState>(m_PendingAddReader.Count(), Allocator.Temp);
-                m_PendingAddReader.CopyTo(ref pendingAdd);
-
+                //If we have nothing to add or remove, we can early return
                 if (pendingRemove.Length <= 0
                  && pendingAdd.Length <= 0)
                 {
-                    //TODO: If we get the clearing for the native array in, we can probably avoid having to 
-                    //do this because we could keep it around and only rebuild if we add or remove
-                    UpdateActiveStatesFromLookup();
                     return;
                 }
 
                 for (int i = 0; i < pendingRemove.Length; ++i)
                 {
-                    TKey key = pendingRemove[i];
-                    m_ActiveStatesLookup.Remove(key);
+                    m_ActiveStatesLookup.Remove(pendingRemove[i]);
                 }
 
                 for (int i = 0; i < pendingAdd.Length; ++i)
@@ -213,12 +286,14 @@ namespace Anvil.Unity.DOTS.Data
 
             private unsafe void UpdateActiveStatesFromLookup()
             {
+                m_ActiveStates.Clear();
+                
                 NativeArray<TState> statesInLookup = m_ActiveStatesLookup.GetValueArray(Allocator.Temp);
                 NativeArray<TState> statesArray = m_ActiveStates.DeferredCreate(statesInLookup.Length);
 
                 void* statesInLookupPtr = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(statesInLookup);
                 void* statesArrayPtr = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(statesArray);
-                long length = statesInLookup.Length * UnsafeUtility.SizeOf<TState>();
+                long length = statesInLookup.Length * STATE_SIZE;
 
                 UnsafeUtility.MemCpy(statesArrayPtr, statesInLookupPtr, length);
             }

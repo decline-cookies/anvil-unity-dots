@@ -33,6 +33,12 @@ namespace Anvil.Unity.DOTS.Data
 
             m_LaneWriter = m_Writer.AsLaneWriter(ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex));
         }
+        
+        //TODO: Move to specialized struct
+        public void Add(TState value, int laneIndex)
+        {
+            m_Writer.AsLaneWriter(laneIndex).Write(ref value);
+        }
 
         public void Add(TState value)
         {

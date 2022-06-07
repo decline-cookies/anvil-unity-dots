@@ -3,7 +3,7 @@ namespace Anvil.Unity.DOTS.Data
     public interface IRequest<TResponse>
         where TResponse : struct
     {
-        public ResponseJobWriter<TResponse> ResponseWriter
+        public JobDataForCompletion<TResponse> ResponseWriter
         {
             get;
         }
