@@ -1,77 +1,33 @@
-using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public interface IVData
-    {
-        void UnregisterAsCompletionDestination(IVData vData);
-        JobHandle AcquireForDestination();
-        void ReleaseForDestination(JobHandle releaseAccessDependency);
-    }
-
-    public class VData<T> : AbstractAnvilBase,
-                            IVData
+    public class VData<T> : AbstractVData
         where T : struct
     {
-        private readonly AccessController m_AccessController;
-
         private UnsafeTypedStream<T> m_Pending;
         private DeferredNativeArray<T> m_Current;
 
-        private readonly IVData m_Source;
-        private readonly HashSet<IVData> m_Destinations;
-
-        public VData() : this(null)
+        public VData() : this(NULL_VDATA)
         {
         }
 
-        private VData(IVData source)
+        public VData(AbstractVData input) : base(input)
         {
-            m_AccessController = new AccessController();
             m_Pending = new UnsafeTypedStream<T>(Allocator.Persistent,
                                                  Allocator.TempJob);
             m_Current = new DeferredNativeArray<T>(Allocator.Persistent,
                                                    Allocator.TempJob);
-            m_Destinations = new HashSet<IVData>();
-
-            m_Source = source;
-            RegisterAsCompletionDestination(m_Source);
         }
 
         protected override void DisposeSelf()
         {
-            m_Destinations.Clear();
-            m_Source?.UnregisterAsCompletionDestination(this);
-            m_AccessController.Dispose();
             m_Pending.Dispose();
             m_Current.Dispose();
 
             base.DisposeSelf();
-        }
-
-        public VData<TType> CreateDestination<TType>()
-            where TType : struct
-        {
-            VData<TType> data = new VData<TType>(this);
-            return data;
-        }
-
-        private void RegisterAsCompletionDestination(IVData vData)
-        {
-            if (vData == null)
-            {
-                return;
-            }
-            m_Destinations.Add(vData);
-        }
-
-        public void UnregisterAsCompletionDestination(IVData vData)
-        {
-            m_Destinations.Remove(vData);
         }
 
         public DeferredNativeArray<T> ArrayForScheduling
@@ -84,22 +40,11 @@ namespace Anvil.Unity.DOTS.Data
             return new JobDataForCompletion<T>(m_Pending.AsWriter());
         }
 
-        public JobHandle AcquireForDestination()
-        {
-            //TODO: Collections Checks
-            return m_AccessController.AcquireAsync(AccessType.SharedWrite);
-        }
-
-        public void ReleaseForDestination(JobHandle releaseAccessDependency)
-        {
-            //TODO: Collections Checks
-            m_AccessController.ReleaseAsync(releaseAccessDependency);
-        }
-
+        
         public JobHandle AcquireForAdd(out JobDataForAdd<T> workStruct)
         {
             //TODO: Collections Checks
-            JobHandle sharedWriteHandle = m_AccessController.AcquireAsync(AccessType.SharedWrite);
+            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
 
             workStruct = new JobDataForAdd<T>(m_Pending.AsWriter());
 
@@ -109,13 +54,13 @@ namespace Anvil.Unity.DOTS.Data
         public void ReleaseForAdd(JobHandle releaseAccessDependency)
         {
             //TODO: Collections Checks
-            m_AccessController.ReleaseAsync(releaseAccessDependency);
+            AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
         public JobHandle AcquireForWork(JobHandle dependsOn, out JobDataForWork<T> workStruct)
         {
             //TODO: Collections Checks
-            JobHandle exclusiveWriteHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+            JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
             //Consolidate everything in pending into current so it can be balanced across threads
             ConsolidateToNativeArrayJob<T> consolidateJob = new ConsolidateToNativeArrayJob<T>(m_Pending.AsReader(),
@@ -129,38 +74,16 @@ namespace Anvil.Unity.DOTS.Data
             workStruct = new JobDataForWork<T>(m_Pending.AsWriter(),
                                                m_Current.AsDeferredJobArray());
 
-            if (m_Destinations.Count == 0)
-            {
-                return clearHandle;
-            }
+            
 
-            //Get write access to all possible channels that we can write a response to.
-            //+1 to include our incoming dependency
-            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_Destinations.Count + 1, Allocator.Temp);
-            allDependencies[0] = clearHandle;
-            int index = 1;
-            foreach (IVData destinationData in m_Destinations)
-            {
-                allDependencies[index] = destinationData.AcquireForDestination();
-                index++;
-            }
-
-            return JobHandle.CombineDependencies(allDependencies);
+            return AcquireOutputsAsync(clearHandle);
         }
 
         public void ReleaseForWork(JobHandle releaseAccessDependency)
         {
             //TODO: Collections Checks
-            m_AccessController.ReleaseAsync(releaseAccessDependency);
-            if (m_Destinations.Count == 0)
-            {
-                return;
-            }
-
-            foreach (IVData destinationData in m_Destinations)
-            {
-                destinationData.ReleaseForDestination(releaseAccessDependency);
-            }
+            AccessController.ReleaseAsync(releaseAccessDependency);
+            ReleaseOutputsAsync(releaseAccessDependency);
         }
     }
 
@@ -186,7 +109,7 @@ namespace Anvil.Unity.DOTS.Data
             m_AddLaneWriter = default;
             LaneIndex = DEFAULT_LANE_INDEX;
         }
-        
+
         public void InitForThread(int nativeThreadIndex)
         {
             //TODO: Collections Checks
@@ -199,7 +122,7 @@ namespace Anvil.Unity.DOTS.Data
             //TODO: Collections Checks
             m_AddLaneWriter.Write(ref value);
         }
-        
+
         public void Add(ref T value)
         {
             //TODO: Collections Checks
@@ -216,12 +139,12 @@ namespace Anvil.Unity.DOTS.Data
         {
             m_CompletionWriter = completionWriter;
         }
-        
+
         public void Add(T value, int laneIndex)
         {
             Add(ref value, laneIndex);
         }
-        
+
         public void Add(ref T value, int laneIndex)
         {
             m_CompletionWriter.AsLaneWriter(laneIndex).Write(ref value);
