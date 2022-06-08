@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -57,6 +58,8 @@ namespace Anvil.Unity.DOTS.Data
         {
             return new JobDataForCompletion<T>(m_Pending.AsWriter());
         }
+        
+        //TODO: Main thread variants
 
         public JobHandle AcquireForEntitiesAdd(out JobDataForEntitiesAdd<T> workStruct)
         {
@@ -70,7 +73,7 @@ namespace Anvil.Unity.DOTS.Data
 
         public void ReleaseForEntitiesAdd(JobHandle releaseAccessDependency)
         {
-            ValidateReleaseState();
+            ValidateReleaseState(STATE_ENTITIES_ADD);
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
@@ -87,7 +90,7 @@ namespace Anvil.Unity.DOTS.Data
 
         public void ReleaseForAdd(JobHandle releaseAccessDependency)
         {
-            ValidateReleaseState();
+            ValidateReleaseState(STATE_ADD);
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
@@ -97,26 +100,55 @@ namespace Anvil.Unity.DOTS.Data
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
             //Consolidate everything in pending into current so it can be balanced across threads
-            ConsolidateToNativeArrayJob<T> consolidateJob = new ConsolidateToNativeArrayJob<T>(m_Pending.AsReader(),
-                                                                                               m_Current);
+            ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,
+                                                               m_Current);
             JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
-
-            //Clear pending so we can use it again
-            JobHandle clearHandle = m_Pending.Clear(consolidateHandle);
 
             //Create the work struct
             workStruct = new JobDataForWork<T>(m_Pending.AsWriter(),
                                                m_Current.AsDeferredJobArray());
 
 
-            return AcquireOutputsAsync(clearHandle);
+            return AcquireOutputsAsync(consolidateHandle);
         }
 
         public void ReleaseForWork(JobHandle releaseAccessDependency)
         {
-            ValidateReleaseState();
+            ValidateReleaseState(STATE_WORK);
             AccessController.ReleaseAsync(releaseAccessDependency);
             ReleaseOutputsAsync(releaseAccessDependency);
+        }
+
+        //*************************************************************************************************************
+        // JOBS
+        //*************************************************************************************************************
+
+        [BurstCompile]
+        private struct ConsolidateJob : IJob
+        {
+            private UnsafeTypedStream<T> m_Pending;
+            private DeferredNativeArray<T> m_Current;
+
+            public ConsolidateJob(UnsafeTypedStream<T> pending,
+                                  DeferredNativeArray<T> current)
+            {
+                m_Pending = pending;
+                m_Current = current;
+            }
+
+            public void Execute()
+            {
+                int newLength = m_Pending.Count();
+
+                if (newLength == 0)
+                {
+                    return;
+                }
+
+                NativeArray<T> array = m_Current.DeferredCreate(newLength);
+                m_Pending.CopyTo(ref array);
+                m_Pending.Clear();
+            }
         }
     }
 }

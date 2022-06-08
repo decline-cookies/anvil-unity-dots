@@ -8,6 +8,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    //TODO: Serialization and Deserialization
     public abstract class AbstractVData : AbstractAnvilBase
     {
         protected class NullVData : AbstractVData
@@ -114,7 +115,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private void ReleaseForOutputAsync(JobHandle releaseAccessDependency)
         {
-            ValidateReleaseState();
+            ValidateReleaseState(STATE_FOR_OUTPUT);
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
@@ -128,9 +129,9 @@ namespace Anvil.Unity.DOTS.Data
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        protected void ValidateReleaseState()
+        protected void ValidateReleaseState(string expectedState)
         {
-            Debug.Assert(m_State != STATE_UNACQUIRED, $"{this} - State was {m_State} but should not be. A release method was called an additional time after: {m_ReleaseCallerInfo}");
+            Debug.Assert(m_State == expectedState, $"{this} - State was {m_State} but expected {expectedState}. A release method was called an additional time after: {m_ReleaseCallerInfo}");
             m_State = STATE_UNACQUIRED;
             StackFrame frame = new StackFrame(4, true);
             m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";

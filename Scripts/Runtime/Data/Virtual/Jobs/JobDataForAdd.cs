@@ -4,6 +4,27 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    public struct JobDataForAddMT<T>
+        where T : struct
+    {
+        private UnsafeTypedStream<T>.LaneWriter m_AddLaneWriter;
+
+        public JobDataForAddMT(UnsafeTypedStream<T>.LaneWriter addLaneWriter)
+        {
+            m_AddLaneWriter = addLaneWriter;
+        }
+        
+        public void Add(T value)
+        {
+            Add(ref value);
+        }
+
+        public void Add(ref T value)
+        {
+            m_AddLaneWriter.Write(ref value);
+        }
+    }
+    
     public struct JobDataForAdd<T>
         where T : struct
     {
@@ -12,23 +33,20 @@ namespace Anvil.Unity.DOTS.Data
         [ReadOnly] private readonly UnsafeTypedStream<T>.Writer m_AddWriter;
 
         private UnsafeTypedStream<T>.LaneWriter m_AddLaneWriter;
+        private int m_LaneIndex;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private bool m_IsInitializedForThread;
 #endif
 
-        public int LaneIndex
-        {
-            get;
-            private set;
-        }
-
+        
+        
         public JobDataForAdd(UnsafeTypedStream<T>.Writer addWriter) : this()
         {
             m_AddWriter = addWriter;
 
             m_AddLaneWriter = default;
-            LaneIndex = DEFAULT_LANE_INDEX;
+            m_LaneIndex = DEFAULT_LANE_INDEX;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_IsInitializedForThread = false;
@@ -42,8 +60,8 @@ namespace Anvil.Unity.DOTS.Data
             m_IsInitializedForThread = true;
 #endif
 
-            LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-            m_AddLaneWriter = m_AddWriter.AsLaneWriter(LaneIndex);
+            m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
+            m_AddLaneWriter = m_AddWriter.AsLaneWriter(m_LaneIndex);
         }
 
         public void Add(T value)

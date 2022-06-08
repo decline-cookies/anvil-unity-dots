@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Data
 {
     public struct StateJobUpdater<TKey, TState>
         where TKey : struct, IEquatable<TKey>
-        where TState : struct, IState<TKey>
+        where TState : struct, ILookupValue<TKey>
     {
         private const int DEFAULT_LANE_INDEX = -1;
         

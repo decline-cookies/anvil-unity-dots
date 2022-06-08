@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Data
     public class StateVirtualData<TKey, TState> : AbstractAnvilBase,
                                                   IStateVirtualData
         where TKey : struct, IEquatable<TKey>
-        where TState : struct, IState<TKey>
+        where TState : struct, ILookupValue<TKey>
     {
         private static readonly int STATE_SIZE = UnsafeUtility.SizeOf<TState>();
         
@@ -80,7 +80,7 @@ namespace Anvil.Unity.DOTS.Data
 
         public StateVirtualData<RKey, RState> CreateResponseChannel<RKey, RState>(int initialCapacity)
             where RKey : struct, IEquatable<RKey>
-            where RState : struct, IState<RKey>
+            where RState : struct, ILookupValue<RKey>
         {
             StateVirtualData<RKey, RState> virtualData = new StateVirtualData<RKey, RState>(initialCapacity);
             m_ResponseChannels.Add(virtualData);

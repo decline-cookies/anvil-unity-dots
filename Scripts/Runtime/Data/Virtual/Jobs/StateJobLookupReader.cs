@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Data
 {
     public struct StateJobLookupReader<TKey, TState>
         where TKey : struct, IEquatable<TKey>
-        where TState : struct, IState<TKey>
+        where TState : struct, ILookupValue<TKey>
     {
         [ReadOnly] private readonly NativeHashMap<TKey, TState> m_Lookup;
 
