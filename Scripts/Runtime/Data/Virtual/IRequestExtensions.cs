@@ -48,19 +48,5 @@ namespace Anvil.Unity.DOTS.Data
         {
             lookupJobDataForWork.Remove(key);
         }
-        
-        public static void RemoveFrom<TKey, TValue>(this TValue value, ref LookupJobDataForExternalWork<TKey, TValue> lookupJobDataForWork)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct, ILookupValue<TKey>
-        {
-            lookupJobDataForWork.Remove(value.Key);
-        }
-        
-        public static void RemoveFrom<TKey, TValue>(this TKey key, ref LookupJobDataForExternalWork<TKey, TValue> lookupJobDataForWork)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct, ILookupValue<TKey>
-        {
-            lookupJobDataForWork.Remove(key);
-        }
     }
 }

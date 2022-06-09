@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private const string STATE_WORK = "Work";
         private const string STATE_ADD_MAIN_THREAD = "AddMainThread";
-        private const string STATE_EXTERNAL_WORK = "ExternalWork";
+        private const string STATE_ADD = "Add";
 #endif
 
         private static readonly int VALUE_SIZE = UnsafeUtility.SizeOf<TValue>();
@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Data
         private UnsafeTypedStream<TValue> m_PendingAdd;
         private UnsafeTypedStream<TKey> m_PendingRemove;
         private DeferredNativeArray<TValue> m_Iteration;
-        private NativeHashMap<TKey, TValue> m_Lookup;
+        private UnsafeHashMap<TKey, TValue> m_Lookup;
 
 
         public LookupVData(int initialCapacity, BatchStrategy batchStrategy) : this(initialCapacity, batchStrategy, NULL_VDATA)
@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Data
                                                           Allocator.TempJob);
             m_Iteration = new DeferredNativeArray<TValue>(Allocator.Persistent,
                                                           Allocator.TempJob);
-            m_Lookup = new NativeHashMap<TKey, TValue>(initialCapacity, Allocator.Persistent);
+            m_Lookup = new UnsafeHashMap<TKey, TValue>(initialCapacity, Allocator.Persistent);
 
 
             //TODO: Check on this - duplicated in VData?
@@ -75,25 +75,46 @@ namespace Anvil.Unity.DOTS.Data
             ValidateReleaseState(STATE_ADD_MAIN_THREAD);
             AccessController.Release();
         }
-        
-        //TODO: Split to different functions - Consolidate and Acquires are different
-        //TODO: Commonality for the work in VDATA
-        public JobHandle AcquireForWork(JobHandle dependsOn, out LookupJobDataForWork<TKey, TValue> workStruct)
-        {
-            ValidateAcquireState(STATE_WORK);
-            JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
+        public JobHandle AcquireForAddAsync(out JobDataForAdd<TValue> jobDataForAdd)
+        {
+            ValidateAcquireState(STATE_ADD);
+            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
+            jobDataForAdd = new JobDataForAdd<TValue>(m_PendingAdd.AsWriter());
+            return sharedWriteHandle;
+        }
+
+        public void ReleaseForAddAsync(JobHandle releaseAccessDependency)
+        {
+            ValidateReleaseState(STATE_ADD);
+            AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
+        public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        {
+            JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_PendingAdd,
                                                                                  m_PendingRemove,
                                                                                  m_Lookup,
                                                                                  m_Iteration);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
+            
+            AccessController.ReleaseAsync(consolidateHandle);
 
+            return consolidateHandle;
+        }
+        
+        //TODO: Commonality for the work in VDATA
+        public JobHandle AcquireForWork(out LookupJobDataForWork<TKey, TValue> workStruct)
+        {
+            ValidateAcquireState(STATE_WORK);
+            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
+            
             workStruct = new LookupJobDataForWork<TKey, TValue>(m_PendingRemove.AsWriter(),
                                                                 m_Lookup,
                                                                 m_Iteration.AsDeferredJobArray());
 
-            return AcquireOutputsAsync(consolidateHandle);
+            return AcquireOutputsAsync(sharedWriteHandle);
         }
 
         public void ReleaseForWork(JobHandle releaseAccessDependency)
@@ -102,26 +123,7 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.ReleaseAsync(releaseAccessDependency);
             ReleaseOutputsAsync(releaseAccessDependency);
         }
-
-        public JobHandle AcquireForExternalWork(out LookupJobDataForExternalWork<TKey, TValue> workStruct)
-        {
-            ValidateAcquireState(STATE_EXTERNAL_WORK);
-            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-
-            workStruct = new LookupJobDataForExternalWork<TKey, TValue>(m_PendingRemove.AsWriter(),
-                                                                        m_Lookup,
-                                                                        m_Iteration.AsDeferredJobArray());
-
-            return sharedWriteHandle;
-        }
-
-        public void ReleaseForExternalWork(JobHandle releaseAccessDependency)
-        {
-            ValidateReleaseState(STATE_EXTERNAL_WORK);
-            AccessController.ReleaseAsync(releaseAccessDependency);
-        }
-
-
+        
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
@@ -131,12 +133,12 @@ namespace Anvil.Unity.DOTS.Data
         {
             private UnsafeTypedStream<TValue> m_PendingAdd;
             private UnsafeTypedStream<TKey> m_PendingRemove;
-            private NativeHashMap<TKey, TValue> m_Lookup;
+            private UnsafeHashMap<TKey, TValue> m_Lookup;
             private DeferredNativeArray<TValue> m_Iteration;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TValue> pendingAdd,
                                         UnsafeTypedStream<TKey> pendingRemove,
-                                        NativeHashMap<TKey, TValue> lookup,
+                                        UnsafeHashMap<TKey, TValue> lookup,
                                         DeferredNativeArray<TValue> iteration)
             {
                 m_PendingAdd = pendingAdd;

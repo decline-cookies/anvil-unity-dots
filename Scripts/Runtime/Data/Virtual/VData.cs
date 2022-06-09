@@ -10,6 +10,7 @@ namespace Anvil.Unity.DOTS.Data
         where T : struct
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+        //TODO: Can we make this an enum
         private const string STATE_ENTITIES_ADD = "EntitiesAdd";
         private const string STATE_ADD = "Add";
         private const string STATE_WORK = "Work";
@@ -94,22 +95,31 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
-        public JobHandle AcquireForWork(JobHandle dependsOn, out JobDataForWork<T> workStruct)
+        public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            ValidateAcquireState(STATE_WORK);
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-
+            
             //Consolidate everything in pending into current so it can be balanced across threads
             ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,
                                                                m_Current);
             JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
+            
+            AccessController.ReleaseAsync(consolidateHandle);
 
+            return consolidateHandle;
+        }
+
+        public JobHandle AcquireForWork(out JobDataForWork<T> workStruct)
+        {
+            ValidateAcquireState(STATE_WORK);
+            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
+            
             //Create the work struct
             workStruct = new JobDataForWork<T>(m_Pending.AsWriter(),
                                                m_Current.AsDeferredJobArray());
 
 
-            return AcquireOutputsAsync(consolidateHandle);
+            return AcquireOutputsAsync(sharedWriteHandle);
         }
 
         public void ReleaseForWork(JobHandle releaseAccessDependency)
@@ -138,6 +148,7 @@ namespace Anvil.Unity.DOTS.Data
 
             public void Execute()
             {
+                m_Current.Clear();
                 int newLength = m_Pending.Count();
 
                 if (newLength == 0)

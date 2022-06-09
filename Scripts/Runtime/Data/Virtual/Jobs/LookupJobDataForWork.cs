@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
@@ -12,12 +13,13 @@ namespace Anvil.Unity.DOTS.Data
         private const int DEFAULT_LANE_INDEX = -1;
         
         [ReadOnly] private readonly UnsafeTypedStream<TKey>.Writer m_RemoveWriter;
-        [ReadOnly] private readonly NativeHashMap<TKey, TValue> m_Lookup;
+        [ReadOnly] private readonly UnsafeHashMap<TKey, TValue> m_Lookup;
         [ReadOnly] private readonly NativeArray<TValue> m_Iteration;
 
         private UnsafeTypedStream<TKey>.LaneWriter m_RemoveLaneWriter;
         
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+        //TODO: Change to int
         private bool m_IsInitializedForThread;
 #endif
 
@@ -34,7 +36,7 @@ namespace Anvil.Unity.DOTS.Data
         
         
         public LookupJobDataForWork(UnsafeTypedStream<TKey>.Writer removeWriter, 
-                                    NativeHashMap<TKey, TValue> lookup, 
+                                    UnsafeHashMap<TKey, TValue> lookup, 
                                     NativeArray<TValue> iteration)
         {
             m_RemoveWriter = removeWriter;
@@ -69,6 +71,18 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
                 return m_Iteration[index];
+            }
+        }
+        
+        public TValue this[TKey key]
+        {
+            get
+            {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                Debug.Assert(m_IsInitializedForThread);
+#endif
+
+                return m_Lookup[key];
             }
         }
 

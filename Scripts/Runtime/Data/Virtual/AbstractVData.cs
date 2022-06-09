@@ -13,6 +13,10 @@ namespace Anvil.Unity.DOTS.Data
     {
         protected class NullVData : AbstractVData
         {
+            public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+            {
+                throw new System.NotSupportedException();
+            }
         }
 
         protected static readonly NullVData NULL_VDATA = new NullVData();
@@ -26,8 +30,6 @@ namespace Anvil.Unity.DOTS.Data
         private const string STATE_FOR_OUTPUT = "ForOutput";
         
         private string m_State;
-        private string m_AcquireCallerInfo;
-        private string m_ReleaseCallerInfo;
 #endif
 
         protected AccessController AccessController
@@ -62,6 +64,8 @@ namespace Anvil.Unity.DOTS.Data
 
             base.DisposeSelf();
         }
+
+        public abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
 
         protected JobHandle AcquireOutputsAsync(JobHandle dependsOn)
         {
@@ -122,19 +126,15 @@ namespace Anvil.Unity.DOTS.Data
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         protected void ValidateAcquireState(string newState)
         {
-            Debug.Assert(m_State == STATE_UNACQUIRED, $"{this} - State was {m_State} but expected {STATE_UNACQUIRED}. Corresponding release method was not called after: {m_AcquireCallerInfo}");
+            Debug.Assert(m_State == STATE_UNACQUIRED, $"{this} - State was {m_State} but expected {STATE_UNACQUIRED}. Corresponding release method was not called after last acquire.");
             m_State = newState;
-            StackFrame frame = new StackFrame(4, true);
-            m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         protected void ValidateReleaseState(string expectedState)
         {
-            Debug.Assert(m_State == expectedState, $"{this} - State was {m_State} but expected {expectedState}. A release method was called an additional time after: {m_ReleaseCallerInfo}");
+            Debug.Assert(m_State == expectedState, $"{this} - State was {m_State} but expected {expectedState}. A release method was called an additional time after last release.");
             m_State = STATE_UNACQUIRED;
-            StackFrame frame = new StackFrame(4, true);
-            m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
         }
     }
 }
