@@ -7,12 +7,12 @@ namespace Anvil.Unity.DOTS.Data
     [BurstCompatible]
     //TODO: Can this be more efficient with caching lane writer?
     //TODO: Should we include TKey info?
-    public struct LookupJobDataForEntitiesAdd<TValue>
+    public struct JobDataForEntitiesAdd<TValue>
         where TValue : struct
     {
         [ReadOnly] private readonly UnsafeTypedStream<TValue>.Writer m_AddWriter;
 
-        public LookupJobDataForEntitiesAdd(UnsafeTypedStream<TValue>.Writer addWriter) : this()
+        public JobDataForEntitiesAdd(UnsafeTypedStream<TValue>.Writer addWriter) : this()
         {
             m_AddWriter = addWriter;
         }

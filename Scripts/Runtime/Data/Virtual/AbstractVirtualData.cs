@@ -1,131 +1,141 @@
 using Anvil.CSharp.Core;
-using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public abstract class AbstractVirtualData<T> : AbstractAnvilBase
-        where T : struct
+    //TODO: Serialization and Deserialization
+    public abstract class AbstractVirtualData : AbstractAnvilBase
     {
+        protected class NullVirtualData : AbstractVirtualData
+        {
+            public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+            {
+                throw new System.NotSupportedException();
+            }
+        }
+
+        protected static readonly NullVirtualData NULL_VDATA = new NullVirtualData();
+
+        //TODO: Could there ever be more than one? 
+        private readonly AbstractVirtualData m_Input;
+        private readonly HashSet<AbstractVirtualData> m_Outputs = new HashSet<AbstractVirtualData>();
+
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        private const string STATE_UNACQUIRED = "Unacquired";
+        private const string STATE_FOR_OUTPUT = "ForOutput";
+        
+        private string m_State;
+#endif
 
         protected AccessController AccessController
         {
             get;
         }
 
-        protected UnsafeTypedStream<T> Pending
+        internal AbstractVirtualData()
         {
-            get;
+            Debug.Assert(GetType() == typeof(NullVirtualData), $"Incorrect code path");
         }
 
-        protected DeferredNativeArray<T> Current
+        protected AbstractVirtualData(AbstractVirtualData input)
         {
-            get;
-        }
-
-        protected AbstractVirtualData()
-        {
+            Debug.Assert(input != null, $"{this} was created by passing in a source but that source is null! Double check that it has been created.");
+        
             AccessController = new AccessController();
-            Pending = new UnsafeTypedStream<T>(Allocator.Persistent, Allocator.TempJob);
-            Current = new DeferredNativeArray<T>(Allocator.Persistent, Allocator.TempJob);
+            m_Input = input;
+            m_State = STATE_UNACQUIRED;
 
-            //TODO: Allow for better batching rules - Spread evenly across X threads, maximizing chunk
-            BatchSize = ChunkUtil.MaxElementsPerChunk<T>();
+            if (!(m_Input is NullVirtualData))
+            {
+                RegisterOutput(m_Input);
+            }
         }
 
         protected override void DisposeSelf()
         {
+            m_Input?.UnregisterOutput(this);
             AccessController.Dispose();
-            Pending.Dispose();
-            Current.Dispose();
+            m_Outputs.Clear();
 
             base.DisposeSelf();
         }
 
-        //*************************************************************************************************************
-        // Scheduling
-        //*************************************************************************************************************
+        public abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
 
-        public DeferredNativeArray<T> ArrayForScheduling
+        protected JobHandle AcquireOutputsAsync(JobHandle dependsOn)
         {
-            get => Current;
+            if (m_Outputs.Count == 0)
+            {
+                return dependsOn;
+            }
+
+            //Get write access to all possible channels that we can write a response to.
+            //+1 to include the incoming dependency
+            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_Outputs.Count + 1, Allocator.Temp);
+            allDependencies[0] = dependsOn;
+            int index = 1;
+            foreach (AbstractVirtualData destinationData in m_Outputs)
+            {
+                allDependencies[index] = destinationData.AcquireForOutputAsync();
+                index++;
+            }
+
+            return JobHandle.CombineDependencies(allDependencies);
         }
 
-        //TODO: Balanced batch across X threads
-        public int BatchSize
+        protected void ReleaseOutputsAsync(JobHandle releaseAccessDependency)
         {
-            get;
+            if (m_Outputs.Count == 0)
+            {
+                return;
+            }
+
+            foreach (AbstractVirtualData destinationData in m_Outputs)
+            {
+                destinationData.ReleaseForOutputAsync(releaseAccessDependency);
+            }
         }
 
-        //*************************************************************************************************************
-        // IDataOwner
-        //*************************************************************************************************************
-
-        protected virtual JobHandle InternalAcquireProcessorAsync(JobHandle dependsOn)
+        private void RegisterOutput(AbstractVirtualData output)
         {
-            //Get access to be able to write exclusively, we need to update everything
-            JobHandle exclusiveWrite = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-
-            //Consolidate everything in pending into current so it can be balanced across threads
-            ConsolidateToNativeArrayJob<T> consolidateJob = new ConsolidateToNativeArrayJob<T>(Pending.AsReader(),
-                                                                                               Current);
-            JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWrite));
-
-            //Clear pending so we can use it again
-            JobHandle clearHandle = Pending.Clear(consolidateHandle);
-
-            return clearHandle;
+            m_Outputs.Add(output);
         }
 
-        public virtual void ReleaseProcessorAsync(JobHandle releaseAccessDependency)
+        private void UnregisterOutput(AbstractVirtualData output)
         {
-            //The native array of current values has been read from this frame, we can clear it.
-            JobHandle clearHandle = Current.Clear(releaseAccessDependency);
-            //Others can use this again
-            AccessController.ReleaseAsync(JobHandle.CombineDependencies(releaseAccessDependency, clearHandle));
+            m_Outputs.Remove(output);
         }
 
-
-        protected UnsafeTypedStream<T>.Writer AcquirePending(AccessType accessType)
+        private JobHandle AcquireForOutputAsync()
         {
-            //TODO: Collections Checks
-            AccessController.Acquire(accessType);
-            return Pending.AsWriter();
+            ValidateAcquireState(STATE_FOR_OUTPUT);
+            return AccessController.AcquireAsync(AccessType.SharedWrite);
         }
 
-        protected JobHandle AcquirePendingAsync(AccessType accessType, out UnsafeTypedStream<T>.Writer pendingWriter)
+        private void ReleaseForOutputAsync(JobHandle releaseAccessDependency)
         {
-            //TODO: Collections Checks
-            pendingWriter = Pending.AsWriter();
-            return AccessController.AcquireAsync(accessType);
-        }
-
-        protected void ReleasePending()
-        {
-            //TODO: Collections Checks
-            AccessController.Release();
-        }
-
-        protected void ReleasePendingAsync(JobHandle releaseAccessDependency)
-        {
-            //TODO: Collections Checks
+            ValidateReleaseState(STATE_FOR_OUTPUT);
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
-        protected JobHandle AcquireAllAsync(AccessType accessType, out UnsafeTypedStream<T>.Writer pendingWriter, out NativeArray<T> current)
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        protected void ValidateAcquireState(string newState)
         {
-            //TODO: Collections Checks
-            pendingWriter = Pending.AsWriter();
-            current = Current.AsDeferredJobArray();
-            return AccessController.AcquireAsync(accessType);
+            Debug.Assert(m_State == STATE_UNACQUIRED, $"{this} - State was {m_State} but expected {STATE_UNACQUIRED}. Corresponding release method was not called after last acquire.");
+            m_State = newState;
         }
-
-        protected void ReleaseAllAsync(JobHandle releaseAccessDependency)
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        protected void ValidateReleaseState(string expectedState)
         {
-            //TODO: Collections Checks
-            AccessController.ReleaseAsync(releaseAccessDependency);
+            Debug.Assert(m_State == expectedState, $"{this} - State was {m_State} but expected {expectedState}. A release method was called an additional time after last release.");
+            m_State = STATE_UNACQUIRED;
         }
     }
 }
