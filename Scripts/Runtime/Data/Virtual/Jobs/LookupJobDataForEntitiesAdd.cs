@@ -1,26 +1,28 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Data
 {
     [BurstCompatible]
     //TODO: Can this be more efficient with caching lane writer?
-    public struct JobDataForEntitiesAdd<T>
-        where T : struct
+    //TODO: Should we include TKey info?
+    public struct LookupJobDataForEntitiesAdd<TValue>
+        where TValue : struct
     {
-        [ReadOnly] private readonly UnsafeTypedStream<T>.Writer m_AddWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<TValue>.Writer m_AddWriter;
 
-        public JobDataForEntitiesAdd(UnsafeTypedStream<T>.Writer addWriter) : this()
+        public LookupJobDataForEntitiesAdd(UnsafeTypedStream<TValue>.Writer addWriter) : this()
         {
             m_AddWriter = addWriter;
         }
 
-        public void Add(T value, int nativeThreadIndex)
+        public void Add(TValue value, int nativeThreadIndex)
         {
             Add(ref value, nativeThreadIndex);
         }
 
-        public void Add(ref T value, int nativeThreadIndex)
+        public void Add(ref TValue value, int nativeThreadIndex)
         {
             m_AddWriter.AsLaneWriter(ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex)).Write(ref value);
         }

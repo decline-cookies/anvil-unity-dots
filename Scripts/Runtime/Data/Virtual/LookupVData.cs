@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Burst;
@@ -15,59 +16,68 @@ namespace Anvil.Unity.DOTS.Data
         private const string STATE_WORK = "Work";
         private const string STATE_ADD_MAIN_THREAD = "AddMainThread";
         private const string STATE_ADD = "Add";
+        private const string STATE_ENTITIES_ADD = "EntitiesAdd";
 #endif
-
-        private static readonly int VALUE_SIZE = UnsafeUtility.SizeOf<TValue>();
+        
         // ReSharper disable once StaticMemberInGenericType
         private static readonly int MAIN_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
 
-        private UnsafeTypedStream<TValue> m_PendingAdd;
-        private UnsafeTypedStream<TKey> m_PendingRemove;
+        private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TValue>();
+        
+        private UnsafeTypedStream<TValue> m_Pending;
         private DeferredNativeArray<TValue> m_Iteration;
         private UnsafeHashMap<TKey, TValue> m_Lookup;
+        
 
+        public DeferredNativeArray<TValue> ArrayForScheduling
+        {
+            get => m_Iteration;
+        }
 
-        public LookupVData(int initialCapacity, BatchStrategy batchStrategy) : this(initialCapacity, batchStrategy, NULL_VDATA)
+        public int BatchSize
+        {
+            get;
+        }
+
+        public LookupVData(BatchStrategy batchStrategy) : this(batchStrategy, NULL_VDATA)
         {
         }
 
-        public LookupVData(int initialCapacity, BatchStrategy batchStrategy, AbstractVData input) : base(input)
+        public LookupVData(BatchStrategy batchStrategy, AbstractVData input) : base(input)
         {
-            m_PendingAdd = new UnsafeTypedStream<TValue>(Allocator.Persistent,
-                                                         Allocator.TempJob);
-            m_PendingRemove = new UnsafeTypedStream<TKey>(Allocator.Persistent,
-                                                          Allocator.TempJob);
+
+            m_Pending = new UnsafeTypedStream<TValue>(Allocator.Persistent,
+                                                      Allocator.TempJob);
             m_Iteration = new DeferredNativeArray<TValue>(Allocator.Persistent,
                                                           Allocator.TempJob);
-            m_Lookup = new UnsafeHashMap<TKey, TValue>(initialCapacity, Allocator.Persistent);
 
+            m_Lookup = new UnsafeHashMap<TKey, TValue>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
 
-            //TODO: Check on this - duplicated in VData?
-            // BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-            //     ? ChunkUtil.MaxElementsPerChunk<T>()
-            //     : 1;
+            
+            BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
+                ? MAX_ELEMENTS_PER_CHUNK
+                : 1;
         }
 
         protected override void DisposeSelf()
         {
-            m_PendingAdd.Dispose();
-            m_PendingRemove.Dispose();
+            m_Pending.Dispose();
             m_Iteration.Dispose();
             m_Lookup.Dispose();
 
             base.DisposeSelf();
         }
-        
+
         public JobDataForCompletion<TValue> GetCompletionWriter()
         {
-            return new JobDataForCompletion<TValue>(m_PendingAdd.AsWriter());
+            return new JobDataForCompletion<TValue>(m_Pending.AsWriter());
         }
 
         public JobDataForAddMT<TValue> AcquireForAdd()
         {
             ValidateAcquireState(STATE_ADD_MAIN_THREAD);
             AccessController.Acquire(AccessType.SharedWrite);
-            return new JobDataForAddMT<TValue>(m_PendingAdd.AsLaneWriter(MAIN_THREAD_INDEX));
+            return new JobDataForAddMT<TValue>(m_Pending.AsLaneWriter(MAIN_THREAD_INDEX));
         }
 
         public void ReleaseForAdd()
@@ -76,11 +86,25 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.Release();
         }
 
+        public JobHandle AcquireForEntitiesAddAsync(out LookupJobDataForEntitiesAdd<TValue> jobDataForEntitiesAdd)
+        {
+            ValidateAcquireState(STATE_ENTITIES_ADD);
+            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
+            jobDataForEntitiesAdd = new LookupJobDataForEntitiesAdd<TValue>(m_Pending.AsWriter());
+            return sharedWriteHandle;
+        }
+
+        public void ReleaseForEntitiesAddAsync(JobHandle releaseAccessDependency)
+        {
+            ValidateReleaseState(STATE_ENTITIES_ADD);
+            AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
         public JobHandle AcquireForAddAsync(out JobDataForAdd<TValue> jobDataForAdd)
         {
             ValidateAcquireState(STATE_ADD);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobDataForAdd = new JobDataForAdd<TValue>(m_PendingAdd.AsWriter());
+            jobDataForAdd = new JobDataForAdd<TValue>(m_Pending.AsWriter());
             return sharedWriteHandle;
         }
 
@@ -93,26 +117,25 @@ namespace Anvil.Unity.DOTS.Data
         public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-            ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_PendingAdd,
-                                                                                 m_PendingRemove,
-                                                                                 m_Lookup,
-                                                                                 m_Iteration);
+            ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
+                                                                                 m_Iteration,
+                                                                                 m_Lookup);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
-            
+
             AccessController.ReleaseAsync(consolidateHandle);
 
             return consolidateHandle;
         }
-        
+
         //TODO: Commonality for the work in VDATA
         public JobHandle AcquireForWork(out LookupJobDataForWork<TKey, TValue> workStruct)
         {
             ValidateAcquireState(STATE_WORK);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            
-            workStruct = new LookupJobDataForWork<TKey, TValue>(m_PendingRemove.AsWriter(),
-                                                                m_Lookup,
-                                                                m_Iteration.AsDeferredJobArray());
+
+            workStruct = new LookupJobDataForWork<TKey, TValue>(m_Pending.AsWriter(),
+                                                                m_Iteration.AsDeferredJobArray(),
+                                                                m_Lookup);
 
             return AcquireOutputsAsync(sharedWriteHandle);
         }
@@ -123,7 +146,7 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.ReleaseAsync(releaseAccessDependency);
             ReleaseOutputsAsync(releaseAccessDependency);
         }
-        
+
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
@@ -131,56 +154,33 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct ConsolidateLookupJob : IJob
         {
-            private UnsafeTypedStream<TValue> m_PendingAdd;
-            private UnsafeTypedStream<TKey> m_PendingRemove;
-            private UnsafeHashMap<TKey, TValue> m_Lookup;
+            private UnsafeTypedStream<TValue> m_Pending;
             private DeferredNativeArray<TValue> m_Iteration;
+            private UnsafeHashMap<TKey, TValue> m_Lookup;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<TValue> pendingAdd,
-                                        UnsafeTypedStream<TKey> pendingRemove,
-                                        UnsafeHashMap<TKey, TValue> lookup,
-                                        DeferredNativeArray<TValue> iteration)
+            public ConsolidateLookupJob(UnsafeTypedStream<TValue> pending,
+                                        DeferredNativeArray<TValue> iteration,
+                                        UnsafeHashMap<TKey, TValue> lookup)
             {
-                m_PendingAdd = pendingAdd;
-                m_PendingRemove = pendingRemove;
-                m_Lookup = lookup;
+                m_Pending = pending;
                 m_Iteration = iteration;
+                m_Lookup = lookup;
             }
 
-            public unsafe void Execute()
+            public void Execute()
             {
-                NativeArray<TKey> pendingRemoveArray = m_PendingRemove.ToNativeArray(Allocator.Temp);
-                NativeArray<TValue> pendingAddArray = m_PendingAdd.ToNativeArray(Allocator.Temp);
-
-                if (pendingRemoveArray.Length <= 0
-                 && pendingAddArray.Length <= 0)
-                {
-                    return;
-                }
-
-                for (int i = 0; i < pendingRemoveArray.Length; ++i)
-                {
-                    m_Lookup.Remove(pendingRemoveArray[i]);
-                }
-
-                for (int i = 0; i < pendingAddArray.Length; ++i)
-                {
-                    TValue value = pendingAddArray[i];
-                    m_Lookup.Add(value.Key, value);
-                }
-
-                m_PendingAdd.Clear();
-                m_PendingRemove.Clear();
+                m_Lookup.Clear();
                 m_Iteration.Clear();
+                
+                NativeArray<TValue> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                m_Pending.CopyTo(ref iterationArray);
+                m_Pending.Clear();
 
-                NativeArray<TValue> valuesInLookup = m_Lookup.GetValueArray(Allocator.Temp);
-                NativeArray<TValue> iterationArray = m_Iteration.DeferredCreate(valuesInLookup.Length);
-
-                void* valuesInLookupPtr = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(valuesInLookup);
-                void* iterationArrayPtr = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(iterationArray);
-                long bytes = valuesInLookup.Length * VALUE_SIZE;
-
-                UnsafeUtility.MemCpy(iterationArrayPtr, valuesInLookupPtr, bytes);
+                for (int i = 0; i < iterationArray.Length; ++i)
+                {
+                    TValue value = iterationArray[i];
+                    m_Lookup.TryAdd(value.Key, value);
+                }
             }
         }
     }

@@ -135,6 +135,14 @@ namespace Anvil.Unity.DOTS.Data
             get => m_BufferInfo != null && m_BufferInfo->Buffer == null;
         }
 
+        public unsafe int Length
+        {
+            get =>
+                m_BufferInfo != null
+                    ? m_BufferInfo->Length
+                    : 0;
+        }
+
         /// <summary>
         /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
         /// </summary>
@@ -145,7 +153,7 @@ namespace Anvil.Unity.DOTS.Data
         public DeferredNativeArray(Allocator allocator) : this(allocator, allocator)
         {
         }
-        
+
         /// <summary>
         /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
         /// </summary>

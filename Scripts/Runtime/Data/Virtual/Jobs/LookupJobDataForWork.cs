@@ -11,16 +11,17 @@ namespace Anvil.Unity.DOTS.Data
         where TValue : struct, ILookupValue<TKey>
     {
         private const int DEFAULT_LANE_INDEX = -1;
-        
-        [ReadOnly] private readonly UnsafeTypedStream<TKey>.Writer m_RemoveWriter;
-        [ReadOnly] private readonly UnsafeHashMap<TKey, TValue> m_Lookup;
-        [ReadOnly] private readonly NativeArray<TValue> m_Iteration;
 
-        private UnsafeTypedStream<TKey>.LaneWriter m_RemoveLaneWriter;
-        
+        [ReadOnly] private readonly UnsafeTypedStream<TValue>.Writer m_ContinueWriter;
+        [ReadOnly] private readonly NativeArray<TValue> m_Iteration;
+        [ReadOnly] private readonly UnsafeHashMap<TKey, TValue> m_Lookup;
+
+        private UnsafeTypedStream<TValue>.LaneWriter m_ContinueLaneWriter;
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         //TODO: Change to int
         private bool m_IsInitializedForThread;
+        private bool m_IsModifying;
 #endif
 
         public int LaneIndex
@@ -33,24 +34,25 @@ namespace Anvil.Unity.DOTS.Data
         {
             get => m_Iteration.Length;
         }
-        
-        
-        public LookupJobDataForWork(UnsafeTypedStream<TKey>.Writer removeWriter, 
-                                    UnsafeHashMap<TKey, TValue> lookup, 
-                                    NativeArray<TValue> iteration)
-        {
-            m_RemoveWriter = removeWriter;
-            m_Lookup = lookup;
-            m_Iteration = iteration;
 
-            m_RemoveLaneWriter = default;
+
+        public LookupJobDataForWork(UnsafeTypedStream<TValue>.Writer continueWriter,
+                                    NativeArray<TValue> iteration,
+                                    UnsafeHashMap<TKey, TValue> lookup)
+        {
+            m_ContinueWriter = continueWriter;
+            m_Iteration = iteration;
+            m_Lookup = lookup;
+
+            m_ContinueLaneWriter = default;
             LaneIndex = DEFAULT_LANE_INDEX;
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_IsInitializedForThread = false;
+            m_IsModifying = false;
 #endif
         }
-        
+
         public void InitForThread(int nativeThreadIndex)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -59,44 +61,61 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
             LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-            m_RemoveLaneWriter = m_RemoveWriter.AsLaneWriter(LaneIndex);
+            m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(LaneIndex);
         }
-        
+
+        //TODO: Would it be better to have this be a named method?
         public TValue this[int index]
         {
             get
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Debug.Assert(m_IsInitializedForThread);
+                Debug.Assert(!m_IsModifying);
+                m_IsModifying = true;
 #endif
 
                 return m_Iteration[index];
             }
         }
-        
+
+        //TODO: Maybe put this in another struct?
         public TValue this[TKey key]
         {
             get
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 Debug.Assert(m_IsInitializedForThread);
+                Debug.Assert(!m_IsModifying);
+                m_IsModifying = true;
 #endif
 
                 return m_Lookup[key];
             }
         }
 
-        public void Remove(TKey key)
+        public void Continue(TValue value)
         {
-            Remove(ref key);
+            Continue(ref value);
         }
 
-        public void Remove(ref TKey key)
+        public void Continue(ref TValue value)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug.Assert(m_IsInitializedForThread);
+            Debug.Assert(m_IsModifying);
+            m_IsModifying = false;
 #endif
-            m_RemoveLaneWriter.Write(ref key);
+            m_ContinueLaneWriter.Write(ref value);
+        }
+
+        internal void Complete()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug.Assert(m_IsInitializedForThread);
+            Debug.Assert(m_IsModifying);
+            m_IsModifying = false;
+#endif
         }
     }
 }
