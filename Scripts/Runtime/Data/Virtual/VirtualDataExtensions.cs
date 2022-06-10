@@ -6,23 +6,23 @@ namespace Anvil.Unity.DOTS.Data
     {
         //TODO: Docs and sort out ref's nicely
 
-        public static void Complete<TKey, TValue, TResponse>(this TValue value, TResponse response, ref JobDataForWork<TKey, TValue> jobDataForWork)
+        public static void Complete<TKey, TValue, TResponse>(this TValue value, TResponse response, ref JobSourceReader<TKey, TValue> jobDataForWork)
             where TKey : struct, IEquatable<TKey>
-            where TValue : struct, ILookupValue<TKey>, ICompletable<TResponse>
+            where TValue : struct, ILookupValue<TKey>, ISourceData<TResponse>
             where TResponse : struct
         {
-            value.CompletionWriter.Add(response, jobDataForWork.LaneIndex);
+            value.ResultWriter.Add(response, jobDataForWork.LaneIndex);
             jobDataForWork.Complete();
         }
 
-        public static void Complete<TKey, TValue>(this TValue value, ref JobDataForWork<TKey, TValue> jobDataForWork)
+        public static void Complete<TKey, TValue>(this TValue value, ref JobSourceReader<TKey, TValue> jobDataForWork)
             where TKey : struct, IEquatable<TKey>
             where TValue : struct, ILookupValue<TKey>
         {
             jobDataForWork.Complete();
         }
 
-        public static void ContinueIn<TKey, TValue>(this TValue value, ref JobDataForWork<TKey, TValue> jobDataForWork)
+        public static void ContinueIn<TKey, TValue>(this TValue value, ref JobSourceReader<TKey, TValue> jobDataForWork)
             where TKey : struct, IEquatable<TKey>
             where TValue : struct, ILookupValue<TKey>
         {

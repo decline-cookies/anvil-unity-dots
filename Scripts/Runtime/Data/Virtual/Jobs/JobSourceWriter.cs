@@ -4,48 +4,27 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public struct JobDataForAddMT<T>
-        where T : struct
-    {
-        private UnsafeTypedStream<T>.LaneWriter m_AddLaneWriter;
-
-        public JobDataForAddMT(UnsafeTypedStream<T>.LaneWriter addLaneWriter)
-        {
-            m_AddLaneWriter = addLaneWriter;
-        }
-        
-        public void Add(T value)
-        {
-            Add(ref value);
-        }
-
-        public void Add(ref T value)
-        {
-            m_AddLaneWriter.Write(ref value);
-        }
-    }
-    
-    public struct JobDataForAdd<T>
+    [BurstCompatible]
+    public struct JobSourceWriter<T>
         where T : struct
     {
         private const int DEFAULT_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<T>.Writer m_AddWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<T>.Writer m_SourceWriter;
 
-        private UnsafeTypedStream<T>.LaneWriter m_AddLaneWriter;
+        private UnsafeTypedStream<T>.LaneWriter m_SourceLaneWriter;
         private int m_LaneIndex;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private bool m_IsInitializedForThread;
 #endif
 
-        
-        
-        public JobDataForAdd(UnsafeTypedStream<T>.Writer addWriter) : this()
-        {
-            m_AddWriter = addWriter;
 
-            m_AddLaneWriter = default;
+        public JobSourceWriter(UnsafeTypedStream<T>.Writer sourceWriter) : this()
+        {
+            m_SourceWriter = sourceWriter;
+
+            m_SourceLaneWriter = default;
             m_LaneIndex = DEFAULT_LANE_INDEX;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -61,7 +40,7 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-            m_AddLaneWriter = m_AddWriter.AsLaneWriter(m_LaneIndex);
+            m_SourceLaneWriter = m_SourceWriter.AsLaneWriter(m_LaneIndex);
         }
 
         public void Add(T value)
@@ -74,7 +53,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug.Assert(m_IsInitializedForThread);
 #endif
-            m_AddLaneWriter.Write(ref value);
+            m_SourceLaneWriter.Write(ref value);
         }
     }
 }
