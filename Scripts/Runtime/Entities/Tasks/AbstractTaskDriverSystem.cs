@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -15,11 +16,13 @@ namespace Anvil.Unity.DOTS.Entities
         where TResult : struct, ILookupValue<TKey>
     {
         private readonly VirtualData<TKey, TSource> m_SourceData;
-        
+        private readonly HashSet<ITaskDriver> m_TaskDrivers = new HashSet<ITaskDriver>();
+
+        // ReSharper disable once InconsistentNaming
         private event Action<TTaskDriverSystem> m_OnCreated;
         private bool m_IsCreated;
 
-        
+
         public event Action<TTaskDriverSystem> OnCreated
         {
             add
@@ -35,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
             remove => m_OnCreated -= value;
         }
-        
+
         protected DeferredNativeArray<TSource> ArrayForScheduling
         {
             get => m_SourceData.ArrayForScheduling;
@@ -65,20 +68,24 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_SourceData.Dispose();
             m_OnCreated = null;
-            
+
             base.OnDestroy();
         }
 
         public TTaskDriver CreateTaskDriver(AbstractTaskDriver<TTaskDriver, TKey, TSource, TResult>.PopulateEntitiesFunction populateEntitiesFunction)
         {
             TTaskDriver taskDriver = (TTaskDriver)Activator.CreateInstance(typeof(TTaskDriver), this, m_SourceData, populateEntitiesFunction);
+            m_TaskDrivers.Add(taskDriver);
             return taskDriver;
         }
 
         protected override void OnUpdate()
         {
-            //Update our source data
-            JobHandle consolidateHandle = m_SourceData.ConsolidateForFrame(Dependency);
+            //Update any drivers that this system spawned, this gives them a chance to add to the source data
+            JobHandle driversHandle = UpdateDrivers(Dependency);
+
+            //Consolidate our source data to operate on it
+            JobHandle consolidateHandle = m_SourceData.ConsolidateForFrame(driversHandle);
 
             //TODO: Bad name. (AcquireProcessorAsync or AcquireForWork) Think harder. Mike said PrepareForWorkAndAcquire 
             //Get the source reader struct
@@ -92,6 +99,25 @@ namespace Anvil.Unity.DOTS.Entities
 
             //Ensure this system's dependency is written back
             Dependency = updateHandle;
+        }
+
+        private JobHandle UpdateDrivers(JobHandle dependsOn)
+        {
+            int taskDriversCount = m_TaskDrivers.Count;
+            if (taskDriversCount <= 0)
+            {
+                return dependsOn;
+            }
+            
+            NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(taskDriversCount, Allocator.Temp);
+            int index = 0;
+            foreach (ITaskDriver taskDriver in m_TaskDrivers)
+            {
+                taskDriverDependencies[index] = taskDriver.Update(dependsOn);
+                index++;
+            }
+            
+            return JobHandle.CombineDependencies(taskDriverDependencies);
         }
 
         protected abstract JobHandle Update(JobHandle dependsOn, ref JobSourceReader<TKey, TSource> jobSourceReader);
@@ -116,7 +142,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
     }
 
-    public interface ITaskDriverSystem<TTaskDriverSystem>
+    public interface ITaskDriverSystem<out TTaskDriverSystem>
         where TTaskDriverSystem : AbstractTaskDriverSystem
     {
         event Action<TTaskDriverSystem> OnCreated;

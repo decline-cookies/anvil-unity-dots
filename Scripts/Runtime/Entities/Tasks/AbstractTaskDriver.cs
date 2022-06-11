@@ -2,9 +2,9 @@ using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -80,8 +80,19 @@ namespace Anvil.Unity.DOTS.Entities
                                 };
         }
 
+        private bool m_StopUpdating;
+        public void StopUpdating()
+        {
+            m_StopUpdating = true;
+        }
+
         public JobHandle Update(JobHandle dependsOn)
         {
+            if (m_StopUpdating)
+            {
+                return dependsOn;
+            }
+
             JobHandle addHandle = m_SourceData.AcquireForEntitiesAddAsync(out JobEntitiesSourceWriter<TSource> addStruct);
             JobResultWriter<TResult> resultStruct = m_ResultData.GetCompletionWriter();
 
@@ -93,30 +104,9 @@ namespace Anvil.Unity.DOTS.Entities
 
             JobHandle consolidateResultHandle = m_ResultData.ConsolidateForFrame(postPopulate);
 
-            //TODO: Could add a hook for user processing before all children go
+            //TODO: Could add a hook for user processing 
 
-            JobHandle childrenUpdateHandle = UpdateChildren(consolidateResultHandle);
-
-            //TODO: Could add a hook for user processing after all children go
-
-            return childrenUpdateHandle;
-        }
-
-        private JobHandle UpdateChildren(JobHandle dependsOn)
-        {
-            int numChildren = m_ChildTaskDrivers.Count;
-            if (numChildren == 0)
-            {
-                return dependsOn;
-            }
-
-            NativeArray<JobHandle> childDependencies = new NativeArray<JobHandle>(m_ChildTaskDrivers.Count, Allocator.Temp);
-            for (int i = 0; i < m_ChildTaskDrivers.Count; ++i)
-            {
-                childDependencies[i] = m_ChildTaskDrivers[i].Update(dependsOn);
-            }
-
-            return JobHandle.CombineDependencies(childDependencies);
+            return consolidateResultHandle;
         }
     }
 }
