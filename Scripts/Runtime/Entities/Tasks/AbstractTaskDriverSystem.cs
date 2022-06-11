@@ -69,6 +69,11 @@ namespace Anvil.Unity.DOTS.Entities
             m_SourceData.Dispose();
             m_OnCreated = null;
 
+            foreach (ITaskDriver taskDriver in m_TaskDrivers)
+            {
+                taskDriver.Dispose();
+            }
+
             base.OnDestroy();
         }
 

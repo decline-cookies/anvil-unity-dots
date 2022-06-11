@@ -4,13 +4,16 @@ using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface ITaskDriver
+    public interface ITaskDriver : IAnvilDisposable
     {
         JobHandle Update(JobHandle dependsOn);
+        public AbstractTaskDriverSystem System
+        {
+            get;
+        }
     }
 
     public abstract class AbstractTaskDriver<TTaskDriver, TKey, TSource, TResult> : AbstractAnvilBase,
@@ -20,7 +23,8 @@ namespace Anvil.Unity.DOTS.Entities
         where TSource : struct, ILookupValue<TKey>
         where TResult : struct, ILookupValue<TKey>
     {
-        public delegate JobHandle PopulateEntitiesFunction(JobHandle dependsOn,
+        public delegate JobHandle PopulateEntitiesFunction(ITaskDriver taskDriver,
+                                                           JobHandle dependsOn,
                                                            JobEntitiesSourceWriter<TSource> addStruct,
                                                            JobResultWriter<TResult> completeStruct);
 
@@ -42,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        protected AbstractTaskDriverSystem System
+        public AbstractTaskDriverSystem System
         {
             get;
         }
@@ -80,25 +84,14 @@ namespace Anvil.Unity.DOTS.Entities
                                 };
         }
 
-        private bool m_StopUpdating;
-        public void StopUpdating()
-        {
-            m_StopUpdating = true;
-        }
-
         public JobHandle Update(JobHandle dependsOn)
         {
-            if (m_StopUpdating)
-            {
-                return dependsOn;
-            }
-
             JobHandle addHandle = m_SourceData.AcquireForEntitiesAddAsync(out JobEntitiesSourceWriter<TSource> addStruct);
             JobResultWriter<TResult> resultStruct = m_ResultData.GetCompletionWriter();
 
             JobHandle prePopulate = JobHandle.CombineDependencies(addHandle, dependsOn);
 
-            JobHandle postPopulate = m_PopulateEntitiesFunction(prePopulate, addStruct, resultStruct);
+            JobHandle postPopulate = m_PopulateEntitiesFunction(this, prePopulate, addStruct, resultStruct);
 
             m_SourceData.ReleaseForEntitiesAddAsync(postPopulate);
 

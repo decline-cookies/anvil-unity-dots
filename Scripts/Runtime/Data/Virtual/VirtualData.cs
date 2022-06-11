@@ -19,16 +19,16 @@ namespace Anvil.Unity.DOTS.Data
         private const string STATE_ADD = "Add";
         private const string STATE_ENTITIES_ADD = "EntitiesAdd";
 #endif
-        
+
         // ReSharper disable once StaticMemberInGenericType
         private static readonly int MAIN_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
 
         private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TValue>();
-        
+
         private UnsafeTypedStream<TValue> m_Pending;
         private DeferredNativeArray<TValue> m_Iteration;
         private UnsafeHashMap<TKey, TValue> m_Lookup;
-        
+
 
         public DeferredNativeArray<TValue> ArrayForScheduling
         {
@@ -46,7 +46,6 @@ namespace Anvil.Unity.DOTS.Data
 
         public VirtualData(BatchStrategy batchStrategy, AbstractVirtualData input) : base(input)
         {
-
             m_Pending = new UnsafeTypedStream<TValue>(Allocator.Persistent,
                                                       Allocator.TempJob);
             m_Iteration = new DeferredNativeArray<TValue>(Allocator.Persistent,
@@ -54,7 +53,7 @@ namespace Anvil.Unity.DOTS.Data
 
             m_Lookup = new UnsafeHashMap<TKey, TValue>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
 
-            
+
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
                 ? MAX_ELEMENTS_PER_CHUNK
                 : 1;
@@ -68,7 +67,7 @@ namespace Anvil.Unity.DOTS.Data
 
             base.DisposeSelf();
         }
-        
+
         //TODO: Main Thread vs Threaded Variants
 
         public JobResultWriter<TValue> GetCompletionWriter()
@@ -137,8 +136,8 @@ namespace Anvil.Unity.DOTS.Data
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
 
             workStruct = new JobSourceReader<TKey, TValue>(m_Pending.AsWriter(),
-                                                                m_Iteration.AsDeferredJobArray(),
-                                                                m_Lookup);
+                                                           m_Iteration.AsDeferredJobArray(),
+                                                           m_Lookup);
 
             return AcquireOutputsAsync(sharedWriteHandle);
         }
@@ -174,7 +173,7 @@ namespace Anvil.Unity.DOTS.Data
             {
                 m_Lookup.Clear();
                 m_Iteration.Clear();
-                
+
                 NativeArray<TValue> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
