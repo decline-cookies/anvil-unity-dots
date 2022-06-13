@@ -7,37 +7,27 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriverSystem<TTaskDriverSystem, TTaskDriver, TKey, TSource, TResult> : AbstractTaskDriverSystem,
-                                                                                                             ITaskDriverSystem<TTaskDriverSystem>
-        where TTaskDriverSystem : AbstractTaskDriverSystem<TTaskDriverSystem, TTaskDriver, TKey, TSource, TResult>
-        where TTaskDriver : AbstractTaskDriver<TTaskDriver, TKey, TSource, TResult>
+    public abstract class AbstractTaskDriverSystem<TTaskDriver, TKey, TSource, TResult> : AbstractTaskDriverSystem
+        where TTaskDriver : AbstractTaskDriver<TKey, TSource, TResult>
         where TKey : struct, IEquatable<TKey>
         where TSource : struct, ILookupValue<TKey>
         where TResult : struct, ILookupValue<TKey>
     {
-        private readonly VirtualData<TKey, TSource> m_SourceData;
-        private readonly HashSet<ITaskDriver> m_TaskDrivers = new HashSet<ITaskDriver>();
-
-        // ReSharper disable once InconsistentNaming
-        private event Action<TTaskDriverSystem> m_OnCreated;
-        private bool m_IsCreated;
-
-
-        public event Action<TTaskDriverSystem> OnCreated
+        private class DeferredTaskDriver
         {
-            add
+            public readonly AbstractPopulator<TKey, TSource, TResult> Populator;
+            public readonly Action<TTaskDriver> Callback;
+
+            public DeferredTaskDriver(AbstractPopulator<TKey, TSource, TResult> populator, Action<TTaskDriver> callback)
             {
-                if (m_IsCreated)
-                {
-                    value((TTaskDriverSystem)this);
-                }
-                else
-                {
-                    m_OnCreated += value;
-                }
+                Populator = populator;
+                Callback = callback;
             }
-            remove => m_OnCreated -= value;
         }
+        
+        private readonly VirtualData<TKey, TSource> m_SourceData;
+        private readonly HashSet<TTaskDriver> m_TaskDrivers = new HashSet<TTaskDriver>();
+        private readonly List<DeferredTaskDriver> m_DeferredTaskDrivers = new List<DeferredTaskDriver>();
 
         protected DeferredNativeArray<TSource> ArrayForScheduling
         {
@@ -60,26 +50,47 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            m_IsCreated = true;
-            m_OnCreated?.Invoke((TTaskDriverSystem)this);
+            CreateDeferredTaskDrivers();
         }
 
         protected override void OnDestroy()
         {
             m_SourceData.Dispose();
-            m_OnCreated = null;
 
-            foreach (ITaskDriver taskDriver in m_TaskDrivers)
+            foreach (TTaskDriver taskDriver in m_TaskDrivers)
             {
                 taskDriver.Dispose();
             }
+            
+            m_DeferredTaskDrivers.Clear();
 
             base.OnDestroy();
         }
-
-        public TTaskDriver CreateTaskDriver(AbstractTaskDriver<TTaskDriver, TKey, TSource, TResult>.PopulateEntitiesFunction populateEntitiesFunction)
+        
+        public void CreateTaskDriver(AbstractPopulator<TKey, TSource, TResult> populator, Action<TTaskDriver> onTaskDriverCreated)
         {
-            TTaskDriver taskDriver = (TTaskDriver)Activator.CreateInstance(typeof(TTaskDriver), this, m_SourceData, populateEntitiesFunction);
+            if (IsCreated)
+            {
+                onTaskDriverCreated?.Invoke(CreateTaskDriver(populator));
+            }
+            else
+            {
+                m_DeferredTaskDrivers.Add(new DeferredTaskDriver(populator, onTaskDriverCreated));
+            }
+        }
+
+        private void CreateDeferredTaskDrivers()
+        {
+            foreach (DeferredTaskDriver deferredTaskDriver in m_DeferredTaskDrivers)
+            {
+                deferredTaskDriver.Callback?.Invoke(CreateTaskDriver(deferredTaskDriver.Populator));
+            }
+            m_DeferredTaskDrivers.Clear();
+        }
+
+        private TTaskDriver CreateTaskDriver(AbstractPopulator<TKey, TSource, TResult> populator)
+        {
+            TTaskDriver taskDriver = (TTaskDriver)Activator.CreateInstance(typeof(TTaskDriver), this, m_SourceData, populator);
             m_TaskDrivers.Add(taskDriver);
             return taskDriver;
         }
@@ -105,7 +116,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle driversConsolidateHandle = ConsolidateDrivers(updateHandle);
 
             //Ensure this system's dependency is written back
-            Dependency = updateHandle;
+            Dependency = driversConsolidateHandle;
         }
 
         private JobHandle PopulateDrivers(JobHandle dependsOn)
@@ -115,15 +126,15 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return dependsOn;
             }
-            
+
             NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(taskDriversCount, Allocator.Temp);
             int index = 0;
-            foreach (ITaskDriver taskDriver in m_TaskDrivers)
+            foreach (TTaskDriver taskDriver in m_TaskDrivers)
             {
                 taskDriverDependencies[index] = taskDriver.Populate(dependsOn);
                 index++;
             }
-            
+
             return JobHandle.CombineDependencies(taskDriverDependencies);
         }
 
@@ -134,15 +145,15 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return dependsOn;
             }
-            
+
             NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(taskDriversCount, Allocator.Temp);
             int index = 0;
-            foreach (ITaskDriver taskDriver in m_TaskDrivers)
+            foreach (TTaskDriver taskDriver in m_TaskDrivers)
             {
                 taskDriverDependencies[index] = taskDriver.Consolidate(dependsOn);
                 index++;
             }
-            
+
             return JobHandle.CombineDependencies(taskDriverDependencies);
         }
 
@@ -151,6 +162,24 @@ namespace Anvil.Unity.DOTS.Entities
 
     public abstract class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
+        protected bool IsCreated
+        {
+            get;
+            private set;
+        }
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            IsCreated = true;
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+        }
+
+
         //TODO: Figure out system ownership
         public EntityQuery GetEntityQuery(params ComponentType[] componentTypes)
         {
@@ -166,11 +195,5 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return base.GetEntityQuery(queryDesc);
         }
-    }
-
-    public interface ITaskDriverSystem<out TTaskDriverSystem>
-        where TTaskDriverSystem : AbstractTaskDriverSystem
-    {
-        event Action<TTaskDriverSystem> OnCreated;
     }
 }
