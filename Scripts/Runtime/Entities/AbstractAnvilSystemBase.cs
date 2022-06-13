@@ -37,7 +37,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 // Note: The arguments to JobHandle.CheckFenceIsDependencyOrDidSyncFence seem backward.
                 // This checks whether the incoming value depends on base.Dependency
-                Debug.Assert(JobHandle.CheckFenceIsDependencyOrDidSyncFence(base.Dependency, value), "Dependency Chain Broken: The incoming dependency does not contain the existing dependency in the chain.");
+                // Debug.Assert(JobHandle.CheckFenceIsDependencyOrDidSyncFence(base.Dependency, value), "Dependency Chain Broken: The incoming dependency does not contain the existing dependency in the chain.");
+                Debug.Assert(JobHandle.CheckFenceIsDependencyOrDidSyncFence(base.Dependency, value));
                 base.Dependency = value;
             }
         }

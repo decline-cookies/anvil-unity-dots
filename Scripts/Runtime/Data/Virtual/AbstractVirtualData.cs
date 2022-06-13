@@ -40,12 +40,14 @@ namespace Anvil.Unity.DOTS.Data
 
         internal AbstractVirtualData()
         {
-            Debug.Assert(GetType() == typeof(NullVirtualData), $"Incorrect code path");
+            // Debug.Assert(GetType() == typeof(NullVirtualData), $"Incorrect code path");
+            Debug.Assert(GetType() == typeof(NullVirtualData));
         }
 
         protected AbstractVirtualData(AbstractVirtualData input)
         {
-            Debug.Assert(input != null, $"{this} was created by passing in a source but that source is null! Double check that it has been created.");
+            // Debug.Assert(input != null, $"{this} was created by passing in a source but that source is null! Double check that it has been created.");
+            Debug.Assert(input != null);
         
             AccessController = new AccessController();
             m_Input = input;
@@ -127,14 +129,16 @@ namespace Anvil.Unity.DOTS.Data
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         protected void ValidateAcquireState(string newState)
         {
-            Debug.Assert(m_State == STATE_UNACQUIRED, $"{this} - State was {m_State} but expected {STATE_UNACQUIRED}. Corresponding release method was not called after last acquire.");
+            // Debug.Assert(m_State == STATE_UNACQUIRED, $"{this} - State was {m_State} but expected {STATE_UNACQUIRED}. Corresponding release method was not called after last acquire.");
+            Debug.Assert(m_State == STATE_UNACQUIRED);
             m_State = newState;
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         protected void ValidateReleaseState(string expectedState)
         {
-            Debug.Assert(m_State == expectedState, $"{this} - State was {m_State} but expected {expectedState}. A release method was called an additional time after last release.");
+            // Debug.Assert(m_State == expectedState, $"{this} - State was {m_State} but expected {expectedState}. A release method was called an additional time after last release.");
+            Debug.Assert(m_State == expectedState);
             m_State = STATE_UNACQUIRED;
         }
     }

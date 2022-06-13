@@ -68,9 +68,12 @@ namespace Anvil.Unity.DOTS.Jobs
         protected override void DisposeSelf()
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
-            Debug.Assert(m_ExclusiveWriteDependency.IsCompleted, "The exclusive write access dependency is not completed");
-            Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
-            Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
+            // Debug.Assert(m_ExclusiveWriteDependency.IsCompleted, "The exclusive write access dependency is not completed");
+            // Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
+            // Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
+            Debug.Assert(m_ExclusiveWriteDependency.IsCompleted);
+            Debug.Assert(m_SharedWriteDependency.IsCompleted);
+            Debug.Assert(m_SharedReadDependency.IsCompleted);
 
             base.DisposeSelf();
         }
@@ -221,21 +224,29 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateAcquireState()
         {
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
-            Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
-            StackFrame frame = new StackFrame(3, true);
-            m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
+            // Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
+            // Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
+            Debug.Assert(m_State != AcquisitionState.Disposing);
+            Debug.Assert(m_State == AcquisitionState.Unacquired);
+            //TODO: Redo this without StackFrame
+            // StackFrame frame = new StackFrame(3, true);
+            // m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
-            Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} was called multiple times. Last {nameof(ReleaseAsync)} was called from: {m_ReleaseCallerInfo}");
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(ReleaseAsync)} was called but the {nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
-            StackFrame frame = new StackFrame(3, true);
-            m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
+            // Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} was called multiple times. Last {nameof(ReleaseAsync)} was called from: {m_ReleaseCallerInfo}");
+            // Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(ReleaseAsync)} was called but the {nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
+            Debug.Assert(m_State != AcquisitionState.Unacquired);
+            Debug.Assert(m_State != AcquisitionState.Disposing);
+            
+            //TODO: Redo this without StackFrame
+            // StackFrame frame = new StackFrame(3, true);
+            // m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
 
-            Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
+            // Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
+            Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired));
         }
     }
 }

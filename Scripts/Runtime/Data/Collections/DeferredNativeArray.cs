@@ -126,15 +126,6 @@ namespace Anvil.Unity.DOTS.Data
             get => m_BufferInfo != null;
         }
 
-        /// <summary>
-        /// True if <see cref="DeferredCreate"/> has NOT yet been called
-        /// False if it was called.
-        /// </summary>
-        public unsafe bool IsPendingDeferredCreate
-        {
-            get => m_BufferInfo != null && m_BufferInfo->Buffer == null;
-        }
-
         public unsafe int Length
         {
             get =>
@@ -251,8 +242,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="nativeArrayOptions">The <see cref="NativeArrayOptions"/> for initializing the array memory.</param>
         public unsafe NativeArray<T> DeferredCreate(int newLength, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
         {
-            AssertForDeferredCreate();
-
             //Allocate the new memory
             long size = SIZE * newLength;
             void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_BufferInfo->DeferredAllocator);
@@ -274,13 +263,6 @@ namespace Anvil.Unity.DOTS.Data
             return array;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [BurstDiscard]
-        private unsafe void AssertForDeferredCreate()
-        {
-            Debug.Assert(!IsPendingDeferredCreate, $"{nameof(DeferredNativeArray<T>)} has already been created! Cannot call {nameof(DeferredCreate)} more than once.");
-        }
-
         /// <summary>
         /// Returns a <see cref="NativeArray{T}"/> for use in a job.
         /// Initially this <see cref="NativeArray{T}"/> will not have anything in it but later on after
@@ -291,8 +273,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <returns>A <see cref="NativeArray{T}"/> instance that will be populated in the future.</returns>
         public unsafe NativeArray<T> AsDeferredJobArray()
         {
-            AssertForAsDeferredJobArray();
-
             //This whole function taken from NativeList.AsDeferredJobArray
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
@@ -308,13 +288,6 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
             return array;
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [BurstDiscard]
-        private unsafe void AssertForAsDeferredJobArray()
-        {
-            Debug.Assert(IsPendingDeferredCreate, $"You are trying to call {nameof(AsDeferredJobArray)} after {nameof(DeferredCreate)} has already been called which is not allowed.");
         }
 
         //*************************************************************************************************************

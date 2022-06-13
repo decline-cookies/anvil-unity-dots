@@ -9,7 +9,8 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public interface ITaskDriver : IAnvilDisposable
     {
-        JobHandle Update(JobHandle dependsOn);
+        JobHandle Populate(JobHandle dependsOn);
+        JobHandle Consolidate(JobHandle dependsOn);
         public AbstractTaskDriverSystem System
         {
             get;
@@ -84,7 +85,7 @@ namespace Anvil.Unity.DOTS.Entities
                                 };
         }
 
-        public JobHandle Update(JobHandle dependsOn)
+        public JobHandle Populate(JobHandle dependsOn)
         {
             JobHandle addHandle = m_SourceData.AcquireForEntitiesAddAsync(out JobEntitiesSourceWriter<TSource> addStruct);
             JobResultWriter<TResult> resultStruct = m_ResultData.GetCompletionWriter();
@@ -94,11 +95,17 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle postPopulate = m_PopulateEntitiesFunction(this, prePopulate, addStruct, resultStruct);
 
             m_SourceData.ReleaseForEntitiesAddAsync(postPopulate);
-
-            JobHandle consolidateResultHandle = m_ResultData.ConsolidateForFrame(postPopulate);
-
+            
             //TODO: Could add a hook for user processing 
 
+            return postPopulate;
+        }
+
+        public JobHandle Consolidate(JobHandle dependsOn)
+        {
+            JobHandle consolidateResultHandle = m_ResultData.ConsolidateForFrame(dependsOn);
+            //TODO: Could add a hook for user processing
+            
             return consolidateResultHandle;
         }
     }

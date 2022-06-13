@@ -150,7 +150,8 @@ namespace Anvil.Unity.DOTS.Jobs
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
         {
             s_ThreadIndicesSeen.TryAdd(nativeThreadIndex, true);
-            Debug.Assert(s_ThreadIndicesSeen.Count <= maxSize, $"Seen {s_ThreadIndicesSeen.Count} when we should only have seen {maxSize}. Output is: {GenerateOutput()}");
+            // Debug.Assert(s_ThreadIndicesSeen.Count <= maxSize, $"Seen {s_ThreadIndicesSeen.Count} when we should only have seen {maxSize}. Output is: {GenerateOutput()}");
+            Debug.Assert(s_ThreadIndicesSeen.Count <= maxSize);
         }
 
         [BurstDiscard]

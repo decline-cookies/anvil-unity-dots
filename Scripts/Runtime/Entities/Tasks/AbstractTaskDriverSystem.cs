@@ -87,10 +87,10 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnUpdate()
         {
             //Update any drivers that this system spawned, this gives them a chance to add to the source data
-            JobHandle driversHandle = UpdateDrivers(Dependency);
+            JobHandle driversPopulateHandle = PopulateDrivers(Dependency);
 
             //Consolidate our source data to operate on it
-            JobHandle consolidateHandle = m_SourceData.ConsolidateForFrame(driversHandle);
+            JobHandle consolidateHandle = m_SourceData.ConsolidateForFrame(driversPopulateHandle);
 
             //TODO: Bad name. (AcquireProcessorAsync or AcquireForWork) Think harder. Mike said PrepareForWorkAndAcquire 
             //Get the source reader struct
@@ -102,11 +102,13 @@ namespace Anvil.Unity.DOTS.Entities
             //Release the source reader struct
             m_SourceData.ReleaseForWork(updateHandle);
 
+            JobHandle driversConsolidateHandle = ConsolidateDrivers(updateHandle);
+
             //Ensure this system's dependency is written back
             Dependency = updateHandle;
         }
 
-        private JobHandle UpdateDrivers(JobHandle dependsOn)
+        private JobHandle PopulateDrivers(JobHandle dependsOn)
         {
             int taskDriversCount = m_TaskDrivers.Count;
             if (taskDriversCount <= 0)
@@ -118,7 +120,26 @@ namespace Anvil.Unity.DOTS.Entities
             int index = 0;
             foreach (ITaskDriver taskDriver in m_TaskDrivers)
             {
-                taskDriverDependencies[index] = taskDriver.Update(dependsOn);
+                taskDriverDependencies[index] = taskDriver.Populate(dependsOn);
+                index++;
+            }
+            
+            return JobHandle.CombineDependencies(taskDriverDependencies);
+        }
+
+        private JobHandle ConsolidateDrivers(JobHandle dependsOn)
+        {
+            int taskDriversCount = m_TaskDrivers.Count;
+            if (taskDriversCount <= 0)
+            {
+                return dependsOn;
+            }
+            
+            NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(taskDriversCount, Allocator.Temp);
+            int index = 0;
+            foreach (ITaskDriver taskDriver in m_TaskDrivers)
+            {
+                taskDriverDependencies[index] = taskDriver.Consolidate(dependsOn);
                 index++;
             }
             

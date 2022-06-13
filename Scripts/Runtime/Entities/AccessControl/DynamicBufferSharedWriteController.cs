@@ -135,7 +135,8 @@ namespace Anvil.Unity.DOTS.Entities
 
             internal ComponentSystemBase GetSystemAtExecutionOrder(int executionOrder)
             {
-                Debug.Assert(executionOrder >= 0 && executionOrder < m_ExecutedOrderedSystems.Count, $"Invalid execution order of {executionOrder}.{nameof(m_ExecutedOrderedSystems)} Count is {m_ExecutedOrderedSystems.Count}");
+                // Debug.Assert(executionOrder >= 0 && executionOrder < m_ExecutedOrderedSystems.Count, $"Invalid execution order of {executionOrder}.{nameof(m_ExecutedOrderedSystems)} Count is {m_ExecutedOrderedSystems.Count}");
+                Debug.Assert(executionOrder >= 0 && executionOrder < m_ExecutedOrderedSystems.Count);
                 return m_ExecutedOrderedSystems[executionOrder];
             }
 
@@ -226,7 +227,8 @@ namespace Anvil.Unity.DOTS.Entities
             private bool DidSystemExecuteSinceLastCheck(ComponentSystemBase system)
             {
                 uint cachedSystemVersion = m_OrderedSystemsVersions[system];
-                Debug.Assert(cachedSystemVersion <= system.LastSystemVersion, $"Investigate. Cached System Version {cachedSystemVersion} is larger than the last recorded version {system.LastSystemVersion}");
+                // Debug.Assert(cachedSystemVersion <= system.LastSystemVersion, $"Investigate. Cached System Version {cachedSystemVersion} is larger than the last recorded version {system.LastSystemVersion}");
+                Debug.Assert(cachedSystemVersion <= system.LastSystemVersion);
                 return system.LastSystemVersion > cachedSystemVersion;
             }
         }
@@ -267,7 +269,8 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void DisposeSelf()
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
-            Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
+            // Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
+            Debug.Assert(m_SharedWriteDependency.IsCompleted);
 
             //Remove ourselves from the chain
             m_LookupByComponentType.Remove<T>();
@@ -279,21 +282,24 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.RegisterSystemForSharedWrite"/>
         public void RegisterSystemForSharedWrite(ComponentSystemBase system)
         {
-            Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
+            // Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
+            Debug.Assert(system.World == m_World);
             m_SharedWriteSystems.Add(system);
         }
 
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.UnregisterSystemForSharedWrite"/>
         public void UnregisterSystemForSharedWrite(ComponentSystemBase system)
         {
-            Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
+            // Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
+            Debug.Assert(system.World == m_World);
             m_SharedWriteSystems.Remove(system);
         }
 
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.GetSharedWriteDependency"/>
         public JobHandle GetSharedWriteDependency(SystemBase callingSystem, JobHandle callingSystemDependency)
         {
-            Debug.Assert(m_SharedWriteSystems.Contains(callingSystem), $"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
+            // Debug.Assert(m_SharedWriteSystems.Contains(callingSystem), $"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
+            Debug.Assert(m_SharedWriteSystems.Contains(callingSystem));
 
             //Rebuild our local cache if we need to. Will trigger a world cache rebuild if necessary too.
             m_LocalCache.RebuildIfNeeded();
