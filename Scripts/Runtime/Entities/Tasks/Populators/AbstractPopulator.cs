@@ -6,11 +6,18 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    //TODO: Probably don't want to be able to extend from here
     public abstract class AbstractPopulator<TKey, TSource, TResult> : AbstractPopulator
         where TKey : struct, IEquatable<TKey>
         where TSource : struct, ILookupValue<TKey>
         where TResult : struct, ILookupValue<TKey>
     {
+        protected TTaskDriver TaskDriver
+        {
+            get;
+            set;
+        }
+        
         internal abstract JobHandle Populate(JobHandle dependsOn, VirtualData<TKey, TSource> sourceData, VirtualData<TKey, TResult> resultData);
     }
 
@@ -25,12 +32,5 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
-        internal AbstractTaskDriver TaskDriver
-        {
-            get;
-            set;
-        }
-        
     }
 }
