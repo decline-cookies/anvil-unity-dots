@@ -7,8 +7,8 @@ namespace Anvil.Unity.DOTS.Entities
     internal class EntitiesAsyncPopulator<TTaskDriverSystem, TKey, TSource, TResult> : AbstractPopulator<TKey, TSource, TResult>
         where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TSource>
         where TKey : struct, IEquatable<TKey>
-        where TSource : struct, ILookupValue<TKey>
-        where TResult : struct, ILookupValue<TKey>
+        where TSource : struct, ILookupData<TKey>
+        where TResult : struct, ILookupData<TKey>
     {
         private readonly AbstractTaskDriver<TTaskDriverSystem, TKey, TSource, TResult>.PopulateEntitiesAsyncDelegate m_PopulateDelegate;
 
@@ -20,8 +20,8 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: Generalize this with AsyncPopulator
         internal sealed override JobHandle Populate(JobHandle dependsOn, VirtualData<TKey, TSource> sourceData, VirtualData<TKey, TResult> resultData)
         {
-            JobHandle addHandle = sourceData.AcquireForEntitiesAddAsync(out JobEntitiesSourceWriter<TSource> addStruct);
-            JobResultWriter<TResult> resultStruct = resultData.GetCompletionWriter();
+            JobHandle addHandle = sourceData.AcquireForEntitiesAddAsync(out JobInstanceWriterEntities<TSource> addStruct);
+            JobResultWriter<TResult> resultStruct = resultData.GetResultWriter();
             
             JobHandle prePopulate = JobHandle.CombineDependencies(addHandle, dependsOn);
             

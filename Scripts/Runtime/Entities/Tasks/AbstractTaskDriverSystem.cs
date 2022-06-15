@@ -2,38 +2,36 @@ using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriverSystem<TKey, TSource> : AbstractTaskDriverSystem
+    public abstract class AbstractTaskDriverSystem<TKey, TInstance> : AbstractAnvilSystemBase
         where TKey : struct, IEquatable<TKey>
-        where TSource : struct, ILookupValue<TKey>
+        where TInstance : struct, ILookupData<TKey>
     {
         private readonly HashSet<AbstractTaskDriver> m_TaskDrivers = new HashSet<AbstractTaskDriver>();
         
-        protected DeferredNativeArray<TSource> ArrayForScheduling
+        protected DeferredNativeArray<TInstance> ArrayForScheduling
         {
-            get => SourceData.ArrayForScheduling;
+            get => InstanceData.ArrayForScheduling;
         }
 
         //TODO: Could use this to get the batch strategy
         protected int BatchSize
         {
-            get => SourceData.BatchSize;
+            get => InstanceData.BatchSize;
         }
 
-        internal VirtualData<TKey, TSource> SourceData
+        internal VirtualData<TKey, TInstance> InstanceData
         {
             get;
         }
-
         protected AbstractTaskDriverSystem()
         {
             //TODO: Do we want to assign a batch strategy or get it when scheduling?
             //TODO: How to handle choosing strategy?
-            SourceData = new VirtualData<TKey, TSource>(BatchStrategy.MaximizeChunk);
+            InstanceData = new VirtualData<TKey, TInstance>(BatchStrategy.MaximizeChunk);
         }
 
         protected override void OnCreate()
@@ -43,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnDestroy()
         {
-            SourceData.Dispose();
+            InstanceData.Dispose();
 
             foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
             {
@@ -52,34 +50,38 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.OnDestroy();
         }
+
+        internal void AddTaskDriver(AbstractTaskDriver taskDriver)
+        {
+            m_TaskDrivers.Add(taskDriver);
+        }
         
         protected override void OnUpdate()
         {
-            //Update any drivers that this system spawned, this gives them a chance to add to the source data
+            //Have drivers be given the chance to add to the Instance Data
             JobHandle driversPopulateHandle = PopulateDrivers(Dependency);
 
-            //Consolidate our source data to operate on it
-            //TODO: Allow for optional State data
-            // JobHandle consolidateStateHandle = m_StateData.ConsolidateForFrame(driversPopulateHandle);
-            JobHandle consolidateStateHandle = default;
-            JobHandle consolidateSourceHandle = SourceData.ConsolidateForFrame(driversPopulateHandle);
+            //Consolidate our instance data to operate on it
+            JobHandle consolidateInstanceHandle = InstanceData.ConsolidateForFrame(driversPopulateHandle);
 
             //TODO: Bad name. (AcquireProcessorAsync or AcquireForWork) Think harder. Mike said PrepareForWorkAndAcquire 
-            //Get the source reader struct
-            JobHandle sourceReaderHandle = SourceData.AcquireForWork(out JobSourceReader<TKey, TSource> jobSourceReader);
+            //Get the updater struct
+            JobHandle jobDataUpdaterHandle = InstanceData.AcquireForUpdate(out JobInstanceUpdater<TKey, TInstance> jobDataUpdater);
 
             //Allow the generic work to happen in the derived class
-            JobHandle updateHandle = Update(JobHandle.CombineDependencies(consolidateSourceHandle, consolidateStateHandle, sourceReaderHandle), ref jobSourceReader);
+            JobHandle updateInstancesHandle = UpdateInstances(JobHandle.CombineDependencies(consolidateInstanceHandle, jobDataUpdaterHandle), ref jobDataUpdater);
 
-            //Release the source reader struct
-            SourceData.ReleaseForWork(updateHandle);
-
-            JobHandle driversConsolidateHandle = ConsolidateDrivers(updateHandle);
+            //Release the updater struct
+            InstanceData.ReleaseForUpdate(updateInstancesHandle);
+            
+            //Have drivers consolidate their result data
+            JobHandle driversConsolidateHandle = ConsolidateDrivers(updateInstancesHandle);
 
             //Ensure this system's dependency is written back
             Dependency = driversConsolidateHandle;
         }
 
+        //TODO: Can we merge code with Consolidate?
         private JobHandle PopulateDrivers(JobHandle dependsOn)
         {
             int taskDriversCount = m_TaskDrivers.Count;
@@ -118,25 +120,6 @@ namespace Anvil.Unity.DOTS.Entities
             return JobHandle.CombineDependencies(taskDriverDependencies);
         }
 
-        protected abstract JobHandle Update(JobHandle dependsOn, ref JobSourceReader<TKey, TSource> jobSourceReader);
-    }
-
-    public abstract class AbstractTaskDriverSystem : AbstractAnvilSystemBase
-    {
-        //TODO: Figure out system ownership
-        public EntityQuery GetEntityQuery(params ComponentType[] componentTypes)
-        {
-            return base.GetEntityQuery(componentTypes);
-        }
-
-        public EntityQuery GetEntityQuery(NativeArray<ComponentType> componentTypes)
-        {
-            return base.GetEntityQuery(componentTypes);
-        }
-
-        public EntityQuery GetEntityQuery(params EntityQueryDesc[] queryDesc)
-        {
-            return base.GetEntityQuery(queryDesc);
-        }
+        protected abstract JobHandle UpdateInstances(JobHandle dependsOn, ref JobInstanceUpdater<TKey, TInstance> jobInstanceUpdater);
     }
 }

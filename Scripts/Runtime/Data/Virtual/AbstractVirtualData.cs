@@ -8,6 +8,8 @@ using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    
+    //TODO: Can probably merge AbstractVirtualData into VirtualData, might just need an interface
     //TODO: Serialization and Deserialization
     public abstract class AbstractVirtualData : AbstractAnvilBase
     {
@@ -46,7 +48,7 @@ namespace Anvil.Unity.DOTS.Data
 
         protected AbstractVirtualData(AbstractVirtualData input)
         {
-            // Debug.Assert(input != null, $"{this} was created by passing in a source but that source is null! Double check that it has been created.");
+            // Debug.Assert(input != null, $"{this} was created by passing in an instance but that instance is null! Double check that it has been created.");
             Debug.Assert(input != null);
         
             AccessController = new AccessController();

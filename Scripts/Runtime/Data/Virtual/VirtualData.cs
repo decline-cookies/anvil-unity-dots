@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Data
 {
     public class VirtualData<TKey, TValue> : AbstractVirtualData
         where TKey : struct, IEquatable<TKey>
-        where TValue : struct, ILookupValue<TKey>
+        where TValue : struct, ILookupData<TKey>
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         //TODO: Can we make this an enum
@@ -70,16 +70,16 @@ namespace Anvil.Unity.DOTS.Data
 
         //TODO: Main Thread vs Threaded Variants
 
-        public JobResultWriter<TValue> GetCompletionWriter()
+        public JobResultWriter<TValue> GetResultWriter()
         {
             return new JobResultWriter<TValue>(m_Pending.AsWriter());
         }
 
-        public JobSourceMainThreadWriter<TValue> AcquireForAdd()
+        public JobInstanceWriterMainThread<TValue> AcquireForAdd()
         {
             ValidateAcquireState(STATE_ADD_MAIN_THREAD);
             AccessController.Acquire(AccessType.SharedWrite);
-            return new JobSourceMainThreadWriter<TValue>(m_Pending.AsLaneWriter(MAIN_THREAD_INDEX));
+            return new JobInstanceWriterMainThread<TValue>(m_Pending.AsLaneWriter(MAIN_THREAD_INDEX));
         }
 
         public void ReleaseForAdd()
@@ -88,11 +88,11 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.Release();
         }
 
-        public JobHandle AcquireForEntitiesAddAsync(out JobEntitiesSourceWriter<TValue> jobDataForEntitiesAdd)
+        public JobHandle AcquireForEntitiesAddAsync(out JobInstanceWriterEntities<TValue> jobInstanceWriterDataForEntitiesAdd)
         {
             ValidateAcquireState(STATE_ENTITIES_ADD);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobDataForEntitiesAdd = new JobEntitiesSourceWriter<TValue>(m_Pending.AsWriter());
+            jobInstanceWriterDataForEntitiesAdd = new JobInstanceWriterEntities<TValue>(m_Pending.AsWriter());
             return sharedWriteHandle;
         }
 
@@ -102,11 +102,11 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
-        public JobHandle AcquireForAddAsync(out JobSourceWriter<TValue> jobDataForAdd)
+        public JobHandle AcquireForAddAsync(out JobInstanceWriter<TValue> jobInstanceForAdd)
         {
             ValidateAcquireState(STATE_ADD);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobDataForAdd = new JobSourceWriter<TValue>(m_Pending.AsWriter());
+            jobInstanceForAdd = new JobInstanceWriter<TValue>(m_Pending.AsWriter());
             return sharedWriteHandle;
         }
 
@@ -130,19 +130,19 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         //TODO: Commonality for the work in VDATA
-        public JobHandle AcquireForWork(out JobSourceReader<TKey, TValue> workStruct)
+        public JobHandle AcquireForUpdate(out JobInstanceUpdater<TKey, TValue> workStruct)
         {
             ValidateAcquireState(STATE_WORK);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
 
-            workStruct = new JobSourceReader<TKey, TValue>(m_Pending.AsWriter(),
+            workStruct = new JobInstanceUpdater<TKey, TValue>(m_Pending.AsWriter(),
                                                            m_Iteration.AsDeferredJobArray(),
                                                            m_Lookup);
 
             return AcquireOutputsAsync(sharedWriteHandle);
         }
 
-        public void ReleaseForWork(JobHandle releaseAccessDependency)
+        public void ReleaseForUpdate(JobHandle releaseAccessDependency)
         {
             ValidateReleaseState(STATE_WORK);
             AccessController.ReleaseAsync(releaseAccessDependency);

@@ -10,12 +10,12 @@ namespace Anvil.Unity.DOTS.Entities
     public abstract class AbstractTaskDriver<TTaskDriverSystem, TKey, TSource, TResult> : AbstractTaskDriver
         where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TSource>
         where TKey : struct, IEquatable<TKey>
-        where TSource : struct, ILookupValue<TKey>
-        where TResult : struct, ILookupValue<TKey>
+        where TSource : struct, ILookupData<TKey>
+        where TResult : struct, ILookupData<TKey>
     {
-        public delegate JobHandle PopulateAsyncDelegate(JobHandle dependsOn, JobSourceWriter<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
+        public delegate JobHandle PopulateAsyncDelegate(JobHandle dependsOn, JobInstanceWriter<TSource> instanceWriter, JobResultWriter<TResult> resultWriter);
 
-        public delegate JobHandle PopulateEntitiesAsyncDelegate(JobHandle dependsOn, JobEntitiesSourceWriter<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
+        public delegate JobHandle PopulateEntitiesAsyncDelegate(JobHandle dependsOn, JobInstanceWriterEntities<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
 
         private readonly VirtualData<TKey, TSource> m_SourceData;
         private readonly VirtualData<TKey, TResult> m_ResultData;
@@ -39,8 +39,9 @@ namespace Anvil.Unity.DOTS.Entities
         private AbstractTaskDriver(World world) : base(world)
         {
             System = World.GetOrCreateSystem<TTaskDriverSystem>();
+            System.AddTaskDriver(this);
             
-            m_SourceData = System.SourceData;
+            m_SourceData = System.InstanceData;
             //TODO: How to specify?
             m_ResultData = new VirtualData<TKey, TResult>(BatchStrategy.MaximizeChunk, m_SourceData);
         }

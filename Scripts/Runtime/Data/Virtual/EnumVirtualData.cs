@@ -8,7 +8,8 @@ namespace Anvil.Unity.DOTS.Data
         where TKey : struct, IEquatable<TKey>
         where TEnum : Enum
     {
-        private struct EnumWrapper : ILookupValue<TKey>
+        public struct EnumWrapper : ILookupData<TKey>,
+                                    IEnumValue<TEnum>
         {
             public TKey Key
             {
@@ -44,6 +45,7 @@ namespace Anvil.Unity.DOTS.Data
             {
                 value.Dispose();
             }
+
             m_VirtualDataLookup.Clear();
         }
     }

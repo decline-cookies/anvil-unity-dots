@@ -7,17 +7,17 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Data
 {
     [BurstCompatible]
-    public struct JobSourceReader<TKey, TValue>
+    public struct JobInstanceUpdater<TKey, TInstance>
         where TKey : struct, IEquatable<TKey>
-        where TValue : struct, ILookupValue<TKey>
+        where TInstance : struct, ILookupData<TKey>
     {
         private const int DEFAULT_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TValue>.Writer m_ContinueWriter;
-        [ReadOnly] private readonly NativeArray<TValue> m_Iteration;
-        [ReadOnly] private readonly UnsafeHashMap<TKey, TValue> m_Lookup;
+        [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_ContinueWriter;
+        [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
+        [ReadOnly] private readonly UnsafeHashMap<TKey, TInstance> m_Lookup;
 
-        private UnsafeTypedStream<TValue>.LaneWriter m_ContinueLaneWriter;
+        private UnsafeTypedStream<TInstance>.LaneWriter m_ContinueLaneWriter;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         //TODO: Change to int
@@ -37,9 +37,9 @@ namespace Anvil.Unity.DOTS.Data
         }
 
 
-        public JobSourceReader(UnsafeTypedStream<TValue>.Writer continueWriter,
-                               NativeArray<TValue> iteration,
-                               UnsafeHashMap<TKey, TValue> lookup)
+        public JobInstanceUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
+                                  NativeArray<TInstance> iteration,
+                                  UnsafeHashMap<TKey, TInstance> lookup)
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         //TODO: Would it be better to have this be a named method?
-        public TValue this[int index]
+        public TInstance this[int index]
         {
             get
             {
@@ -81,7 +81,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         //TODO: Maybe put this in another struct?
-        public TValue this[TKey key]
+        public TInstance this[TKey key]
         {
             get
             {
@@ -95,12 +95,12 @@ namespace Anvil.Unity.DOTS.Data
             }
         }
 
-        public void Continue(TValue value)
+        public void Continue(TInstance value)
         {
             Continue(ref value);
         }
 
-        public void Continue(ref TValue value)
+        public void Continue(ref TInstance value)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug.Assert(m_IsInitializedForThread);

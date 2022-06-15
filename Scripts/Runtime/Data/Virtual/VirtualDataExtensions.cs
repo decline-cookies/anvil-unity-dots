@@ -6,27 +6,27 @@ namespace Anvil.Unity.DOTS.Data
     {
         //TODO: Docs and sort out ref's nicely
 
-        public static void Complete<TKey, TValue, TResponse>(this TValue value, TResponse response, ref JobSourceReader<TKey, TValue> jobDataForWork)
+        public static void Complete<TKey, TInstance, TResult>(this TInstance instance, TResult result, ref JobInstanceUpdater<TKey, TInstance> jobInstanceUpdater)
             where TKey : struct, IEquatable<TKey>
-            where TValue : struct, ILookupValue<TKey>, ISourceData<TResponse>
-            where TResponse : struct
+            where TInstance : struct, ILookupData<TKey>, IInstanceData<TResult>
+            where TResult : struct
         {
-            value.ResultWriter.Add(response, jobDataForWork.LaneIndex);
-            jobDataForWork.Complete();
+            instance.ResultWriter.Add(result, jobInstanceUpdater.LaneIndex);
+            jobInstanceUpdater.Complete();
         }
 
-        public static void Complete<TKey, TValue>(this TValue value, ref JobSourceReader<TKey, TValue> jobDataForWork)
+        public static void Complete<TKey, TInstance>(this TInstance value, ref JobInstanceUpdater<TKey, TInstance> jobInstanceUpdater)
             where TKey : struct, IEquatable<TKey>
-            where TValue : struct, ILookupValue<TKey>
+            where TInstance : struct, ILookupData<TKey>
         {
-            jobDataForWork.Complete();
+            jobInstanceUpdater.Complete();
         }
 
-        public static void ContinueIn<TKey, TValue>(this TValue value, ref JobSourceReader<TKey, TValue> jobDataForWork)
+        public static void ContinueIn<TKey, TInstance>(this TInstance value, ref JobInstanceUpdater<TKey, TInstance> jobInstanceUpdater)
             where TKey : struct, IEquatable<TKey>
-            where TValue : struct, ILookupValue<TKey>
+            where TInstance : struct, ILookupData<TKey>
         {
-            jobDataForWork.Continue(ref value);
+            jobInstanceUpdater.Continue(ref value);
         }
     }
 }
