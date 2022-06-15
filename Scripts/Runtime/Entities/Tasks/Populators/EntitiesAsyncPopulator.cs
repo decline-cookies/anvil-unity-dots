@@ -4,21 +4,28 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractAsyncPopulator<TKey, TSource, TResult> : AbstractPopulator<TKey, TSource, TResult>
+    internal class EntitiesAsyncPopulator<TTaskDriverSystem, TKey, TSource, TResult> : AbstractPopulator<TKey, TSource, TResult>
+        where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TSource>
         where TKey : struct, IEquatable<TKey>
         where TSource : struct, ILookupValue<TKey>
         where TResult : struct, ILookupValue<TKey>
     {
-        public abstract JobHandle PopulateAsync(JobHandle dependsOn, JobSourceWriter<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
-        
+        private readonly AbstractTaskDriver<TTaskDriverSystem, TKey, TSource, TResult>.PopulateEntitiesAsyncDelegate m_PopulateDelegate;
+
+        public EntitiesAsyncPopulator(AbstractTaskDriver<TTaskDriverSystem, TKey, TSource, TResult>.PopulateEntitiesAsyncDelegate populateDelegate)
+        {
+            m_PopulateDelegate = populateDelegate;
+        }
+
+        //TODO: Generalize this with AsyncPopulator
         internal sealed override JobHandle Populate(JobHandle dependsOn, VirtualData<TKey, TSource> sourceData, VirtualData<TKey, TResult> resultData)
         {
-            JobHandle addHandle = sourceData.AcquireForAddAsync(out JobSourceWriter<TSource> addStruct);
+            JobHandle addHandle = sourceData.AcquireForEntitiesAddAsync(out JobEntitiesSourceWriter<TSource> addStruct);
             JobResultWriter<TResult> resultStruct = resultData.GetCompletionWriter();
             
             JobHandle prePopulate = JobHandle.CombineDependencies(addHandle, dependsOn);
             
-            JobHandle postPopulate = PopulateAsync(prePopulate, addStruct, resultStruct);
+            JobHandle postPopulate = m_PopulateDelegate(prePopulate, addStruct, resultStruct);
             
             sourceData.ReleaseForEntitiesAddAsync(postPopulate);
             

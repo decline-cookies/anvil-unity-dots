@@ -7,50 +7,58 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriver<TKey, TSource, TResult> : AbstractTaskDriver
+    public abstract class AbstractTaskDriver<TTaskDriverSystem, TKey, TSource, TResult> : AbstractTaskDriver
+        where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TSource>
         where TKey : struct, IEquatable<TKey>
         where TSource : struct, ILookupValue<TKey>
         where TResult : struct, ILookupValue<TKey>
     {
+        public delegate JobHandle PopulateAsyncDelegate(JobHandle dependsOn, JobSourceWriter<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
+
+        public delegate JobHandle PopulateEntitiesAsyncDelegate(JobHandle dependsOn, JobEntitiesSourceWriter<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
+
         private readonly VirtualData<TKey, TSource> m_SourceData;
         private readonly VirtualData<TKey, TResult> m_ResultData;
         private readonly AbstractPopulator<TKey, TSource, TResult> m_Populator;
 
-        protected AbstractTaskDriver(AbstractTaskDriverSystem owningSystem,
-                                     VirtualData<TKey, TSource> sourceData,
-                                     AbstractPopulator<TKey, TSource, TResult> populator) : base(owningSystem)
+        public TTaskDriverSystem System
         {
-            m_SourceData = sourceData;
-            m_Populator = populator;
-            m_Populator.TaskDriver = this;
+            get;
+        }
+        
+        protected AbstractTaskDriver(World world, PopulateEntitiesAsyncDelegate populateDelegate) : this(world)
+        {
+            m_Populator = new EntitiesAsyncPopulator<TTaskDriverSystem, TKey, TSource, TResult>(populateDelegate);
+        }
+        
+        protected AbstractTaskDriver(World world, PopulateAsyncDelegate populateDelegate) : this(world)
+        {
+            m_Populator = new AsyncPopulator<TTaskDriverSystem, TKey, TSource, TResult>(populateDelegate);
+        }
+
+        private AbstractTaskDriver(World world) : base(world)
+        {
+            System = World.GetOrCreateSystem<TTaskDriverSystem>();
+            
+            m_SourceData = System.SourceData;
             //TODO: How to specify?
-            m_ResultData = new VirtualData<TKey, TResult>(BatchStrategy.MaximizeChunk, sourceData);
+            m_ResultData = new VirtualData<TKey, TResult>(BatchStrategy.MaximizeChunk, m_SourceData);
         }
 
         protected override void DisposeSelf()
         {
             m_ResultData.Dispose();
-            m_Populator.Dispose();
 
             base.DisposeSelf();
         }
-
-        protected void CreateChildTaskDriver<TChildTaskDriverSystem, TChildTaskDriver, TChildKey, TChildSource, TChildResult>(AbstractPopulator<TChildKey, TChildSource, TChildResult> populator)
-            where TChildTaskDriverSystem : AbstractTaskDriverSystem<TChildTaskDriver, TChildKey, TChildSource, TChildResult>
-            where TChildTaskDriver : AbstractTaskDriver<TChildKey, TChildSource, TChildResult>
-            where TChildKey : struct, IEquatable<TChildKey>
-            where TChildSource : struct, ILookupValue<TChildKey>
-            where TChildResult : struct, ILookupValue<TChildKey>
-        {
-            TChildTaskDriverSystem system = World.GetOrCreateSystem<TChildTaskDriverSystem>();
-            system.CreateTaskDriver(populator, System_OnCreateTaskDriverComplete);
-        }
-
-        private void System_OnCreateTaskDriverComplete(AbstractTaskDriver taskDriver)
-        {
-            AddChildTaskDriver(taskDriver);
-        }
         
+        protected TChildTaskDriver RegisterChildTaskDriver<TChildTaskDriver>(TChildTaskDriver childTaskDriver)
+            where TChildTaskDriver : AbstractTaskDriver
+        {
+            base.RegisterChildTaskDriver(childTaskDriver);
+            return childTaskDriver;
+        }
+
         internal sealed override JobHandle Populate(JobHandle dependsOn)
         {
             return m_Populator.Populate(dependsOn, m_SourceData, m_ResultData);
@@ -67,22 +75,16 @@ namespace Anvil.Unity.DOTS.Entities
 
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
-        protected World World
-        {
-            get;
-        }
-        
-        protected AbstractTaskDriverSystem System
-        {
-            get;
-        }
-        
         private readonly List<AbstractTaskDriver> m_ChildTaskDrivers = new List<AbstractTaskDriver>();
 
-        protected AbstractTaskDriver(AbstractTaskDriverSystem owningSystem)
+        public World World
         {
-            System = owningSystem;
-            World = System.World;
+            get;
+        }
+        
+        protected AbstractTaskDriver(World world)
+        {
+            World = world;
         }
 
         protected override void DisposeSelf()
@@ -91,11 +93,17 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        protected void AddChildTaskDriver(AbstractTaskDriver childTaskDriver)
+        protected void RegisterChildTaskDriver(AbstractTaskDriver childTaskDriver)
         {
             m_ChildTaskDrivers.Add(childTaskDriver);
         }
-        
+
+        public void Cancel(Entity entity)
+        {
+            //Add entity to pending entities to cancel
+            //Job that gets scheduled to look up those entities and cancel them
+        }
+
         //TODO: Cancel, plus cancel children
 
 
