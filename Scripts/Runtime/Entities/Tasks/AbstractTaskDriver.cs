@@ -2,87 +2,29 @@ using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriver<TTaskDriverSystem, TKey, TSource, TResult> : AbstractTaskDriver
-        where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TSource>
-        where TKey : struct, IEquatable<TKey>
-        where TSource : struct, ILookupData<TKey>
-        where TResult : struct, ILookupData<TKey>
-    {
-        public delegate JobHandle PopulateAsyncDelegate(JobHandle dependsOn, JobInstanceWriter<TSource> instanceWriter, JobResultWriter<TResult> resultWriter);
-
-        public delegate JobHandle PopulateEntitiesAsyncDelegate(JobHandle dependsOn, JobInstanceWriterEntities<TSource> sourceWriter, JobResultWriter<TResult> resultWriter);
-
-        private readonly VirtualData<TKey, TSource> m_SourceData;
-        private readonly VirtualData<TKey, TResult> m_ResultData;
-        private readonly AbstractPopulator<TKey, TSource, TResult> m_Populator;
-
-        public TTaskDriverSystem System
-        {
-            get;
-        }
-        
-        protected AbstractTaskDriver(World world, PopulateEntitiesAsyncDelegate populateDelegate) : this(world)
-        {
-            m_Populator = new EntitiesAsyncPopulator<TTaskDriverSystem, TKey, TSource, TResult>(populateDelegate);
-        }
-        
-        protected AbstractTaskDriver(World world, PopulateAsyncDelegate populateDelegate) : this(world)
-        {
-            m_Populator = new AsyncPopulator<TTaskDriverSystem, TKey, TSource, TResult>(populateDelegate);
-        }
-
-        private AbstractTaskDriver(World world) : base(world)
-        {
-            System = World.GetOrCreateSystem<TTaskDriverSystem>();
-            System.AddTaskDriver(this);
-            
-            m_SourceData = System.InstanceData;
-            //TODO: How to specify?
-            m_ResultData = new VirtualData<TKey, TResult>(BatchStrategy.MaximizeChunk, m_SourceData);
-        }
-
-        protected override void DisposeSelf()
-        {
-            m_ResultData.Dispose();
-
-            base.DisposeSelf();
-        }
-        
-        protected TChildTaskDriver RegisterChildTaskDriver<TChildTaskDriver>(TChildTaskDriver childTaskDriver)
-            where TChildTaskDriver : AbstractTaskDriver
-        {
-            base.RegisterChildTaskDriver(childTaskDriver);
-            return childTaskDriver;
-        }
-
-        internal sealed override JobHandle Populate(JobHandle dependsOn)
-        {
-            return m_Populator.Populate(dependsOn, m_SourceData, m_ResultData);
-        }
-
-        internal sealed override JobHandle Consolidate(JobHandle dependsOn)
-        {
-            JobHandle consolidateResultHandle = m_ResultData.ConsolidateForFrame(dependsOn);
-            //TODO: Could add a hook for user processing
-
-            return consolidateResultHandle;
-        }
-    }
-
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
+        private readonly VirtualDataLookup m_InstanceData = new VirtualDataLookup();
         private readonly List<AbstractTaskDriver> m_ChildTaskDrivers = new List<AbstractTaskDriver>();
+        private readonly List<JobData> m_PopulateJobData = new List<JobData>();
 
         public World World
         {
             get;
         }
-        
+
+        public AbstractTaskDriverSystem System
+        {
+            get;
+            protected set;
+        }
+
         protected AbstractTaskDriver(World world)
         {
             World = world;
@@ -90,25 +32,95 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void DisposeSelf()
         {
-            //TODO: Dispose children?
+            m_InstanceData.Dispose();
+
+            foreach (AbstractTaskDriver childTaskDriver in m_ChildTaskDrivers)
+            {
+                childTaskDriver.Dispose();
+            }
+
+            m_ChildTaskDrivers.Clear();
+            m_PopulateJobData.Clear();
+
             base.DisposeSelf();
         }
 
-        protected void RegisterChildTaskDriver(AbstractTaskDriver childTaskDriver)
+
+        protected abstract void CreateInstanceData();
+        protected abstract void CreatePopulateJobs();
+        protected abstract void CreateChildTaskDrivers();
+
+        public VirtualData<TKey, TInstance> GetInstanceData<TKey, TInstance>()
+            where TKey : struct, IEquatable<TKey>
+            where TInstance : struct, ILookupData<TKey>
         {
-            m_ChildTaskDrivers.Add(childTaskDriver);
+            return m_InstanceData.GetData<TKey, TInstance>();
         }
 
-        public void Cancel(Entity entity)
+        protected void CreateInstanceData<TKey, TInstance>(AbstractVirtualData sourceData = null)
+            where TKey : struct, IEquatable<TKey>
+            where TInstance : struct, ILookupData<TKey>
         {
-            //Add entity to pending entities to cancel
-            //Job that gets scheduled to look up those entities and cancel them
+            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>(sourceData);
+            m_InstanceData.AddData(virtualData);
         }
 
-        //TODO: Cancel, plus cancel children
+        public JobData CreatePopulateJob(JobData.JobDataDelegate jobDataDelegate, BatchStrategy batchStrategy)
+        {
+            JobData jobData = new JobData(jobDataDelegate, batchStrategy, System);
+            m_PopulateJobData.Add(jobData);
+            return jobData;
+        }
+
+        public JobHandle Populate(JobHandle dependsOn)
+        {
+            int len = m_PopulateJobData.Count;
+            if (len == 0)
+            {
+                return dependsOn;
+            }
+
+            NativeArray<JobHandle> populateDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            for (int i = 0; i < len; ++i)
+            {
+                populateDependencies[i] = m_PopulateJobData[i].PrepareAndSchedule(dependsOn);
+            }
+
+            return JobHandle.CombineDependencies(populateDependencies);
+        }
 
 
-        internal abstract JobHandle Populate(JobHandle dependsOn);
-        internal abstract JobHandle Consolidate(JobHandle dependsOn);
+        public JobHandle Consolidate(JobHandle dependsOn)
+        {
+            JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
+            //TODO: Could add a hook for user processing
+            return consolidateHandle;
+        }
+    }
+
+    public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver
+        where TTaskDriverSystem : AbstractTaskDriverSystem
+    {
+        public new TTaskDriverSystem System
+        {
+            get;
+        }
+
+        protected AbstractTaskDriver(World world) : base(world)
+        {
+            System = World.GetOrCreateSystem<TTaskDriverSystem>();
+            base.System = System;
+            System.AddTaskDriver(this);
+
+            CreateInstanceData();
+            CreatePopulateJobs();
+            CreateChildTaskDrivers();
+        }
+
+
+        protected override void DisposeSelf()
+        {
+            base.DisposeSelf();
+        }
     }
 }

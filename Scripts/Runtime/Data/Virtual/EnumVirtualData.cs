@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Data
             TEnum[] values = (TEnum[])Enum.GetValues(typeof(TEnum));
             foreach (TEnum value in values)
             {
-                m_VirtualDataLookup.Add(value, new VirtualData<TKey, EnumWrapper>(BatchStrategy.MaximizeChunk));
+                m_VirtualDataLookup.Add(value, new VirtualData<TKey, EnumWrapper>());
             }
         }
 

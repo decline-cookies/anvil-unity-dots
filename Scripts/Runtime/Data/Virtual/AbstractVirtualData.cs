@@ -13,21 +13,10 @@ namespace Anvil.Unity.DOTS.Data
     //TODO: Serialization and Deserialization
     public abstract class AbstractVirtualData : AbstractAnvilBase
     {
-        protected class NullVirtualData : AbstractVirtualData
-        {
-            public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
-            {
-                throw new System.NotSupportedException();
-            }
-        }
-
-        protected static readonly NullVirtualData NULL_VDATA = new NullVirtualData();
-
         //TODO: Could there ever be more than one? 
         private readonly AbstractVirtualData m_Input;
         private readonly HashSet<AbstractVirtualData> m_Outputs = new HashSet<AbstractVirtualData>();
-
-
+        
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private const string STATE_UNACQUIRED = "Unacquired";
         private const string STATE_FOR_OUTPUT = "ForOutput";
@@ -35,27 +24,18 @@ namespace Anvil.Unity.DOTS.Data
         private string m_State;
 #endif
 
-        protected AccessController AccessController
+        internal AccessController AccessController
         {
             get;
         }
 
-        internal AbstractVirtualData()
-        {
-            // Debug.Assert(GetType() == typeof(NullVirtualData), $"Incorrect code path");
-            Debug.Assert(GetType() == typeof(NullVirtualData));
-        }
-
         protected AbstractVirtualData(AbstractVirtualData input)
         {
-            // Debug.Assert(input != null, $"{this} was created by passing in an instance but that instance is null! Double check that it has been created.");
-            Debug.Assert(input != null);
-        
             AccessController = new AccessController();
             m_Input = input;
             m_State = STATE_UNACQUIRED;
 
-            if (!(m_Input is NullVirtualData))
+            if (m_Input != null)
             {
                 RegisterOutput(m_Input);
             }

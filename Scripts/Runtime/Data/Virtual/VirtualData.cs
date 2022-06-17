@@ -8,55 +8,45 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public class VirtualData<TKey, TValue> : AbstractVirtualData
+    public class VirtualData<TKey, TInstance> : AbstractVirtualData
         where TKey : struct, IEquatable<TKey>
-        where TValue : struct, ILookupData<TKey>
+        where TInstance : struct, ILookupData<TKey>
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         //TODO: Can we make this an enum
         private const string STATE_WORK = "Work";
         private const string STATE_ADD_MAIN_THREAD = "AddMainThread";
         private const string STATE_ADD = "Add";
+        private const string STATE_READ = "Read";
         private const string STATE_ENTITIES_ADD = "EntitiesAdd";
 #endif
-
+        
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
+        
         // ReSharper disable once StaticMemberInGenericType
         private static readonly int MAIN_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
 
-        private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TValue>();
-
-        private UnsafeTypedStream<TValue> m_Pending;
-        private DeferredNativeArray<TValue> m_Iteration;
-        private UnsafeHashMap<TKey, TValue> m_Lookup;
+        private UnsafeTypedStream<TInstance> m_Pending;
+        private DeferredNativeArray<TInstance> m_Iteration;
+        private UnsafeHashMap<TKey, TInstance> m_Lookup;
 
 
-        public DeferredNativeArray<TValue> ArrayForScheduling
+        public DeferredNativeArray<TInstance> ArrayForScheduling
         {
             get => m_Iteration;
         }
 
-        public int BatchSize
+        public VirtualData(AbstractVirtualData input = null) : base(input)
         {
-            get;
-        }
+            m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
+                                                         Allocator.TempJob);
+            m_Iteration = new DeferredNativeArray<TInstance>(Allocator.Persistent,
+                                                             Allocator.TempJob);
 
-        public VirtualData(BatchStrategy batchStrategy) : this(batchStrategy, NULL_VDATA)
-        {
-        }
-
-        public VirtualData(BatchStrategy batchStrategy, AbstractVirtualData input) : base(input)
-        {
-            m_Pending = new UnsafeTypedStream<TValue>(Allocator.Persistent,
-                                                      Allocator.TempJob);
-            m_Iteration = new DeferredNativeArray<TValue>(Allocator.Persistent,
-                                                          Allocator.TempJob);
-
-            m_Lookup = new UnsafeHashMap<TKey, TValue>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Lookup = new UnsafeHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
 
 
-            BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? MAX_ELEMENTS_PER_CHUNK
-                : 1;
+            
         }
 
         protected override void DisposeSelf()
@@ -70,16 +60,43 @@ namespace Anvil.Unity.DOTS.Data
 
         //TODO: Main Thread vs Threaded Variants
 
-        public JobResultWriter<TValue> GetResultWriter()
+        public JobResultWriter<TInstance> GetJobResultWriter()
         {
-            return new JobResultWriter<TValue>(m_Pending.AsWriter());
+            //TODO: Exceptions
+            return new JobResultWriter<TInstance>(m_Pending.AsWriter());
         }
 
-        public JobInstanceWriterMainThread<TValue> AcquireForAdd()
+        public JobInstanceUpdater<TKey, TInstance> GetJobInstanceUpdater()
+        {
+            //TODO: Exceptions
+            return new JobInstanceUpdater<TKey, TInstance>(m_Pending.AsWriter(),
+                                                           m_Iteration.AsDeferredJobArray(),
+                                                           m_Lookup);
+        }
+        
+        public JobInstanceReader<TInstance> GetJobInstanceReader()
+        {
+            //TODO: Exceptions
+            return new JobInstanceReader<TInstance>(m_Iteration.AsDeferredJobArray());
+        }
+        
+        public JobInstanceWriter<TInstance> GetJobInstanceWriter()
+        {
+            //TODO: Exceptions
+            return new JobInstanceWriter<TInstance>(m_Pending.AsWriter());
+        }
+        
+        public JobInstanceWriterEntities<TInstance> GetJobInstanceWriterEntities()
+        {
+            //TODO: Exceptions
+            return new JobInstanceWriterEntities<TInstance>(m_Pending.AsWriter());
+        }
+
+        public JobInstanceWriterMainThread<TInstance> AcquireForAdd()
         {
             ValidateAcquireState(STATE_ADD_MAIN_THREAD);
             AccessController.Acquire(AccessType.SharedWrite);
-            return new JobInstanceWriterMainThread<TValue>(m_Pending.AsLaneWriter(MAIN_THREAD_INDEX));
+            return new JobInstanceWriterMainThread<TInstance>(m_Pending.AsLaneWriter(MAIN_THREAD_INDEX));
         }
 
         public void ReleaseForAdd()
@@ -88,11 +105,11 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.Release();
         }
 
-        public JobHandle AcquireForEntitiesAddAsync(out JobInstanceWriterEntities<TValue> jobInstanceWriterDataForEntitiesAdd)
+        public JobHandle AcquireForEntitiesAddAsync(out JobInstanceWriterEntities<TInstance> jobInstanceWriterDataForEntitiesAdd)
         {
             ValidateAcquireState(STATE_ENTITIES_ADD);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobInstanceWriterDataForEntitiesAdd = new JobInstanceWriterEntities<TValue>(m_Pending.AsWriter());
+            jobInstanceWriterDataForEntitiesAdd = new JobInstanceWriterEntities<TInstance>(m_Pending.AsWriter());
             return sharedWriteHandle;
         }
 
@@ -102,17 +119,32 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
-        public JobHandle AcquireForAddAsync(out JobInstanceWriter<TValue> jobInstanceForAdd)
+        public JobHandle AcquireForAddAsync(out JobInstanceWriter<TInstance> jobInstanceForAdd)
         {
             ValidateAcquireState(STATE_ADD);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobInstanceForAdd = new JobInstanceWriter<TValue>(m_Pending.AsWriter());
+            jobInstanceForAdd = new JobInstanceWriter<TInstance>(m_Pending.AsWriter());
             return sharedWriteHandle;
         }
 
         public void ReleaseForAddAsync(JobHandle releaseAccessDependency)
         {
             ValidateReleaseState(STATE_ADD);
+            AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
+        public JobHandle AcquireForReadAsync(out JobInstanceReader<TInstance> jobInstanceReader)
+        {
+            ValidateAcquireState(STATE_READ);
+            JobHandle sharedReadHandle = AccessController.AcquireAsync(AccessType.SharedRead);
+            jobInstanceReader = new JobInstanceReader<TInstance>(m_Iteration.AsDeferredJobArray());
+            return sharedReadHandle;
+        }
+
+
+        public void ReleaseForReadAsync(JobHandle releaseAccessDependency)
+        {
+            ValidateReleaseState(STATE_READ);
             AccessController.ReleaseAsync(releaseAccessDependency);
         }
 
@@ -130,14 +162,14 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         //TODO: Commonality for the work in VDATA
-        public JobHandle AcquireForUpdate(out JobInstanceUpdater<TKey, TValue> workStruct)
+        public JobHandle AcquireForUpdate(out JobInstanceUpdater<TKey, TInstance> jobInstanceUpdater)
         {
             ValidateAcquireState(STATE_WORK);
             JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
 
-            workStruct = new JobInstanceUpdater<TKey, TValue>(m_Pending.AsWriter(),
-                                                           m_Iteration.AsDeferredJobArray(),
-                                                           m_Lookup);
+            jobInstanceUpdater = new JobInstanceUpdater<TKey, TInstance>(m_Pending.AsWriter(),
+                                                                 m_Iteration.AsDeferredJobArray(),
+                                                                 m_Lookup);
 
             return AcquireOutputsAsync(sharedWriteHandle);
         }
@@ -156,13 +188,13 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct ConsolidateLookupJob : IJob
         {
-            private UnsafeTypedStream<TValue> m_Pending;
-            private DeferredNativeArray<TValue> m_Iteration;
-            private UnsafeHashMap<TKey, TValue> m_Lookup;
+            private UnsafeTypedStream<TInstance> m_Pending;
+            private DeferredNativeArray<TInstance> m_Iteration;
+            private UnsafeHashMap<TKey, TInstance> m_Lookup;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<TValue> pending,
-                                        DeferredNativeArray<TValue> iteration,
-                                        UnsafeHashMap<TKey, TValue> lookup)
+            public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
+                                        DeferredNativeArray<TInstance> iteration,
+                                        UnsafeHashMap<TKey, TInstance> lookup)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
@@ -174,13 +206,13 @@ namespace Anvil.Unity.DOTS.Data
                 m_Lookup.Clear();
                 m_Iteration.Clear();
 
-                NativeArray<TValue> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                NativeArray<TInstance> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
 
                 for (int i = 0; i < iterationArray.Length; ++i)
                 {
-                    TValue value = iterationArray[i];
+                    TInstance value = iterationArray[i];
                     m_Lookup.TryAdd(value.Key, value);
                 }
             }
