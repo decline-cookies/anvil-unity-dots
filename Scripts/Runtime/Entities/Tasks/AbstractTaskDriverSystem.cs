@@ -1,10 +1,8 @@
-using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -48,12 +46,13 @@ namespace Anvil.Unity.DOTS.Entities
             return jobData;
         }
 
-        protected void CreateInstanceData<TKey, TInstance>(AbstractVirtualData sourceData = null)
+        protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(AbstractVirtualData sourceData = null)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
             VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>(sourceData);
             m_InstanceData.AddData(virtualData);
+            return virtualData;
         }
 
         public VirtualData<TKey, TInstance> GetInstanceData<TKey, TInstance>()
@@ -76,14 +75,21 @@ namespace Anvil.Unity.DOTS.Entities
             //Consolidate our instance data to operate on it
             JobHandle consolidateInstancesHandle = m_InstanceData.ConsolidateForFrame(driversPopulateHandle);
             
+            //TODO: Allow for cancels to occur
+            
             //Allow the generic work to happen in the derived class
             JobHandle updateInstancesHandle = UpdateInstances(consolidateInstancesHandle);
             
             //Have drivers consolidate their result data
             JobHandle driversConsolidateHandle = ConsolidateDrivers(updateInstancesHandle);
+            
+            //TODO: Allow for cancels on the drivers to occur
+            
+            //Have drivers to do their own generic work
+            JobHandle driversUpdateHandle = UpdateDrivers(driversConsolidateHandle);
 
             //Ensure this system's dependency is written back
-            Dependency = driversConsolidateHandle;
+            Dependency = driversUpdateHandle;
         }
 
         private JobHandle UpdateInstances(JobHandle dependsOn)
@@ -103,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
 
-        //TODO: Can we merge code with Consolidate?
+        //TODO: Can we merge code with Consolidate/Update/Cancel?
         private JobHandle PopulateDrivers(JobHandle dependsOn)
         {
             int len = m_TaskDrivers.Count;
@@ -136,6 +142,25 @@ namespace Anvil.Unity.DOTS.Entities
             foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
             {
                 taskDriverDependencies[index] = taskDriver.Consolidate(dependsOn);
+                index++;
+            }
+
+            return JobHandle.CombineDependencies(taskDriverDependencies);
+        }
+        
+        private JobHandle UpdateDrivers(JobHandle dependsOn)
+        {
+            int len = m_TaskDrivers.Count;
+            if (len <= 0)
+            {
+                return dependsOn;
+            }
+
+            NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            int index = 0;
+            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
+            {
+                taskDriverDependencies[index] = taskDriver.Update(dependsOn);
                 index++;
             }
 

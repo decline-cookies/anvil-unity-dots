@@ -13,6 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly VirtualDataLookup m_InstanceData = new VirtualDataLookup();
         private readonly List<AbstractTaskDriver> m_ChildTaskDrivers = new List<AbstractTaskDriver>();
         private readonly List<JobData> m_PopulateJobData = new List<JobData>();
+        private readonly List<JobData> m_UpdateJobData = new List<JobData>();
 
         public World World
         {
@@ -41,6 +42,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_ChildTaskDrivers.Clear();
             m_PopulateJobData.Clear();
+            m_UpdateJobData.Clear();
 
             base.DisposeSelf();
         }
@@ -57,18 +59,26 @@ namespace Anvil.Unity.DOTS.Entities
             return m_InstanceData.GetData<TKey, TInstance>();
         }
 
-        protected void CreateInstanceData<TKey, TInstance>(AbstractVirtualData sourceData = null)
+        protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(AbstractVirtualData sourceData = null)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
             VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>(sourceData);
             m_InstanceData.AddData(virtualData);
+            return virtualData;
         }
 
         public JobData CreatePopulateJob(JobData.JobDataDelegate jobDataDelegate, BatchStrategy batchStrategy)
         {
             JobData jobData = new JobData(jobDataDelegate, batchStrategy, System);
             m_PopulateJobData.Add(jobData);
+            return jobData;
+        }
+
+        protected JobData CreateUpdateJob(JobData.JobDataDelegate jobDataDelegate, BatchStrategy batchStrategy)
+        {
+            JobData jobData = new JobData(jobDataDelegate, batchStrategy, System);
+            m_UpdateJobData.Add(jobData);
             return jobData;
         }
 
@@ -88,14 +98,32 @@ namespace Anvil.Unity.DOTS.Entities
 
             return JobHandle.CombineDependencies(populateDependencies);
         }
+        
+        public JobHandle Update(JobHandle dependsOn)
+        {
+            int len = m_UpdateJobData.Count;
+            if (len == 0)
+            {
+                return dependsOn;
+            }
 
+            NativeArray<JobHandle> populateDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            for (int i = 0; i < len; ++i)
+            {
+                populateDependencies[i] = m_UpdateJobData[i].PrepareAndSchedule(dependsOn);
+            }
 
+            return JobHandle.CombineDependencies(populateDependencies);
+        }
+        
         public JobHandle Consolidate(JobHandle dependsOn)
         {
             JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
             //TODO: Could add a hook for user processing
             return consolidateHandle;
         }
+
+        
     }
 
     public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver

@@ -36,6 +36,7 @@ namespace Anvil.Unity.DOTS.Data
             get => m_Iteration;
         }
 
+        //TODO: Hide this so we can't construct willy nilly
         public VirtualData(AbstractVirtualData input = null) : base(input)
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
