@@ -10,51 +10,47 @@ namespace Anvil.Unity.DOTS.Data
         /// Gets the pointer to <see cref="DeferredNativeArray{T}.BufferInfo"/> struct.
         /// Will check the safety handle
         /// </summary>
-        /// <param name="deferredNativeArray">The <see cref="DeferredNativeArray{T}"/> to get the pointer from</param>
-        /// <typeparam name="T">The type of <see cref="DeferredNativeArray{T}"/> it is.</typeparam>
+        /// <param name="deferredNativeArray">The <see cref="IDeferredNativeArray"/> to get the pointer from</param>
         /// <returns>The pointer</returns>
-        public static void* GetBufferInfo<T>(ref DeferredNativeArray<T> deferredNativeArray)
-            where T : struct
+        public static void* GetBufferInfo<TDeferredNativeArray>(ref TDeferredNativeArray deferredNativeArray)
+            where TDeferredNativeArray : struct, IDeferredNativeArray
         {
-            AtomicSafetyHandle.CheckWriteAndThrow(deferredNativeArray.m_Safety);
-            return deferredNativeArray.m_BufferInfo;
+            AtomicSafetyHandle.CheckWriteAndThrow(deferredNativeArray.SafetyHandle);
+            return deferredNativeArray.BufferPtr;
         }
 
         /// <summary>
         /// Gets the pointer to <see cref="DeferredNativeArray{T}.BufferInfo"/> struct.
         /// Will NOT check the safety handle
         /// </summary>
-        /// <param name="deferredNativeArray">The <see cref="DeferredNativeArray{T}"/> to get the pointer from</param>
-        /// <typeparam name="T">The type of <see cref="DeferredNativeArray{T}"/> it is.</typeparam>
+        /// <param name="deferredNativeArray">The <see cref="IDeferredNativeArray"/> to get the pointer from</param>
         /// <returns>The pointer</returns>
-        public static void* GetBufferInfoUnchecked<T>(ref DeferredNativeArray<T> deferredNativeArray)
-            where T : struct
+        public static void* GetBufferInfoUnchecked<TDeferredNativeArray>(ref TDeferredNativeArray deferredNativeArray)
+            where TDeferredNativeArray : struct, IDeferredNativeArray
         {
-            return deferredNativeArray.m_BufferInfo;
+            return deferredNativeArray.BufferPtr;
         }
 
         /// <summary>
-        /// Gets the safety handle for a <see cref="DeferredNativeArray{T}"/>
+        /// Gets the safety handle for a <see cref="IDeferredNativeArray"/>
         /// </summary>
         /// <param name="deferredNativeArray">The instance to get the safety handle from.</param>
-        /// <typeparam name="T">The type of <see cref="DeferredNativeArray{T}"/></typeparam>
         /// <returns>An <see cref="AtomicSafetyHandle"/> instance</returns>
-        public static AtomicSafetyHandle GetSafetyHandle<T>(ref DeferredNativeArray<T> deferredNativeArray)
-            where T : struct
+        public static AtomicSafetyHandle GetSafetyHandle<TDeferredNativeArray>(ref TDeferredNativeArray deferredNativeArray)
+            where TDeferredNativeArray : struct, IDeferredNativeArray
         {
-            return deferredNativeArray.m_Safety;
+            return deferredNativeArray.SafetyHandle;
         }
 
         /// <summary>
-        /// Gets the pointer to the safety handle for a <see cref="DeferredNativeArray{T}"/>
+        /// Gets the pointer to the safety handle for a <see cref="IDeferredNativeArray"/>
         /// </summary>
         /// <param name="deferredNativeArray">The instance to get the safety handle pointer from.</param>
-        /// <typeparam name="T">The type of <see cref="DeferredNativeArray{T}"/></typeparam>
         /// <returns>The pointer to the <see cref="AtomicSafetyHandle"/> instance</returns>
-        public static void* GetSafetyHandlePointer<T>(ref DeferredNativeArray<T> deferredNativeArray)
-            where T : struct
+        public static void* GetSafetyHandlePointer<TDeferredNativeArray>(ref TDeferredNativeArray deferredNativeArray)
+            where TDeferredNativeArray : struct, IDeferredNativeArray
         {
-            return UnsafeUtility.AddressOf(ref deferredNativeArray.m_Safety);
+            return deferredNativeArray.SafetyHandlePtr;
         }
     }
 }

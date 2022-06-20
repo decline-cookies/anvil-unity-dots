@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
 using Unity.Burst;
@@ -9,6 +8,27 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    /// <summary>
+    /// Helper interface for <see cref="DeferredNativeArray{T}"/> used for scheduling.
+    /// </summary>
+    public interface IDeferredNativeArray
+    {
+        internal AtomicSafetyHandle SafetyHandle
+        {
+            get;
+        }
+
+        internal unsafe void* BufferPtr
+        {
+            get;
+        }
+
+        internal unsafe void* SafetyHandlePtr
+        {
+            get;
+        }
+    }
+    
     /// <summary>
     /// A native collection similar to <see cref="NativeArray{T}"/> but intended for use in a deferred context.
     /// Useful for cases where a job that hasn't finished yet will determine the length of the array.
@@ -32,7 +52,8 @@ namespace Anvil.Unity.DOTS.Data
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [BurstCompatible]
-    public struct DeferredNativeArray<T> : INativeDisposable
+    public struct DeferredNativeArray<T> : INativeDisposable,
+                                           IDeferredNativeArray
         where T : struct
     {
         //*************************************************************************************************************
@@ -41,7 +62,7 @@ namespace Anvil.Unity.DOTS.Data
 
         [BurstCompatible]
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct BufferInfo
+        private unsafe struct BufferInfo
         {
             // ReSharper disable once MemberHidesStaticFromOuterClass
             public static readonly int SIZE = UnsafeUtility.SizeOf<BufferInfo>();
@@ -133,11 +154,11 @@ namespace Anvil.Unity.DOTS.Data
         // NATIVE COLLECTION
         //*************************************************************************************************************
 
-        [NativeDisableUnsafePtrRestriction] internal unsafe BufferInfo* m_BufferInfo;
+        [NativeDisableUnsafePtrRestriction] private unsafe BufferInfo* m_BufferInfo;
 
         [NativeSetClassTypeToNullOnSchedule] private DisposeSentinel m_DisposeSentinel;
 
-        internal AtomicSafetyHandle m_Safety;
+        private AtomicSafetyHandle m_Safety;
         private Allocator m_Allocator;
 
         /// <summary>
@@ -154,6 +175,21 @@ namespace Anvil.Unity.DOTS.Data
                 m_BufferInfo != null
                     ? m_BufferInfo->Length
                     : 0;
+        }
+
+        AtomicSafetyHandle IDeferredNativeArray.SafetyHandle
+        {
+            get => m_Safety;
+        }
+
+        unsafe void* IDeferredNativeArray.SafetyHandlePtr
+        {
+            get => UnsafeUtility.AddressOf(ref m_Safety);
+        }
+
+        unsafe void* IDeferredNativeArray.BufferPtr
+        {
+            get => m_BufferInfo;
         }
 
         /// <summary>
