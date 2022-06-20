@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private static unsafe void Allocate(Allocator allocator, Allocator deferredAllocator, out DeferredNativeArray<T> array)
         {
-            //Ensures that deferred allocator can only be Temp, TempJob or Persistent and that the allocator is at the same or higher level.
+            //Ensures that deferred allocator can only be Temp, TempJob or Persistent and that the allocator is at the same or more persistent level.
             //Can't have a deferred allocator that is persistent and a temp allocator.
             Assert.IsTrue(deferredAllocator <= allocator && deferredAllocator > Allocator.None);
 
@@ -105,6 +105,28 @@ namespace Anvil.Unity.DOTS.Data
 
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
             InitStaticSafetyId(ref array.m_Safety);
+        }
+
+        private static unsafe void ClearBufferInfo(BufferInfo* bufferInfo)
+        {
+            if (bufferInfo == null || bufferInfo->Buffer == null)
+            {
+                return;
+            }
+
+            UnsafeUtility.Free(bufferInfo->Buffer, bufferInfo->DeferredAllocator);
+            bufferInfo->Buffer = null;
+            bufferInfo->Length = 0;
+        }
+
+        private static unsafe void DisposeBufferInfo(BufferInfo* bufferInfo, Allocator allocator)
+        {
+            if (bufferInfo == null)
+            {
+                return;
+            }
+            ClearBufferInfo(bufferInfo);
+            UnsafeUtility.Free(bufferInfo, allocator);
         }
 
         //*************************************************************************************************************
@@ -171,9 +193,7 @@ namespace Anvil.Unity.DOTS.Data
             }
 
             DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
-            Clear();
-
-            UnsafeUtility.Free(m_BufferInfo, m_Allocator);
+            DisposeBufferInfo(m_BufferInfo, m_Allocator);
             m_BufferInfo = null;
         }
 
@@ -183,15 +203,7 @@ namespace Anvil.Unity.DOTS.Data
         [WriteAccessRequired]
         public unsafe void Clear()
         {
-            if (!IsCreated
-             || m_BufferInfo->Buffer == null)
-            {
-                return;
-            }
-
-            UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
-            m_BufferInfo->Buffer = null;
-            m_BufferInfo->Length = 0;
+            ClearBufferInfo(m_BufferInfo);
         }
 
         /// <summary>
@@ -308,15 +320,7 @@ namespace Anvil.Unity.DOTS.Data
 
             public void Execute()
             {
-                //This dispose job just handles freeing the memory, the other aspects of the collection were already
-                //when this job was scheduled because it requires main thread access
-                if (m_BufferInfo->Buffer != null)
-                {
-                    UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
-                    m_BufferInfo->Buffer = null;
-                }
-
-                UnsafeUtility.Free(m_BufferInfo, m_Allocator);
+                DisposeBufferInfo(m_BufferInfo, m_Allocator);
             }
         }
 
@@ -332,15 +336,7 @@ namespace Anvil.Unity.DOTS.Data
 
             public void Execute()
             {
-                if (m_BufferInfo->Buffer == null)
-                {
-                    return;
-                }
-
-                //Just clears the memory internally, the structure memory is still intact
-                UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
-                m_BufferInfo->Buffer = null;
-                m_BufferInfo->Length = 0;
+                ClearBufferInfo(m_BufferInfo);
             }
         }
     }
