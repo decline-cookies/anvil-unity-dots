@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Data
 {
     [BurstCompatible]
-    public struct JobInstanceUpdater<TKey, TInstance>
+    public struct VDJobUpdater<TKey, TInstance>
         where TKey : struct, IEquatable<TKey>
         where TInstance : struct, ILookupData<TKey>
     {
@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
 
-        public JobInstanceUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
+        public VDJobUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
                                   NativeArray<TInstance> iteration,
                                   UnsafeHashMap<TKey, TInstance> lookup)
         {

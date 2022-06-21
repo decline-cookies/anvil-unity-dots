@@ -46,11 +46,11 @@ namespace Anvil.Unity.DOTS.Entities
             return jobData;
         }
 
-        protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(AbstractVirtualData sourceData = null)
+        protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(params IVirtualData[] sources)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
-            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>(sourceData);
+            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
             m_InstanceData.AddData(virtualData);
             return virtualData;
         }

@@ -1,6 +1,8 @@
+using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -8,46 +10,53 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public class VirtualData<TKey, TInstance> : AbstractVirtualData
+    public class VirtualData<TKey, TInstance> : AbstractAnvilBase,
+                                                IVirtualData
         where TKey : struct, IEquatable<TKey>
         where TInstance : struct, ILookupData<TKey>
     {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        //TODO: Can we make this an enum
-        private const string STATE_WORK = "Work";
-        private const string STATE_ADD_MAIN_THREAD = "AddMainThread";
-        private const string STATE_ADD = "Add";
-        private const string STATE_READ = "Read";
-        private const string STATE_ENTITIES_ADD = "EntitiesAdd";
-#endif
-        
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
-        
-        // ReSharper disable once StaticMemberInGenericType
-        private static readonly int MAIN_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
+
+        internal static VirtualData<TKey, TInstance> Create(params IVirtualData[] sources)
+        {
+            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>();
+
+            foreach (IVirtualData source in sources)
+            {
+                virtualData.AddSource(source);
+                source.AddResultDestination(virtualData);
+            }
+
+            return virtualData;
+        }
+
+        private readonly HashSet<IVirtualData> m_Sources = new HashSet<IVirtualData>();
+        private readonly HashSet<IVirtualData> m_ResultDestinations = new HashSet<IVirtualData>();
+        private readonly AccessController m_AccessController;
 
         private UnsafeTypedStream<TInstance> m_Pending;
         private DeferredNativeArray<TInstance> m_Iteration;
         private UnsafeHashMap<TKey, TInstance> m_Lookup;
-
-
+        
         public DeferredNativeArray<TInstance> ArrayForScheduling
         {
             get => m_Iteration;
         }
 
-        //TODO: Hide this so we can't construct willy nilly
-        public VirtualData(AbstractVirtualData input = null) : base(input)
+        AccessController IVirtualData.AccessController
         {
+            get => m_AccessController;
+        }
+
+        private VirtualData()
+        {
+            m_AccessController = new AccessController();
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.TempJob);
             m_Iteration = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                              Allocator.TempJob);
 
             m_Lookup = new UnsafeHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
-
-
-            
         }
 
         protected override void DisposeSelf()
@@ -56,130 +65,161 @@ namespace Anvil.Unity.DOTS.Data
             m_Iteration.Dispose();
             m_Lookup.Dispose();
 
+            RemoveFromSources();
+            m_ResultDestinations.Clear();
+            m_Sources.Clear();
+
+            m_AccessController.Dispose();
+
             base.DisposeSelf();
         }
+        
+        //*************************************************************************************************************
+        // SERIALIZATION
+        //*************************************************************************************************************
+        
+        //TODO: Add Serialization and Deserialization functions to hook into our serialization framework
 
-        //TODO: Main Thread vs Threaded Variants
+        //*************************************************************************************************************
+        // RELATIONSHIPS
+        //*************************************************************************************************************
 
-        public JobResultWriter<TInstance> GetJobResultWriter()
+        void IVirtualData.AddResultDestination(IVirtualData resultData)
         {
-            //TODO: Exceptions
-            return new JobResultWriter<TInstance>(m_Pending.AsWriter());
+            AddResultDestination(resultData);
         }
 
-        public JobInstanceUpdater<TKey, TInstance> GetJobInstanceUpdater()
+        private void AddResultDestination(IVirtualData resultData)
         {
-            //TODO: Exceptions
-            return new JobInstanceUpdater<TKey, TInstance>(m_Pending.AsWriter(),
-                                                           m_Iteration.AsDeferredJobArray(),
-                                                           m_Lookup);
+            m_ResultDestinations.Add(resultData);
+        }
+
+        void IVirtualData.RemoveResultDestination(IVirtualData resultData)
+        {
+            RemoveResultDestination(resultData);
+        }
+
+        private void RemoveResultDestination(IVirtualData resultData)
+        {
+            m_ResultDestinations.Remove(resultData);
+        }
+
+        private void AddSource(IVirtualData sourceData)
+        {
+            m_Sources.Add(sourceData);
+        }
+
+        private void RemoveSource(IVirtualData sourceData)
+        {
+            m_Sources.Remove(sourceData);
+        }
+
+        private void RemoveFromSources()
+        {
+            foreach (IVirtualData sourceData in m_Sources)
+            {
+                sourceData.RemoveResultDestination(this);
+            }
         }
         
-        public JobInstanceReader<TInstance> GetJobInstanceReader()
+        //*************************************************************************************************************
+        // ACCESS
+        //*************************************************************************************************************
+
+        JobHandle IVirtualData.AcquireForUpdate()
         {
-            //TODO: Exceptions
-            return new JobInstanceReader<TInstance>(m_Iteration.AsDeferredJobArray());
+            return AcquireForUpdate();
+        }
+
+        private JobHandle AcquireForUpdate()
+        {
+            JobHandle exclusiveWrite = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+            
+            if (m_ResultDestinations.Count == 0)
+            {
+                return exclusiveWrite;
+            }
+
+            //Get write access to all possible channels that we can write a response to.
+            //+1 to include the exclusive write
+            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResultDestinations.Count + 1, Allocator.Temp);
+            allDependencies[0] = exclusiveWrite;
+            int index = 1;
+            foreach (IVirtualData destinationData in m_ResultDestinations)
+            {
+                allDependencies[index] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
+                index++;
+            }
+
+            return JobHandle.CombineDependencies(allDependencies);
+        }
+
+        void IVirtualData.ReleaseForUpdate(JobHandle releaseAccessDependency)
+        {
+            ReleaseForUpdate(releaseAccessDependency);
+        }
+
+        private void ReleaseForUpdate(JobHandle releaseAccessDependency)
+        {
+            m_AccessController.ReleaseAsync(releaseAccessDependency);
+            
+            if (m_ResultDestinations.Count == 0)
+            {
+                return;
+            }
+
+            foreach (IVirtualData destinationData in m_ResultDestinations)
+            {
+                destinationData.AccessController.ReleaseAsync(releaseAccessDependency);
+            }
         }
         
-        public JobInstanceWriter<TInstance> GetJobInstanceWriter()
+        //*************************************************************************************************************
+        // JOB STRUCTS
+        //*************************************************************************************************************
+
+        internal VDJobReader<TInstance> CreateVDJobReader()
         {
-            //TODO: Exceptions
-            return new JobInstanceWriter<TInstance>(m_Pending.AsWriter());
+            return new VDJobReader<TInstance>(m_Iteration.AsDeferredJobArray());
+        }
+
+        internal VDJobResultsDestination<TInstance> CreateVDJobResultsDestination()
+        {
+            return new VDJobResultsDestination<TInstance>(m_Pending.AsWriter());
+        }
+
+        internal VDJobUpdater<TKey, TInstance> CreateVDJobUpdater()
+        {
+            return new VDJobUpdater<TKey, TInstance>(m_Pending.AsWriter(),
+                                                     m_Iteration.AsDeferredJobArray(),
+                                                     m_Lookup);
+        }
+
+        internal VDJobWriter<TInstance> CreateVDJobWriter()
+        {
+            return new VDJobWriter<TInstance>(m_Pending.AsWriter());
         }
         
-        public JobInstanceWriterEntities<TInstance> GetJobInstanceWriterEntities()
+        //*************************************************************************************************************
+        // CONSOLIDATION
+        //*************************************************************************************************************
+
+        JobHandle IVirtualData.ConsolidateForFrame(JobHandle dependsOn)
         {
-            //TODO: Exceptions
-            return new JobInstanceWriterEntities<TInstance>(m_Pending.AsWriter());
+            return ConsolidateForFrame(dependsOn);
         }
 
-        public JobInstanceWriterMainThread<TInstance> AcquireForAdd()
+        private JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            ValidateAcquireState(STATE_ADD_MAIN_THREAD);
-            AccessController.Acquire(AccessType.SharedWrite);
-            return new JobInstanceWriterMainThread<TInstance>(m_Pending.AsLaneWriter(MAIN_THREAD_INDEX));
-        }
-
-        public void ReleaseForAdd()
-        {
-            ValidateReleaseState(STATE_ADD_MAIN_THREAD);
-            AccessController.Release();
-        }
-
-        public JobHandle AcquireForEntitiesAddAsync(out JobInstanceWriterEntities<TInstance> jobInstanceWriterDataForEntitiesAdd)
-        {
-            ValidateAcquireState(STATE_ENTITIES_ADD);
-            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobInstanceWriterDataForEntitiesAdd = new JobInstanceWriterEntities<TInstance>(m_Pending.AsWriter());
-            return sharedWriteHandle;
-        }
-
-        public void ReleaseForEntitiesAddAsync(JobHandle releaseAccessDependency)
-        {
-            ValidateReleaseState(STATE_ENTITIES_ADD);
-            AccessController.ReleaseAsync(releaseAccessDependency);
-        }
-
-        public JobHandle AcquireForAddAsync(out JobInstanceWriter<TInstance> jobInstanceForAdd)
-        {
-            ValidateAcquireState(STATE_ADD);
-            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-            jobInstanceForAdd = new JobInstanceWriter<TInstance>(m_Pending.AsWriter());
-            return sharedWriteHandle;
-        }
-
-        public void ReleaseForAddAsync(JobHandle releaseAccessDependency)
-        {
-            ValidateReleaseState(STATE_ADD);
-            AccessController.ReleaseAsync(releaseAccessDependency);
-        }
-
-        public JobHandle AcquireForReadAsync(out JobInstanceReader<TInstance> jobInstanceReader)
-        {
-            ValidateAcquireState(STATE_READ);
-            JobHandle sharedReadHandle = AccessController.AcquireAsync(AccessType.SharedRead);
-            jobInstanceReader = new JobInstanceReader<TInstance>(m_Iteration.AsDeferredJobArray());
-            return sharedReadHandle;
-        }
-
-
-        public void ReleaseForReadAsync(JobHandle releaseAccessDependency)
-        {
-            ValidateReleaseState(STATE_READ);
-            AccessController.ReleaseAsync(releaseAccessDependency);
-        }
-
-        public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
-        {
-            JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+            JobHandle exclusiveWriteHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
                                                                                  m_Iteration,
                                                                                  m_Lookup);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
-            AccessController.ReleaseAsync(consolidateHandle);
+            m_AccessController.ReleaseAsync(consolidateHandle);
 
             return consolidateHandle;
-        }
-
-        //TODO: Commonality for the work in VDATA
-        public JobHandle AcquireForUpdate(out JobInstanceUpdater<TKey, TInstance> jobInstanceUpdater)
-        {
-            ValidateAcquireState(STATE_WORK);
-            JobHandle sharedWriteHandle = AccessController.AcquireAsync(AccessType.SharedWrite);
-
-            jobInstanceUpdater = new JobInstanceUpdater<TKey, TInstance>(m_Pending.AsWriter(),
-                                                                 m_Iteration.AsDeferredJobArray(),
-                                                                 m_Lookup);
-
-            return AcquireOutputsAsync(sharedWriteHandle);
-        }
-
-        public void ReleaseForUpdate(JobHandle releaseAccessDependency)
-        {
-            ValidateReleaseState(STATE_WORK);
-            AccessController.ReleaseAsync(releaseAccessDependency);
-            ReleaseOutputsAsync(releaseAccessDependency);
         }
 
         //*************************************************************************************************************

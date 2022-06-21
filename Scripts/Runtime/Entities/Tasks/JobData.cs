@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
         Read,
         Add,
         Update,
-        Results
+        ResultsDestination
     }
 
     public class JobData
@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities
                 get;
             }
 
-            public AbstractVirtualData Data
+            public IVirtualData Data
             {
                 get;
             }
@@ -40,27 +40,27 @@ namespace Anvil.Unity.DOTS.Entities
             private readonly AccessController m_AccessController;
 
 
-            public ReferencedData(AbstractVirtualData data, JobDataContext context)
+            public ReferencedData(IVirtualData data, JobDataContext context)
             {
                 Data = data;
                 m_AccessController = Data.AccessController;
                 Context = context;
                 m_AcquireDelegate = context switch
                 {
-                    JobDataContext.Read    => AcquireForReadAsync,
-                    JobDataContext.Add     => AcquireForSharedWriteAsync,
-                    JobDataContext.Update  => AcquireForExclusiveWriteAsync,
-                    JobDataContext.Results => AcquireForResults,
-                    _                      => throw new ArgumentOutOfRangeException(nameof(context), context, null)
+                    JobDataContext.Read               => AcquireForReadAsync,
+                    JobDataContext.Add                => AcquireForSharedWriteAsync,
+                    JobDataContext.Update             => AcquireForUpdate,
+                    JobDataContext.ResultsDestination => AcquireForResultsDestination,
+                    _                                 => throw new ArgumentOutOfRangeException(nameof(context), context, null)
                 };
-                
+
                 m_ReleaseDelegate = context switch
                 {
-                    JobDataContext.Read    => ReleaseAsync,
-                    JobDataContext.Add     => ReleaseAsync,
-                    JobDataContext.Update  => ReleaseAsync,
-                    JobDataContext.Results => ReleaseResults,
-                    _                      => throw new ArgumentOutOfRangeException(nameof(context), context, null)
+                    JobDataContext.Read               => ReleaseAsync,
+                    JobDataContext.Add                => ReleaseAsync,
+                    JobDataContext.Update             => ReleaseAsync,
+                    JobDataContext.ResultsDestination => ReleaseResultsDestination,
+                    _                                 => throw new ArgumentOutOfRangeException(nameof(context), context, null)
                 };
             }
 
@@ -74,22 +74,22 @@ namespace Anvil.Unity.DOTS.Entities
                 return m_AccessController.AcquireAsync(AccessType.SharedWrite);
             }
 
-            private JobHandle AcquireForExclusiveWriteAsync()
+            private JobHandle AcquireForUpdate()
             {
-                return m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+                return Data.AcquireForUpdate();
             }
 
-            private JobHandle AcquireForResults()
+            private JobHandle AcquireForResultsDestination()
             {
                 return default;
             }
 
             private void ReleaseAsync(JobHandle releaseAccessDependency)
             {
-                m_AccessController.ReleaseAsync(releaseAccessDependency);
+                Data.ReleaseForUpdate(releaseAccessDependency);
             }
 
-            private void ReleaseResults(JobHandle releaseAccessDependency)
+            private void ReleaseResultsDestination(JobHandle releaseAccessDependency)
             {
                 //Does Nothing
             }
@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly JobDataDelegate m_JobDataDelegate;
         private readonly BatchStrategy m_BatchStrategy;
 
-        private AbstractVirtualData m_SchedulingData;
+        private IVirtualData m_SchedulingData;
 
         public AbstractTaskDriverSystem System
         {
@@ -207,49 +207,41 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        public JobInstanceUpdater<TKey, TInstance> GetUpdater<TKey, TInstance>()
+        public VDJobUpdater<TKey, TInstance> GetUpdater<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.GetJobInstanceUpdater();
+            return typedData.CreateVDJobUpdater();
         }
 
-        public JobInstanceReader<TInstance> GetReader<TKey, TInstance>()
+        public VDJobReader<TInstance> GetReader<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.GetJobInstanceReader();
+            return typedData.CreateVDJobReader();
         }
 
-        public JobInstanceWriter<TInstance> GetWriter<TKey, TInstance>()
+        public VDJobWriter<TInstance> GetWriter<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.GetJobInstanceWriter();
+            return typedData.CreateVDJobWriter();
         }
 
-        public JobInstanceWriterEntities<TInstance> GetEntitiesWriter<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
-        {
-            //TODO: Exceptions
-            VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.GetJobInstanceWriterEntities();
-        }
 
-        public JobResultWriter<TInstance> GetResultWriter<TKey, TInstance>()
+        public VDJobResultsDestination<TInstance> GetResultsDestination<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.GetJobResultWriter();
+            return typedData.CreateVDJobResultsDestination();
         }
     }
 }

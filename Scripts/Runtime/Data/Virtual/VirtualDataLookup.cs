@@ -8,11 +8,11 @@ namespace Anvil.Unity.DOTS.Data
 {
     public class VirtualDataLookup : AbstractAnvilBase
     {
-        private readonly Dictionary<Type, AbstractVirtualData> m_Data = new Dictionary<Type, AbstractVirtualData>();
+        private readonly Dictionary<Type, IVirtualData> m_Data = new Dictionary<Type, IVirtualData>();
 
         protected override void DisposeSelf()
         {
-            foreach (AbstractVirtualData data in m_Data.Values)
+            foreach (IVirtualData data in m_Data.Values)
             {
                 data.Dispose();
             }
@@ -45,7 +45,7 @@ namespace Anvil.Unity.DOTS.Data
             
             NativeArray<JobHandle> consolidateDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
             int index = 0;
-            foreach (AbstractVirtualData data in m_Data.Values)
+            foreach (IVirtualData data in m_Data.Values)
             {
                 consolidateDependencies[index] = data.ConsolidateForFrame(dependsOn);
                 index++;

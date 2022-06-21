@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Data
 {
     [BurstCompatible]
-    public struct JobInstanceWriter<TInstance>
+    public struct VDJobWriter<TInstance>
         where TInstance : struct
     {
         private const int DEFAULT_LANE_INDEX = -1;
@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
 
-        public JobInstanceWriter(UnsafeTypedStream<TInstance>.Writer instanceWriter) : this()
+        public VDJobWriter(UnsafeTypedStream<TInstance>.Writer instanceWriter) : this()
         {
             m_InstanceWriter = instanceWriter;
 
