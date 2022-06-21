@@ -225,8 +225,7 @@ namespace Anvil.Unity.DOTS.Data
         internal VDJobUpdater<TKey, TInstance> CreateVDJobUpdater()
         {
             return new VDJobUpdater<TKey, TInstance>(m_Pending.AsWriter(),
-                                                     m_Iteration.AsDeferredJobArray(),
-                                                     m_Lookup);
+                                                     m_Iteration.AsDeferredJobArray());
         }
 
         internal VDJobWriter<TInstance> CreateVDJobWriter()
