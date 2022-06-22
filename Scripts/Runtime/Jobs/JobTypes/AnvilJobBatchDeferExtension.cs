@@ -15,10 +15,10 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // SCHEDULING
         //*************************************************************************************************************
-        public static unsafe JobHandle ScheduleBatch<TJob, TDeferredNativeArray>(this TJob jobData,
-                                                                                 DeferredNativeArrayScheduleInfo scheduleInfo,
-                                                                                 int batchSize,
-                                                                                 JobHandle dependsOn = default)
+        public static unsafe JobHandle ScheduleBatch<TJob>(this TJob jobData,
+                                                           DeferredNativeArrayScheduleInfo scheduleInfo,
+                                                           int batchSize,
+                                                           JobHandle dependsOn = default)
             where TJob : struct, IAnvilJobBatchDefer
         {
             void* atomicSafetyHandlePtr = null;
