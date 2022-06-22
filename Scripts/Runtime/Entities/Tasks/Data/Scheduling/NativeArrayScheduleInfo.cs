@@ -4,7 +4,7 @@ using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class NativeArrayScheduleWrapper<T> : IScheduleWrapper
+    internal class NativeArrayScheduleInfo<T> : IScheduleInfo
         where T : struct
     {
         public int BatchSize
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private readonly NativeArray<T> m_Array;
-        public NativeArrayScheduleWrapper(NativeArray<T> array, BatchStrategy batchStrategy)
+        public NativeArrayScheduleInfo(NativeArray<T> array, BatchStrategy batchStrategy)
         {
             m_Array = array;
             

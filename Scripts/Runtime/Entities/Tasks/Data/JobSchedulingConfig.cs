@@ -8,12 +8,13 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public class JobSchedulingConfig
     {
-        public delegate JobHandle JobDataDelegate(JobHandle dependsOn, JobData jobData);
+        public delegate JobHandle JobDataDelegate(JobHandle dependsOn, JobData jobData, IScheduleInfo scheduleInfo);
         
         private readonly Dictionary<Type, ScheduledVirtualData> m_ReferencedData = new Dictionary<Type, ScheduledVirtualData>();
         private readonly JobDataDelegate m_JobDataDelegate;
 
         private readonly JobData m_JobData;
+        private IScheduleInfo m_ScheduleInfo;
         
         
         internal JobSchedulingConfig(JobDataDelegate jobDataDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem)
@@ -26,14 +27,14 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, ILookupData<TKey>
         {
-            m_JobData.ScheduleWrapper = new VirtualDataScheduleWrapper<TKey, TInstance>(data, batchStrategy);
+            m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy);
             return this;
         }
 
         public JobSchedulingConfig ScheduleOn<T>(NativeArray<T> array, BatchStrategy batchStrategy)
             where T : struct
         {
-            m_JobData.ScheduleWrapper = new NativeArrayScheduleWrapper<T>(array, batchStrategy);
+            m_ScheduleInfo = new NativeArrayScheduleInfo<T>(array, batchStrategy);
             return this;
         }
 
@@ -96,7 +97,7 @@ namespace Anvil.Unity.DOTS.Entities
                 index++;
             }
 
-            JobHandle delegateDependency = m_JobDataDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobData);
+            JobHandle delegateDependency = m_JobDataDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobData, m_ScheduleInfo);
 
             foreach (ScheduledVirtualData data in m_ReferencedData.Values)
             {

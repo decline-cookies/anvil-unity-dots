@@ -3,7 +3,7 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VirtualDataScheduleWrapper<TKey, TInstance> : IScheduleWrapper
+    internal class VirtualDataScheduleInfo<TKey, TInstance> : IScheduleInfo
         where TKey : struct, IEquatable<TKey>
         where TInstance : struct, ILookupData<TKey>
     {
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public VirtualDataScheduleWrapper(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
+        public VirtualDataScheduleInfo(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
         {
             DeferredNativeArrayScheduleInfo = data.ScheduleInfo;
 

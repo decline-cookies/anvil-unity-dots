@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Data;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IScheduleWrapper
+    public interface IScheduleInfo
     {
         public int BatchSize
         {

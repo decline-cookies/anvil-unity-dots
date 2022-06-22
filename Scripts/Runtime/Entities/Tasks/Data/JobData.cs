@@ -22,12 +22,6 @@ namespace Anvil.Unity.DOTS.Entities
             get => ref World.Time;
         }
 
-        public IScheduleWrapper ScheduleWrapper
-        {
-            get;
-            internal set;
-        }
-
         internal JobData(AbstractTaskDriverSystem system)
         {
             System = system;
