@@ -15,17 +15,16 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // SCHEDULING
         //*************************************************************************************************************
-        public static unsafe JobHandle ScheduleParallel<TJob, TDeferredNativeArray>(this TJob jobData,
-                                                                                    TDeferredNativeArray deferredNativeArray,
-                                                                                    int batchSize,
-                                                                                    JobHandle dependsOn = default)
+        public static unsafe JobHandle ScheduleParallel<TJob>(this TJob jobData,
+                                                              DeferredNativeArrayScheduleInfo scheduleInfo,
+                                                              int batchSize,
+                                                              JobHandle dependsOn = default)
             where TJob : struct, IAnvilJobForDefer
-            where TDeferredNativeArray : struct, IDeferredNativeArray
         {
             void* atomicSafetyHandlePtr = null;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            atomicSafetyHandlePtr = DeferredNativeArrayUnsafeUtility.GetSafetyHandlePointer(ref deferredNativeArray);
+            atomicSafetyHandlePtr = scheduleInfo.SafetyHandlePtr;
 #endif
 
             IntPtr reflectionData = WrapperJobProducer<TJob>.GetReflectionData();
@@ -40,7 +39,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       batchSize,
-                                                                      DeferredNativeArrayUnsafeUtility.GetBufferInfoUnchecked(ref deferredNativeArray),
+                                                                      scheduleInfo.BufferPtr,
                                                                       atomicSafetyHandlePtr);
 
             return dependsOn;
