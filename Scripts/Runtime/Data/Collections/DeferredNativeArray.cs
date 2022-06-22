@@ -1,11 +1,12 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -78,7 +79,14 @@ namespace Anvil.Unity.DOTS.Data
             [NativeDisableUnsafePtrRestriction] public void* Buffer;
             public int Length;
             public Allocator DeferredAllocator;
-            public bool IsPending;
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            public bool CanAllocate;
+#endif
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            public void AssertCanAllocate()
+            {
+                Debug.Assert(CanAllocate);
+            }
         }
 
         //*************************************************************************************************************
@@ -127,7 +135,7 @@ namespace Anvil.Unity.DOTS.Data
             array.m_BufferInfo->Length = 0;
             array.m_BufferInfo->Buffer = null;
             array.m_BufferInfo->DeferredAllocator = deferredAllocator;
-            array.m_BufferInfo->IsPending = true;
+            array.m_BufferInfo->CanAllocate = true;
 
             array.m_Allocator = allocator;
 
@@ -137,7 +145,8 @@ namespace Anvil.Unity.DOTS.Data
 
         private static unsafe void ClearBufferInfo(BufferInfo* bufferInfo)
         {
-            if (bufferInfo == null || bufferInfo->Buffer == null)
+            if (bufferInfo == null
+             || bufferInfo->Buffer == null)
             {
                 return;
             }
@@ -247,7 +256,7 @@ namespace Anvil.Unity.DOTS.Data
         public unsafe void Clear()
         {
             ClearBufferInfo(m_BufferInfo);
-            m_BufferInfo->IsPending = true;
+            m_BufferInfo->CanAllocate = true;
         }
 
         /// <summary>
@@ -287,7 +296,7 @@ namespace Anvil.Unity.DOTS.Data
 
             ClearJob clearJob = new ClearJob(m_BufferInfo);
             JobHandle jobHandle = clearJob.Schedule(inputDeps);
-            m_BufferInfo->IsPending = true;
+            m_BufferInfo->CanAllocate = true;
             return jobHandle;
         }
 
@@ -305,7 +314,7 @@ namespace Anvil.Unity.DOTS.Data
             Debug.Assert(m_BufferInfo != null);
             //If this triggers, we called DeferredCreate twice. 
             //Check scheduling to ensure that a Clear job happened in between the jobs that do a DeferredCreate
-            Debug.Assert(m_BufferInfo->IsPending);
+            m_BufferInfo->AssertCanAllocate();
 
             //Allocate the new memory
             long size = SIZE * newLength;
@@ -318,7 +327,7 @@ namespace Anvil.Unity.DOTS.Data
             //Update the buffer info
             m_BufferInfo->Length = newLength;
             m_BufferInfo->Buffer = newMemory;
-            m_BufferInfo->IsPending = false;
+            m_BufferInfo->CanAllocate = false;
 
             //Return an actual NativeArray so it's familiar to use and we don't have to reimplement the same api and functionality
             NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, newLength, m_BufferInfo->DeferredAllocator);
