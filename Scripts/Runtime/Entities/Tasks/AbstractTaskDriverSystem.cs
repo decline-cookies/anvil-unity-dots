@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly HashSet<AbstractTaskDriver> m_TaskDrivers = new HashSet<AbstractTaskDriver>();
         private readonly VirtualDataLookup m_InstanceData = new VirtualDataLookup();
-        private readonly List<JobData> m_UpdateJobData = new List<JobData>();
+        private readonly List<JobSchedulingConfig> m_UpdateJobData = new List<JobSchedulingConfig>();
 
         protected AbstractTaskDriverSystem()
         {
@@ -39,11 +39,11 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        protected JobData CreateUpdateJob(JobData.JobDataDelegate jobDataDelegate, BatchStrategy batchStrategy)
+        protected JobSchedulingConfig CreateUpdateJob(JobSchedulingConfig.JobDataDelegate jobDataDelegate)
         {
-            JobData jobData = new JobData(jobDataDelegate, batchStrategy, this);
-            m_UpdateJobData.Add(jobData);
-            return jobData;
+            JobSchedulingConfig config = new JobSchedulingConfig(jobDataDelegate, this);
+            m_UpdateJobData.Add(config);
+            return config;
         }
 
         protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(params IVirtualData[] sources)

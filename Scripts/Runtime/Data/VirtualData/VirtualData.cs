@@ -68,13 +68,10 @@ namespace Anvil.Unity.DOTS.Data
         private DeferredNativeArray<TInstance> m_Iteration;
         private UnsafeHashMap<TKey, TInstance> m_Lookup;
 
-        /// <summary>
-        /// The underlying <see cref="IDeferredNativeArray"/> used for scheduling
-        /// <see cref="IAnvilJobForDefer"/> or <see cref="IAnvilJobBatchDefer"/> jobs.
-        /// </summary>
-        public DeferredNativeArray<TInstance> ArrayForScheduling
+        
+        public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
-            get => m_Iteration;
+            get => m_Iteration.ScheduleInfo;
         }
 
         AccessController IVirtualData.AccessController

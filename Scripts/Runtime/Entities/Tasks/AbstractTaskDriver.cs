@@ -12,8 +12,8 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly VirtualDataLookup m_InstanceData = new VirtualDataLookup();
         private readonly List<AbstractTaskDriver> m_ChildTaskDrivers = new List<AbstractTaskDriver>();
-        private readonly List<JobData> m_PopulateJobData = new List<JobData>();
-        private readonly List<JobData> m_UpdateJobData = new List<JobData>();
+        private readonly List<JobSchedulingConfig> m_PopulateJobData = new List<JobSchedulingConfig>();
+        private readonly List<JobSchedulingConfig> m_UpdateJobData = new List<JobSchedulingConfig>();
 
         public World World
         {
@@ -68,18 +68,18 @@ namespace Anvil.Unity.DOTS.Entities
             return virtualData;
         }
 
-        public JobData CreatePopulateJob(JobData.JobDataDelegate jobDataDelegate, BatchStrategy batchStrategy)
+        public JobSchedulingConfig ConfigurePopulateJob(JobSchedulingConfig.JobDataDelegate jobDataDelegate)
         {
-            JobData jobData = new JobData(jobDataDelegate, batchStrategy, System);
-            m_PopulateJobData.Add(jobData);
-            return jobData;
+            JobSchedulingConfig config = new JobSchedulingConfig(jobDataDelegate, System);
+            m_PopulateJobData.Add(config);
+            return config;
         }
 
-        protected JobData CreateUpdateJob(JobData.JobDataDelegate jobDataDelegate, BatchStrategy batchStrategy)
+        protected JobSchedulingConfig ConfigureUpdateJob(JobSchedulingConfig.JobDataDelegate jobDataDelegate)
         {
-            JobData jobData = new JobData(jobDataDelegate, batchStrategy, System);
-            m_UpdateJobData.Add(jobData);
-            return jobData;
+            JobSchedulingConfig config = new JobSchedulingConfig(jobDataDelegate, System);
+            m_UpdateJobData.Add(config);
+            return config;
         }
 
         public JobHandle Populate(JobHandle dependsOn)
