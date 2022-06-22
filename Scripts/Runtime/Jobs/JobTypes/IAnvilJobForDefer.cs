@@ -9,9 +9,15 @@ namespace Anvil.Unity.DOTS.Jobs
     /// A replacement for <see cref="IJobFor"/> when the number of work items is not known at Schedule time
     /// and you are using a <see cref="DeferredNativeArray{T}"/>
     /// </summary>
-    [JobProducerType(typeof(JobDeferredNativeArrayForExtension.JobDeferredNativeArrayForProducer<>))]
-    public interface IJobDeferredNativeArrayFor
+    [JobProducerType(typeof(AnvilJobForDeferExtension.WrapperJobStruct<>))]
+    public interface IAnvilJobForDefer
     {
+        /// <summary>
+        /// Called once per thread to allow for initialization of state in the job
+        /// </summary>
+        /// <param name="nativeThreadIndex">The native thread index that the job is running on</param>
+        void InitForThread(int nativeThreadIndex);
+
         /// <summary>
         /// Implement this method to perform work against a specific iteration index.
         /// </summary>
