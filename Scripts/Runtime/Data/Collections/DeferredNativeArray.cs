@@ -5,30 +5,36 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// Helper interface for <see cref="DeferredNativeArray{T}"/> used for scheduling.
+    /// Scheduling information for a <see cref="DeferredNativeArray{T}"/>
     /// </summary>
-    public interface IDeferredNativeArray
+    /// <remarks>
+    /// Provides access to internal data necessary for job scheduling but avoids
+    /// boxing if done with interfaces.
+    /// </remarks>
+    public unsafe struct DeferredNativeArrayScheduleInfo
     {
-        internal AtomicSafetyHandle SafetyHandle
+        internal void* SafetyHandlePtr
         {
             get;
         }
 
-        internal unsafe void* BufferPtr
+        internal void* BufferPtr
         {
             get;
         }
 
-        internal unsafe void* SafetyHandlePtr
+        internal DeferredNativeArrayScheduleInfo(void* safetyHandlePtr, void* bufferPtr)
         {
-            get;
+            SafetyHandlePtr = safetyHandlePtr;
+            BufferPtr = bufferPtr;
         }
     }
-    
+
     /// <summary>
     /// A native collection similar to <see cref="NativeArray{T}"/> but intended for use in a deferred context.
     /// Useful for cases where a job that hasn't finished yet will determine the length of the array.
@@ -52,8 +58,7 @@ namespace Anvil.Unity.DOTS.Data
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [BurstCompatible]
-    public struct DeferredNativeArray<T> : INativeDisposable,
-                                           IDeferredNativeArray
+    public struct DeferredNativeArray<T> : INativeDisposable
         where T : struct
     {
         //*************************************************************************************************************
@@ -73,6 +78,7 @@ namespace Anvil.Unity.DOTS.Data
             [NativeDisableUnsafePtrRestriction] public void* Buffer;
             public int Length;
             public Allocator DeferredAllocator;
+            public bool IsPending;
         }
 
         //*************************************************************************************************************
@@ -121,6 +127,7 @@ namespace Anvil.Unity.DOTS.Data
             array.m_BufferInfo->Length = 0;
             array.m_BufferInfo->Buffer = null;
             array.m_BufferInfo->DeferredAllocator = deferredAllocator;
+            array.m_BufferInfo->IsPending = true;
 
             array.m_Allocator = allocator;
 
@@ -146,6 +153,7 @@ namespace Anvil.Unity.DOTS.Data
             {
                 return;
             }
+
             ClearBufferInfo(bufferInfo);
             UnsafeUtility.Free(bufferInfo, allocator);
         }
@@ -169,6 +177,9 @@ namespace Anvil.Unity.DOTS.Data
             get => m_BufferInfo != null;
         }
 
+        /// <summary>
+        /// The length of the array
+        /// </summary>
         public unsafe int Length
         {
             get =>
@@ -177,19 +188,15 @@ namespace Anvil.Unity.DOTS.Data
                     : 0;
         }
 
-        AtomicSafetyHandle IDeferredNativeArray.SafetyHandle
+        /// <summary>
+        /// Scheduling information about this <see cref="DeferredNativeArray{T}"/> for use in job
+        /// scheduling.
+        /// </summary>
+        public unsafe DeferredNativeArrayScheduleInfo ScheduleInfo
         {
-            get => m_Safety;
-        }
-
-        unsafe void* IDeferredNativeArray.SafetyHandlePtr
-        {
-            get => UnsafeUtility.AddressOf(ref m_Safety);
-        }
-
-        unsafe void* IDeferredNativeArray.BufferPtr
-        {
-            get => m_BufferInfo;
+            get =>
+                new DeferredNativeArrayScheduleInfo(UnsafeUtility.AddressOf(ref m_Safety),
+                                                    m_BufferInfo);
         }
 
         /// <summary>
@@ -240,6 +247,7 @@ namespace Anvil.Unity.DOTS.Data
         public unsafe void Clear()
         {
             ClearBufferInfo(m_BufferInfo);
+            m_BufferInfo->IsPending = true;
         }
 
         /// <summary>
@@ -279,6 +287,7 @@ namespace Anvil.Unity.DOTS.Data
 
             ClearJob clearJob = new ClearJob(m_BufferInfo);
             JobHandle jobHandle = clearJob.Schedule(inputDeps);
+            m_BufferInfo->IsPending = true;
             return jobHandle;
         }
 
@@ -290,6 +299,14 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="nativeArrayOptions">The <see cref="NativeArrayOptions"/> for initializing the array memory.</param>
         public unsafe NativeArray<T> DeferredCreate(int newLength, NativeArrayOptions nativeArrayOptions = NativeArrayOptions.ClearMemory)
         {
+            //We must exist and be in a pending state. This will prevent multiple calls to DeferredCreate
+            //which could leak memory. We can call this again if we've scheduled or performed a Clear.
+            //If this triggers, we have been disposed or never created
+            Debug.Assert(m_BufferInfo != null);
+            //If this triggers, we called DeferredCreate twice. 
+            //Check scheduling to ensure that a Clear job happened in between the jobs that do a DeferredCreate
+            Debug.Assert(m_BufferInfo->IsPending);
+
             //Allocate the new memory
             long size = SIZE * newLength;
             void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_BufferInfo->DeferredAllocator);
@@ -301,6 +318,7 @@ namespace Anvil.Unity.DOTS.Data
             //Update the buffer info
             m_BufferInfo->Length = newLength;
             m_BufferInfo->Buffer = newMemory;
+            m_BufferInfo->IsPending = false;
 
             //Return an actual NativeArray so it's familiar to use and we don't have to reimplement the same api and functionality
             NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, newLength, m_BufferInfo->DeferredAllocator);
