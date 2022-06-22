@@ -79,13 +79,20 @@ namespace Anvil.Unity.DOTS.Data
             [NativeDisableUnsafePtrRestriction] public void* Buffer;
             public int Length;
             public Allocator DeferredAllocator;
+            
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            public bool CanAllocate;
+            private bool m_CanAllocate;
 #endif
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             public void AssertCanAllocate()
             {
-                Debug.Assert(CanAllocate);
+                Debug.Assert(m_CanAllocate);
+            }
+
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            public void SetCanAllocate(bool value)
+            {
+                m_CanAllocate = value;
             }
         }
 
@@ -135,7 +142,7 @@ namespace Anvil.Unity.DOTS.Data
             array.m_BufferInfo->Length = 0;
             array.m_BufferInfo->Buffer = null;
             array.m_BufferInfo->DeferredAllocator = deferredAllocator;
-            array.m_BufferInfo->CanAllocate = true;
+            array.m_BufferInfo->SetCanAllocate(true);
 
             array.m_Allocator = allocator;
 
@@ -256,7 +263,7 @@ namespace Anvil.Unity.DOTS.Data
         public unsafe void Clear()
         {
             ClearBufferInfo(m_BufferInfo);
-            m_BufferInfo->CanAllocate = true;
+            m_BufferInfo->SetCanAllocate(true);
         }
 
         /// <summary>
@@ -296,7 +303,7 @@ namespace Anvil.Unity.DOTS.Data
 
             ClearJob clearJob = new ClearJob(m_BufferInfo);
             JobHandle jobHandle = clearJob.Schedule(inputDeps);
-            m_BufferInfo->CanAllocate = true;
+            m_BufferInfo->SetCanAllocate(true);
             return jobHandle;
         }
 
@@ -327,7 +334,7 @@ namespace Anvil.Unity.DOTS.Data
             //Update the buffer info
             m_BufferInfo->Length = newLength;
             m_BufferInfo->Buffer = newMemory;
-            m_BufferInfo->CanAllocate = false;
+            m_BufferInfo->SetCanAllocate(false);
 
             //Return an actual NativeArray so it's familiar to use and we don't have to reimplement the same api and functionality
             NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, newLength, m_BufferInfo->DeferredAllocator);
