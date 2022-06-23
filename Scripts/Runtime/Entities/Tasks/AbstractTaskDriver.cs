@@ -54,14 +54,14 @@ namespace Anvil.Unity.DOTS.Entities
 
         public VirtualData<TKey, TInstance> GetInstanceData<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             return m_InstanceData.GetData<TKey, TInstance>();
         }
 
         protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(params IVirtualData[] sources)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
             m_InstanceData.AddData(virtualData);

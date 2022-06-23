@@ -3,21 +3,24 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A struct to be used in jobs that only allows for reading.
-    /// Commonly used to read and trigger something else.
+    /// Represents a read only reference to <see cref="VirtualData{TKey,TInstance}"/>
+    /// To be used in jobs that only allows for reading of this data.
     /// </summary>
+    /// <remarks>
+    /// Commonly used to read the data and trigger something else.
+    /// </remarks>
     /// <typeparam name="TInstance">They type of data to read</typeparam>
     [BurstCompatible]
-    public readonly struct VDJobReader<TInstance>
+    public readonly struct VDReader<TInstance>
         where TInstance : struct
     {
         [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
 
-        internal VDJobReader(NativeArray<TInstance> iteration)
+        internal VDReader(NativeArray<TInstance> iteration)
         {
             m_Iteration = iteration;
         }
-        
+
         /// <summary>
         /// Gets the <typeparamref name="TInstance"/> at the specified index.
         /// </summary>

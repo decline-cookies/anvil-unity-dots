@@ -6,21 +6,22 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A struct to be used in jobs that is for updating the <see cref="VirtualData{TKey,TInstance}"/>
-    /// that this <see cref="VDJobUpdater{TKey,TInstance}"/> represents.
-    ///
+    /// Represents a read/write reference to <see cref="VirtualData{TKey,TInstance}"/>
+    /// for use in updating the data.
+    /// </summary>
+    /// <remarks>
     /// Commonly used to iterate through all instances, perform some work and either
     /// <see cref="Continue(TInstance)"/> if more work needs to be done next frame or
     /// <see cref="Complete"/> if the work is done.
-    /// </summary>
+    /// </remarks>
     /// <typeparam name="TKey">The type of key to use for lookup of the instance</typeparam>
     /// <typeparam name="TInstance">The type of instance</typeparam>
     [BurstCompatible]
-    public struct VDJobUpdater<TKey, TInstance>
+    public struct VDUpdater<TKey, TInstance>
         where TKey : struct, IEquatable<TKey>
-        where TInstance : struct, ILookupData<TKey>
+        where TInstance : struct, IKeyedData<TKey>
     {
-        private const int DEFAULT_LANE_INDEX = -1;
+        private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_ContinueWriter;
         [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
@@ -44,24 +45,28 @@ namespace Anvil.Unity.DOTS.Data
             private set;
         }
 
-        internal VDJobUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
-                              NativeArray<TInstance> iteration)
+        internal VDUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
+                           NativeArray<TInstance> iteration)
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
 
             m_ContinueLaneWriter = default;
-            LaneIndex = DEFAULT_LANE_INDEX;
+            LaneIndex = UNSET_LANE_INDEX;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_State = UpdaterState.Uninitialized;
 #endif
         }
-        
+
         /// <summary>
-        /// Initializes the struct based on the thread it's being used on.
+        /// Initializes based on the thread it's being used on.
         /// This must be called before doing anything else with the struct.
         /// </summary>
+        /// <remarks>
+        /// Anvil Jobs (<see cref="IAnvilJob"/>, <see cref="IAnvilJobForDefer"/>, etc)
+        /// will call this automatically.
+        /// </remarks>
         /// <param name="nativeThreadIndex">The native thread index</param>
         public void InitForThread(int nativeThreadIndex)
         {
@@ -73,7 +78,7 @@ namespace Anvil.Unity.DOTS.Data
             LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(LaneIndex);
         }
-        
+
         /// <summary>
         /// Gets a <typeparamref name="TInstance"/> at the specified index.
         /// </summary>
@@ -90,7 +95,7 @@ namespace Anvil.Unity.DOTS.Data
                 return m_Iteration[index];
             }
         }
-        
+
         /// <summary>
         /// Signals that this instance should be updated again next frame.
         /// </summary>
@@ -99,7 +104,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             Continue(ref instance);
         }
-        
+
         /// <inheritdoc cref="Continue(TInstance)"/>
         public void Continue(ref TInstance instance)
         {

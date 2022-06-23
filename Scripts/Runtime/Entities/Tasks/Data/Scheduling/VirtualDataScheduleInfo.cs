@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class VirtualDataScheduleInfo<TKey, TInstance> : IScheduleInfo
         where TKey : struct, IEquatable<TKey>
-        where TInstance : struct, ILookupData<TKey>
+        where TInstance : struct, IKeyedData<TKey>
     {
         public int BatchSize
         {

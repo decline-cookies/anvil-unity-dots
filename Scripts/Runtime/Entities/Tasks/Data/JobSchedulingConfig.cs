@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobSchedulingConfig ScheduleOn<TKey, TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy);
             return this;
@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobSchedulingConfig RequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Store in abstract form
             return this;
@@ -48,8 +48,8 @@ namespace Anvil.Unity.DOTS.Entities
         
         public JobSchedulingConfig RequireDataForAdd<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
-            where TResult : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
+            where TResult : struct, IKeyedData<TKey>
         {
             //TODO: Store in abstract form
             return this;
@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         public JobSchedulingConfig RequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Store in abstract form
             return this;
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         public JobSchedulingConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Store in abstract form
             return this;
@@ -73,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobSchedulingConfig RequireDataAsResultsDestination<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Store in abstract form
             return this;

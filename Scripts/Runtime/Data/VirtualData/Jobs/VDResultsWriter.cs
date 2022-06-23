@@ -3,22 +3,22 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A struct to be used in jobs that writes new results.
+    /// Represents a write only reference to <see cref="VirtualData{TKey,TInstance}"/>
     /// <seealso cref="IVirtualDataInstance{TResult}"/>
-    /// <seealso cref="VDJobResultsDestination{TResult}"/>
+    /// <seealso cref="VDResultsDestination{TResult}"/>
     /// </summary>
     /// <typeparam name="TResult">The type of result to write</typeparam>
     [BurstCompatible]
-    public readonly struct VDJobResultsWriter<TResult>
+    public readonly struct VDResultsWriter<TResult>
         where TResult : struct
     {
         [ReadOnly] private readonly UnsafeTypedStream<TResult>.Writer m_ResultWriter;
 
-        internal VDJobResultsWriter(UnsafeTypedStream<TResult>.Writer resultWriter)
+        internal VDResultsWriter(UnsafeTypedStream<TResult>.Writer resultWriter)
         {
             m_ResultWriter = resultWriter;
         }
-        
+
         /// <summary>
         /// Adds a new result to the <see cref="VirtualData{TKey,TInstance}"/> of results.
         /// </summary>

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// The location to write the result
         /// </summary>
-        public VDJobResultsDestination<TResult> ResultsDestination
+        public VDResultsDestination<TResult> ResultsDestination
         {
             get;
         }

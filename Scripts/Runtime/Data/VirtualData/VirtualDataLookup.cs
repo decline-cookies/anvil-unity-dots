@@ -23,14 +23,14 @@ namespace Anvil.Unity.DOTS.Data
 
         public void AddData<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             m_Data.Add(typeof(VirtualData<TKey, TInstance>), data);
         }
 
         public VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             return (VirtualData<TKey, TInstance>)m_Data[typeof(VirtualData<TKey, TInstance>)];
         }
