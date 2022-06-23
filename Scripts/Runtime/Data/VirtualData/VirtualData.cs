@@ -211,13 +211,7 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-
         JobHandle IVirtualData.ConsolidateForFrame(JobHandle dependsOn)
-        {
-            return ConsolidateForFrame(dependsOn);
-        }
-
-        private JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
