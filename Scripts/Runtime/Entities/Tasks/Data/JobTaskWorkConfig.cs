@@ -83,7 +83,6 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
         
-        
         public JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
             int len = DataWrappers.Count;

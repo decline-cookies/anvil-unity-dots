@@ -15,8 +15,10 @@ namespace Anvil.Unity.DOTS.Data
         
         internal JobHandle ConsolidateForFrame(JobHandle dependsOn);
 
-        internal JobHandle AcquireForUpdate();
-        internal void ReleaseForUpdate(JobHandle releaseAccessDependency);
+        internal JobHandle AcquireForUpdateAsync();
+        internal void AcquireForUpdate();
+        internal void ReleaseForUpdateAsync(JobHandle releaseAccessDependency);
+        internal void ReleaseForUpdate();
 
         internal AccessController AccessController
         {

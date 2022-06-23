@@ -152,7 +152,7 @@ namespace Anvil.Unity.DOTS.Data
         // ACCESS
         //*************************************************************************************************************
 
-        JobHandle IVirtualData.AcquireForUpdate()
+        JobHandle IVirtualData.AcquireForUpdateAsync()
         {
             JobHandle exclusiveWrite = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
@@ -174,7 +174,7 @@ namespace Anvil.Unity.DOTS.Data
             return JobHandle.CombineDependencies(allDependencies);
         }
 
-        void IVirtualData.ReleaseForUpdate(JobHandle releaseAccessDependency)
+        void IVirtualData.ReleaseForUpdateAsync(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
 
@@ -186,6 +186,26 @@ namespace Anvil.Unity.DOTS.Data
             foreach (IVirtualData destinationData in m_ResultDestinations)
             {
                 destinationData.AccessController.ReleaseAsync(releaseAccessDependency);
+            }
+        }
+
+        void IVirtualData.AcquireForUpdate()
+        {
+            m_AccessController.Acquire(AccessType.ExclusiveWrite);
+
+            foreach (IVirtualData destinationData in m_ResultDestinations)
+            {
+                destinationData.AccessController.Acquire(AccessType.SharedWrite);
+            }
+        }
+
+        void IVirtualData.ReleaseForUpdate()
+        {
+            m_AccessController.Release();
+            
+            foreach (IVirtualData destinationData in m_ResultDestinations)
+            {
+                destinationData.AccessController.Release();
             }
         }
 

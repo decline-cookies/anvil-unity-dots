@@ -15,6 +15,8 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<JobTaskWorkConfig> m_PopulateJobData = new List<JobTaskWorkConfig>();
         private readonly List<JobTaskWorkConfig> m_UpdateJobData = new List<JobTaskWorkConfig>();
 
+        private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
+        
         public World World
         {
             get;
@@ -39,6 +41,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 childTaskDriver.Dispose();
             }
+
+            ReleaseMainThreadTaskWork();
 
             m_ChildTaskDrivers.Clear();
             m_PopulateJobData.Clear();
@@ -126,6 +130,20 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
             //TODO: Could add a hook for user processing
             return consolidateHandle;
+        }
+
+        public MainThreadTaskWorkConfig ConfigureMainThreadTaskWork()
+        {
+            //TODO: Exceptions
+            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
+            return m_ActiveMainThreadTaskWorkConfig;
+        }
+
+        public void ReleaseMainThreadTaskWork()
+        {
+            //TODO: Exceptions
+            m_ActiveMainThreadTaskWorkConfig?.Release();
+            m_ActiveMainThreadTaskWorkConfig = null;
         }
 
         

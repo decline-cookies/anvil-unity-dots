@@ -3,20 +3,21 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VDWrapperForUpdateAsync : AbstractVDWrapper
+    internal class VDWrapperForUpdate : AbstractVDWrapper
     {
-        public VDWrapperForUpdateAsync(IVirtualData data) : base(data)
+        public VDWrapperForUpdate(IVirtualData data) : base(data)
         {
         }
 
         public override JobHandle Acquire()
         {
-            return Data.AcquireForUpdateAsync();
+            Data.AcquireForUpdate();
+            return default;
         }
 
         public override void Release(JobHandle releaseAccessDependency)
         {
-            Data.ReleaseForUpdateAsync(releaseAccessDependency);
+            Data.ReleaseForUpdate();
         }
     }
 }

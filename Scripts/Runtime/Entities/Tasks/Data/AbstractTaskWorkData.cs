@@ -45,21 +45,45 @@ namespace Anvil.Unity.DOTS.Entities
             IDataWrapper wrapper = m_WrappedDataLookup[typeof(VirtualData<TKey, TInstance>)];
             return (VirtualData<TKey, TInstance>)wrapper.Data;
         }
-
-        public abstract VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
+        
+        public VDReader<TInstance> GetVDReader<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>;
-
-        public abstract VDReader<TInstance> GetVDReader<TKey, TInstance>()
+            where TInstance : struct, IKeyedData<TKey>
+        {
+            //TODO: Exceptions
+            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>(); 
+            VDReader<TInstance> reader = virtualData.CreateVDReader();
+            return reader;
+        }
+        
+        public VDResultsDestination<TResult> GetVDResultsDestination<TKey, TResult>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>;
+            where TResult : struct, IKeyedData<TKey>
+        {
+            //TODO: Exceptions
+            VirtualData<TKey, TResult> virtualData = GetVirtualData<TKey, TResult>(); 
+            VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
+            return resultsDestination;
+        }
 
-        public abstract VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
+        public virtual VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>;
+            where TInstance : struct, IKeyedData<TKey>
+        {
+            //TODO: Exceptions
+            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VDUpdater<TKey, TInstance> updater = virtualData.CreateVDUpdater();
+            return updater;
+        }
 
-        public abstract VDResultsDestination<TResult> GetVDResultsDestination<TKey, TResult>()
+        public virtual VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TResult : struct, IKeyedData<TKey>;
+            where TInstance : struct, IKeyedData<TKey>
+        {
+            //TODO: Exceptions
+            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>(); 
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+            return writer;
+        }
     }
 }
