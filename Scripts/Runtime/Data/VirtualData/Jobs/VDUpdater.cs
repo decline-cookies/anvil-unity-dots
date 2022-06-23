@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <remarks>
     /// Commonly used to iterate through all instances, perform some work and either
     /// <see cref="Continue(TInstance)"/> if more work needs to be done next frame or
-    /// <see cref="Complete"/> if the work is done.
+    /// <see cref="Resolve"/> if the work is done.
     /// </remarks>
     /// <typeparam name="TKey">The type of key to use for lookup of the instance</typeparam>
     /// <typeparam name="TInstance">The type of instance</typeparam>
@@ -115,7 +115,7 @@ namespace Anvil.Unity.DOTS.Data
             m_ContinueLaneWriter.Write(ref instance);
         }
 
-        internal void Complete()
+        internal void Resolve()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug.Assert(m_State == UpdaterState.Modifying);

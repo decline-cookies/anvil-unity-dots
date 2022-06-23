@@ -19,27 +19,27 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The type of key for the instance.</typeparam>
         /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
         /// <typeparam name="TResult">The type of the result struct</typeparam>
-        public static void Complete<TKey, TInstance, TResult>(this TInstance instance, ref TResult result, ref VDUpdater<TKey, TInstance> updater)
+        public static void Resolve<TKey, TInstance, TResult>(this TInstance instance, ref TResult result, ref VDUpdater<TKey, TInstance> updater)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>, IVirtualDataInstance<TResult>
             where TResult : struct
         {
             VDResultsWriter<TResult> resultsWriter = instance.ResultsDestination.AsResultsWriter();
             resultsWriter.Add(ref result, updater.LaneIndex);
-            updater.Complete();
+            updater.Resolve();
         }
         
-        /// <inheritdoc cref="Complete{TKey,TInstance,TResult}"/>
-        public static void Complete<TKey, TInstance, TResult>(this TInstance instance, TResult result, ref VDUpdater<TKey, TInstance> updater)
+        /// <inheritdoc cref="Resolve{TKey,TInstance,TResult}"/>
+        public static void Resolve<TKey, TInstance, TResult>(this TInstance instance, TResult result, ref VDUpdater<TKey, TInstance> updater)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>, IVirtualDataInstance<TResult>
             where TResult : struct
         {
-            Complete(instance, ref result, ref updater);
+            Resolve(instance, ref result, ref updater);
         }
 
         /// <summary>
-        /// Consistency helper function to correspond to <see cref="Complete{TKey,TInstance,TResult}(TInstance,ref TResult,ref VDUpdater{TKey,TInstance})"/>
+        /// Consistency helper function to correspond to <see cref="Resolve{TKey,TInstance,TResult}(TInstance,ref TResult,ref Anvil.Unity.DOTS.Data.VDUpdater{TKey,TInstance})"/>
         /// when there is no result to write.
         /// Allows for the code to look the same in the jobs and checks safeties when ENABLE_UNITY_COLLECTIONS_CHECKS is enabled.
         /// </summary>
@@ -47,15 +47,15 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="updater">The <see cref="VDUpdater{TKey,TInstance}"/> the instance was from.</param>
         /// <typeparam name="TKey">The type of key for the instance.</typeparam>
         /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
-        public static void Complete<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
+        public static void Resolve<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
-            updater.Complete();
+            updater.Resolve();
         }
         
         /// <summary>
-        /// Companion to <see cref="Complete{TKey,TInstance,TResult}(TInstance,ref TResult,ref VDUpdater{TKey,TInstance})"/>
+        /// Companion to <see cref="Resolve{TKey,TInstance,TResult}(TInstance,ref TResult,ref Anvil.Unity.DOTS.Data.VDUpdater{TKey,TInstance})"/>
         /// where the instance is not ready to write it's result and should be updated again the next frame.
         /// </summary>
         /// <param name="instance">The instance to update again next frame</param>
