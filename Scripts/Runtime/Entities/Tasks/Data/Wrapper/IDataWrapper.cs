@@ -1,7 +1,15 @@
-namespace Anvil.Unity.DOTS.Entities.Wrapper
+using Anvil.Unity.DOTS.Data;
+using Unity.Jobs;
+
+namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IDataWrapper
+    internal interface IDataWrapper
     {
-        
+        public IVirtualData Data
+        {
+            get;
+        }
+        JobHandle Acquire();
+        void Release(JobHandle releaseAccessDependency);
     }
 }

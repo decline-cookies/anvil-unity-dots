@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using System;
+using System.Collections.Generic;
 using Unity.Core;
 using Unity.Entities;
 
@@ -7,6 +8,8 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public class JobData
     {
+        private readonly Dictionary<Type, IDataWrapper> m_WrappedDataLookup;
+        
         public AbstractTaskDriverSystem System
         {
             get;
@@ -21,48 +24,59 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => ref World.Time;
         }
-
+        
         internal JobData(AbstractTaskDriverSystem system)
         {
             System = system;
             World = System.World;
+            m_WrappedDataLookup = new Dictionary<Type, IDataWrapper>();
         }
 
-        public VDJobUpdater<TKey, TInstance> GetUpdater<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+        internal void AddDataWrapper(Type type, IDataWrapper dataWrapper)
         {
-            //TODO: Exceptions
-            VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.CreateVDJobUpdater();
+            m_WrappedDataLookup.Add(type, dataWrapper);
         }
 
-        public VDJobReader<TInstance> GetReader<TKey, TInstance>()
+        private VirtualData<TKey, TInstance> GetVirtualData<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Exceptions
-            VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.CreateVDJobReader();
+            IDataWrapper wrapper = m_WrappedDataLookup[typeof(VirtualData<TKey, TInstance>)];
+            return (VirtualData<TKey, TInstance>)wrapper.Data;
         }
 
-        public VDJobWriter<TInstance> GetWriter<TKey, TInstance>()
+        public VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Exceptions
-            VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.CreateVDJobWriter();
+            return GetVirtualData<TKey, TInstance>().CreateVDUpdater();
+        }
+
+        public VDReader<TInstance> GetVDReader<TKey, TInstance>()
+            where TKey : struct, IEquatable<TKey>
+            where TInstance : struct, IKeyedData<TKey>
+        {
+            //TODO: Exceptions
+            return GetVirtualData<TKey, TInstance>().CreateVDReader();
+        }
+
+        public VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
+            where TKey : struct, IEquatable<TKey>
+            where TInstance : struct, IKeyedData<TKey>
+        {
+            //TODO: Exceptions
+            return GetVirtualData<TKey, TInstance>().CreateVDWriter();
         }
 
 
-        public VDJobResultsDestination<TInstance> GetResultsDestination<TKey, TInstance>()
+        public VDResultsDestination<TInstance> GetVDResultsDestination<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, ILookupData<TKey>
+            where TInstance : struct, IKeyedData<TKey>
         {
             //TODO: Exceptions
-            VirtualData<TKey, TInstance> typedData = (VirtualData<TKey, TInstance>)m_ReferencedData[typeof(VirtualData<TKey, TInstance>)].Data;
-            return typedData.CreateVDJobResultsDestination();
+            return GetVirtualData<TKey, TInstance>().CreateVDResultsDestination();
         }
     }
 }

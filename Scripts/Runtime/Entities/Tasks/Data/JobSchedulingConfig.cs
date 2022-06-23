@@ -9,18 +9,18 @@ namespace Anvil.Unity.DOTS.Entities
     public class JobSchedulingConfig
     {
         public delegate JobHandle JobDataDelegate(JobHandle dependsOn, JobData jobData, IScheduleInfo scheduleInfo);
-        
-        private readonly Dictionary<Type, ScheduledVirtualData> m_ReferencedData = new Dictionary<Type, ScheduledVirtualData>();
+
+        private readonly List<IDataWrapper> m_DataWrappers;
         private readonly JobDataDelegate m_JobDataDelegate;
 
         private readonly JobData m_JobData;
         private IScheduleInfo m_ScheduleInfo;
         
-        
         internal JobSchedulingConfig(JobDataDelegate jobDataDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem)
         {
             m_JobDataDelegate = jobDataDelegate;
             m_JobData = new JobData(abstractTaskDriverSystem);
+            m_DataWrappers = new List<IDataWrapper>();
         }
 
         public JobSchedulingConfig ScheduleOn<TKey, TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
@@ -38,36 +38,40 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobSchedulingConfig RequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data)
+        public JobSchedulingConfig RequireDataForAddAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
-            //TODO: Store in abstract form
+            VDWrapperForAddAsync wrapper = new VDWrapperForAddAsync(data);
+            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
             return this;
         }
         
-        public JobSchedulingConfig RequireDataForAdd<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
+        public JobSchedulingConfig RequireDataForAddAsync<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
             where TResult : struct, IKeyedData<TKey>
         {
-            //TODO: Store in abstract form
+            RequireDataForAddAsync(data);
+            RequireDataAsResultsDestination(resultsDestination);
             return this;
         }
         
-        public JobSchedulingConfig RequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
+        public JobSchedulingConfig RequireDataForIterateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
-            //TODO: Store in abstract form
+            VDWrapperForIterateAsync wrapper = new VDWrapperForIterateAsync(data);
+            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
             return this;
         }
         
-        public JobSchedulingConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
+        public JobSchedulingConfig RequireDataForUpdateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
-            //TODO: Store in abstract form
+            VDWrapperForUpdateAsync wrapper = new VDWrapperForUpdateAsync(data);
+            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
             return this;
         }
 
@@ -75,14 +79,21 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
-            //TODO: Store in abstract form
+            VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(data);
+            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
             return this;
+        }
+
+        private void AddDataWrapper(Type type, IDataWrapper dataWrapper)
+        {
+            m_JobData.AddDataWrapper(type, dataWrapper);
+            m_DataWrappers.Add(dataWrapper);
         }
         
         
         public JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
-            int len = m_ReferencedData.Count;
+            int len = m_DataWrappers.Count;
             if (len == 0)
             {
                 return dependsOn;
@@ -90,16 +101,15 @@ namespace Anvil.Unity.DOTS.Entities
 
             NativeArray<JobHandle> dataDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
 
-            int index = 0;
-            foreach (ScheduledVirtualData data in m_ReferencedData.Values)
+            for (int i = 0; i < m_DataWrappers.Count; ++i)
             {
-                dataDependencies[index] = data.Acquire();
-                index++;
+                IDataWrapper wrapper = m_DataWrappers[i];
+                dataDependencies[i] = wrapper.Acquire();
             }
 
             JobHandle delegateDependency = m_JobDataDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobData, m_ScheduleInfo);
 
-            foreach (ScheduledVirtualData data in m_ReferencedData.Values)
+            foreach (IDataWrapper data in m_DataWrappers)
             {
                 data.Release(delegateDependency);
             }
