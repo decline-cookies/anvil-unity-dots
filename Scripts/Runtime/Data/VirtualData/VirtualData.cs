@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Data
     public class VirtualData<TKey, TInstance> : AbstractAnvilBase,
                                                 IVirtualData
         where TKey : struct, IEquatable<TKey>
-        where TInstance : struct, ILookupData<TKey>
+        where TInstance : struct, IKeyedData<TKey>
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
@@ -212,26 +212,25 @@ namespace Anvil.Unity.DOTS.Data
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal VDJobReader<TInstance> CreateVDJobReader()
+        internal VDReader<TInstance> CreateVDJobReader()
         {
-            return new VDJobReader<TInstance>(m_Iteration.AsDeferredJobArray());
+            return new VDReader<TInstance>(m_Iteration.AsDeferredJobArray());
         }
 
-        internal VDJobResultsDestination<TInstance> CreateVDJobResultsDestination()
+        internal VDResultsDestination<TInstance> CreateVDJobResultsDestination()
         {
-            return new VDJobResultsDestination<TInstance>(m_Pending.AsWriter());
+            return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
         }
 
-        internal VDJobUpdater<TKey, TInstance> CreateVDJobUpdater()
+        internal VDUpdater<TKey, TInstance> CreateVDJobUpdater()
         {
-            return new VDJobUpdater<TKey, TInstance>(m_Pending.AsWriter(),
-                                                     m_Iteration.AsDeferredJobArray(),
-                                                     m_Lookup);
+            return new VDUpdater<TKey, TInstance>(m_Pending.AsWriter(),
+                                                     m_Iteration.AsDeferredJobArray());
         }
 
-        internal VDJobWriter<TInstance> CreateVDJobWriter()
+        internal VDWriter<TInstance> CreateVDJobWriter()
         {
-            return new VDJobWriter<TInstance>(m_Pending.AsWriter());
+            return new VDWriter<TInstance>(m_Pending.AsWriter());
         }
 
         //*************************************************************************************************************

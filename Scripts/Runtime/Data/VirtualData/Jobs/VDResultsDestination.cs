@@ -8,17 +8,17 @@ namespace Anvil.Unity.DOTS.Data
     /// </summary>
     /// <typeparam name="TResult">The type of result that can be written</typeparam>
     [BurstCompatible]
-    public readonly struct VDJobResultsDestination<TResult>
+    public readonly struct VDResultsDestination<TResult>
         where TResult : struct
     {
         //Implicit cast to a writer when we need to actually write.
         //Otherwise this struct doesn't let you do anything with it until we can guarantee you
         //have access.
-        public static implicit operator VDJobResultsWriter<TResult>(VDJobResultsDestination<TResult> destination) => new VDJobResultsWriter<TResult>(destination.m_ResultWriter);
+        public static implicit operator VDResultsWriter<TResult>(VDResultsDestination<TResult> destination) => new VDResultsWriter<TResult>(destination.m_ResultWriter);
 
         [ReadOnly] private readonly UnsafeTypedStream<TResult>.Writer m_ResultWriter;
 
-        internal VDJobResultsDestination(UnsafeTypedStream<TResult>.Writer resultWriter)
+        internal VDResultsDestination(UnsafeTypedStream<TResult>.Writer resultWriter)
         {
             m_ResultWriter = resultWriter;
         }

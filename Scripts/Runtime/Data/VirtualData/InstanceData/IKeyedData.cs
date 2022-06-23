@@ -7,11 +7,11 @@ namespace Anvil.Unity.DOTS.Data
     /// that can be looked up with a <typeparamref name="TKey"/>
     /// </summary>
     /// <typeparam name="TKey">The type of key to use for lookup.</typeparam>
-    public interface ILookupData<out TKey>
+    public interface IKeyedData<out TKey>
         where TKey : struct, IEquatable<TKey>
     {
         /// <summary>
-        /// The lookup key for this struct
+        /// The lookup key for this data
         /// </summary>
         public TKey Key
         {
