@@ -413,10 +413,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <returns>A <see cref="NativeArray{T}" /> of the elements</returns>
         public NativeArray<T> ToNativeArray(Allocator allocator)
         {
-            NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
-            CopyTo(ref array);
-
-            return array;
+            return AsReader().ToNativeArray(allocator);
         }
 
         //*************************************************************************************************************
@@ -493,11 +490,8 @@ namespace Anvil.Unity.DOTS.Data
                 m_Lane = m_BufferInfo->LaneInfos + laneIndex;
             }
 
-            /// <summary>
-            /// Writes the element to the next spot in the lane's current block.
-            /// </summary>
-            /// <param name="value">The element to write</param>
-            public void Write(T value)
+            /// <inheritdoc cref="Write(T)"/>
+            public void Write(ref T value)
             {
                 //See if we need to allocate a new block
                 CheckForNewBlock();
@@ -506,6 +500,15 @@ namespace Anvil.Unity.DOTS.Data
                 UnsafeUtility.CopyStructureToPtr(ref value, m_Lane->WriterHead);
                 m_Lane->WriterHead += ELEMENT_SIZE;
                 m_Lane->Count++;
+            }
+            
+            /// <summary>
+            /// Writes the element to the next spot in the lane's current block.
+            /// </summary>
+            /// <param name="value">The element to write</param>
+            public void Write(T value)
+            {
+                Write(ref value);
             }
 
             private void CheckForNewBlock()
@@ -622,6 +625,15 @@ namespace Anvil.Unity.DOTS.Data
                         laneElementsRemaining -= numElementsToRead;
                     }
                 }
+            }
+            
+            /// <inheritdoc cref="UnsafeTypedStream{T}.ToNativeArray"/>
+            public NativeArray<T> ToNativeArray(Allocator allocator)
+            {
+                NativeArray<T> array = new NativeArray<T>(Count(), allocator, NativeArrayOptions.UninitializedMemory);
+                CopyTo(ref array);
+
+                return array;
             }
         }
 
