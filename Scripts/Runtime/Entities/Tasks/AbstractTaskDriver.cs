@@ -12,8 +12,8 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly VirtualDataLookup m_InstanceData = new VirtualDataLookup();
         private readonly List<AbstractTaskDriver> m_ChildTaskDrivers = new List<AbstractTaskDriver>();
-        private readonly List<JobSchedulingConfig> m_PopulateJobData = new List<JobSchedulingConfig>();
-        private readonly List<JobSchedulingConfig> m_UpdateJobData = new List<JobSchedulingConfig>();
+        private readonly List<JobTaskWorkConfig> m_PopulateJobData = new List<JobTaskWorkConfig>();
+        private readonly List<JobTaskWorkConfig> m_UpdateJobData = new List<JobTaskWorkConfig>();
 
         public World World
         {
@@ -46,6 +46,8 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.DisposeSelf();
         }
+        
+        //TODO: Cancel plus cancel children
 
 
         protected abstract void CreateInstanceData();
@@ -68,16 +70,19 @@ namespace Anvil.Unity.DOTS.Entities
             return virtualData;
         }
 
-        public JobSchedulingConfig ConfigurePopulateJob(JobSchedulingConfig.JobDataDelegate jobDataDelegate)
+        
+        //TODO: Some way to remove the populate function
+        public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
-            JobSchedulingConfig config = new JobSchedulingConfig(jobDataDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, System);
             m_PopulateJobData.Add(config);
             return config;
         }
-
-        protected JobSchedulingConfig ConfigureUpdateJob(JobSchedulingConfig.JobDataDelegate jobDataDelegate)
+        
+        //TODO: Some way to remove the update Job
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
-            JobSchedulingConfig config = new JobSchedulingConfig(jobDataDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, System);
             m_UpdateJobData.Add(config);
             return config;
         }

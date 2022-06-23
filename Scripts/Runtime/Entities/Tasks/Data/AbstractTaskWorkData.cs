@@ -6,7 +6,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class JobData
+    public abstract class AbstractTaskWorkData
     {
         private readonly Dictionary<Type, IDataWrapper> m_WrappedDataLookup;
         
@@ -25,19 +25,19 @@ namespace Anvil.Unity.DOTS.Entities
             get => ref World.Time;
         }
         
-        internal JobData(AbstractTaskDriverSystem system)
+        protected AbstractTaskWorkData(AbstractTaskDriverSystem system)
         {
             System = system;
             World = System.World;
             m_WrappedDataLookup = new Dictionary<Type, IDataWrapper>();
         }
-
+        
         internal void AddDataWrapper(Type type, IDataWrapper dataWrapper)
         {
             m_WrappedDataLookup.Add(type, dataWrapper);
         }
-
-        private VirtualData<TKey, TInstance> GetVirtualData<TKey, TInstance>()
+        
+        protected VirtualData<TKey, TInstance> GetVirtualData<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
@@ -46,37 +46,20 @@ namespace Anvil.Unity.DOTS.Entities
             return (VirtualData<TKey, TInstance>)wrapper.Data;
         }
 
-        public VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
+        public abstract VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
-        {
-            //TODO: Exceptions
-            return GetVirtualData<TKey, TInstance>().CreateVDUpdater();
-        }
+            where TInstance : struct, IKeyedData<TKey>;
 
-        public VDReader<TInstance> GetVDReader<TKey, TInstance>()
+        public abstract VDReader<TInstance> GetVDReader<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
-        {
-            //TODO: Exceptions
-            return GetVirtualData<TKey, TInstance>().CreateVDReader();
-        }
+            where TInstance : struct, IKeyedData<TKey>;
 
-        public VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
+        public abstract VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
-        {
-            //TODO: Exceptions
-            return GetVirtualData<TKey, TInstance>().CreateVDWriter();
-        }
+            where TInstance : struct, IKeyedData<TKey>;
 
-
-        public VDResultsDestination<TInstance> GetVDResultsDestination<TKey, TInstance>()
+        public abstract VDResultsDestination<TResult> GetVDResultsDestination<TKey, TResult>()
             where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
-        {
-            //TODO: Exceptions
-            return GetVirtualData<TKey, TInstance>().CreateVDResultsDestination();
-        }
+            where TResult : struct, IKeyedData<TKey>;
     }
 }
