@@ -3,24 +3,28 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A struct to be used in jobs that acts as a placeholder for results to be written to
-    /// later on. Use with <see cref="IVirtualDataInstance{TResult}"/>
+    /// Represents a reference to <see cref="VirtualData{TKey,TInstance}"/> where results
+    /// will be written to at a later time.
+    /// No reading or writing can happen until that later time when the proper access will have
+    /// been resolved.
+    /// Use with <see cref="IVirtualDataInstance{TResult}"/>
     /// </summary>
     /// <typeparam name="TResult">The type of result that can be written</typeparam>
     [BurstCompatible]
     public readonly struct VDResultsDestination<TResult>
         where TResult : struct
     {
-        //Implicit cast to a writer when we need to actually write.
-        //Otherwise this struct doesn't let you do anything with it until we can guarantee you
-        //have access.
-        public static implicit operator VDResultsWriter<TResult>(VDResultsDestination<TResult> destination) => new VDResultsWriter<TResult>(destination.m_ResultWriter);
-
         [ReadOnly] private readonly UnsafeTypedStream<TResult>.Writer m_ResultWriter;
 
         internal VDResultsDestination(UnsafeTypedStream<TResult>.Writer resultWriter)
         {
             m_ResultWriter = resultWriter;
+        }
+        
+        //Called internally when we're sure we have access to actually write
+        internal VDResultsWriter<TResult> AsResultsWriter()
+        {
+            return new VDResultsWriter<TResult>(m_ResultWriter);
         }
     }
 }

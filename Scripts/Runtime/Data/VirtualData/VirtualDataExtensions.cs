@@ -10,11 +10,11 @@ namespace Anvil.Unity.DOTS.Data
     public static class VirtualDataExtensions
     {
         /// <summary>
-        /// Writes a result struct to the <see cref="VDResultsDestination{TResult}"/> on a
+        /// Writes result data to the <see cref="VDResultsDestination{TResult}"/> on a
         /// <see cref="IVirtualDataInstance{TResult}"/>
         /// </summary>
         /// <param name="instance">The instance to correspond the result to</param>
-        /// <param name="result">The result struct to write</param>
+        /// <param name="result">The result data to write</param>
         /// <param name="updater">The <see cref="VDUpdater{TKey,TInstance}"/> the instance was from.</param>
         /// <typeparam name="TKey">The type of key for the instance.</typeparam>
         /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Data
             where TInstance : struct, IKeyedData<TKey>, IVirtualDataInstance<TResult>
             where TResult : struct
         {
-            VDResultsWriter<TResult> resultsWriter = instance.ResultsDestination;
+            VDResultsWriter<TResult> resultsWriter = instance.ResultsDestination.AsResultsWriter();
             resultsWriter.Add(ref result, updater.LaneIndex);
             updater.Complete();
         }

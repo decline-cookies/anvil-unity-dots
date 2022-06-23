@@ -11,7 +11,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// This class represents wrapped collections of data and manages them for use in Jobs.
+    /// Represents wrapped collections of data and manages them for use in Jobs.
     /// </summary>
     /// <remarks>
     /// In Unity's ECS, data is stored on <see cref="Entity"/>'s via <see cref="IComponentBase"/> structs.
@@ -20,21 +20,23 @@ namespace Anvil.Unity.DOTS.Data
     ///
     /// There are often cases where the overhead of using Entities doesn't make sense. The data is not persistent
     /// and should exist for a period of time and then cease to exist. While this can be accomplished by Adding
-    /// or Removing Components from an Entity or spawning/destroying new entities with those components, it results
-    /// in a structural change which gets resolved at a sync point and happens on the main thread.
+    /// and Removing Components from an Entity or spawning/destroying new entities with those components, it results
+    /// in a structural change which gets resolved at a sync point on the main thread.
     ///
     /// Instead, using <see cref="VirtualData{TKey,TInstance}"/> can alleviate these issues while working in a similar
     /// manner. Additional benefits are:
-    /// 
-    /// - Allowing for Shared Write
-    /// - - Multiple different jobs can write to the Pending collection at the same time.
-    /// - Fast reading via iteration or lookup
-    /// - The ability for instances of the data to write a result to different result destinations.
-    /// - - This gives implicit grouping of the data while still allowing for processing the overall set of data
-    ///     as one large set.
-    /// - - Getting access to writing to the results is handled automatically.
+    /// - Allowing for parallel writing
+    ///   - Multiple different jobs can write to the Pending collection at the same time.
+    /// - Fast reading via iteration or individual lookup
+    /// - The ability for each instance of the data to write its result to a different result destination.
+    ///   - This gives implicit grouping of the data while still allowing for processing the overall set of data
+    ///     as one large set. (Ex: Timers update as one set but complete back to different destinations)
+    ///   - Getting write to result destinations is handled automatically.
     /// </remarks>
-    /// <typeparam name="TKey">The type of key to use to lookup data. Usually <see cref="Entity"/></typeparam>
+    /// <typeparam name="TKey">
+    /// The type of key to use to lookup data. Usually <see cref="Entity"/> if this is being used as an
+    /// alternative to adding component data to an <see cref="Entity"/>
+    /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
     public class VirtualData<TKey, TInstance> : AbstractAnvilBase,
                                                 IVirtualData
@@ -60,22 +62,13 @@ namespace Anvil.Unity.DOTS.Data
             return virtualData;
         }
 
-        private readonly HashSet<IVirtualData> m_Sources = new HashSet<IVirtualData>();
-        private readonly HashSet<IVirtualData> m_ResultDestinations = new HashSet<IVirtualData>();
+        private readonly List<IVirtualData> m_Sources;
+        private readonly List<IVirtualData> m_ResultDestinations;
         private readonly AccessController m_AccessController;
 
         private UnsafeTypedStream<TInstance> m_Pending;
-        private DeferredNativeArray<TInstance> m_Iteration;
+        private DeferredNativeArray<TInstance> m_IterationTarget;
         private UnsafeHashMap<TKey, TInstance> m_Lookup;
-
-        /// <summary>
-        /// The underlying <see cref="IDeferredNativeArray"/> used for scheduling
-        /// <see cref="IAnvilJobForDefer"/> or <see cref="IAnvilJobBatchDefer"/> jobs.
-        /// </summary>
-        public DeferredNativeArray<TInstance> ArrayForScheduling
-        {
-            get => m_Iteration;
-        }
 
         AccessController IVirtualData.AccessController
         {
@@ -84,11 +77,13 @@ namespace Anvil.Unity.DOTS.Data
 
         private VirtualData()
         {
+            m_Sources = new List<IVirtualData>();
+            m_ResultDestinations = new List<IVirtualData>();
             m_AccessController = new AccessController();
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.TempJob);
-            m_Iteration = new DeferredNativeArray<TInstance>(Allocator.Persistent,
-                                                             Allocator.TempJob);
+            m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
+                                                                   Allocator.TempJob);
 
             m_Lookup = new UnsafeHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
@@ -96,7 +91,7 @@ namespace Anvil.Unity.DOTS.Data
         protected override void DisposeSelf()
         {
             m_Pending.Dispose();
-            m_Iteration.Dispose();
+            m_IterationTarget.Dispose();
             m_Lookup.Dispose();
 
             RemoveFromSources();
@@ -178,11 +173,10 @@ namespace Anvil.Unity.DOTS.Data
             //+1 to include the exclusive write
             NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResultDestinations.Count + 1, Allocator.Temp);
             allDependencies[0] = exclusiveWrite;
-            int index = 1;
-            foreach (IVirtualData destinationData in m_ResultDestinations)
+            for (int i = 1; i < allDependencies.Length; ++i)
             {
-                allDependencies[index] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
-                index++;
+                IVirtualData destinationData = m_ResultDestinations[i];
+                allDependencies[i] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
             }
 
             return JobHandle.CombineDependencies(allDependencies);
@@ -212,23 +206,23 @@ namespace Anvil.Unity.DOTS.Data
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal VDReader<TInstance> CreateVDJobReader()
+        internal VDReader<TInstance> CreateVDReader()
         {
-            return new VDReader<TInstance>(m_Iteration.AsDeferredJobArray());
+            return new VDReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal VDResultsDestination<TInstance> CreateVDJobResultsDestination()
+        internal VDResultsDestination<TInstance> CreateVDResultsDestination()
         {
             return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
         }
 
-        internal VDUpdater<TKey, TInstance> CreateVDJobUpdater()
+        internal VDUpdater<TKey, TInstance> CreateVDUpdater()
         {
             return new VDUpdater<TKey, TInstance>(m_Pending.AsWriter(),
-                                                     m_Iteration.AsDeferredJobArray());
+                                                  m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal VDWriter<TInstance> CreateVDJobWriter()
+        internal VDWriter<TInstance> CreateVDWriter()
         {
             return new VDWriter<TInstance>(m_Pending.AsWriter());
         }
@@ -246,7 +240,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             JobHandle exclusiveWriteHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
-                                                                                 m_Iteration,
+                                                                                 m_IterationTarget,
                                                                                  m_Lookup);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 

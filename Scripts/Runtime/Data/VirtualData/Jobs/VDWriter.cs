@@ -5,17 +5,18 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A struct to be used in jobs that is for writing new <typeparamref name="TInstance"/> to
-    /// <see cref="VirtualData{TKey,TInstance}"/>.
-    ///
-    /// Commonly used to add new instances. 
+    /// Represents a write only reference to <see cref="VirtualData{TKey,TInstance}"/>
+    /// for writing new <typeparamref name="TInstance"/> to.
     /// </summary>
+    /// <remarks>
+    /// Commonly used to add new instances.
+    /// </remarks>
     /// <typeparam name="TInstance">The type of instance to add</typeparam>
     [BurstCompatible]
     public struct VDWriter<TInstance>
         where TInstance : struct
     {
-        private const int DEFAULT_LANE_INDEX = -1;
+        private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_InstanceWriter;
 
@@ -38,7 +39,7 @@ namespace Anvil.Unity.DOTS.Data
             m_InstanceWriter = instanceWriter;
 
             m_InstanceLaneWriter = default;
-            m_LaneIndex = DEFAULT_LANE_INDEX;
+            m_LaneIndex = UNSET_LANE_INDEX;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_State = WriterState.Uninitialized;
@@ -46,7 +47,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         /// <summary>
-        /// Initializes the struct based on the thread it's being used on.
+        /// Initializes based on the thread it's being used on.
         /// This must be called before doing anything else with the struct.
         /// </summary>
         /// <param name="nativeThreadIndex">The native thread index</param>

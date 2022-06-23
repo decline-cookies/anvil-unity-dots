@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Data
     /// will be populated properly.
     /// </summary>
     /// <remarks>
-    /// This could be accomplished using a <see cref="NativeList{T}"/> but this class is more clear about its intent
+    /// This could be accomplished using a <see cref="NativeList{T}"/> but this is more clear about its intent
     /// and guards against potential misuse.
     /// </remarks>
     /// <typeparam name="T">The type to contain in the <see cref="DeferredNativeArray{T}"/></typeparam>

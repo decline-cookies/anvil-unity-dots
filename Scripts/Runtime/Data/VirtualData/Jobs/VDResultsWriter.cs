@@ -3,7 +3,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A struct to be used in jobs that writes new results.
+    /// Represents a write only reference to <see cref="VirtualData{TKey,TInstance}"/>
     /// <seealso cref="IVirtualDataInstance{TResult}"/>
     /// <seealso cref="VDResultsDestination{TResult}"/>
     /// </summary>
@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             m_ResultWriter = resultWriter;
         }
-        
+
         /// <summary>
         /// Adds a new result to the <see cref="VirtualData{TKey,TInstance}"/> of results.
         /// </summary>
