@@ -18,13 +18,13 @@ namespace Anvil.Unity.DOTS.Data
     /// Unity's <see cref="SystemBase"/>'s handle the dependencies on the different sorts of data that are needed
     /// for a given update call depending on the <see cref="EntityQuery"/>s used and Jobs scheduled.
     ///
-    /// There are often cases where the overhead of using Entities doesn't make sense. The data is not persistent
-    /// and should exist for a period of time and then cease to exist. While this can be accomplished by Adding
-    /// and Removing Components from an Entity or spawning/destroying new entities with those components, it results
-    /// in a structural change which gets resolved at a sync point on the main thread.
+    /// When to use VirtualData over Entities+Components?
+    /// The general rule of thumb is that using VirtualData will be easier to work with and faster to execute.
+    /// Spawning and destroying Entities+Components can lead to chunk fragmentation is the lifecycles are variable with
+    /// some lasting a short time while others last longer. It also results in a structural change which gets resolved
+    /// at a sync point on the main thread.
     ///
-    /// Instead, using <see cref="VirtualData{TKey,TInstance}"/> can alleviate these issues while working in a similar
-    /// manner. Additional benefits are:
+    /// Additional VirtualData benefits are:
     /// - Allowing for parallel writing
     ///   - Multiple different jobs can write to the Pending collection at the same time.
     /// - Fast reading via iteration or individual lookup
@@ -113,7 +113,8 @@ namespace Anvil.Unity.DOTS.Data
         // SERIALIZATION
         //*************************************************************************************************************
 
-        //TODO: Add Serialization and Deserialization functions to hook into our serialization framework
+        //TODO: Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
+        //here but keeping the TODO for future reminder.
 
         //*************************************************************************************************************
         // RELATIONSHIPS
@@ -121,20 +122,10 @@ namespace Anvil.Unity.DOTS.Data
 
         void IVirtualData.AddResultDestination(IVirtualData resultData)
         {
-            AddResultDestination(resultData);
-        }
-
-        private void AddResultDestination(IVirtualData resultData)
-        {
             m_ResultDestinations.Add(resultData);
         }
-
+        
         void IVirtualData.RemoveResultDestination(IVirtualData resultData)
-        {
-            RemoveResultDestination(resultData);
-        }
-
-        private void RemoveResultDestination(IVirtualData resultData)
         {
             m_ResultDestinations.Remove(resultData);
         }
@@ -163,11 +154,6 @@ namespace Anvil.Unity.DOTS.Data
 
         JobHandle IVirtualData.AcquireForUpdate()
         {
-            return AcquireForUpdate();
-        }
-
-        private JobHandle AcquireForUpdate()
-        {
             JobHandle exclusiveWrite = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
             if (m_ResultDestinations.Count == 0)
@@ -189,11 +175,6 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         void IVirtualData.ReleaseForUpdate(JobHandle releaseAccessDependency)
-        {
-            ReleaseForUpdate(releaseAccessDependency);
-        }
-
-        private void ReleaseForUpdate(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
 
@@ -236,13 +217,7 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-
         JobHandle IVirtualData.ConsolidateForFrame(JobHandle dependsOn)
-        {
-            return ConsolidateForFrame(dependsOn);
-        }
-
-        private JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
