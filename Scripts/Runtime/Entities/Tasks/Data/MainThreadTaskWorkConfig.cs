@@ -10,6 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
         internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
         {
             m_MainThreadTaskWorkData = new MainThreadTaskWorkData(abstractTaskDriverSystem);
+            SetTaskWorkData(m_MainThreadTaskWorkData);
         }
 
         public MainThreadTaskWorkData Acquire()

@@ -28,12 +28,12 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly JobTaskWorkData m_JobTaskWorkData;
         private IScheduleInfo m_ScheduleInfo;
-        
+
         internal JobTaskWorkConfig(JobDataDelegate jobDataDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem)
         {
             m_JobDataDelegate = jobDataDelegate;
             m_JobTaskWorkData = new JobTaskWorkData(abstractTaskDriverSystem);
-            
+            SetTaskWorkData(m_JobTaskWorkData);
         }
 
         public JobTaskWorkConfig ScheduleOn<TKey, TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)

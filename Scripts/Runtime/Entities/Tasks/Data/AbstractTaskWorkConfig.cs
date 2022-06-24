@@ -10,12 +10,17 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        private readonly AbstractTaskWorkData m_TaskWorkData;
+        private AbstractTaskWorkData m_TaskWorkData;
         protected AbstractTaskWorkConfig()
         {
             DataWrappers = new List<IDataWrapper>();
         }
-        
+
+        protected void SetTaskWorkData(AbstractTaskWorkData taskWorkData)
+        {
+            m_TaskWorkData = taskWorkData;
+        }
+
         internal void AddDataWrapper(Type type, IDataWrapper dataWrapper)
         {
             m_TaskWorkData.AddDataWrapper(type, dataWrapper);
