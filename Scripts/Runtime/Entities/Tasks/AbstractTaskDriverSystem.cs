@@ -5,7 +5,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriverSystem : AbstractAnvilSystemBase
+    public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly VirtualDataLookup m_InstanceData;
@@ -90,6 +90,11 @@ namespace Anvil.Unity.DOTS.Entities
         
         protected sealed override void OnUpdate()
         {
+            if (this.GetType().Name.Contains("WanderSystem"))
+            {
+                float a = 5.0f;
+            }
+            
             //Have drivers be given the chance to add to the Instance Data
             JobHandle driversPopulateHandle = m_PopulateBulkScheduler.BulkSchedule(Dependency);
             

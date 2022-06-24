@@ -163,13 +163,15 @@ namespace Anvil.Unity.DOTS.Data
 
             //Get write access to all possible channels that we can write a response to.
             //+1 to include the exclusive write
-            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResultDestinations.Count + 1, Allocator.Temp);
-            allDependencies[0] = exclusiveWrite;
-            for (int i = 1; i < allDependencies.Length; ++i)
+            int len = m_ResultDestinations.Count + 1;
+            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            len--;
+            for (int i = 0; i < len; ++i)
             {
                 IVirtualData destinationData = m_ResultDestinations[i];
                 allDependencies[i] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
             }
+            allDependencies[len] = exclusiveWrite;
 
             return JobHandle.CombineDependencies(allDependencies);
         }
