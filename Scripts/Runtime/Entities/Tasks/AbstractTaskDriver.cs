@@ -23,18 +23,12 @@ namespace Anvil.Unity.DOTS.Entities
             System.AddTaskDriver(this);
 
             ConstructData();
-            ConstructPopulateJobs();
             ConstructChildTaskDrivers();
         }
 
         private void ConstructData()
         {
             InitData();
-        }
-
-        private void ConstructPopulateJobs()
-        {
-            InitPopulateJobs();
         }
 
         private void ConstructChildTaskDrivers()
@@ -141,7 +135,6 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         protected abstract void InitData();
-        protected abstract void InitPopulateJobs();
         protected abstract void InitChildTaskDrivers();
 
         public VirtualData<TKey, TInstance> GetInstanceData<TKey, TInstance>()

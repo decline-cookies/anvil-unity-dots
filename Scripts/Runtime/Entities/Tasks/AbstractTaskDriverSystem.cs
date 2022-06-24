@@ -36,10 +36,13 @@ namespace Anvil.Unity.DOTS.Entities
         }
         protected sealed override void OnCreate()
         {
+            InitSystemAfterCreate();
             InitUpdateJobs();
         }
         
         protected abstract void InitData();
+
+        protected abstract void InitSystemAfterCreate();
         protected abstract void InitUpdateJobs();
         
         protected override void OnDestroy()
