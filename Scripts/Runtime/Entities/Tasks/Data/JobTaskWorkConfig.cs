@@ -1,5 +1,7 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -7,6 +9,18 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public class JobTaskWorkConfig : AbstractTaskWorkConfig
     {
+        public class JobTaskWorkConfigBulkScheduler : AbstractBulkScheduler<JobTaskWorkConfig>
+        {
+            public JobTaskWorkConfigBulkScheduler(List<JobTaskWorkConfig> list) : base(list)
+            {
+            }
+
+            protected override JobHandle ScheduleItem(JobTaskWorkConfig item, JobHandle dependsOn)
+            {
+                return item.PrepareAndSchedule(dependsOn);
+            }
+        }
+
         public delegate JobHandle JobDataDelegate(JobHandle dependsOn, JobTaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
 
         

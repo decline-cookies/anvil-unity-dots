@@ -1,30 +1,47 @@
 using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
     public abstract class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
-        private readonly HashSet<AbstractTaskDriver> m_TaskDrivers = new HashSet<AbstractTaskDriver>();
-        private readonly VirtualDataLookup m_InstanceData = new VirtualDataLookup();
-        private readonly List<JobTaskWorkConfig> m_UpdateJobData = new List<JobTaskWorkConfig>();
+        private readonly List<AbstractTaskDriver> m_TaskDrivers;
+        private readonly VirtualDataLookup m_InstanceData;
+        private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+
+        private readonly AbstractTaskDriver.TaskDriverPopulateBulkScheduler m_PopulateBulkScheduler;
+        private readonly AbstractTaskDriver.TaskDriverUpdateBulkScheduler m_UpdateBulkScheduler;
+        private readonly AbstractTaskDriver.TaskDriverConsolidateBulkScheduler m_ConsolidateBulkScheduler;
+        private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_JobTaskWorkConfigBulkScheduler;
 
         protected AbstractTaskDriverSystem()
         {
-            CreateInstanceData();
+            m_InstanceData = new VirtualDataLookup();
+            m_TaskDrivers = new List<AbstractTaskDriver>();
+            m_UpdateJobData = new List<JobTaskWorkConfig>();
+
+            m_PopulateBulkScheduler = new AbstractTaskDriver.TaskDriverPopulateBulkScheduler(m_TaskDrivers);
+            m_UpdateBulkScheduler = new AbstractTaskDriver.TaskDriverUpdateBulkScheduler(m_TaskDrivers);
+            m_ConsolidateBulkScheduler = new AbstractTaskDriver.TaskDriverConsolidateBulkScheduler(m_TaskDrivers);
+            m_JobTaskWorkConfigBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_UpdateJobData);
+            
+            ConstructData();
         }
 
-        protected abstract void CreateInstanceData();
-
+        private void ConstructData()
+        {
+            InitData();
+        }
         protected sealed override void OnCreate()
         {
-            CreateUpdateJobs();
+            InitUpdateJobs();
         }
         
-        protected abstract void CreateUpdateJobs();
+        protected abstract void InitData();
+        protected abstract void InitUpdateJobs();
+        
         protected override void OnDestroy()
         {
             m_InstanceData.Dispose();
@@ -35,6 +52,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 taskDriver.Dispose();
             }
+            m_TaskDrivers.Clear();
 
             base.OnDestroy();
         }
@@ -46,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities
             return config;
         }
 
-        protected VirtualData<TKey, TInstance> CreateInstanceData<TKey, TInstance>(params IVirtualData[] sources)
+        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params IVirtualData[] sources)
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
@@ -55,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities
             return virtualData;
         }
 
-        public VirtualData<TKey, TInstance> GetInstanceData<TKey, TInstance>()
+        protected VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
             where TKey : struct, IEquatable<TKey>
             where TInstance : struct, IKeyedData<TKey>
         {
@@ -70,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected sealed override void OnUpdate()
         {
             //Have drivers be given the chance to add to the Instance Data
-            JobHandle driversPopulateHandle = PopulateDrivers(Dependency);
+            JobHandle driversPopulateHandle = m_PopulateBulkScheduler.BulkSchedule(Dependency);
             
             //Consolidate our instance data to operate on it
             JobHandle consolidateInstancesHandle = m_InstanceData.ConsolidateForFrame(driversPopulateHandle);
@@ -78,93 +96,18 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: Allow for cancels to occur
             
             //Allow the generic work to happen in the derived class
-            JobHandle updateInstancesHandle = UpdateInstances(consolidateInstancesHandle);
+            JobHandle updateInstancesHandle = m_JobTaskWorkConfigBulkScheduler.BulkSchedule(consolidateInstancesHandle);
             
             //Have drivers consolidate their result data
-            JobHandle driversConsolidateHandle = ConsolidateDrivers(updateInstancesHandle);
+            JobHandle driversConsolidateHandle = m_ConsolidateBulkScheduler.BulkSchedule(updateInstancesHandle);
             
             //TODO: Allow for cancels on the drivers to occur
             
             //Have drivers to do their own generic work
-            JobHandle driversUpdateHandle = UpdateDrivers(driversConsolidateHandle);
+            JobHandle driversUpdateHandle = m_UpdateBulkScheduler.BulkSchedule(driversConsolidateHandle);
 
             //Ensure this system's dependency is written back
             Dependency = driversUpdateHandle;
-        }
-
-        private JobHandle UpdateInstances(JobHandle dependsOn)
-        {
-            int len = m_UpdateJobData.Count;
-            if (len == 0)
-            {
-                return dependsOn;
-            }
-            
-            NativeArray<JobHandle> updateDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
-            for (int i = 0; i < len; ++i)
-            {
-                updateDependencies[i] = m_UpdateJobData[i].PrepareAndSchedule(dependsOn);
-            }
-            return JobHandle.CombineDependencies(updateDependencies);
-        }
-        
-
-        //TODO: Can we merge code with Consolidate/Update/Cancel?
-        private JobHandle PopulateDrivers(JobHandle dependsOn)
-        {
-            int len = m_TaskDrivers.Count;
-            if (len == 0)
-            {
-                return dependsOn;
-            }
-
-            NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
-            int index = 0;
-            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
-            {
-                taskDriverDependencies[index] = taskDriver.Populate(dependsOn);
-                index++;
-            }
-
-            return JobHandle.CombineDependencies(taskDriverDependencies);
-        }
-
-        private JobHandle ConsolidateDrivers(JobHandle dependsOn)
-        {
-            int len = m_TaskDrivers.Count;
-            if (len <= 0)
-            {
-                return dependsOn;
-            }
-
-            NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
-            int index = 0;
-            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
-            {
-                taskDriverDependencies[index] = taskDriver.Consolidate(dependsOn);
-                index++;
-            }
-
-            return JobHandle.CombineDependencies(taskDriverDependencies);
-        }
-        
-        private JobHandle UpdateDrivers(JobHandle dependsOn)
-        {
-            int len = m_TaskDrivers.Count;
-            if (len <= 0)
-            {
-                return dependsOn;
-            }
-
-            NativeArray<JobHandle> taskDriverDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
-            int index = 0;
-            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
-            {
-                taskDriverDependencies[index] = taskDriver.Update(dependsOn);
-                index++;
-            }
-
-            return JobHandle.CombineDependencies(taskDriverDependencies);
         }
     }
 }
