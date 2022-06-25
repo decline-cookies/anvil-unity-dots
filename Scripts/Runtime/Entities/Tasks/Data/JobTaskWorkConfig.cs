@@ -105,13 +105,14 @@ namespace Anvil.Unity.DOTS.Entities
                 return dependsOn;
             }
 
-            NativeArray<JobHandle> dataDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            NativeArray<JobHandle> dataDependencies = new NativeArray<JobHandle>(len + 1, Allocator.Temp);
 
             for (int i = 0; i < DataWrappers.Count; ++i)
             {
                 IDataWrapper wrapper = DataWrappers[i];
                 dataDependencies[i] = wrapper.Acquire();
             }
+            dataDependencies[len] = dependsOn;
 
             JobHandle delegateDependency = m_JobDataDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobTaskWorkData, m_ScheduleInfo);
 
