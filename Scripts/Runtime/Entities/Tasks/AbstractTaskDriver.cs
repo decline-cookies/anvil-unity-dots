@@ -3,6 +3,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -35,13 +36,13 @@ namespace Anvil.Unity.DOTS.Entities
         {
             InitChildTaskDrivers();
         }
-        
+
         protected override void DisposeSelf()
         {
             base.DisposeSelf();
         }
     }
-    
+
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
         public class TaskDriverPopulateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
@@ -55,7 +56,7 @@ namespace Anvil.Unity.DOTS.Entities
                 return item.Populate(dependsOn);
             }
         }
-        
+
         public class TaskDriverUpdateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
         {
             public TaskDriverUpdateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
@@ -89,7 +90,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_UpdateBulkScheduler;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
-        
+
         public World World
         {
             get;
@@ -130,8 +131,9 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.DisposeSelf();
         }
-        
+
         //TODO: Cancel plus cancel children
+        //TODO: Need to actually add the children
 
 
         protected abstract void InitData();
@@ -144,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities
             return m_InstanceData.GetData<TKey, TInstance>();
         }
 
-        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params IVirtualData[] sources)
+        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
@@ -153,7 +155,7 @@ namespace Anvil.Unity.DOTS.Entities
             return virtualData;
         }
 
-        
+
         //TODO: Some way to remove the populate function
         public JobTaskWorkConfig CreatePopulateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
@@ -161,7 +163,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_PopulateJobData.Add(config);
             return config;
         }
-        
+
         //TODO: Some way to remove the update Job
         protected JobTaskWorkConfig CreateUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
@@ -172,35 +174,43 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle Populate(JobHandle dependsOn)
         {
+            DebugEnsureNoMainThreadWorkCurrentlyActive();
             return m_PopulateBulkScheduler.BulkSchedule(dependsOn);
         }
-        
+
         private JobHandle Update(JobHandle dependsOn)
         {
+            DebugEnsureNoMainThreadWorkCurrentlyActive();
             return m_UpdateBulkScheduler.BulkSchedule(dependsOn);
         }
-        
+
         private JobHandle Consolidate(JobHandle dependsOn)
         {
+            DebugEnsureNoMainThreadWorkCurrentlyActive();
             JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
-            //TODO: Could add a hook for user processing
             return consolidateHandle;
         }
 
         public MainThreadTaskWorkConfig ConfigureMainThreadTaskWork()
         {
-            //TODO: Exceptions
+            DebugEnsureNoMainThreadWorkCurrentlyActive();
             m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
             return m_ActiveMainThreadTaskWorkConfig;
         }
 
         public void ReleaseMainThreadTaskWork()
         {
-            //TODO: Exceptions
             m_ActiveMainThreadTaskWorkConfig?.Release();
             m_ActiveMainThreadTaskWorkConfig = null;
         }
-
         
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void DebugEnsureNoMainThreadWorkCurrentlyActive()
+        {
+            if (m_ActiveMainThreadTaskWorkConfig != null)
+            {
+                throw new InvalidOperationException($"Main Thread Task Work currently active, wait until after {nameof(ReleaseMainThreadTaskWork)} is called.");
+            }
+        }
     }
 }

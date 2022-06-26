@@ -67,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
             return config;
         }
 
-        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params IVirtualData[] sources)
+        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
@@ -90,11 +90,6 @@ namespace Anvil.Unity.DOTS.Entities
         
         protected sealed override void OnUpdate()
         {
-            if (this.GetType().Name.Contains("WanderSystem"))
-            {
-                float a = 5.0f;
-            }
-            
             //Have drivers be given the chance to add to the Instance Data
             JobHandle driversPopulateHandle = m_PopulateBulkScheduler.BulkSchedule(Dependency);
             

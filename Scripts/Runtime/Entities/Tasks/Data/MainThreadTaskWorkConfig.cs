@@ -36,7 +36,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Add);
+#endif
             return this;
         }
         
@@ -55,7 +58,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Iterate);
+#endif
             return this;
         }
         
@@ -64,7 +70,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Update);
+#endif
             return this;
         }
 
@@ -73,7 +82,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.ResultsDestination);
+#endif
             return this;
         }
     }

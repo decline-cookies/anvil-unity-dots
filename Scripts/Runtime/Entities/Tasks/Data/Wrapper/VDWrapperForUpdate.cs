@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class VDWrapperForUpdate : AbstractVDWrapper
     {
-        public VDWrapperForUpdate(IVirtualData data) : base(data)
+        public VDWrapperForUpdate(AbstractVirtualData data) : base(data)
         {
         }
 

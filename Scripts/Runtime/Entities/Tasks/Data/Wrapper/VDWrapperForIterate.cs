@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class VDWrapperForIterate : AbstractVDWrapper
     {
-        public VDWrapperForIterate(IVirtualData data) : base(data)
+        public VDWrapperForIterate(AbstractVirtualData data) : base(data)
         {
         }
 

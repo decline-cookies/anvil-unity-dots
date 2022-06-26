@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class VDWrapperAsResultsDestination : AbstractVDWrapper
     {
-        public VDWrapperAsResultsDestination(IVirtualData data) : base(data)
+        public VDWrapperAsResultsDestination(AbstractVirtualData data) : base(data)
         {
         }
 

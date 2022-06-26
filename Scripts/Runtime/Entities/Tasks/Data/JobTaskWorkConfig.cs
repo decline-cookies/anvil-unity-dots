@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public class JobTaskWorkConfig : AbstractTaskWorkConfig
     {
-        public class JobTaskWorkConfigBulkScheduler : AbstractBulkScheduler<JobTaskWorkConfig>
+        internal class JobTaskWorkConfigBulkScheduler : AbstractBulkScheduler<JobTaskWorkConfig>
         {
             public JobTaskWorkConfigBulkScheduler(List<JobTaskWorkConfig> list) : base(list)
             {
@@ -21,9 +21,10 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
+
         public delegate JobHandle JobDataDelegate(JobHandle dependsOn, JobTaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
 
-        
+
         private readonly JobDataDelegate m_JobDataDelegate;
 
         private readonly JobTaskWorkData m_JobTaskWorkData;
@@ -56,10 +57,13 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForAddAsync wrapper = new VDWrapperForAddAsync(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Add);
+#endif
             return this;
         }
-        
+
         public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -69,22 +73,28 @@ namespace Anvil.Unity.DOTS.Entities
             RequireDataAsResultsDestination(resultsDestination);
             return this;
         }
-        
+
         public JobTaskWorkConfig RequireDataForIterateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForIterateAsync wrapper = new VDWrapperForIterateAsync(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Iterate);
+#endif
             return this;
         }
-        
+
         public JobTaskWorkConfig RequireDataForUpdateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForUpdateAsync wrapper = new VDWrapperForUpdateAsync(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Update);
+#endif
             return this;
         }
 
@@ -93,12 +103,22 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(data);
-            AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.ResultsDestination);
+#endif
             return this;
         }
-        
-        public JobHandle PrepareAndSchedule(JobHandle dependsOn)
+
+        private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_ScheduleInfo == null)
+            {
+                throw new InvalidOperationException($"No {nameof(IScheduleInfo)} was present. Please ensure that {nameof(ScheduleOn)} was called when configuring.");
+            }
+#endif
+
             int len = DataWrappers.Count;
             if (len == 0)
             {
@@ -112,6 +132,7 @@ namespace Anvil.Unity.DOTS.Entities
                 IDataWrapper wrapper = DataWrappers[i];
                 dataDependencies[i] = wrapper.Acquire();
             }
+
             dataDependencies[len] = dependsOn;
 
             JobHandle delegateDependency = m_JobDataDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobTaskWorkData, m_ScheduleInfo);
@@ -123,5 +144,5 @@ namespace Anvil.Unity.DOTS.Entities
 
             return delegateDependency;
         }
-    }   
+    }
 }

@@ -1,23 +1,46 @@
 using Anvil.CSharp.Core;
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
 {
     public class VirtualDataLookup : AbstractAnvilBase
     {
-        private readonly Dictionary<Type, IVirtualData> m_Data = new Dictionary<Type, IVirtualData>();
+        private class VirtualDataBulkSchedulerForConsolidate : AbstractBulkScheduler<AbstractVirtualData>
+        {
+            public VirtualDataBulkSchedulerForConsolidate(List<AbstractVirtualData> list) : base(list)
+            {
+            }
+
+            protected override JobHandle ScheduleItem(AbstractVirtualData item, JobHandle dependsOn)
+            {
+                return item.ConsolidateForFrame(dependsOn);
+            }
+        }
+        
+        private readonly Dictionary<Type, AbstractVirtualData> m_DataLookup;
+        private readonly List<AbstractVirtualData> m_Data;
+        private readonly VirtualDataBulkSchedulerForConsolidate m_VirtualDataBulkScheduler;
+
+        public VirtualDataLookup()
+        {
+            m_DataLookup = new Dictionary<Type, AbstractVirtualData>();
+            m_Data = new List<AbstractVirtualData>();
+            m_VirtualDataBulkScheduler = new VirtualDataBulkSchedulerForConsolidate(m_Data);
+        }
 
         protected override void DisposeSelf()
         {
-            foreach (IVirtualData data in m_Data.Values)
+            foreach (AbstractVirtualData data in m_Data)
             {
                 data.Dispose();
             }
-
+            
+            m_DataLookup.Clear();
             m_Data.Clear();
+            
             base.DisposeSelf();
         }
 
@@ -25,33 +48,20 @@ namespace Anvil.Unity.DOTS.Data
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            m_Data.Add(typeof(VirtualData<TKey, TInstance>), data);
+            m_DataLookup.Add(typeof(VirtualData<TKey, TInstance>), data);
+            m_Data.Add(data);
         }
 
         public VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            return (VirtualData<TKey, TInstance>)m_Data[typeof(VirtualData<TKey, TInstance>)];
+            return (VirtualData<TKey, TInstance>)m_DataLookup[typeof(VirtualData<TKey, TInstance>)];
         }
 
         public JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            int len = m_Data.Count;
-            if (len == 0)
-            {
-                return dependsOn;
-            }
-            
-            NativeArray<JobHandle> consolidateDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
-            int index = 0;
-            foreach (IVirtualData data in m_Data.Values)
-            {
-                consolidateDependencies[index] = data.ConsolidateForFrame(dependsOn);
-                index++;
-            }
-            
-            return JobHandle.CombineDependencies(consolidateDependencies);
+            return m_VirtualDataBulkScheduler.BulkSchedule(dependsOn);
         }
     }
 }
