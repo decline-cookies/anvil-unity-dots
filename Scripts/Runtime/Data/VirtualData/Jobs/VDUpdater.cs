@@ -71,7 +71,11 @@ namespace Anvil.Unity.DOTS.Data
         public void InitForThread(int nativeThreadIndex)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            Debug.Assert(m_State == UpdaterState.Uninitialized);
+            if (m_State != UpdaterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
+            }
+
             m_State = UpdaterState.Ready;
 #endif
 
@@ -88,7 +92,17 @@ namespace Anvil.Unity.DOTS.Data
             get
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                Debug.Assert(m_State == UpdaterState.Ready);
+                // ReSharper disable once ConvertIfStatementToSwitchStatement
+                if (m_State == UpdaterState.Uninitialized)
+                {
+                    throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to get an element.");
+                }
+
+                if (m_State == UpdaterState.Modifying)
+                {
+                    throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(VirtualDataExtensions.ContinueOn)} or {nameof(VirtualDataExtensions.Resolve)} gets called before the next iteration.");
+                }
+
                 m_State = UpdaterState.Modifying;
 #endif
 
@@ -109,7 +123,17 @@ namespace Anvil.Unity.DOTS.Data
         public void Continue(ref TInstance instance)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            Debug.Assert(m_State == UpdaterState.Modifying);
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == UpdaterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to continue an element.");
+            }
+
+            if (m_State == UpdaterState.Ready)
+            {
+                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(VDUpdater<TKey, TInstance>)}. Please ensure that the indexer was called first.");
+            }
+
             m_State = UpdaterState.Ready;
 #endif
             m_ContinueLaneWriter.Write(ref instance);
@@ -118,6 +142,17 @@ namespace Anvil.Unity.DOTS.Data
         internal void Resolve()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == UpdaterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to resolve an element.");
+            }
+
+            if (m_State == UpdaterState.Ready)
+            {
+                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(VDUpdater<TKey, TInstance>)}. Please ensure that the indexer was called first.");
+            }
+
             Debug.Assert(m_State == UpdaterState.Modifying);
             m_State = UpdaterState.Ready;
 #endif

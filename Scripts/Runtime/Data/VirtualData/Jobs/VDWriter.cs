@@ -1,6 +1,6 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Collections;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -54,7 +54,11 @@ namespace Anvil.Unity.DOTS.Data
         public void InitForThread(int nativeThreadIndex)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            Debug.Assert(m_State == WriterState.Uninitialized);
+            if (m_State != WriterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
+            }
+
             m_State = WriterState.Ready;
 #endif
 
@@ -77,7 +81,11 @@ namespace Anvil.Unity.DOTS.Data
         public void Add(ref TInstance instance)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            Debug.Assert(m_State == WriterState.Ready);
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == WriterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
+            }
 #endif
             m_InstanceLaneWriter.Write(ref instance);
         }
