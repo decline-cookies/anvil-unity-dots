@@ -38,8 +38,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         protected VirtualData<TKey, TInstance> GetVirtualData<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             //TODO: Exceptions
             IDataWrapper wrapper = m_WrappedDataLookup[typeof(VirtualData<TKey, TInstance>)];
@@ -47,8 +47,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public VDReader<TInstance> GetVDReader<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>(); 
@@ -57,8 +57,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public VDResultsDestination<TResult> GetVDResultsDestination<TKey, TResult>()
-            where TKey : struct, IEquatable<TKey>
-            where TResult : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TResult : unmanaged, IKeyedData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TResult> virtualData = GetVirtualData<TKey, TResult>(); 
@@ -67,8 +67,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public virtual VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
@@ -77,8 +77,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public virtual VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             //TODO: Exceptions
             VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>(); 

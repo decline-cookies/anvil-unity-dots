@@ -68,8 +68,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params IVirtualData[] sources)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
             m_InstanceData.AddData(virtualData);
@@ -77,8 +77,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             return m_InstanceData.GetData<TKey, TInstance>();
         }

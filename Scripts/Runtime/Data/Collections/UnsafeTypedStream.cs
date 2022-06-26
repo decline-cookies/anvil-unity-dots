@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="T">The type of elements to store in the collection.</typeparam>
     [BurstCompatible]
     public unsafe struct UnsafeTypedStream<T> : INativeDisposable
-        where T : struct
+        where T : unmanaged
     {
         /// <summary>
         /// Information about the <see cref="UnsafeTypedStream{T}" /> itself.

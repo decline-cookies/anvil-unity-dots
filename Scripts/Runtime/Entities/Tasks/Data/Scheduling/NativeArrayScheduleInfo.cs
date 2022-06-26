@@ -5,7 +5,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class NativeArrayScheduleInfo<T> : IScheduleInfo
-        where T : struct
+        where T : unmanaged
     {
         public int BatchSize
         {

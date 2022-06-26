@@ -37,23 +37,23 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public JobTaskWorkConfig ScheduleOn<TKey, TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy);
             return this;
         }
 
         public JobTaskWorkConfig ScheduleOn<T>(NativeArray<T> array, BatchStrategy batchStrategy)
-            where T : struct
+            where T : unmanaged
         {
             m_ScheduleInfo = new NativeArrayScheduleInfo<T>(array, batchStrategy);
             return this;
         }
 
         public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForAddAsync wrapper = new VDWrapperForAddAsync(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
@@ -61,9 +61,9 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
-            where TResult : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
+            where TResult : unmanaged, IKeyedData<TKey>
         {
             RequireDataForAddAsync(data);
             RequireDataAsResultsDestination(resultsDestination);
@@ -71,8 +71,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public JobTaskWorkConfig RequireDataForIterateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForIterateAsync wrapper = new VDWrapperForIterateAsync(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
@@ -80,8 +80,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public JobTaskWorkConfig RequireDataForUpdateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForUpdateAsync wrapper = new VDWrapperForUpdateAsync(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
@@ -89,8 +89,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public JobTaskWorkConfig RequireDataAsResultsDestination<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);

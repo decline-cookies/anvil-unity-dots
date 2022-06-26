@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TInstance">They type of data to read</typeparam>
     [BurstCompatible]
     public readonly struct VDReader<TInstance>
-        where TInstance : struct
+        where TInstance : unmanaged
     {
         [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
 

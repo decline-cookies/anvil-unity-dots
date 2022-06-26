@@ -32,8 +32,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public MainThreadTaskWorkConfig RequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
@@ -41,9 +41,9 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public MainThreadTaskWorkConfig RequireDataForAdd<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
-            where TResult : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
+            where TResult : unmanaged, IKeyedData<TKey>
         {
             RequireDataForAdd(data);
             RequireDataAsResultsDestination(resultsDestination);
@@ -51,8 +51,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public MainThreadTaskWorkConfig RequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
@@ -60,8 +60,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         public MainThreadTaskWorkConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);
@@ -69,8 +69,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public MainThreadTaskWorkConfig RequireDataAsResultsDestination<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(data);
             AddDataWrapper(typeof(VirtualData<TKey, TInstance>), wrapper);

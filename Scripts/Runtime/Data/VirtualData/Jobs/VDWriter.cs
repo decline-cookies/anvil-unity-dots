@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TInstance">The type of instance to add</typeparam>
     [BurstCompatible]
     public struct VDWriter<TInstance>
-        where TInstance : struct
+        where TInstance : unmanaged
     {
         private const int UNSET_LANE_INDEX = -1;
 

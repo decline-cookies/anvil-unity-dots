@@ -18,8 +18,8 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TInstance">The type of instance</typeparam>
     [BurstCompatible]
     public struct VDUpdater<TKey, TInstance>
-        where TKey : struct, IEquatable<TKey>
-        where TInstance : struct, IKeyedData<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
+        where TInstance : unmanaged, IKeyedData<TKey>
     {
         private const int UNSET_LANE_INDEX = -1;
 

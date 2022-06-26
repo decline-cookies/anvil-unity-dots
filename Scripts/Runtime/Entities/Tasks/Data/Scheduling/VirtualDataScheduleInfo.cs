@@ -4,8 +4,8 @@ using System;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class VirtualDataScheduleInfo<TKey, TInstance> : IScheduleInfo
-        where TKey : struct, IEquatable<TKey>
-        where TInstance : struct, IKeyedData<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
+        where TInstance : unmanaged, IKeyedData<TKey>
     {
         public int BatchSize
         {
