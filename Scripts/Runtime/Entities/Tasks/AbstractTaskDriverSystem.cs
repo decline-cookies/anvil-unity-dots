@@ -82,6 +82,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_UpdateJobData.Add(config);
             return config;
         }
+        
+        //TODO: #39 - Some way to remove the update Job
 
         protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
             where TKey : unmanaged, IEquatable<TKey>
@@ -112,7 +114,7 @@ namespace Anvil.Unity.DOTS.Entities
             //Consolidate our instance data to operate on it
             JobHandle consolidateInstancesHandle = m_InstanceData.ConsolidateForFrame(driversPopulateHandle);
             
-            //TODO: Allow for cancels to occur
+            //TODO: #38 - Allow for cancels to occur
             
             //Allow the generic work to happen in the derived class
             JobHandle updateInstancesHandle = m_JobTaskWorkConfigBulkScheduler.BulkSchedule(consolidateInstancesHandle);
@@ -120,7 +122,7 @@ namespace Anvil.Unity.DOTS.Entities
             //Have drivers consolidate their result data
             JobHandle driversConsolidateHandle = m_ConsolidateBulkScheduler.BulkSchedule(updateInstancesHandle);
             
-            //TODO: Allow for cancels on the drivers to occur
+            //TODO: #38 - Allow for cancels on the drivers to occur
             
             //Have drivers to do their own generic work
             JobHandle driversUpdateHandle = m_UpdateBulkScheduler.BulkSchedule(driversConsolidateHandle);

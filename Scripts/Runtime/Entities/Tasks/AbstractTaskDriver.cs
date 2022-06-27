@@ -145,9 +145,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_ActiveMainThreadTaskWorkConfig = null;
         }
 
-        //TODO: Cancel plus cancel children
-        //TODO: Some way to remove the populate function
-        //TODO: Some way to remove the update Job
+        //TODO: #38 - Cancel plus cancel subtaskdrivers - public API
+        //TODO: #39 - Some way to remove the populate job
+        //TODO: #39 - Some way to remove the update Job
 
         /// <summary>
         /// Configures a job to be scheduled with the required data as specified by the <see cref="JobTaskWorkConfig"/>
