@@ -3,6 +3,8 @@ using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 using Anvil.CSharp.Logging;
+using Anvil.Unity.DOTS.Jobs;
+using System;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -25,20 +27,18 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        /// <inheritdoc/>
+        /// <inheritdoc cref="Dependency" />
         protected new JobHandle Dependency
         {
-            get
-            {
-                return base.Dependency;
-            }
+            get => base.Dependency;
             // Detects situations where the existing dependency is overwritten rather than chained or combined.
             set
             {
-                // Note: The arguments to JobHandle.CheckFenceIsDependencyOrDidSyncFence seem backward.
-                // This checks whether the incoming value depends on base.Dependency
-                // Debug.Assert(JobHandle.CheckFenceIsDependencyOrDidSyncFence(base.Dependency, value), "Dependency Chain Broken: The incoming dependency does not contain the existing dependency in the chain.");
-                Debug.Assert(JobHandle.CheckFenceIsDependencyOrDidSyncFence(base.Dependency, value));
+                if (!value.DependsOn(base.Dependency))
+                {
+                    throw new InvalidOperationException($"Dependency Chain Broken: Dependency Chain Broken: The incoming dependency does not contain the existing dependency in the chain.");
+                }
+
                 base.Dependency = value;
             }
         }

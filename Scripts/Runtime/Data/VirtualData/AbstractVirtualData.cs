@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Data
             get;
         }
 
-        public Type Type
+        internal Type Type
         {
             get;
         }
@@ -41,10 +41,10 @@ namespace Anvil.Unity.DOTS.Data
             m_Sources.Clear();
 
             AccessController.Dispose();
-            
+
             base.DisposeSelf();
         }
-        
+
         //*************************************************************************************************************
         // RELATIONSHIPS
         //*************************************************************************************************************
@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Data
                 sourceData.RemoveResultDestination(this);
             }
         }
-        
+
         //*************************************************************************************************************
         // ACCESS
         //*************************************************************************************************************
@@ -84,16 +84,16 @@ namespace Anvil.Unity.DOTS.Data
         {
             JobHandle exclusiveWrite = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
-            if (m_ResultDestinations.Count == 0)
+            int len = m_ResultDestinations.Count;
+
+            if (len == 0)
             {
                 return exclusiveWrite;
             }
 
-            //Get write access to all possible channels that we can write a response to.
+            //Get write access to all possible channels that we can write a result to.
             //+1 to include the exclusive write
-            int len = m_ResultDestinations.Count + 1;
-            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
-            len--;
+            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(len + 1, Allocator.Temp);
             for (int i = 0; i < len; ++i)
             {
                 AbstractVirtualData destinationData = m_ResultDestinations[i];
@@ -114,6 +114,7 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
+            //Release all the possible channels we could have written a result to.
             foreach (AbstractVirtualData destinationData in m_ResultDestinations)
             {
                 destinationData.AccessController.ReleaseAsync(releaseAccessDependency);
@@ -139,7 +140,7 @@ namespace Anvil.Unity.DOTS.Data
                 destinationData.AccessController.Release();
             }
         }
-        
+
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************

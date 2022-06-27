@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo
         {
-            get => throw new NotSupportedException();
+            get => throw new NotSupportedException($"This scheduling info is based on a {nameof(NativeArray<T>)}, there is no {nameof(DeferredNativeArrayScheduleInfo)} to get.");
         }
 
         private readonly NativeArray<T> m_Array;

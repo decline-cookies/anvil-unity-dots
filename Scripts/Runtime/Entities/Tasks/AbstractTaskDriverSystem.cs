@@ -5,6 +5,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
+    /// </summary>
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
@@ -37,13 +40,26 @@ namespace Anvil.Unity.DOTS.Entities
         protected sealed override void OnCreate()
         {
             InitSystemAfterCreate();
-            InitUpdateJobs();
+            InitUpdateJobConfiguration();
         }
         
+        /// <summary>
+        /// Hook to allow for creating new <see cref="VirtualData{TKey,TInstance}"/>
+        /// via <see cref="CreateData{TKey,TInstance}"/>
+        /// </summary>
         protected abstract void InitData();
-
+    
+        /// <summary>
+        /// Hook to allow for additional System setup.
+        /// This occurs once the System has been created via <see cref="OnCreate"/>
+        /// </summary>
         protected abstract void InitSystemAfterCreate();
-        protected abstract void InitUpdateJobs();
+        
+        /// <summary>
+        /// Hook to allow for configuring jobs to execute during the system's update phase via
+        /// <see cref="ConfigureUpdateJob"/>
+        /// </summary>
+        protected abstract void InitUpdateJobConfiguration();
         
         protected override void OnDestroy()
         {
@@ -60,7 +76,7 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        protected JobTaskWorkConfig CreateUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
             JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, this);
             m_UpdateJobData.Add(config);
@@ -83,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities
             return m_InstanceData.GetData<TKey, TInstance>();
         }
 
-        internal void AddTaskDriver(AbstractTaskDriver taskDriver)
+        internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             m_TaskDrivers.Add(taskDriver);
         }

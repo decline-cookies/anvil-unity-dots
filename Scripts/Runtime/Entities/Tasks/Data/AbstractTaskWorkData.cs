@@ -6,23 +6,38 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// Job information object to aid with scheduling and populating a job instance.
+    /// Data acquired from this object is guaranteed to have the proper access.
+    /// </summary>
     public abstract class AbstractTaskWorkData
     {
         private readonly Dictionary<Type, IDataWrapper> m_WrappedDataLookup;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private readonly Dictionary<Type, AbstractTaskWorkConfig.DataUsage> m_DataUsageByType;
 #endif
-
+        
+        /// <summary>
+        /// The <see cref="AbstractTaskDriverSystem"/> this job is being scheduled during.
+        /// Calls to <see cref="SystemBase.GetComponentDataFromEntity{T}"/> and similar will attribute dependencies
+        /// correctly.
+        /// </summary>
         public AbstractTaskDriverSystem System
         {
             get;
         }
-
+        
+        /// <summary>
+        /// The <see cref="World"/> this job is being scheduled under.
+        /// </summary>
         public World World
         {
             get;
         }
-
+        
+        /// <summary>
+        /// Helper function for accessing the <see cref="TimeData"/> normally found on <see cref="SystemBase.Time"/>
+        /// </summary>
         public ref readonly TimeData Time
         {
             get => ref World.Time;
@@ -63,7 +78,13 @@ namespace Anvil.Unity.DOTS.Entities
             IDataWrapper wrapper = m_WrappedDataLookup[type];
             return (VirtualData<TKey, TInstance>)wrapper.Data;
         }
-
+        
+        /// <summary>
+        /// Returns a <see cref="VDReader{TInstance}"/> for use in a job.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <typeparam name="TInstance">The type of the data</typeparam>
+        /// <returns>The <see cref="VDReader{TInstance}"/></returns>
         public VDReader<TInstance> GetVDReader<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -77,7 +98,13 @@ namespace Anvil.Unity.DOTS.Entities
             VDReader<TInstance> reader = virtualData.CreateVDReader();
             return reader;
         }
-
+        
+        /// <summary>
+        /// Returns a <see cref="VDResultsDestination{TResult}"/> for use in a job.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <typeparam name="TResult">The type of the data</typeparam>
+        /// <returns>The <see cref="VDResultsDestination{TResult}"/></returns>
         public VDResultsDestination<TResult> GetVDResultsDestination<TKey, TResult>()
             where TKey : unmanaged, IEquatable<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
@@ -91,7 +118,13 @@ namespace Anvil.Unity.DOTS.Entities
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
             return resultsDestination;
         }
-
+        
+        /// <summary>
+        /// Returns a <see cref="VDUpdater{TKey, TInstance}"/> for use in a job.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <typeparam name="TInstance">The type of the data</typeparam>
+        /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
         public virtual VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -105,7 +138,13 @@ namespace Anvil.Unity.DOTS.Entities
             VDUpdater<TKey, TInstance> updater = virtualData.CreateVDUpdater();
             return updater;
         }
-
+        
+        /// <summary>
+        /// Returns a <see cref="VDWriter{TInstance}"/> for use in a job.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <typeparam name="TInstance">The type of the data</typeparam>
+        /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
         public virtual VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>

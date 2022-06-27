@@ -1,3 +1,4 @@
+using Anvil.CSharp.Command;
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
@@ -9,9 +10,24 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// Task Drivers are the Data Oriented Design method of <see cref="AbstractCommand"/> in the Object Oriented Design
+    /// Whereas a Command instance would be created to take an element of data through some specific logic steps
+    /// to then output a result, a TaskDriver exists as a definition or route that all elements of data pass through to
+    /// accomplish the same logical steps.
+    /// Custom "Populate" jobs allow for getting elements of data into the TaskDriver.
+    /// Custom "Update" jobs allow for stitching together sub task drivers input/output data.
+    /// </summary>
+    /// <typeparam name="TTaskDriverSystem">
+    /// The <see cref="AbstractTaskDriverSystem"/> this TaskDriver belongs to. This ensures that the TaskDriver is
+    /// executed during the System's update phase and that job dependencies are written to the correct system.
+    /// </typeparam>
     public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver
         where TTaskDriverSystem : AbstractTaskDriverSystem
     {
+        /// <summary>
+        /// The <see cref="AbstractTaskDriverSystem"/> this TaskDriver belongs to.
+        /// </summary>
         public new TTaskDriverSystem System
         {
             get;
@@ -21,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             System = World.GetOrCreateSystem<TTaskDriverSystem>();
             base.System = System;
-            System.AddTaskDriver(this);
+            System.RegisterTaskDriver(this);
 
             ConstructData();
             ConstructChildTaskDrivers();
@@ -34,55 +50,15 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void ConstructChildTaskDrivers()
         {
-            InitChildTaskDrivers();
-        }
-
-        protected override void DisposeSelf()
-        {
-            base.DisposeSelf();
+            InitSubTaskDriverRegistration();
         }
     }
-
+    
+    /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}"/>
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
-        public class TaskDriverPopulateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
-        {
-            public TaskDriverPopulateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
-            {
-                return item.Populate(dependsOn);
-            }
-        }
-
-        public class TaskDriverUpdateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
-        {
-            public TaskDriverUpdateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
-            {
-                return item.Update(dependsOn);
-            }
-        }
-
-        public class TaskDriverConsolidateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
-        {
-            public TaskDriverConsolidateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
-            {
-                return item.Consolidate(dependsOn);
-            }
-        }
-
         private readonly VirtualDataLookup m_InstanceData;
-        private readonly List<AbstractTaskDriver> m_ChildTaskDrivers;
+        private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly List<JobTaskWorkConfig> m_PopulateJobData;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
 
@@ -90,12 +66,16 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_UpdateBulkScheduler;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
-
+        
+        /// <summary>
+        /// The <see cref="World"/> this TaskDriver belongs to.
+        /// </summary>
         public World World
         {
             get;
         }
-
+        
+        /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}.System"/>
         public AbstractTaskDriverSystem System
         {
             get;
@@ -106,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             World = world;
             m_InstanceData = new VirtualDataLookup();
-            m_ChildTaskDrivers = new List<AbstractTaskDriver>();
+            m_SubTaskDrivers = new List<AbstractTaskDriver>();
             m_PopulateJobData = new List<JobTaskWorkConfig>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
 
@@ -118,54 +98,80 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_InstanceData.Dispose();
 
-            foreach (AbstractTaskDriver childTaskDriver in m_ChildTaskDrivers)
+            foreach (AbstractTaskDriver childTaskDriver in m_SubTaskDrivers)
             {
                 childTaskDriver.Dispose();
             }
 
             ReleaseMainThreadTaskWork();
 
-            m_ChildTaskDrivers.Clear();
+            m_SubTaskDrivers.Clear();
             m_PopulateJobData.Clear();
             m_UpdateJobData.Clear();
 
             base.DisposeSelf();
         }
+        
+        /// <summary>
+        /// Hook to allow for creating new <see cref="VirtualData{TKey,TInstance}"/>
+        /// via <see cref="CreateData{TKey,TInstance}"/>
+        /// </summary>
+        protected abstract void InitData();
+        /// <summary>
+        /// Hook to allow for registering new <see cref="AbstractTaskDriver"/> via
+        /// <see cref="RegisterSubTaskDriver"/>
+        /// </summary>
+        protected abstract void InitSubTaskDriverRegistration();
+        
+        /// <summary>
+        /// Configures this TaskDriver for performing work on the main thread immediately.
+        /// <see cref="ReleaseMainThreadTaskWork"/> when finished. 
+        /// </summary>
+        /// <returns>A <see cref="MainThreadTaskWorkConfig"/> to chain on further customization.</returns>
+        public MainThreadTaskWorkConfig ConfigureMainThreadTaskWork()
+        {
+            DebugEnsureNoMainThreadWorkCurrentlyActive();
+            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
+            return m_ActiveMainThreadTaskWorkConfig;
+        }
+        
+        /// <summary>
+        /// Releases this TaskDriver from performing work on the main thread.
+        /// <see cref="ConfigureMainThreadTaskWork"/>
+        /// </summary>
+        public void ReleaseMainThreadTaskWork()
+        {
+            m_ActiveMainThreadTaskWorkConfig?.Release();
+            m_ActiveMainThreadTaskWorkConfig = null;
+        }
 
         //TODO: Cancel plus cancel children
-        //TODO: Need to actually add the children
-
-
-        protected abstract void InitData();
-        protected abstract void InitChildTaskDrivers();
-
-        public VirtualData<TKey, TInstance> GetInstanceData<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
-        {
-            return m_InstanceData.GetData<TKey, TInstance>();
-        }
-
-        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
-        {
-            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
-            m_InstanceData.AddData(virtualData);
-            return virtualData;
-        }
-
-
         //TODO: Some way to remove the populate function
-        public JobTaskWorkConfig CreatePopulateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
+        //TODO: Some way to remove the update Job
+
+        /// <summary>
+        /// Configures a job to be scheduled with the required data as specified by the <see cref="JobTaskWorkConfig"/>
+        /// When scheduling, it will ensure that the data has the correct access.
+        /// This job type is to be used to populate the TaskDriver so new elements can be processed.
+        /// </summary>
+        /// <param name="jobDataDelegate">The scheduling delegate to call</param>
+        /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
+        public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
             JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, System);
             m_PopulateJobData.Add(config);
             return config;
         }
 
-        //TODO: Some way to remove the update Job
-        protected JobTaskWorkConfig CreateUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
+        /// <summary>
+        /// Configures a job to be scheduled with the required data as specified by the <see cref="JobTaskWorkConfig"/>
+        /// When scheduling, it will ensure that the data has the correct access.
+        /// This job type is to be used in the update phase of the TaskDriver so that results from a sub task driver
+        /// can be stitched into the input for another.
+        /// </summary>
+        /// <param name="jobDataDelegate">The scheduling delegate to call</param>
+        /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
         {
             JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, System);
             m_UpdateJobData.Add(config);
@@ -190,19 +196,28 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
             return consolidateHandle;
         }
-
-        public MainThreadTaskWorkConfig ConfigureMainThreadTaskWork()
+        
+        protected void RegisterSubTaskDriver(AbstractTaskDriver subTaskDriver)
         {
-            DebugEnsureNoMainThreadWorkCurrentlyActive();
-            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
-            return m_ActiveMainThreadTaskWorkConfig;
+            m_SubTaskDrivers.Add(subTaskDriver);
+        }
+        
+        protected VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
+        {
+            return m_InstanceData.GetData<TKey, TInstance>();
         }
 
-        public void ReleaseMainThreadTaskWork()
+        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
-            m_ActiveMainThreadTaskWorkConfig?.Release();
-            m_ActiveMainThreadTaskWorkConfig = null;
+            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
+            m_InstanceData.AddData(virtualData);
+            return virtualData;
         }
+        
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void DebugEnsureNoMainThreadWorkCurrentlyActive()
@@ -210,6 +225,46 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_ActiveMainThreadTaskWorkConfig != null)
             {
                 throw new InvalidOperationException($"Main Thread Task Work currently active, wait until after {nameof(ReleaseMainThreadTaskWork)} is called.");
+            }
+        }
+        
+        //*************************************************************************************************************
+        // BULK SCHEDULERS
+        //*************************************************************************************************************
+        
+        internal class TaskDriverPopulateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
+        {
+            public TaskDriverPopulateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
+            {
+            }
+
+            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
+            {
+                return item.Populate(dependsOn);
+            }
+        }
+
+        internal class TaskDriverUpdateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
+        {
+            public TaskDriverUpdateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
+            {
+            }
+
+            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
+            {
+                return item.Update(dependsOn);
+            }
+        }
+
+        internal class TaskDriverConsolidateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
+        {
+            public TaskDriverConsolidateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
+            {
+            }
+
+            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
+            {
+                return item.Consolidate(dependsOn);
             }
         }
     }

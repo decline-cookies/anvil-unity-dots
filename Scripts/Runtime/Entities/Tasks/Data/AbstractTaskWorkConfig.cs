@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// Configuration object to schedule a job that will be executed during an
+    /// <see cref="AbstractTaskDriver{TTaskDriverSystem}"/> or <see cref="AbstractTaskDriverSystem"/>'s update phase.
+    /// </summary>
     public abstract class AbstractTaskWorkConfig
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS

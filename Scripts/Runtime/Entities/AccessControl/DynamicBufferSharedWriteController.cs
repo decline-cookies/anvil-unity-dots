@@ -135,8 +135,14 @@ namespace Anvil.Unity.DOTS.Entities
 
             internal ComponentSystemBase GetSystemAtExecutionOrder(int executionOrder)
             {
-                // Debug.Assert(executionOrder >= 0 && executionOrder < m_ExecutedOrderedSystems.Count, $"Invalid execution order of {executionOrder}.{nameof(m_ExecutedOrderedSystems)} Count is {m_ExecutedOrderedSystems.Count}");
-                Debug.Assert(executionOrder >= 0 && executionOrder < m_ExecutedOrderedSystems.Count);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                if (executionOrder <= 0
+                 || executionOrder > m_ExecutedOrderedSystems.Count)
+                {
+                    throw new InvalidOperationException($"Invalid execution order of {executionOrder}.{nameof(m_ExecutedOrderedSystems)} Count is {m_ExecutedOrderedSystems.Count}");
+                }
+#endif
+
                 return m_ExecutedOrderedSystems[executionOrder];
             }
 
@@ -227,8 +233,12 @@ namespace Anvil.Unity.DOTS.Entities
             private bool DidSystemExecuteSinceLastCheck(ComponentSystemBase system)
             {
                 uint cachedSystemVersion = m_OrderedSystemsVersions[system];
-                // Debug.Assert(cachedSystemVersion <= system.LastSystemVersion, $"Investigate. Cached System Version {cachedSystemVersion} is larger than the last recorded version {system.LastSystemVersion}");
-                Debug.Assert(cachedSystemVersion <= system.LastSystemVersion);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                if (cachedSystemVersion > system.LastSystemVersion)
+                {
+                    throw new InvalidOperationException($"Investigate. Cached System Version {cachedSystemVersion} is larger than the last recorded version {system.LastSystemVersion}");
+                }
+#endif
                 return system.LastSystemVersion > cachedSystemVersion;
             }
         }
@@ -245,7 +255,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly DynamicBufferSharedWriteDataSystem.LookupByComponentType m_LookupByComponentType;
 
         private JobHandle m_SharedWriteDependency;
-        private int m_ExecutionOrderOfLastSharedWriteDepedency;
+        private int m_ExecutionOrderOfLastSharedWriteDependency;
 
         /// <summary>
         /// The <see cref="ComponentType"/> of <see cref="IBufferElementData"/> this instance is associated with.
@@ -269,8 +279,12 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void DisposeSelf()
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
-            // Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
-            Debug.Assert(m_SharedWriteDependency.IsCompleted);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (!m_SharedWriteDependency.IsCompleted)
+            {
+                throw new InvalidOperationException("The shared write access dependency is not completed");
+            }
+#endif
 
             //Remove ourselves from the chain
             m_LookupByComponentType.Remove<T>();
@@ -282,24 +296,36 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.RegisterSystemForSharedWrite"/>
         public void RegisterSystemForSharedWrite(ComponentSystemBase system)
         {
-            // Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
-            Debug.Assert(system.World == m_World);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (system.World != m_World)
+            {
+                throw new InvalidOperationException($"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
+            }
+#endif
             m_SharedWriteSystems.Add(system);
         }
 
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.UnregisterSystemForSharedWrite"/>
         public void UnregisterSystemForSharedWrite(ComponentSystemBase system)
         {
-            // Debug.Assert(system.World == m_World, $"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
-            Debug.Assert(system.World == m_World);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (system.World != m_World)
+            {
+                throw new InvalidOperationException($"System {system} is not part of the same world as this {nameof(DynamicBufferSharedWriteController<T>)}");
+            }
+#endif
             m_SharedWriteSystems.Remove(system);
         }
 
         /// <inheritdoc cref="IDynamicBufferSharedWriteController.GetSharedWriteDependency"/>
         public JobHandle GetSharedWriteDependency(SystemBase callingSystem, JobHandle callingSystemDependency)
         {
-            // Debug.Assert(m_SharedWriteSystems.Contains(callingSystem), $"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
-            Debug.Assert(m_SharedWriteSystems.Contains(callingSystem));
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (!m_SharedWriteSystems.Contains(callingSystem))
+            {
+                throw new InvalidOperationException($"Trying to get the shared write handle but {callingSystem} hasn't been registered. Did you call {nameof(RegisterSystemForSharedWrite)}?");
+            }
+#endif
 
             //Rebuild our local cache if we need to. Will trigger a world cache rebuild if necessary too.
             m_LocalCache.RebuildIfNeeded();
@@ -314,7 +340,7 @@ namespace Anvil.Unity.DOTS.Entities
             if (callingSystemOrder == 0)
             {
                 m_SharedWriteDependency = callingSystemDependency;
-                m_ExecutionOrderOfLastSharedWriteDepedency = callingSystemOrder;
+                m_ExecutionOrderOfLastSharedWriteDependency = callingSystemOrder;
             }
             //Otherwise we want to check the system(s) that executed before us to see what kind of lock they had 
             //on our IBufferElementData
@@ -322,7 +348,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 //We want to loop backwards to see if an exclusive write or shared read was inserted
                 //in the case where a shared write system DOESN'T call this GetSharedWriteDependency
-                for (int i = callingSystemOrder - 1; i > m_ExecutionOrderOfLastSharedWriteDepedency; --i)
+                for (int i = callingSystemOrder - 1; i > m_ExecutionOrderOfLastSharedWriteDependency; --i)
                 {
                     //If that system was a shared writable system, we don't want to move our dependency up so that we 
                     //can also share the write. If not, we move it up.
@@ -332,7 +358,7 @@ namespace Anvil.Unity.DOTS.Entities
                     }
 
                     m_SharedWriteDependency = callingSystemDependency;
-                    m_ExecutionOrderOfLastSharedWriteDepedency = callingSystemOrder;
+                    m_ExecutionOrderOfLastSharedWriteDependency = callingSystemOrder;
                     break;
                 }
             }

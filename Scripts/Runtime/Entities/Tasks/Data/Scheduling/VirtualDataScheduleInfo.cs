@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public int Length
         {
-            get => throw new NotSupportedException();
+            get => throw new NotSupportedException($"This scheduling info is based on {nameof(VirtualData<TKey, TInstance>)} which uses {nameof(DeferredNativeArray<TInstance>)}. The {nameof(Length)} is not known at schedule time as it will be filled in by a later job.");
         }
 
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo
