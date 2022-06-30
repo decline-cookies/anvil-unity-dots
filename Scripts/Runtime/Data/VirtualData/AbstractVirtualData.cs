@@ -16,15 +16,8 @@ namespace Anvil.Unity.DOTS.Data
         private readonly List<AbstractVirtualData> m_Sources;
         private readonly List<AbstractVirtualData> m_ResultDestinations;
 
-        internal AccessController AccessController
-        {
-            get;
-        }
-
-        internal Type Type
-        {
-            get;
-        }
+        internal AccessController AccessController { get; }
+        internal Type Type { get; }
 
         protected AbstractVirtualData()
         {
@@ -44,7 +37,7 @@ namespace Anvil.Unity.DOTS.Data
 
             base.DisposeSelf();
         }
-
+        
         //*************************************************************************************************************
         // RELATIONSHIPS
         //*************************************************************************************************************

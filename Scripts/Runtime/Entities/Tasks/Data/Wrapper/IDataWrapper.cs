@@ -16,7 +16,10 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
         
-        JobHandle Acquire();
-        void Release(JobHandle releaseAccessDependency);
+        JobHandle AcquireAsync();
+        void ReleaseAsync(JobHandle releaseAccessDependency);
+
+        void Acquire();
+        void Release();
     }
 }

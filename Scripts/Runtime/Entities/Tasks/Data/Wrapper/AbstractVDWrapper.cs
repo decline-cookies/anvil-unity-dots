@@ -22,7 +22,9 @@ namespace Anvil.Unity.DOTS.Entities
             Type = data.GetType();
         }
 
-        public abstract JobHandle Acquire();
-        public abstract void Release(JobHandle releaseAccessDependency);
+        public abstract JobHandle AcquireAsync();
+        public abstract void ReleaseAsync(JobHandle releaseAccessDependency);
+        public abstract void Acquire();
+        public abstract void Release();
     }
 }

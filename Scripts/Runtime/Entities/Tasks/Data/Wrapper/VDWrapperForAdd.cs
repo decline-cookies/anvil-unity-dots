@@ -9,14 +9,23 @@ namespace Anvil.Unity.DOTS.Entities
         public VDWrapperForAdd(AbstractVirtualData data) : base(data)
         {
         }
-
-        public override JobHandle Acquire()
+        
+        public override JobHandle AcquireAsync()
         {
-            Data.AccessController.Acquire(AccessType.SharedWrite);
-            return default;
+            return Data.AccessController.AcquireAsync(AccessType.SharedWrite);
         }
 
-        public override void Release(JobHandle releaseAccessDependency)
+        public override void ReleaseAsync(JobHandle releaseAccessDependency)
+        {
+            Data.AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
+        public override void Acquire()
+        {
+            Data.AccessController.Acquire(AccessType.SharedWrite);
+        }
+
+        public override void Release()
         {
             Data.AccessController.Release();
         }

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly VirtualDataLookup m_InstanceData;
+        private readonly VirtualDataLookup m_InstanceDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
 
         private readonly AbstractTaskDriver.TaskDriverPopulateBulkScheduler m_PopulateBulkScheduler;
@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractTaskDriverSystem()
         {
-            m_InstanceData = new VirtualDataLookup();
+            m_InstanceDataLookup = new VirtualDataLookup();
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
 
@@ -39,6 +39,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
         protected sealed override void OnCreate()
         {
+            base.OnCreate();
             InitSystemAfterCreate();
             InitUpdateJobConfiguration();
         }
@@ -63,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         protected override void OnDestroy()
         {
-            m_InstanceData.Dispose();
+            m_InstanceDataLookup.Dispose();
             
             m_UpdateJobData.Clear();
 
@@ -76,9 +77,9 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, this);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this);
             m_UpdateJobData.Add(config);
             return config;
         }
@@ -90,7 +91,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
-            m_InstanceData.AddData(virtualData);
+            m_InstanceDataLookup.AddData(virtualData);
             return virtualData;
         }
 
@@ -98,11 +99,12 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            return m_InstanceData.GetData<TKey, TInstance>();
+            return m_InstanceDataLookup.GetData<TKey, TInstance>();
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
+            //TODO: Add guards - https://github.com/decline-cookies/anvil-unity-dots/pull/40/files#r910315944
             m_TaskDrivers.Add(taskDriver);
         }
         
@@ -112,7 +114,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle driversPopulateHandle = m_PopulateBulkScheduler.BulkSchedule(Dependency);
             
             //Consolidate our instance data to operate on it
-            JobHandle consolidateInstancesHandle = m_InstanceData.ConsolidateForFrame(driversPopulateHandle);
+            JobHandle consolidateInstancesHandle = m_InstanceDataLookup.ConsolidateForFrame(driversPopulateHandle);
             
             //TODO: #38 - Allow for cancels to occur
             

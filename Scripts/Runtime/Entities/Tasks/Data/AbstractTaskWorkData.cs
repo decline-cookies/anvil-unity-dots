@@ -160,7 +160,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        internal void DebugNotifyWorkDataOfUsage(Type type, AbstractTaskWorkConfig.DataUsage usage)
+        internal void Debug_NotifyWorkDataOfUsage(Type type, AbstractTaskWorkConfig.DataUsage usage)
         {
             m_DataUsageByType.Add(type, usage);
         }

@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -7,7 +8,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// A wrapped collection of <see cref="VirtualData{TKey,TInstance}"/> by <see cref="Type"/>
+    /// A lookup collection of <see cref="VirtualData{TKey,TInstance}"/> by <see cref="Type"/>
     /// </summary>
     internal class VirtualDataLookup : AbstractAnvilBase
     {
@@ -24,14 +25,9 @@ namespace Anvil.Unity.DOTS.Data
 
         protected override void DisposeSelf()
         {
-            foreach (AbstractVirtualData data in m_Data)
-            {
-                data.Dispose();
-            }
-            
+            m_Data.DisposeAllAndClear();
             m_DataLookup.Clear();
-            m_Data.Clear();
-            
+
             base.DisposeSelf();
         }
         

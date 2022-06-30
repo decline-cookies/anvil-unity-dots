@@ -30,27 +30,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         public new TTaskDriverSystem System
         {
-            get;
+            get => base.System as TTaskDriverSystem;
         }
 
-        protected AbstractTaskDriver(World world) : base(world)
+        protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskDriverSystem>())
         {
-            System = World.GetOrCreateSystem<TTaskDriverSystem>();
-            base.System = System;
-            System.RegisterTaskDriver(this);
-
-            ConstructData();
-            ConstructChildTaskDrivers();
-        }
-
-        private void ConstructData()
-        {
-            InitData();
-        }
-
-        private void ConstructChildTaskDrivers()
-        {
-            InitSubTaskDriverRegistration();
         }
     }
     
@@ -79,12 +63,12 @@ namespace Anvil.Unity.DOTS.Entities
         public AbstractTaskDriverSystem System
         {
             get;
-            protected set;
         }
 
-        protected AbstractTaskDriver(World world)
+        protected AbstractTaskDriver(World world, AbstractTaskDriverSystem system)
         {
             World = world;
+            System = system;
             m_InstanceData = new VirtualDataLookup();
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             m_PopulateJobData = new List<JobTaskWorkConfig>();
@@ -92,6 +76,21 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_PopulateBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_PopulateJobData);
             m_UpdateBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_UpdateJobData);
+            
+            System.RegisterTaskDriver(this);
+
+            ConstructData();
+            ConstructChildTaskDrivers();
+        }
+        
+        private void ConstructData()
+        {
+            InitData();
+        }
+
+        private void ConstructChildTaskDrivers()
+        {
+            InitSubTaskDriverRegistration();
         }
 
         protected override void DisposeSelf()
@@ -130,7 +129,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>A <see cref="MainThreadTaskWorkConfig"/> to chain on further customization.</returns>
         public MainThreadTaskWorkConfig ConfigureMainThreadTaskWork()
         {
-            DebugEnsureNoMainThreadWorkCurrentlyActive();
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
             m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
             return m_ActiveMainThreadTaskWorkConfig;
         }
@@ -154,11 +153,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// When scheduling, it will ensure that the data has the correct access.
         /// This job type is to be used to populate the TaskDriver so new elements can be processed.
         /// </summary>
-        /// <param name="jobDataDelegate">The scheduling delegate to call</param>
+        /// <param name="scheduleJobDelegate">The scheduling delegate to call</param>
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
-        public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
+        public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System);
             m_PopulateJobData.Add(config);
             return config;
         }
@@ -169,30 +168,30 @@ namespace Anvil.Unity.DOTS.Entities
         /// This job type is to be used in the update phase of the TaskDriver so that results from a sub task driver
         /// can be stitched into the input for another.
         /// </summary>
-        /// <param name="jobDataDelegate">The scheduling delegate to call</param>
+        /// <param name="scheduleJobDelegate">The scheduling delegate to call</param>
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
-        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.JobDataDelegate jobDataDelegate)
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(jobDataDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System);
             m_UpdateJobData.Add(config);
             return config;
         }
 
         private JobHandle Populate(JobHandle dependsOn)
         {
-            DebugEnsureNoMainThreadWorkCurrentlyActive();
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
             return m_PopulateBulkScheduler.BulkSchedule(dependsOn);
         }
 
         private JobHandle Update(JobHandle dependsOn)
         {
-            DebugEnsureNoMainThreadWorkCurrentlyActive();
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
             return m_UpdateBulkScheduler.BulkSchedule(dependsOn);
         }
 
         private JobHandle Consolidate(JobHandle dependsOn)
         {
-            DebugEnsureNoMainThreadWorkCurrentlyActive();
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
             JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
             return consolidateHandle;
         }
@@ -220,7 +219,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void DebugEnsureNoMainThreadWorkCurrentlyActive()
+        private void Debug_EnsureNoMainThreadWorkCurrentlyActive()
         {
             if (m_ActiveMainThreadTaskWorkConfig != null)
             {

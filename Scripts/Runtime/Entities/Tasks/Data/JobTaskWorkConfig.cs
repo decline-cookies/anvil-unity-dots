@@ -2,6 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -15,19 +16,18 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The scheduling callback that is called when the job struct needs to be created and run through the job scheduler.
         /// </summary>
-        public delegate JobHandle JobDataDelegate(JobHandle dependsOn, JobTaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
-        
-        private readonly JobDataDelegate m_JobDataDelegate;
+        public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, JobTaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
+
+        private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
         private readonly JobTaskWorkData m_JobTaskWorkData;
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobTaskWorkConfig(JobDataDelegate jobDataDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem)
+        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem) : base(new JobTaskWorkData(abstractTaskDriverSystem))
         {
-            m_JobDataDelegate = jobDataDelegate;
-            m_JobTaskWorkData = new JobTaskWorkData(abstractTaskDriverSystem);
-            SetTaskWorkData(m_JobTaskWorkData);
+            m_ScheduleJobDelegate = scheduleJobDelegate;
+            m_JobTaskWorkData = (JobTaskWorkData)TaskWorkData;
         }
-        
+
         /// <summary>
         /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> to use for scheduling.
         /// This will calculate the batch size based on the <see cref="BatchStrategy"/> and size of
@@ -44,10 +44,11 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
+            Debug_EnsureNoDuplicateScheduleInfo();
             m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies an instance of <see cref="NativeArray{T}"/> to use for scheduling.
         /// This will calculate the batch size based on <see cref="BatchStrategy"/> and size of the
@@ -61,10 +62,11 @@ namespace Anvil.Unity.DOTS.Entities
         public JobTaskWorkConfig ScheduleOn<T>(NativeArray<T> array, BatchStrategy batchStrategy)
             where T : unmanaged
         {
+            Debug_EnsureNoDuplicateScheduleInfo();
             m_ScheduleInfo = new NativeArrayScheduleInfo<T>(array, batchStrategy);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
         /// Add context. 
@@ -77,14 +79,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForAddAsync wrapper = new VDWrapperForAddAsync(data);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Add);
-#endif
+            InternalRequireDataForAdd(data);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
         /// Add context as well as a <see cref="VirtualData{TKey,TInstance}"/> that will be used as a results
@@ -108,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities
             RequireDataAsResultsDestination(resultsDestination);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
         /// Iterate context. 
@@ -121,14 +119,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForIterateAsync wrapper = new VDWrapperForIterateAsync(data);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Iterate);
-#endif
+            InternalRequireDataForIterate(data);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
         /// Update context. 
@@ -141,14 +135,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForUpdateAsync wrapper = new VDWrapperForUpdateAsync(data);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Update);
-#endif
+            InternalRequireDataForUpdate(data);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
         /// Results Destination context. 
@@ -164,22 +154,14 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.ResultsDestination);
-#endif
+            InternalRequireDataAsResultsDestination(resultData);
             return this;
         }
 
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_ScheduleInfo == null)
-            {
-                throw new InvalidOperationException($"No {nameof(IScheduleInfo)} was present. Please ensure that {nameof(ScheduleOn)} was called when configuring.");
-            }
-#endif
+            Debug_SetConfigurationStateComplete();
+            Debug_EnsureScheduleInfoPresent();
 
             int len = DataWrappers.Count;
             if (len == 0)
@@ -189,29 +171,28 @@ namespace Anvil.Unity.DOTS.Entities
 
             NativeArray<JobHandle> dataDependencies = new NativeArray<JobHandle>(len + 1, Allocator.Temp);
 
-            for (int i = 0; i < DataWrappers.Count; ++i)
+            for (int i = 0; i < len; ++i)
             {
                 IDataWrapper wrapper = DataWrappers[i];
-                dataDependencies[i] = wrapper.Acquire();
+                dataDependencies[i] = wrapper.AcquireAsync();
             }
 
             dataDependencies[len] = dependsOn;
 
-            JobHandle delegateDependency = m_JobDataDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobTaskWorkData, m_ScheduleInfo);
+            JobHandle delegateDependency = m_ScheduleJobDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobTaskWorkData, m_ScheduleInfo);
 
             foreach (IDataWrapper data in DataWrappers)
             {
-                data.Release(delegateDependency);
+                data.ReleaseAsync(delegateDependency);
             }
 
             return delegateDependency;
         }
-        
-        
+
         //*************************************************************************************************************
         // BULK SCHEDULERS
         //*************************************************************************************************************
-        
+
         internal class JobTaskWorkConfigBulkScheduler : AbstractBulkScheduler<JobTaskWorkConfig>
         {
             public JobTaskWorkConfigBulkScheduler(List<JobTaskWorkConfig> list) : base(list)
@@ -221,6 +202,28 @@ namespace Anvil.Unity.DOTS.Entities
             protected override JobHandle ScheduleItem(JobTaskWorkConfig item, JobHandle dependsOn)
             {
                 return item.PrepareAndSchedule(dependsOn);
+            }
+        }
+        
+        //*************************************************************************************************************
+        // SAFETY CHECKS
+        //*************************************************************************************************************
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateScheduleInfo()
+        {
+            if (m_ScheduleInfo != null)
+            {
+                throw new InvalidOperationException($"{nameof(ScheduleOn)} has already been called. This should only be called once");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureScheduleInfoPresent()
+        {
+            if (m_ScheduleInfo == null)
+            {
+                throw new InvalidOperationException($"No {nameof(IScheduleInfo)} was present. Please ensure that {nameof(ScheduleOn)} was called when configuring.");
             }
         }
     }

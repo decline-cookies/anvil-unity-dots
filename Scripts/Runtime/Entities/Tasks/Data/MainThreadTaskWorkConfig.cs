@@ -10,12 +10,11 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly MainThreadTaskWorkData m_MainThreadTaskWorkData;
 
-        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
+        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem) : base(new MainThreadTaskWorkData(abstractTaskDriverSystem))
         {
-            m_MainThreadTaskWorkData = new MainThreadTaskWorkData(abstractTaskDriverSystem);
-            SetTaskWorkData(m_MainThreadTaskWorkData);
+            m_MainThreadTaskWorkData = (MainThreadTaskWorkData)TaskWorkData;
         }
-        
+
         /// <summary>
         /// Call when configuration of the <see cref="MainThreadTaskWorkConfig"/> is complete
         /// and all the data needed should be acquired to operate on.
@@ -30,7 +29,9 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 wrapper.Acquire();
             }
-            
+
+            Debug_SetConfigurationStateComplete();
+
             return m_MainThreadTaskWorkData;
         }
 
@@ -38,10 +39,10 @@ namespace Anvil.Unity.DOTS.Entities
         {
             foreach (IDataWrapper wrapper in DataWrappers)
             {
-                wrapper.Release(default);
+                wrapper.Release();
             }
         }
-        
+
         /// <summary>
         /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used on the main thread
         /// in an Add context. 
@@ -54,14 +55,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Add);
-#endif
+            InternalRequireDataForAdd(data);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used on the main thread in an
         /// Add context as well as a <see cref="VirtualData{TKey,TInstance}"/> that will be used as a results
@@ -85,8 +82,8 @@ namespace Anvil.Unity.DOTS.Entities
             RequireDataAsResultsDestination(resultsDestination);
             return this;
         }
-        
-        
+
+
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used on the main thread in an
         /// Iterate context. 
@@ -99,14 +96,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Iterate);
-#endif
+            InternalRequireDataForIterate(data);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used on the main thread in an
         /// Update context. 
@@ -119,14 +112,10 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.Update);
-#endif
+            InternalRequireDataForUpdate(data);
             return this;
         }
-        
+
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used on the main thread in an
         /// Results Destination context. 
@@ -142,11 +131,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
-            AddDataWrapper(wrapper);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            DebugNotifyWorkDataOfUsage(wrapper.Type, DataUsage.ResultsDestination);
-#endif
+            InternalRequireDataAsResultsDestination(resultData);
             return this;
         }
     }
