@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private UnsafeTypedStream<TInstance> m_Pending;
         private DeferredNativeArray<TInstance> m_IterationTarget;
-        private UnsafeHashMap<TKey, TInstance> m_Lookup;
+        private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
 
         AccessController IVirtualData.AccessController
         {
@@ -85,7 +85,7 @@ namespace Anvil.Unity.DOTS.Data
             m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                    Allocator.TempJob);
 
-            m_Lookup = new UnsafeHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Lookup = new UnsafeParallelHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -233,11 +233,11 @@ namespace Anvil.Unity.DOTS.Data
         {
             private UnsafeTypedStream<TInstance> m_Pending;
             private DeferredNativeArray<TInstance> m_Iteration;
-            private UnsafeHashMap<TKey, TInstance> m_Lookup;
+            private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
                                         DeferredNativeArray<TInstance> iteration,
-                                        UnsafeHashMap<TKey, TInstance> lookup)
+                                        UnsafeParallelHashMap<TKey, TInstance> lookup)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
