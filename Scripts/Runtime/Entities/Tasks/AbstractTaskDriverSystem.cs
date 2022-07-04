@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -70,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
-            //TODO: Add guards - https://github.com/decline-cookies/anvil-unity-dots/pull/40/files#r910315944
+            Debug_EnsureTaskDriverSystemRelationship(taskDriver);
             m_TaskDrivers.Add(taskDriver);
         }
         
@@ -97,6 +98,20 @@ namespace Anvil.Unity.DOTS.Entities
 
             //Ensure this system's dependency is written back
             Dependency = driversUpdateHandle;
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureTaskDriverSystemRelationship(AbstractTaskDriver taskDriver)
+        {
+            if (taskDriver.System != this)
+            {
+                throw new InvalidOperationException($"{taskDriver} is part of system {taskDriver.System} but it should be {this}!");
+            }
+
+            if (m_TaskDrivers.Contains(taskDriver))
+            {
+                throw new InvalidOperationException($"Trying to add {taskDriver} to {this}'s list of Task Drivers but it is already there!");
+            }
         }
     }
 }

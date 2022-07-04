@@ -50,7 +50,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_UpdateBulkScheduler;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
-        
+
         /// <summary>
         /// The <see cref="World"/> this TaskDriver belongs to.
         /// </summary>
