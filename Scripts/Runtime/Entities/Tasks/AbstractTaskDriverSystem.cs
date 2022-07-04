@@ -36,11 +36,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_InstanceDataLookup.Dispose();
             
             m_UpdateJobData.Clear();
-
-            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
-            {
-                taskDriver.Dispose();
-            }
+            
+            //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
             m_TaskDrivers.Clear();
 
             base.OnDestroy();
