@@ -29,38 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_UpdateBulkScheduler = new AbstractTaskDriver.TaskDriverUpdateBulkScheduler(m_TaskDrivers);
             m_ConsolidateBulkScheduler = new AbstractTaskDriver.TaskDriverConsolidateBulkScheduler(m_TaskDrivers);
             m_JobTaskWorkConfigBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_UpdateJobData);
-            
-            ConstructData();
         }
-
-        private void ConstructData()
-        {
-            InitData();
-        }
-        protected sealed override void OnCreate()
-        {
-            base.OnCreate();
-            InitSystemAfterCreate();
-            InitUpdateJobConfiguration();
-        }
-        
-        /// <summary>
-        /// Hook to allow for creating new <see cref="VirtualData{TKey,TInstance}"/>
-        /// via <see cref="CreateData{TKey,TInstance}"/>
-        /// </summary>
-        protected abstract void InitData();
-    
-        /// <summary>
-        /// Hook to allow for additional System setup.
-        /// This occurs once the System has been created via <see cref="OnCreate"/>
-        /// </summary>
-        protected abstract void InitSystemAfterCreate();
-        
-        /// <summary>
-        /// Hook to allow for configuring jobs to execute during the system's update phase via
-        /// <see cref="ConfigureUpdateJob"/>
-        /// </summary>
-        protected abstract void InitUpdateJobConfiguration();
         
         protected override void OnDestroy()
         {

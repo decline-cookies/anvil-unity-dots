@@ -78,19 +78,6 @@ namespace Anvil.Unity.DOTS.Entities
             m_UpdateBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_UpdateJobData);
             
             System.RegisterTaskDriver(this);
-
-            ConstructData();
-            ConstructChildTaskDrivers();
-        }
-        
-        private void ConstructData()
-        {
-            InitData();
-        }
-
-        private void ConstructChildTaskDrivers()
-        {
-            InitSubTaskDriverRegistration();
         }
 
         protected override void DisposeSelf()
@@ -110,18 +97,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.DisposeSelf();
         }
-        
-        /// <summary>
-        /// Hook to allow for creating new <see cref="VirtualData{TKey,TInstance}"/>
-        /// via <see cref="CreateData{TKey,TInstance}"/>
-        /// </summary>
-        protected abstract void InitData();
-        /// <summary>
-        /// Hook to allow for registering new <see cref="AbstractTaskDriver"/> via
-        /// <see cref="RegisterSubTaskDriver"/>
-        /// </summary>
-        protected abstract void InitSubTaskDriverRegistration();
-        
+
         /// <summary>
         /// Configures this TaskDriver for performing work on the main thread immediately.
         /// <see cref="ReleaseMainThreadTaskWork"/> when finished. 
