@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TResult">The type of result to write</typeparam>
     [BurstCompatible]
     public readonly struct VDResultsWriter<TResult>
-        where TResult : struct
+        where TResult : unmanaged
     {
         [ReadOnly] private readonly UnsafeTypedStream<TResult>.Writer m_ResultWriter;
 

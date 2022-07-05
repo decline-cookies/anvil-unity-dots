@@ -56,11 +56,6 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        private string m_AcquireCallerInfo;
-        private string m_ReleaseCallerInfo;
-#endif
-
         public AccessController()
         {
         }
@@ -68,9 +63,22 @@ namespace Anvil.Unity.DOTS.Jobs
         protected override void DisposeSelf()
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
-            Debug.Assert(m_ExclusiveWriteDependency.IsCompleted, "The exclusive write access dependency is not completed");
-            Debug.Assert(m_SharedWriteDependency.IsCompleted, "The shared write access dependency is not completed");
-            Debug.Assert(m_SharedReadDependency.IsCompleted, "The shared read access dependency is not completed");
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (!m_ExclusiveWriteDependency.IsCompleted)
+            {
+                throw new InvalidOperationException("The exclusive write access dependency is not completed");
+            }
+
+            if (!m_SharedWriteDependency.IsCompleted)
+            {
+                throw new InvalidOperationException("The shared write access dependency is not completed");
+            }
+
+            if (!m_SharedReadDependency.IsCompleted)
+            {
+                throw new InvalidOperationException("The shared read access dependency is not completed");
+            }
+#endif
 
             base.DisposeSelf();
         }
@@ -96,11 +104,6 @@ namespace Anvil.Unity.DOTS.Jobs
             m_State = AcquisitionState.Unacquired;
             m_ExclusiveWriteDependency = m_SharedWriteDependency = m_SharedReadDependency = initialDependency;
             m_LastHandleAcquired = default;
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            m_AcquireCallerInfo = string.Empty;
-            m_ReleaseCallerInfo = string.Empty;
-#endif
         }
 
         /// <summary>
@@ -208,9 +211,9 @@ namespace Anvil.Unity.DOTS.Jobs
                             = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
                 case AcquisitionState.Disposing:
-                    throw new Exception($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new InvalidOperationException($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
                 case AcquisitionState.Unacquired:
-                    throw new Exception($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new InvalidOperationException($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(m_State), m_State, $"Tried to release but {nameof(m_State)} was {m_State} and no code path satisfies!");
             }
@@ -221,21 +224,36 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateAcquireState()
         {
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
-            Debug.Assert(m_State == AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again. Last {nameof(AcquireAsync)} was called from: {m_AcquireCallerInfo}");
-            StackFrame frame = new StackFrame(3, true);
-            m_AcquireCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == AcquisitionState.Disposing)
+            {
+                throw new InvalidOperationException($"{nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No longer allowed to acquire until {nameof(Reset)} is called.");
+            }
+
+            if (m_State != AcquisitionState.Unacquired)
+            {
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again.");
+            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
-            Debug.Assert(m_State != AcquisitionState.Unacquired, $"{nameof(ReleaseAsync)} was called multiple times. Last {nameof(ReleaseAsync)} was called from: {m_ReleaseCallerInfo}");
-            Debug.Assert(m_State != AcquisitionState.Disposing, $"{nameof(ReleaseAsync)} was called but the {nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
-            StackFrame frame = new StackFrame(3, true);
-            m_ReleaseCallerInfo = $"{frame.GetMethod().Name} at {frame.GetFileName()}:{frame.GetFileLineNumber()}";
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == AcquisitionState.Unacquired)
+            {
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times.");
+            }
 
-            Debug.Assert(releaseAccessDependency.DependsOn(m_LastHandleAcquired), $"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
+            if (m_State == AcquisitionState.Disposing)
+            {
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called but the {nameof(AccessController)} is already in the {AcquisitionState.Disposing} state. No need to call release since no one else can write or read. Call {nameof(Reset)} if you want to reuse the controller.");
+            }
+
+            if (!releaseAccessDependency.DependsOn(m_LastHandleAcquired))
+            {
+                throw new InvalidOperationException($"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
+            }
         }
     }
 }

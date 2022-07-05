@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Data
     /// </summary>
     /// <typeparam name="TResult">The type of result to write</typeparam>
     public interface IVirtualDataInstance<TResult>
-        where TResult : struct
+        where TResult : unmanaged
     {
         /// <summary>
         /// The location to write the result

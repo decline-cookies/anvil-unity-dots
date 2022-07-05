@@ -1,8 +1,6 @@
-using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -38,10 +36,9 @@ namespace Anvil.Unity.DOTS.Data
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class VirtualData<TKey, TInstance> : AbstractAnvilBase,
-                                                IVirtualData
-        where TKey : struct, IEquatable<TKey>
-        where TInstance : struct, IKeyedData<TKey>
+    public class VirtualData<TKey, TInstance> : AbstractVirtualData
+        where TKey : unmanaged, IEquatable<TKey>
+        where TInstance : unmanaged, IKeyedData<TKey>
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
@@ -49,11 +46,11 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
 
-        internal static VirtualData<TKey, TInstance> Create(params IVirtualData[] sources)
+        internal static VirtualData<TKey, TInstance> Create(params AbstractVirtualData[] sources)
         {
             VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>();
 
-            foreach (IVirtualData source in sources)
+            foreach (AbstractVirtualData source in sources)
             {
                 virtualData.AddSource(source);
                 source.AddResultDestination(virtualData);
@@ -62,24 +59,19 @@ namespace Anvil.Unity.DOTS.Data
             return virtualData;
         }
 
-        private readonly List<IVirtualData> m_Sources;
-        private readonly List<IVirtualData> m_ResultDestinations;
-        private readonly AccessController m_AccessController;
-
         private UnsafeTypedStream<TInstance> m_Pending;
         private DeferredNativeArray<TInstance> m_IterationTarget;
         private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
 
-        AccessController IVirtualData.AccessController
+
+        public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
-            get => m_AccessController;
+            get => m_IterationTarget.ScheduleInfo;
         }
 
-        private VirtualData()
+
+        private VirtualData() : base()
         {
-            m_Sources = new List<IVirtualData>();
-            m_ResultDestinations = new List<IVirtualData>();
-            m_AccessController = new AccessController();
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.TempJob);
             m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
@@ -90,15 +82,10 @@ namespace Anvil.Unity.DOTS.Data
 
         protected override void DisposeSelf()
         {
+            AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
             m_IterationTarget.Dispose();
             m_Lookup.Dispose();
-
-            RemoveFromSources();
-            m_ResultDestinations.Clear();
-            m_Sources.Clear();
-
-            m_AccessController.Dispose();
 
             base.DisposeSelf();
         }
@@ -109,79 +96,6 @@ namespace Anvil.Unity.DOTS.Data
 
         //TODO: Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
         //here but keeping the TODO for future reminder.
-
-        //*************************************************************************************************************
-        // RELATIONSHIPS
-        //*************************************************************************************************************
-
-        void IVirtualData.AddResultDestination(IVirtualData resultData)
-        {
-            m_ResultDestinations.Add(resultData);
-        }
-        
-        void IVirtualData.RemoveResultDestination(IVirtualData resultData)
-        {
-            m_ResultDestinations.Remove(resultData);
-        }
-
-        private void AddSource(IVirtualData sourceData)
-        {
-            m_Sources.Add(sourceData);
-        }
-
-        private void RemoveSource(IVirtualData sourceData)
-        {
-            m_Sources.Remove(sourceData);
-        }
-
-        private void RemoveFromSources()
-        {
-            foreach (IVirtualData sourceData in m_Sources)
-            {
-                sourceData.RemoveResultDestination(this);
-            }
-        }
-
-        //*************************************************************************************************************
-        // ACCESS
-        //*************************************************************************************************************
-
-        JobHandle IVirtualData.AcquireForUpdate()
-        {
-            JobHandle exclusiveWrite = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-
-            if (m_ResultDestinations.Count == 0)
-            {
-                return exclusiveWrite;
-            }
-
-            //Get write access to all possible channels that we can write a response to.
-            //+1 to include the exclusive write
-            NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(m_ResultDestinations.Count + 1, Allocator.Temp);
-            allDependencies[0] = exclusiveWrite;
-            for (int i = 1; i < allDependencies.Length; ++i)
-            {
-                IVirtualData destinationData = m_ResultDestinations[i];
-                allDependencies[i] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
-            }
-
-            return JobHandle.CombineDependencies(allDependencies);
-        }
-
-        void IVirtualData.ReleaseForUpdate(JobHandle releaseAccessDependency)
-        {
-            m_AccessController.ReleaseAsync(releaseAccessDependency);
-
-            if (m_ResultDestinations.Count == 0)
-            {
-                return;
-            }
-
-            foreach (IVirtualData destinationData in m_ResultDestinations)
-            {
-                destinationData.AccessController.ReleaseAsync(releaseAccessDependency);
-            }
-        }
 
         //*************************************************************************************************************
         // JOB STRUCTS
@@ -211,15 +125,15 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        JobHandle IVirtualData.ConsolidateForFrame(JobHandle dependsOn)
+        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            JobHandle exclusiveWriteHandle = m_AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+            JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
                                                                                  m_IterationTarget,
                                                                                  m_Lookup);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
-            m_AccessController.ReleaseAsync(consolidateHandle);
+            AccessController.ReleaseAsync(consolidateHandle);
 
             return consolidateHandle;
         }

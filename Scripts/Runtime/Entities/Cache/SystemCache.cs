@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
@@ -53,7 +54,14 @@ namespace Anvil.Unity.DOTS.Entities
             //Will ignore if already added
             m_GroupCaches.Add(parentGroupCache);
             int currentQueryCount = System.EntityQueries.Length;
-            Debug.Assert(currentQueryCount >= QueryCount, $"System queries decreased!");
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (currentQueryCount < QueryCount)
+            {
+                throw new InvalidOperationException($"System queries decreased!");
+            }
+#endif
+            
             if (currentQueryCount > QueryCount)
             {
                 RebuildQueries();

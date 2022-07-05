@@ -60,7 +60,7 @@ namespace Anvil.Unity.DOTS.Data
     [NativeContainer]
     [BurstCompatible]
     public struct DeferredNativeArray<T> : INativeDisposable
-        where T : struct
+        where T : unmanaged
     {
         //*************************************************************************************************************
         // INTERNAL STRUCTS

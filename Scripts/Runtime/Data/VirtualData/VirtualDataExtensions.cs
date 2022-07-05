@@ -20,9 +20,9 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
         /// <typeparam name="TResult">The type of the result struct</typeparam>
         public static void Resolve<TKey, TInstance, TResult>(this TInstance instance, ref TResult result, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>, IVirtualDataInstance<TResult>
-            where TResult : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>, IVirtualDataInstance<TResult>
+            where TResult : unmanaged
         {
             VDResultsWriter<TResult> resultsWriter = instance.ResultsDestination.AsResultsWriter();
             resultsWriter.Add(ref result, updater.LaneIndex);
@@ -31,9 +31,9 @@ namespace Anvil.Unity.DOTS.Data
         
         /// <inheritdoc cref="Resolve{TKey,TInstance,TResult}"/>
         public static void Resolve<TKey, TInstance, TResult>(this TInstance instance, TResult result, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>, IVirtualDataInstance<TResult>
-            where TResult : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>, IVirtualDataInstance<TResult>
+            where TResult : unmanaged
         {
             Resolve(instance, ref result, ref updater);
         }
@@ -48,8 +48,8 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The type of key for the instance.</typeparam>
         /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
         public static void Resolve<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             updater.Resolve();
         }
@@ -63,8 +63,8 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The type of key for the instance.</typeparam>
         /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
         public static void ContinueOn<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : struct, IEquatable<TKey>
-            where TInstance : struct, IKeyedData<TKey>
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
         {
             updater.Continue(ref instance);
         }
