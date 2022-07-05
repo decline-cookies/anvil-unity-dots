@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities
         private ConfigState m_ConfigState;
 #endif
 
-        internal List<IDataWrapper> DataWrappers
+        internal List<AbstractVDWrapper> DataWrappers
         {
             get;
         }
@@ -45,7 +45,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
         {
-            DataWrappers = new List<IDataWrapper>();
+            DataWrappers = new List<AbstractVDWrapper>();
             TaskWorkData = new TaskWorkData(abstractTaskDriverSystem);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        private void AddDataWrapper(IDataWrapper dataWrapper)
+        private void AddDataWrapper(AbstractVDWrapper dataWrapper)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_ConfigState != ConfigState.Configuring)

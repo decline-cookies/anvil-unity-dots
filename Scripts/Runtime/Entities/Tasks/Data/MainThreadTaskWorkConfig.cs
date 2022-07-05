@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         public TaskWorkData Acquire()
         {
-            foreach (IDataWrapper wrapper in DataWrappers)
+            foreach (AbstractVDWrapper wrapper in DataWrappers)
             {
                 wrapper.Acquire();
             }
@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal void Release()
         {
-            foreach (IDataWrapper wrapper in DataWrappers)
+            foreach (AbstractVDWrapper wrapper in DataWrappers)
             {
                 wrapper.Release();
             }

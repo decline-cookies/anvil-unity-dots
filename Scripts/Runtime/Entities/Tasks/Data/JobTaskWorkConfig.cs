@@ -173,7 +173,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             for (int i = 0; i < len; ++i)
             {
-                IDataWrapper wrapper = DataWrappers[i];
+                AbstractVDWrapper wrapper = DataWrappers[i];
                 dataDependencies[i] = wrapper.AcquireAsync();
             }
 
@@ -181,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             JobHandle delegateDependency = m_ScheduleJobDelegate(JobHandle.CombineDependencies(dataDependencies), TaskWorkData, m_ScheduleInfo);
 
-            foreach (IDataWrapper data in DataWrappers)
+            foreach (AbstractVDWrapper data in DataWrappers)
             {
                 data.ReleaseAsync(delegateDependency);
             }

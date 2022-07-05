@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
         //We don't have to be on the main thread, but it makes sense as a good default
         private static readonly int SYNCHRONOUS_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
         
-        private readonly Dictionary<Type, IDataWrapper> m_WrappedDataLookup;
+        private readonly Dictionary<Type, AbstractVDWrapper> m_WrappedDataLookup;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private readonly Dictionary<Type, AbstractTaskWorkConfig.DataUsage> m_DataUsageByType;
 #endif
@@ -51,13 +51,13 @@ namespace Anvil.Unity.DOTS.Entities
         {
             System = system;
             World = System.World;
-            m_WrappedDataLookup = new Dictionary<Type, IDataWrapper>();
+            m_WrappedDataLookup = new Dictionary<Type, AbstractVDWrapper>();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_DataUsageByType = new Dictionary<Type, AbstractTaskWorkConfig.DataUsage>();
 #endif
         }
 
-        internal void AddDataWrapper(IDataWrapper dataWrapper)
+        internal void AddDataWrapper(AbstractVDWrapper dataWrapper)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_WrappedDataLookup.ContainsKey(dataWrapper.Type))
@@ -79,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Tried to get {nameof(VirtualData<TKey, TInstance>)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
             }
 #endif
-            IDataWrapper wrapper = m_WrappedDataLookup[type];
+            AbstractVDWrapper wrapper = m_WrappedDataLookup[type];
             return (VirtualData<TKey, TInstance>)wrapper.Data;
         }
         

@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal abstract class AbstractVDWrapper : IDataWrapper
+    internal abstract class AbstractVDWrapper
     {
         public AbstractVirtualData Data
         {
