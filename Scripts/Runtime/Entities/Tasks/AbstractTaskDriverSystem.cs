@@ -65,29 +65,34 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDrivers.Add(taskDriver);
         }
         
-        protected sealed override void OnUpdate()
+        protected override void OnUpdate()
+        {
+            Dependency = UpdateTaskDriverSystem(Dependency);
+        }
+
+        private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
             //Have drivers be given the chance to add to the Instance Data
-            JobHandle driversPopulateHandle = m_TaskDrivers.BulkScheduleParallel(Dependency, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
             
             //Consolidate our instance data to operate on it
-            JobHandle consolidateInstancesHandle = m_InstanceDataLookup.ConsolidateForFrame(driversPopulateHandle);
+            dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn);
             
             //TODO: #38 - Allow for cancels to occur
             
             //Allow the generic work to happen in the derived class
-            JobHandle updateInstancesHandle = m_UpdateJobData.BulkScheduleParallel(consolidateInstancesHandle, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
+            dependsOn = m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
             
             //Have drivers consolidate their result data
-            JobHandle driversConsolidateHandle = m_TaskDrivers.BulkScheduleParallel(updateInstancesHandle, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
             
             //TODO: #38 - Allow for cancels on the drivers to occur
             
             //Have drivers to do their own generic work
-            JobHandle driversUpdateHandle = m_TaskDrivers.BulkScheduleParallel(driversConsolidateHandle, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE);
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE);
 
             //Ensure this system's dependency is written back
-            Dependency = driversUpdateHandle;
+            return dependsOn;
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
