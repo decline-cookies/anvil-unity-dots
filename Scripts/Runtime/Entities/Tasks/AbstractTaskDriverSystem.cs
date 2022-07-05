@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,22 +15,11 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly VirtualDataLookup m_InstanceDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
-
-        private readonly AbstractTaskDriver.TaskDriverPopulateBulkScheduler m_PopulateBulkScheduler;
-        private readonly AbstractTaskDriver.TaskDriverUpdateBulkScheduler m_UpdateBulkScheduler;
-        private readonly AbstractTaskDriver.TaskDriverConsolidateBulkScheduler m_ConsolidateBulkScheduler;
-        private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_JobTaskWorkConfigBulkScheduler;
-
         protected AbstractTaskDriverSystem()
         {
             m_InstanceDataLookup = new VirtualDataLookup();
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
-
-            m_PopulateBulkScheduler = new AbstractTaskDriver.TaskDriverPopulateBulkScheduler(m_TaskDrivers);
-            m_UpdateBulkScheduler = new AbstractTaskDriver.TaskDriverUpdateBulkScheduler(m_TaskDrivers);
-            m_ConsolidateBulkScheduler = new AbstractTaskDriver.TaskDriverConsolidateBulkScheduler(m_TaskDrivers);
-            m_JobTaskWorkConfigBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_UpdateJobData);
         }
         
         protected override void OnDestroy()
@@ -78,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected sealed override void OnUpdate()
         {
             //Have drivers be given the chance to add to the Instance Data
-            JobHandle driversPopulateHandle = m_PopulateBulkScheduler.BulkSchedule(Dependency);
+            JobHandle driversPopulateHandle = m_TaskDrivers.BulkScheduleParallel(Dependency, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
             
             //Consolidate our instance data to operate on it
             JobHandle consolidateInstancesHandle = m_InstanceDataLookup.ConsolidateForFrame(driversPopulateHandle);
@@ -86,15 +76,15 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: #38 - Allow for cancels to occur
             
             //Allow the generic work to happen in the derived class
-            JobHandle updateInstancesHandle = m_JobTaskWorkConfigBulkScheduler.BulkSchedule(consolidateInstancesHandle);
+            JobHandle updateInstancesHandle = m_UpdateJobData.BulkScheduleParallel(consolidateInstancesHandle, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
             
             //Have drivers consolidate their result data
-            JobHandle driversConsolidateHandle = m_ConsolidateBulkScheduler.BulkSchedule(updateInstancesHandle);
+            JobHandle driversConsolidateHandle = m_TaskDrivers.BulkScheduleParallel(updateInstancesHandle, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
             
             //TODO: #38 - Allow for cancels on the drivers to occur
             
             //Have drivers to do their own generic work
-            JobHandle driversUpdateHandle = m_UpdateBulkScheduler.BulkSchedule(driversConsolidateHandle);
+            JobHandle driversUpdateHandle = m_TaskDrivers.BulkScheduleParallel(driversConsolidateHandle, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE);
 
             //Ensure this system's dependency is written back
             Dependency = driversUpdateHandle;

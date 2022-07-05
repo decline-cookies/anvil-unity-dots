@@ -2,6 +2,7 @@ using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -13,6 +14,8 @@ namespace Anvil.Unity.DOTS.Data
     /// </summary>
     public abstract class AbstractVirtualData : AbstractAnvilBase
     {
+        internal static readonly BulkScheduleDelegate<AbstractVirtualData> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractVirtualData>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
+
         private readonly List<AbstractVirtualData> m_Sources;
         private readonly List<AbstractVirtualData> m_ResultDestinations;
 

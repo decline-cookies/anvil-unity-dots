@@ -5,6 +5,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -41,13 +42,14 @@ namespace Anvil.Unity.DOTS.Entities
     /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}"/>
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> POPULATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Populate), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> UPDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Update), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CONSOLIDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.NonPublic);
+        
         private readonly VirtualDataLookup m_InstanceData;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly List<JobTaskWorkConfig> m_PopulateJobData;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
-
-        private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_PopulateBulkScheduler;
-        private readonly JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler m_UpdateBulkScheduler;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
 
@@ -74,9 +76,6 @@ namespace Anvil.Unity.DOTS.Entities
             m_PopulateJobData = new List<JobTaskWorkConfig>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
 
-            m_PopulateBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_PopulateJobData);
-            m_UpdateBulkScheduler = new JobTaskWorkConfig.JobTaskWorkConfigBulkScheduler(m_UpdateJobData);
-            
             System.RegisterTaskDriver(this);
         }
 
@@ -156,13 +155,13 @@ namespace Anvil.Unity.DOTS.Entities
         private JobHandle Populate(JobHandle dependsOn)
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            return m_PopulateBulkScheduler.BulkSchedule(dependsOn);
+            return m_PopulateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
         private JobHandle Update(JobHandle dependsOn)
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            return m_UpdateBulkScheduler.BulkSchedule(dependsOn);
+            return m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
         private JobHandle Consolidate(JobHandle dependsOn)
@@ -200,46 +199,6 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_ActiveMainThreadTaskWorkConfig != null)
             {
                 throw new InvalidOperationException($"Main Thread Task Work currently active, wait until after {nameof(ReleaseMainThreadTaskWork)} is called.");
-            }
-        }
-        
-        //*************************************************************************************************************
-        // BULK SCHEDULERS
-        //*************************************************************************************************************
-        
-        internal class TaskDriverPopulateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
-        {
-            public TaskDriverPopulateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
-            {
-                return item.Populate(dependsOn);
-            }
-        }
-
-        internal class TaskDriverUpdateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
-        {
-            public TaskDriverUpdateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
-            {
-                return item.Update(dependsOn);
-            }
-        }
-
-        internal class TaskDriverConsolidateBulkScheduler : AbstractBulkScheduler<AbstractTaskDriver>
-        {
-            public TaskDriverConsolidateBulkScheduler(List<AbstractTaskDriver> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractTaskDriver item, JobHandle dependsOn)
-            {
-                return item.Consolidate(dependsOn);
             }
         }
     }

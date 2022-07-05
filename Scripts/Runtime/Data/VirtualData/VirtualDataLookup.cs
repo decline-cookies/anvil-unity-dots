@@ -1,4 +1,3 @@
-using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -13,19 +12,18 @@ namespace Anvil.Unity.DOTS.Data
     internal class VirtualDataLookup : AbstractAnvilBase
     {
         private readonly Dictionary<Type, AbstractVirtualData> m_DataLookup;
-        private readonly List<AbstractVirtualData> m_Data;
-        private readonly VirtualDataBulkSchedulerForConsolidate m_VirtualDataBulkScheduler;
 
         public VirtualDataLookup()
         {
             m_DataLookup = new Dictionary<Type, AbstractVirtualData>();
-            m_Data = new List<AbstractVirtualData>();
-            m_VirtualDataBulkScheduler = new VirtualDataBulkSchedulerForConsolidate(m_Data);
         }
 
         protected override void DisposeSelf()
         {
-            m_Data.DisposeAllAndClear();
+            foreach (AbstractVirtualData data in m_DataLookup.Values)
+            {
+                data.Dispose();
+            }
             m_DataLookup.Clear();
 
             base.DisposeSelf();
@@ -49,7 +47,6 @@ namespace Anvil.Unity.DOTS.Data
             }
 #endif
             m_DataLookup.Add(type, data);
-            m_Data.Add(data);
         }
         
         /// <summary>
@@ -83,26 +80,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </returns>
         public JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            return m_VirtualDataBulkScheduler.BulkSchedule(dependsOn);
-        }
-        
-        //*************************************************************************************************************
-        // BULK SCHEDULERS
-        //*************************************************************************************************************
-        
-        /// <summary>
-        /// <see cref="AbstractBulkScheduler{T}"/> to call ConsolidateForFrame on <see cref="VirtualData{TKey,TInstance}"/>
-        /// </summary>
-        private class VirtualDataBulkSchedulerForConsolidate : AbstractBulkScheduler<AbstractVirtualData>
-        {
-            public VirtualDataBulkSchedulerForConsolidate(List<AbstractVirtualData> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(AbstractVirtualData item, JobHandle dependsOn)
-            {
-                return item.ConsolidateForFrame(dependsOn);
-            }
+            return m_DataLookup.Values.BulkScheduleParallel(dependsOn, AbstractVirtualData.CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE);
         }
     }
 }

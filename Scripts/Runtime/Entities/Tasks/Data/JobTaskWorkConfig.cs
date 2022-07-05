@@ -1,8 +1,8 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -13,6 +13,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public class JobTaskWorkConfig : AbstractTaskWorkConfig
     {
+        internal static readonly BulkScheduleDelegate<JobTaskWorkConfig> PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<JobTaskWorkConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
+        
         /// <summary>
         /// The scheduling callback that is called when the job struct needs to be created and run through the job scheduler.
         /// </summary>
@@ -189,22 +191,6 @@ namespace Anvil.Unity.DOTS.Entities
             return delegateDependency;
         }
 
-        //*************************************************************************************************************
-        // BULK SCHEDULERS
-        //*************************************************************************************************************
-
-        internal class JobTaskWorkConfigBulkScheduler : AbstractBulkScheduler<JobTaskWorkConfig>
-        {
-            public JobTaskWorkConfigBulkScheduler(List<JobTaskWorkConfig> list) : base(list)
-            {
-            }
-
-            protected override JobHandle ScheduleItem(JobTaskWorkConfig item, JobHandle dependsOn)
-            {
-                return item.PrepareAndSchedule(dependsOn);
-            }
-        }
-        
         //*************************************************************************************************************
         // SAFETY CHECKS
         //*************************************************************************************************************
