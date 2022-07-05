@@ -18,16 +18,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The scheduling callback that is called when the job struct needs to be created and run through the job scheduler.
         /// </summary>
-        public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, JobTaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
+        public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, TaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
 
         private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
-        private readonly JobTaskWorkData m_JobTaskWorkData;
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem) : base(new JobTaskWorkData(abstractTaskDriverSystem))
+        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
         {
             m_ScheduleJobDelegate = scheduleJobDelegate;
-            m_JobTaskWorkData = (JobTaskWorkData)TaskWorkData;
         }
 
         /// <summary>
@@ -81,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataForAdd(data);
+            InternalRequireDataForAdd(data, true);
             return this;
         }
 
@@ -121,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataForIterate(data);
+            InternalRequireDataForIterate(data, true);
             return this;
         }
 
@@ -137,7 +135,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataForUpdate(data);
+            InternalRequireDataForUpdate(data, true);
             return this;
         }
 
@@ -156,7 +154,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataAsResultsDestination(resultData);
+            InternalRequireDataAsResultsDestination(resultData, true);
             return this;
         }
 
@@ -181,7 +179,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             dataDependencies[len] = dependsOn;
 
-            JobHandle delegateDependency = m_ScheduleJobDelegate(JobHandle.CombineDependencies(dataDependencies), m_JobTaskWorkData, m_ScheduleInfo);
+            JobHandle delegateDependency = m_ScheduleJobDelegate(JobHandle.CombineDependencies(dataDependencies), TaskWorkData, m_ScheduleInfo);
 
             foreach (IDataWrapper data in DataWrappers)
             {

@@ -8,11 +8,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public class MainThreadTaskWorkConfig : AbstractTaskWorkConfig
     {
-        private readonly MainThreadTaskWorkData m_MainThreadTaskWorkData;
-
-        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem) : base(new MainThreadTaskWorkData(abstractTaskDriverSystem))
+        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
         {
-            m_MainThreadTaskWorkData = (MainThreadTaskWorkData)TaskWorkData;
         }
 
         /// <summary>
@@ -20,10 +17,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// and all the data needed should be acquired to operate on.
         /// </summary>
         /// <returns>
-        /// A <see cref="MainThreadTaskWorkData"/> to use for doing the work.
+        /// A <see cref="TaskWorkData"/> to use for doing the work.
         /// All required data will have proper access.
         /// </returns>
-        public MainThreadTaskWorkData Acquire()
+        public TaskWorkData Acquire()
         {
             foreach (IDataWrapper wrapper in DataWrappers)
             {
@@ -32,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             Debug_SetConfigurationStateComplete();
 
-            return m_MainThreadTaskWorkData;
+            return TaskWorkData;
         }
 
         internal void Release()
@@ -55,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataForAdd(data);
+            InternalRequireDataForAdd(data, false);
             return this;
         }
 
@@ -96,7 +93,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataForIterate(data);
+            InternalRequireDataForIterate(data, false);
             return this;
         }
 
@@ -112,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataForUpdate(data);
+            InternalRequireDataForUpdate(data, false);
             return this;
         }
 
@@ -131,7 +128,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TKey : unmanaged, IEquatable<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
         {
-            InternalRequireDataAsResultsDestination(resultData);
+            InternalRequireDataAsResultsDestination(resultData, false);
             return this;
         }
     }

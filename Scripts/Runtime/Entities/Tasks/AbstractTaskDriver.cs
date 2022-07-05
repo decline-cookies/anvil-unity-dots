@@ -102,7 +102,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <see cref="ReleaseMainThreadTaskWork"/> when finished. 
         /// </summary>
         /// <returns>A <see cref="MainThreadTaskWorkConfig"/> to chain on further customization.</returns>
-        public MainThreadTaskWorkConfig ConfigureMainThreadTaskWork()
+        public MainThreadTaskWorkConfig CreateMainThreadTaskWork()
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
             m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         /// <summary>
         /// Releases this TaskDriver from performing work on the main thread.
-        /// <see cref="ConfigureMainThreadTaskWork"/>
+        /// <see cref="CreateMainThreadTaskWork"/>
         /// </summary>
         public void ReleaseMainThreadTaskWork()
         {
