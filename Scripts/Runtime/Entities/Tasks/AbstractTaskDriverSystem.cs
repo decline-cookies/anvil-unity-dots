@@ -15,11 +15,13 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly VirtualDataLookup m_InstanceDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+        private readonly List<JobTaskWorkConfig> m_CancelJobData;
         protected AbstractTaskDriverSystem()
         {
             m_InstanceDataLookup = new VirtualDataLookup();
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
+            m_CancelJobData = new List<JobTaskWorkConfig>();
         }
         
         protected override void OnDestroy()
@@ -27,6 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_InstanceDataLookup.Dispose();
             
             m_UpdateJobData.Clear();
+            m_CancelJobData.Clear();
             
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
             m_TaskDrivers.Clear();
@@ -36,8 +39,15 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, false);
             m_UpdateJobData.Add(config);
+            return config;
+        }
+        
+        protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
+        {
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, true);
+            m_CancelJobData.Add(config);
             return config;
         }
         
@@ -78,15 +88,21 @@ namespace Anvil.Unity.DOTS.Entities
             //Consolidate our instance data to operate on it
             dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn);
             
-            //TODO: #38 - Allow for cancels to occur
+            
+            //TODO: Can we do both Cancel and Update jobs at the same time? 
+            //Handle anything that was cancelled
+            dependsOn = m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
             
             //Allow the generic work to happen in the derived class
             dependsOn = m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
             
+            
             //Have drivers consolidate their result data
             dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
             
-            //TODO: #38 - Allow for cancels on the drivers to occur
+            //TODO: Can we do both Cancel and Update jobs at the same time?
+            //Have drivers handle anything that was cancelled
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CANCEL_SCHEDULE_DELEGATE);
             
             //Have drivers to do their own generic work
             dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE);

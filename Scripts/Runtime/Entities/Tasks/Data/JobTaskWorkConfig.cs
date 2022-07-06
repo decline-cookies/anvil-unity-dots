@@ -20,12 +20,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, TaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
 
+        private readonly bool m_IsForCancel;
         private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
+        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem, bool isForCancel) : base(abstractTaskDriverSystem)
         {
             m_ScheduleJobDelegate = scheduleJobDelegate;
+            m_IsForCancel = isForCancel;
         }
 
         /// <summary>
@@ -45,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             Debug_EnsureNoDuplicateScheduleInfo();
-            m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy);
+            m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy, m_IsForCancel);
             return this;
         }
 

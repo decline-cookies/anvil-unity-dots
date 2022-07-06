@@ -44,12 +44,14 @@ namespace Anvil.Unity.DOTS.Entities
     {
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> POPULATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Populate), BindingFlags.Instance | BindingFlags.NonPublic);
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> UPDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Update), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CANCEL_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Cancel), BindingFlags.Instance | BindingFlags.NonPublic);
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CONSOLIDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.NonPublic);
         
         private readonly VirtualDataLookup m_InstanceData;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly List<JobTaskWorkConfig> m_PopulateJobData;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+        private readonly List<JobTaskWorkConfig> m_CancelJobData;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
 
@@ -75,6 +77,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             m_PopulateJobData = new List<JobTaskWorkConfig>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
+            m_CancelJobData = new List<JobTaskWorkConfig>();
 
             System.RegisterTaskDriver(this);
         }
@@ -93,6 +96,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_SubTaskDrivers.Clear();
             m_PopulateJobData.Clear();
             m_UpdateJobData.Clear();
+            m_CancelJobData.Clear();
 
             base.DisposeSelf();
         }
@@ -132,7 +136,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, false);
             m_PopulateJobData.Add(config);
             return config;
         }
@@ -147,8 +151,23 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, false);
             m_UpdateJobData.Add(config);
+            return config;
+        }
+        
+        /// <summary>
+        /// Configures a job to be scheduled with the required data as specified by the <see cref="JobTaskWorkConfig"/>
+        /// When scheduling, it will ensure that the data has the correct access.
+        /// This job type is to be used in the cancel phase of the TaskDriver so that custom logic can happen when an
+        /// element has been cancelled.
+        /// </summary>
+        /// <param name="scheduleJobDelegate">The scheduling delegate to call</param>
+        /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
+        protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
+        {
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, true);
+            m_CancelJobData.Add(config);
             return config;
         }
 
@@ -162,6 +181,12 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
             return m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
+        }
+
+        private JobHandle Cancel(JobHandle dependsOn)
+        {
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
+            return m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
         private JobHandle Consolidate(JobHandle dependsOn)

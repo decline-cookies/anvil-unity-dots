@@ -4,6 +4,7 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
@@ -60,13 +61,18 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         private UnsafeTypedStream<TInstance> m_Pending;
+        private UnsafeTypedStream<TInstance> m_PendingCancelled;
         private DeferredNativeArray<TInstance> m_IterationTarget;
+        private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
         private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
 
-
-        public DeferredNativeArrayScheduleInfo ScheduleInfo
+        internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
+        }
+        internal DeferredNativeArrayScheduleInfo CancelScheduleInfo
+        {
+            get => m_CancelledIterationTarget.ScheduleInfo;
         }
 
 
@@ -74,8 +80,12 @@ namespace Anvil.Unity.DOTS.Data
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.TempJob);
+            m_PendingCancelled = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
+                                                                  Allocator.TempJob);
             m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                    Allocator.TempJob);
+            m_CancelledIterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
+                                                                            Allocator.TempJob);
 
             m_Lookup = new UnsafeParallelHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
@@ -84,7 +94,9 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
+            m_PendingCancelled.Dispose();
             m_IterationTarget.Dispose();
+            m_CancelledIterationTarget.Dispose();
             m_Lookup.Dispose();
 
             base.DisposeSelf();
@@ -129,7 +141,9 @@ namespace Anvil.Unity.DOTS.Data
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
+                                                                                 m_PendingCancelled,
                                                                                  m_IterationTarget,
+                                                                                 m_CancelledIterationTarget,
                                                                                  m_Lookup);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
@@ -146,31 +160,104 @@ namespace Anvil.Unity.DOTS.Data
         private struct ConsolidateLookupJob : IJob
         {
             private UnsafeTypedStream<TInstance> m_Pending;
+            private UnsafeTypedStream<TInstance> m_PendingCancelled;
             private DeferredNativeArray<TInstance> m_Iteration;
+            private DeferredNativeArray<TInstance> m_CancelledIteration;
             private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
+                                        UnsafeTypedStream<TInstance> pendingCancelled,
                                         DeferredNativeArray<TInstance> iteration,
+                                        DeferredNativeArray<TInstance> cancelledIteration,
                                         UnsafeParallelHashMap<TKey, TInstance> lookup)
             {
                 m_Pending = pending;
+                m_PendingCancelled = pendingCancelled;
                 m_Iteration = iteration;
+                m_CancelledIteration = cancelledIteration;
                 m_Lookup = lookup;
             }
 
             public void Execute()
             {
+                //Clear previously consolidated 
                 m_Lookup.Clear();
                 m_Iteration.Clear();
-
-                NativeArray<TInstance> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
-                m_Pending.CopyTo(ref iterationArray);
-                m_Pending.Clear();
-
-                for (int i = 0; i < iterationArray.Length; ++i)
+                m_CancelledIteration.Clear();
+                
+                //Get the new counts
+                int pendingCount = m_Pending.Count();
+                int pendingCancelledCount = m_PendingCancelled.Count();
+                
+                //Take optimized path if possible
+                if (pendingCancelledCount == 0)
                 {
-                    TInstance value = iterationArray[i];
-                    m_Lookup.TryAdd(value.Key, value);
+                    ConsolidateWithoutCancel(pendingCount);
+                }
+                else
+                {
+                    ConsolidateWithCancel(pendingCount, pendingCancelledCount);
+                }
+                
+                //Clear pending for next frame
+                m_Pending.Clear();
+                m_PendingCancelled.Clear();
+            }
+
+            private void ConsolidateWithoutCancel(int pendingCount)
+            {
+                //Allocate memory for arrays based on counts
+                NativeArray<TInstance> iterationArray = m_Iteration.DeferredCreate(pendingCount);
+                
+                //Fast blit
+                m_Pending.CopyTo(ref iterationArray);
+                
+                //Populate the lookup
+                for (int i = 0; i < pendingCount; ++i)
+                {
+                    TInstance instance = iterationArray[i];
+                    m_Lookup.Add(instance.Key, instance);
+                }
+            }
+
+            private void ConsolidateWithCancel(int pendingCount, int pendingCancelledCount)
+            {
+                //Allocate memory for arrays based on counts
+                NativeArray<TInstance> iterationArray = m_Iteration.DeferredCreate(pendingCount - pendingCancelledCount);
+                NativeArray<TInstance> cancelledIterationArray = m_CancelledIteration.DeferredCreate(pendingCancelledCount);
+                
+                //Build up the cancel array and lookup
+                int cancelIndex = 0;
+                UnsafeParallelHashMap<TKey, bool> cancelledLookup = new UnsafeParallelHashMap<TKey, bool>(pendingCancelledCount, Allocator.Temp);
+                for (int laneIndex = 0; laneIndex < m_PendingCancelled.LaneCount; ++laneIndex)
+                {
+                    UnsafeTypedStream<TInstance>.LaneReader laneReader = m_PendingCancelled.AsLaneReader(laneIndex);
+                    for (int i = 0; i < laneReader.Count; ++i)
+                    {
+                        TInstance cancelledInstance = laneReader.Read();
+                        cancelledLookup.Add(cancelledInstance.Key, false);
+                        cancelledIterationArray[cancelIndex] = cancelledInstance;
+                        cancelIndex++;
+                    }
+                }
+                
+                //Build up the surviving iteration array and lookup
+                int iterationIndex = 0;
+                for (int laneIndex = 0; laneIndex < m_Pending.LaneCount; ++laneIndex)
+                {
+                    UnsafeTypedStream<TInstance>.LaneReader laneReader = m_Pending.AsLaneReader(laneIndex);
+                    for (int i = 0; i < laneReader.Count; ++i)
+                    {
+                        TInstance instance = laneReader.Read();
+                        if (cancelledLookup.ContainsKey(instance.Key))
+                        {
+                            continue;
+                        }
+
+                        iterationArray[iterationIndex] = instance;
+                        m_Lookup.TryAdd(instance.Key, instance);
+                        iterationIndex++;
+                    }
                 }
             }
         }
