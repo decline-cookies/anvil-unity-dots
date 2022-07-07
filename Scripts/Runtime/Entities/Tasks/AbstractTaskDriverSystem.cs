@@ -15,14 +15,18 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly List<AbstractTaskDriver<TKey>> m_TaskDrivers;
         private readonly VirtualDataLookup<TKey> m_InstanceDataLookup;
-        private readonly CancelVirtualData<TKey> m_CancelData;
         private readonly List<JobTaskWorkConfig<TKey>> m_UpdateJobData;
         private readonly List<JobTaskWorkConfig<TKey>> m_CancelJobData;
-        
+
+        public CancelVirtualData<TKey> CancelData
+        {
+            get;
+        }
+
         protected AbstractTaskDriverSystem()
         {
             m_InstanceDataLookup = new VirtualDataLookup<TKey>();
-            m_CancelData = new CancelVirtualData<TKey>();
+            CancelData = new CancelVirtualData<TKey>();
             
             m_TaskDrivers = new List<AbstractTaskDriver<TKey>>();
             m_UpdateJobData = new List<JobTaskWorkConfig<TKey>>();
@@ -32,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnDestroy()
         {
             m_InstanceDataLookup.Dispose();
-            m_CancelData.Dispose();
+            CancelData.Dispose();
             
             m_UpdateJobData.Clear();
             m_CancelJobData.Clear();
@@ -90,10 +94,10 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver<TKey>.POPULATE_SCHEDULE_DELEGATE);
             
             //Consolidate our cancel data
-            dependsOn = m_CancelData.ConsolidateForFrame(dependsOn, null);
+            dependsOn = CancelData.ConsolidateForFrame(dependsOn, null);
             
             //Consolidate our instance data to operate on it
-            dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn, m_CancelData);
+            dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn, CancelData);
             
             //Handle anything that was cancelled and allow for generic work to happen in the derived class
             dependsOn = JobHandle.CombineDependencies(m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig<TKey>.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE),

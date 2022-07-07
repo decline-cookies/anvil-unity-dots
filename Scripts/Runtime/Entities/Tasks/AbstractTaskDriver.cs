@@ -57,7 +57,6 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<JobTaskWorkConfig<TKey>> m_CancelJobData;
 
         private MainThreadTaskWorkConfig<TKey> m_ActiveMainThreadTaskWorkConfig;
-        private AbstractTaskDriver<TKey> m_Parent;
 
         /// <summary>
         /// The <see cref="World"/> this TaskDriver belongs to.
@@ -76,7 +75,6 @@ namespace Anvil.Unity.DOTS.Entities
         internal CancelVirtualData<TKey> CancelData
         {
             get;
-            private set;
         }
 
         protected AbstractTaskDriver(World world, AbstractTaskDriverSystem<TKey> system)
@@ -85,8 +83,8 @@ namespace Anvil.Unity.DOTS.Entities
             System = system;
             
             m_InstanceDataLookup = new VirtualDataLookup<TKey>();
-            CancelData = new CancelVirtualData<TKey>();
-            
+            CancelData = System.CancelData;
+
             m_SubTaskDrivers = new List<AbstractTaskDriver<TKey>>();
             m_PopulateJobData = new List<JobTaskWorkConfig<TKey>>();
             m_UpdateJobData = new List<JobTaskWorkConfig<TKey>>();
@@ -98,14 +96,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void DisposeSelf()
         {
             m_InstanceDataLookup.Dispose();
-            //If we don't have a parent, then we own the CancelData
-            if (m_Parent == null)
-            {
-                CancelData.Dispose();
-            }
 
-            m_Parent = null;
-            
 
             foreach (AbstractTaskDriver<TKey> childTaskDriver in m_SubTaskDrivers)
             {
@@ -223,17 +214,8 @@ namespace Anvil.Unity.DOTS.Entities
         protected void RegisterSubTaskDriver(AbstractTaskDriver<TKey> subTaskDriver)
         {
             m_SubTaskDrivers.Add(subTaskDriver);
-            subTaskDriver.AssignParent(this);
         }
 
-        private void AssignParent(AbstractTaskDriver<TKey> parentTaskDriver)
-        {
-            Debug_EnsureNoParent();
-            m_Parent = parentTaskDriver;
-            CancelData.Dispose();
-            CancelData = m_Parent.CancelData;
-        }
-        
         protected VirtualData<TKey, TInstance> GetData<TInstance>()
             where TInstance : unmanaged, IKeyedData<TKey>
         {
@@ -255,15 +237,6 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_ActiveMainThreadTaskWorkConfig != null)
             {
                 throw new InvalidOperationException($"Main Thread Task Work currently active, wait until after {nameof(ReleaseMainThreadTaskWork)} is called.");
-            }
-        }
-        
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoParent()
-        {
-            if (m_Parent != null)
-            {
-                throw new InvalidOperationException($"{this} is trying to have a parent assigned but it already had {m_Parent} assigned!");
             }
         }
     }
