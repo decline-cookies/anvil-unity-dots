@@ -12,20 +12,21 @@ namespace Anvil.Unity.DOTS.Data
     /// For dealing with <see cref="VirtualData{TKey,TInstance}"/> in a generic way without having
     /// to know the types.
     /// </summary>
-    public abstract class AbstractVirtualData : AbstractAnvilBase
+    public abstract class AbstractVirtualData<TKey> : AbstractAnvilBase
+        where TKey : unmanaged, IEquatable<TKey>
     {
-        internal static readonly BulkScheduleDelegate<AbstractVirtualData> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractVirtualData>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly VirtualDataBulkScheduleDelegate<AbstractVirtualData<TKey>, TKey> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<VirtualDataBulkScheduleDelegate<AbstractVirtualData<TKey>, TKey>, AbstractVirtualData<TKey>>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private readonly List<AbstractVirtualData> m_Sources;
-        private readonly List<AbstractVirtualData> m_ResultDestinations;
+        private readonly List<AbstractVirtualData<TKey>> m_Sources;
+        private readonly List<AbstractVirtualData<TKey>> m_ResultDestinations;
 
         internal AccessController AccessController { get; }
         internal Type Type { get; }
 
         protected AbstractVirtualData()
         {
-            m_Sources = new List<AbstractVirtualData>();
-            m_ResultDestinations = new List<AbstractVirtualData>();
+            m_Sources = new List<AbstractVirtualData<TKey>>();
+            m_ResultDestinations = new List<AbstractVirtualData<TKey>>();
             AccessController = new AccessController();
             Type = GetType();
         }
@@ -45,29 +46,29 @@ namespace Anvil.Unity.DOTS.Data
         // RELATIONSHIPS
         //*************************************************************************************************************
 
-        internal void AddResultDestination(AbstractVirtualData resultData)
+        internal void AddResultDestination(AbstractVirtualData<TKey> resultData)
         {
             m_ResultDestinations.Add(resultData);
         }
 
-        private void RemoveResultDestination(AbstractVirtualData resultData)
+        private void RemoveResultDestination(AbstractVirtualData<TKey> resultData)
         {
             m_ResultDestinations.Remove(resultData);
         }
 
-        internal void AddSource(AbstractVirtualData sourceData)
+        internal void AddSource(AbstractVirtualData<TKey> sourceData)
         {
             m_Sources.Add(sourceData);
         }
 
-        private void RemoveSource(AbstractVirtualData sourceData)
+        private void RemoveSource(AbstractVirtualData<TKey> sourceData)
         {
             m_Sources.Remove(sourceData);
         }
 
         private void RemoveFromSources()
         {
-            foreach (AbstractVirtualData sourceData in m_Sources)
+            foreach (AbstractVirtualData<TKey> sourceData in m_Sources)
             {
                 sourceData.RemoveResultDestination(this);
             }
@@ -92,7 +93,7 @@ namespace Anvil.Unity.DOTS.Data
             NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(len + 1, Allocator.Temp);
             for (int i = 0; i < len; ++i)
             {
-                AbstractVirtualData destinationData = m_ResultDestinations[i];
+                AbstractVirtualData<TKey> destinationData = m_ResultDestinations[i];
                 allDependencies[i] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
             }
 
@@ -111,7 +112,7 @@ namespace Anvil.Unity.DOTS.Data
             }
 
             //Release all the possible channels we could have written a result to.
-            foreach (AbstractVirtualData destinationData in m_ResultDestinations)
+            foreach (AbstractVirtualData<TKey> destinationData in m_ResultDestinations)
             {
                 destinationData.AccessController.ReleaseAsync(releaseAccessDependency);
             }
@@ -121,7 +122,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Acquire(AccessType.ExclusiveWrite);
 
-            foreach (AbstractVirtualData destinationData in m_ResultDestinations)
+            foreach (AbstractVirtualData<TKey> destinationData in m_ResultDestinations)
             {
                 destinationData.AccessController.Acquire(AccessType.SharedWrite);
             }
@@ -131,7 +132,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Release();
 
-            foreach (AbstractVirtualData destinationData in m_ResultDestinations)
+            foreach (AbstractVirtualData<TKey> destinationData in m_ResultDestinations)
             {
                 destinationData.AccessController.Release();
             }
@@ -140,6 +141,6 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
+        internal abstract JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData<TKey> cancelData);
     }
 }

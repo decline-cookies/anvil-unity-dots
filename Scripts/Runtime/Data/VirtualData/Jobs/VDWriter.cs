@@ -81,7 +81,6 @@ namespace Anvil.Unity.DOTS.Data
         public void Add(ref TInstance instance)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (m_State == WriterState.Uninitialized)
             {
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");

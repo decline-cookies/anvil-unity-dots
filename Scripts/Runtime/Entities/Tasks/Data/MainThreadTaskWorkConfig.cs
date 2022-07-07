@@ -6,9 +6,10 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// A <see cref="AbstractTaskWorkConfig"/> specific for Main Thread work.
     /// </summary>
-    public class MainThreadTaskWorkConfig : AbstractTaskWorkConfig
+    public class MainThreadTaskWorkConfig<TKey> : AbstractTaskWorkConfig<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
     {
-        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
+        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem<TKey> abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
         {
         }
 
@@ -20,9 +21,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// A <see cref="TaskWorkData"/> to use for doing the work.
         /// All required data will have proper access.
         /// </returns>
-        public TaskWorkData Acquire()
+        public TaskWorkData<TKey> Acquire()
         {
-            foreach (AbstractVDWrapper wrapper in DataWrappers)
+            foreach (AbstractVDWrapper<TKey> wrapper in DataWrappers)
             {
                 wrapper.Acquire();
             }
@@ -34,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal void Release()
         {
-            foreach (AbstractVDWrapper wrapper in DataWrappers)
+            foreach (AbstractVDWrapper<TKey> wrapper in DataWrappers)
             {
                 wrapper.Release();
             }
@@ -48,8 +49,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
+        public MainThreadTaskWorkConfig<TKey> RequireDataForAdd<TInstance>(VirtualData<TKey, TInstance> data)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataForAdd(data, false);
@@ -70,8 +70,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForAdd<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
-            where TKey : unmanaged, IEquatable<TKey>
+        public MainThreadTaskWorkConfig<TKey> RequireDataForAdd<TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
             where TInstance : unmanaged, IKeyedData<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
         {
@@ -89,8 +88,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
+        public MainThreadTaskWorkConfig<TKey> RequireDataForIterate<TInstance>(VirtualData<TKey, TInstance> data)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataForIterate(data, false);
@@ -105,8 +103,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
+        public MainThreadTaskWorkConfig<TKey> RequireDataForUpdate<TInstance>(VirtualData<TKey, TInstance> data)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataForUpdate(data, false);
@@ -124,8 +121,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData)
-            where TKey : unmanaged, IEquatable<TKey>
+        public MainThreadTaskWorkConfig<TKey> RequireDataAsResultsDestination<TResult>(VirtualData<TKey, TResult> resultData)
             where TResult : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataAsResultsDestination(resultData, false);

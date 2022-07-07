@@ -11,20 +11,21 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// A <see cref="AbstractTaskWorkConfig"/> specific for Jobs
     /// </summary>
-    public class JobTaskWorkConfig : AbstractTaskWorkConfig
+    public class JobTaskWorkConfig<TKey> : AbstractTaskWorkConfig<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
     {
-        internal static readonly BulkScheduleDelegate<JobTaskWorkConfig> PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<JobTaskWorkConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
-        
+        internal static readonly BulkScheduleDelegate<JobTaskWorkConfig<TKey>> PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<JobTaskWorkConfig<TKey>>, JobTaskWorkConfig<TKey>>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
+
         /// <summary>
         /// The scheduling callback that is called when the job struct needs to be created and run through the job scheduler.
         /// </summary>
-        public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, TaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
+        public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, TaskWorkData<TKey> jobTaskWorkData, IScheduleInfo scheduleInfo);
 
         private readonly bool m_IsForCancel;
         private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem, bool isForCancel) : base(abstractTaskDriverSystem)
+        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem<TKey> abstractTaskDriverSystem, bool isForCancel) : base(abstractTaskDriverSystem)
         {
             m_ScheduleJobDelegate = scheduleJobDelegate;
             m_IsForCancel = isForCancel;
@@ -42,8 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig ScheduleOn<TKey, TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
-            where TKey : unmanaged, IEquatable<TKey>
+        public JobTaskWorkConfig<TKey> ScheduleOn<TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             Debug_EnsureNoDuplicateScheduleInfo();
@@ -61,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to calculate scheduling with.</param>
         /// <typeparam name="T">The type of the data.</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig ScheduleOn<T>(NativeArray<T> array, BatchStrategy batchStrategy)
+        public JobTaskWorkConfig<TKey> ScheduleOn<T>(NativeArray<T> array, BatchStrategy batchStrategy)
             where T : unmanaged
         {
             Debug_EnsureNoDuplicateScheduleInfo();
@@ -77,8 +77,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
+        public JobTaskWorkConfig<TKey> RequireDataForAddAsync<TInstance>(VirtualData<TKey, TInstance> data)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataForAdd(data, true);
@@ -99,8 +98,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
-            where TKey : unmanaged, IEquatable<TKey>
+        public JobTaskWorkConfig<TKey> RequireDataForAddAsync<TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
             where TInstance : unmanaged, IKeyedData<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
         {
@@ -117,8 +115,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForIterateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
+        public JobTaskWorkConfig<TKey> RequireDataForIterateAsync<TInstance>(VirtualData<TKey, TInstance> data)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataForIterate(data, true);
@@ -133,8 +130,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForUpdateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
+        public JobTaskWorkConfig<TKey> RequireDataForUpdateAsync<TInstance>(VirtualData<TKey, TInstance> data)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataForUpdate(data, true);
@@ -152,11 +148,16 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData)
-            where TKey : unmanaged, IEquatable<TKey>
+        public JobTaskWorkConfig<TKey> RequireDataAsResultsDestination<TResult>(VirtualData<TKey, TResult> resultData)
             where TResult : unmanaged, IKeyedData<TKey>
         {
             InternalRequireDataAsResultsDestination(resultData, true);
+            return this;
+        }
+
+        public JobTaskWorkConfig<TKey> RequireTaskDriverForCancelAsync(AbstractTaskDriver<TKey> taskDriver)
+        {
+            InternalRequireTaskDriverForCancel(taskDriver, true);
             return this;
         }
 
@@ -175,7 +176,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             for (int i = 0; i < len; ++i)
             {
-                AbstractVDWrapper wrapper = DataWrappers[i];
+                AbstractVDWrapper<TKey> wrapper = DataWrappers[i];
                 dataDependencies[i] = wrapper.AcquireAsync();
             }
 
@@ -183,7 +184,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             JobHandle delegateDependency = m_ScheduleJobDelegate(JobHandle.CombineDependencies(dataDependencies), TaskWorkData, m_ScheduleInfo);
 
-            foreach (AbstractVDWrapper data in DataWrappers)
+            foreach (AbstractVDWrapper<TKey> data in DataWrappers)
             {
                 data.ReleaseAsync(delegateDependency);
             }
@@ -194,7 +195,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // SAFETY CHECKS
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoDuplicateScheduleInfo()
         {
@@ -203,7 +204,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"{nameof(ScheduleOn)} has already been called. This should only be called once");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureScheduleInfoPresent()
         {

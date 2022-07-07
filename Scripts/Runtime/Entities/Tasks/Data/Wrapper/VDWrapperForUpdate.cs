@@ -1,11 +1,13 @@
 using Anvil.Unity.DOTS.Data;
+using System;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VDWrapperForUpdate : AbstractVDWrapper
+    internal class VDWrapperForUpdate<TKey> : AbstractVDWrapper<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
     {
-        public VDWrapperForUpdate(AbstractVirtualData data) : base(data)
+        public VDWrapperForUpdate(AbstractVirtualData<TKey> data) : base(data)
         {
         }
         public override JobHandle AcquireAsync()

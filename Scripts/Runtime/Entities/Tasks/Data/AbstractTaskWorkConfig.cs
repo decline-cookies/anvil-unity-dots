@@ -9,7 +9,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// Configuration object to schedule a job that will be executed during an
     /// <see cref="AbstractTaskDriver{TTaskDriverSystem}"/> or <see cref="AbstractTaskDriverSystem"/>'s update phase.
     /// </summary>
-    public abstract class AbstractTaskWorkConfig
+    public abstract class AbstractTaskWorkConfig<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal enum DataUsage
@@ -21,7 +22,9 @@ namespace Anvil.Unity.DOTS.Entities
             UpdateAsync,
             Update,
             ResultsDestinationAsync,
-            ResultsDestination
+            ResultsDestination,
+            RequestCancelAsync,
+            RequestCancel
         }
 
         private enum ConfigState
@@ -33,27 +36,27 @@ namespace Anvil.Unity.DOTS.Entities
         private ConfigState m_ConfigState;
 #endif
 
-        internal List<AbstractVDWrapper> DataWrappers
+        internal List<AbstractVDWrapper<TKey>> DataWrappers
         {
             get;
         }
 
-        protected TaskWorkData TaskWorkData
+        protected TaskWorkData<TKey> TaskWorkData
         {
             get;
         }
 
-        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
+        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem<TKey> abstractTaskDriverSystem)
         {
-            DataWrappers = new List<AbstractVDWrapper>();
-            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem);
+            DataWrappers = new List<AbstractVDWrapper<TKey>>();
+            TaskWorkData = new TaskWorkData<TKey>(abstractTaskDriverSystem);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_ConfigState = ConfigState.Configuring;
 #endif
         }
 
-        private void AddDataWrapper(AbstractVDWrapper dataWrapper)
+        private void AddDataWrapper(AbstractVDWrapper<TKey> dataWrapper)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_ConfigState != ConfigState.Configuring)
@@ -65,47 +68,52 @@ namespace Anvil.Unity.DOTS.Entities
             DataWrappers.Add(dataWrapper);
         }
         
-        protected void InternalRequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
+        protected void InternalRequireDataForAdd<TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
+            VDWrapperForAdd<TKey> wrapper = new VDWrapperForAdd<TKey>(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.AddAsync : DataUsage.Add);
 #endif
         }
         
-        protected void InternalRequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
+        protected void InternalRequireDataForIterate<TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
+            VDWrapperForIterate<TKey> wrapper = new VDWrapperForIterate<TKey>(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.IterateAsync : DataUsage.Iterate);
 #endif
         }
         
-        protected void InternalRequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
+        protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
+            VDWrapperForUpdate<TKey> wrapper = new VDWrapperForUpdate<TKey>(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.UpdateAsync : DataUsage.Update);
 #endif
         }
         
-        protected void InternalRequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
+        protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TKey, TResult> resultData, bool isAsync)
             where TResult : unmanaged, IKeyedData<TKey>
         {
-            VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
+            VDWrapperAsResultsDestination<TKey> wrapper = new VDWrapperAsResultsDestination<TKey>(resultData);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.ResultsDestinationAsync : DataUsage.ResultsDestination);
+#endif
+        }
+
+        protected void InternalRequireTaskDriverForCancel(AbstractTaskDriver<TKey> taskDriver, bool isAsync)
+        {
+            VDWrapperForAdd<TKey> wrapper = new VDWrapperForAdd<TKey>(taskDriver.CancelData);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.RequestCancelAsync : DataUsage.RequestCancel);
 #endif
         }
 

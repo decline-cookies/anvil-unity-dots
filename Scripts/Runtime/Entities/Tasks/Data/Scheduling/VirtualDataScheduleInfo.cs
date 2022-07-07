@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public VirtualDataScheduleInfo(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy, bool isForCancel)
         {
-            DeferredNativeArrayScheduleInfo = isForCancel ? data.ScheduleInfo : data.CancelScheduleInfo;
+            DeferredNativeArrayScheduleInfo = data.ScheduleInfo;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
                 ? VirtualData<TKey, TInstance>.MAX_ELEMENTS_PER_CHUNK

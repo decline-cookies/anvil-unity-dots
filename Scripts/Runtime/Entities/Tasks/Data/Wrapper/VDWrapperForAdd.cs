@@ -1,12 +1,14 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VDWrapperForAdd : AbstractVDWrapper
+    internal class VDWrapperForAdd<TKey> : AbstractVDWrapper<TKey>
+        where TKey : unmanaged, IEquatable<TKey>
     {
-        public VDWrapperForAdd(AbstractVirtualData data) : base(data)
+        public VDWrapperForAdd(AbstractVirtualData<TKey> data) : base(data)
         {
         }
         
