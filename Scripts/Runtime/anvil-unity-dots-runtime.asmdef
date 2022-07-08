@@ -1,5 +1,6 @@
 {
     "name": "anvil-unity-dots-runtime",
+    "rootNamespace": "Anvil.Unity.DOTS",
     "references": [
         "anvil-csharp-core",
         "anvil-unity-core-runtime",
