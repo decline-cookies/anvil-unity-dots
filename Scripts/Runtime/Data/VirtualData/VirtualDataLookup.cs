@@ -8,19 +8,18 @@ namespace Anvil.Unity.DOTS.Data
     /// <summary>
     /// A lookup collection of <see cref="VirtualData{TKey,TInstance}"/> by <see cref="Type"/>
     /// </summary>
-    internal class VirtualDataLookup<TKey> : AbstractAnvilBase
-        where TKey : unmanaged, IEquatable<TKey>
+    internal class VirtualDataLookup : AbstractAnvilBase
     {
-        private readonly Dictionary<Type, AbstractVirtualData<TKey>> m_DataLookup;
+        private readonly Dictionary<Type, AbstractVirtualData> m_DataLookup;
 
         public VirtualDataLookup()
         {
-            m_DataLookup = new Dictionary<Type, AbstractVirtualData<TKey>>();
+            m_DataLookup = new Dictionary<Type, AbstractVirtualData>();
         }
 
         protected override void DisposeSelf()
         {
-            foreach (AbstractVirtualData<TKey> data in m_DataLookup.Values)
+            foreach (AbstractVirtualData data in m_DataLookup.Values)
             {
                 data.Dispose();
             }
@@ -36,10 +35,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> to add</param>
         /// <typeparam name="TKey">The type of Key</typeparam>
         /// <typeparam name="TInstance">The type of Instance data</typeparam>
-        public void AddData<TInstance>(VirtualData<TKey, TInstance> data)
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public void AddData<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
-            Type type = typeof(VirtualData<TKey, TInstance>);
+            Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_DataLookup.ContainsKey(type))
             {
@@ -55,10 +54,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The type of Key</typeparam>
         /// <typeparam name="TInstance">The type of Instance data</typeparam>
         /// <returns>The <see cref="VirtualData{TKey,TInstance}"/> instance</returns>
-        public VirtualData<TKey, TInstance> GetData<TInstance>()
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VirtualData<TInstance> GetData<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            Type type = typeof(VirtualData<TKey, TInstance>);
+            Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (!m_DataLookup.ContainsKey(type))
             {
@@ -66,7 +65,7 @@ namespace Anvil.Unity.DOTS.Data
             }
 #endif
 
-            return (VirtualData<TKey, TInstance>)m_DataLookup[type];
+            return (VirtualData<TInstance>)m_DataLookup[type];
         }
 
         /// <summary>
@@ -77,9 +76,9 @@ namespace Anvil.Unity.DOTS.Data
         /// A <see cref="JobHandle"/> that represents when all <see cref="VirtualData{TKey,TInstance}"/>
         /// consolidation is complete.
         /// </returns>
-        public JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData<TKey> cancelData)
+        public JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData cancelData)
         {
-            return m_DataLookup.Values.BulkScheduleParallel(dependsOn, cancelData, AbstractVirtualData<TKey>.CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE);
+            return m_DataLookup.Values.BulkScheduleParallel(dependsOn, cancelData, AbstractVirtualData.CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE);
         }
     }
 }

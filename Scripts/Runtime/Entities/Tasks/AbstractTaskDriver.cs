@@ -23,9 +23,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// The <see cref="AbstractTaskDriverSystem"/> this TaskDriver belongs to. This ensures that the TaskDriver is
     /// executed during the System's update phase and that job dependencies are written to the correct system.
     /// </typeparam>
-    public abstract class AbstractTaskDriver<TKey, TTaskDriverSystem> : AbstractTaskDriver<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
-        where TTaskDriverSystem : AbstractTaskDriverSystem<TKey>
+    public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver
+        where TTaskDriverSystem : AbstractTaskDriverSystem
     {
         /// <summary>
         /// The <see cref="AbstractTaskDriverSystem"/> this TaskDriver belongs to.
@@ -41,22 +40,21 @@ namespace Anvil.Unity.DOTS.Entities
     }
     
     /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}"/>
-    public abstract class AbstractTaskDriver<TKey> : AbstractAnvilBase
-        where TKey : unmanaged, IEquatable<TKey>
+    public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
-        internal static readonly BulkScheduleDelegate<AbstractTaskDriver<TKey>> POPULATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver<TKey>>, AbstractTaskDriver<TKey>>(nameof(Populate), BindingFlags.Instance | BindingFlags.NonPublic);
-        internal static readonly BulkScheduleDelegate<AbstractTaskDriver<TKey>> UPDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver<TKey>>, AbstractTaskDriver<TKey>>(nameof(Update), BindingFlags.Instance | BindingFlags.NonPublic);
-        internal static readonly BulkScheduleDelegate<AbstractTaskDriver<TKey>> CANCEL_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver<TKey>>, AbstractTaskDriver<TKey>>(nameof(Cancel), BindingFlags.Instance | BindingFlags.NonPublic);
-        internal static readonly BulkScheduleDelegate<AbstractTaskDriver<TKey>> CONSOLIDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver<TKey>>, AbstractTaskDriver<TKey>>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> POPULATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Populate), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> UPDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Update), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CANCEL_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Cancel), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CONSOLIDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.NonPublic);
         
-        private readonly VirtualDataLookup<TKey> m_InstanceDataLookup;
+        private readonly VirtualDataLookup m_InstanceDataLookup;
 
-        private readonly List<AbstractTaskDriver<TKey>> m_SubTaskDrivers;
-        private readonly List<JobTaskWorkConfig<TKey>> m_PopulateJobData;
-        private readonly List<JobTaskWorkConfig<TKey>> m_UpdateJobData;
-        private readonly List<JobTaskWorkConfig<TKey>> m_CancelJobData;
+        private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
+        private readonly List<JobTaskWorkConfig> m_PopulateJobData;
+        private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+        private readonly List<JobTaskWorkConfig> m_CancelJobData;
 
-        private MainThreadTaskWorkConfig<TKey> m_ActiveMainThreadTaskWorkConfig;
+        private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
 
         /// <summary>
         /// The <see cref="World"/> this TaskDriver belongs to.
@@ -67,28 +65,28 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}.System"/>
-        public AbstractTaskDriverSystem<TKey> System
+        public AbstractTaskDriverSystem System
         {
             get;
         }
 
-        internal CancelVirtualData<TKey> CancelData
+        internal CancelVirtualData CancelData
         {
             get;
         }
 
-        protected AbstractTaskDriver(World world, AbstractTaskDriverSystem<TKey> system)
+        protected AbstractTaskDriver(World world, AbstractTaskDriverSystem system)
         {
             World = world;
             System = system;
             
-            m_InstanceDataLookup = new VirtualDataLookup<TKey>();
+            m_InstanceDataLookup = new VirtualDataLookup();
             CancelData = System.CancelData;
 
-            m_SubTaskDrivers = new List<AbstractTaskDriver<TKey>>();
-            m_PopulateJobData = new List<JobTaskWorkConfig<TKey>>();
-            m_UpdateJobData = new List<JobTaskWorkConfig<TKey>>();
-            m_CancelJobData = new List<JobTaskWorkConfig<TKey>>();
+            m_SubTaskDrivers = new List<AbstractTaskDriver>();
+            m_PopulateJobData = new List<JobTaskWorkConfig>();
+            m_UpdateJobData = new List<JobTaskWorkConfig>();
+            m_CancelJobData = new List<JobTaskWorkConfig>();
 
             System.RegisterTaskDriver(this);
         }
@@ -98,7 +96,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_InstanceDataLookup.Dispose();
 
 
-            foreach (AbstractTaskDriver<TKey> childTaskDriver in m_SubTaskDrivers)
+            foreach (AbstractTaskDriver childTaskDriver in m_SubTaskDrivers)
             {
                 childTaskDriver.Dispose();
             }
@@ -118,10 +116,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <see cref="ReleaseMainThreadTaskWork"/> when finished. 
         /// </summary>
         /// <returns>A <see cref="MainThreadTaskWorkConfig"/> to chain on further customization.</returns>
-        public MainThreadTaskWorkConfig<TKey> CreateMainThreadTaskWork()
+        public MainThreadTaskWorkConfig CreateMainThreadTaskWork()
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig<TKey>(System);
+            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
             return m_ActiveMainThreadTaskWorkConfig;
         }
         
@@ -146,9 +144,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="scheduleJobDelegate">The scheduling delegate to call</param>
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
-        public JobTaskWorkConfig<TKey> ConfigurePopulateJob(JobTaskWorkConfig<TKey>.ScheduleJobDelegate scheduleJobDelegate)
+        public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig<TKey> config = new JobTaskWorkConfig<TKey>(scheduleJobDelegate, System, false);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, false);
             m_PopulateJobData.Add(config);
             return config;
         }
@@ -161,9 +159,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="scheduleJobDelegate">The scheduling delegate to call</param>
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
-        protected JobTaskWorkConfig<TKey> ConfigureUpdateJob(JobTaskWorkConfig<TKey>.ScheduleJobDelegate scheduleJobDelegate)
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig<TKey> config = new JobTaskWorkConfig<TKey>(scheduleJobDelegate, System, false);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, false);
             m_UpdateJobData.Add(config);
             return config;
         }
@@ -176,9 +174,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="scheduleJobDelegate">The scheduling delegate to call</param>
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
-        protected JobTaskWorkConfig<TKey> ConfigureCancelJob(JobTaskWorkConfig<TKey>.ScheduleJobDelegate scheduleJobDelegate)
+        protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig<TKey> config = new JobTaskWorkConfig<TKey>(scheduleJobDelegate, System, true);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, true);
             m_CancelJobData.Add(config);
             return config;
         }
@@ -186,19 +184,19 @@ namespace Anvil.Unity.DOTS.Entities
         private JobHandle Populate(JobHandle dependsOn)
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            return m_PopulateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig<TKey>.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
+            return m_PopulateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
         private JobHandle Update(JobHandle dependsOn)
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            return m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig<TKey>.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
+            return m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
         private JobHandle Cancel(JobHandle dependsOn)
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            return m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig<TKey>.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
+            return m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
         private JobHandle Consolidate(JobHandle dependsOn)
@@ -211,21 +209,21 @@ namespace Anvil.Unity.DOTS.Entities
             return consolidateHandle;
         }
         
-        protected void RegisterSubTaskDriver(AbstractTaskDriver<TKey> subTaskDriver)
+        protected void RegisterSubTaskDriver(AbstractTaskDriver subTaskDriver)
         {
             m_SubTaskDrivers.Add(subTaskDriver);
         }
 
-        protected VirtualData<TKey, TInstance> GetData<TInstance>()
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected VirtualData<TInstance> GetData<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
             return m_InstanceDataLookup.GetData<TInstance>();
         }
 
-        protected VirtualData<TKey, TInstance> CreateData<TInstance>(params AbstractVirtualData<TKey>[] sources)
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected VirtualData<TInstance> CreateData<TInstance>(params AbstractVirtualData[] sources)
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
+            VirtualData<TInstance> virtualData = VirtualData<TInstance>.Create(sources);
             m_InstanceDataLookup.AddData(virtualData);
             return virtualData;
         }

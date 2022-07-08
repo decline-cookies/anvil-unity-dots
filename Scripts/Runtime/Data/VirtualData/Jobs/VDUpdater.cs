@@ -17,9 +17,8 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TKey">The type of key to use for lookup of the instance</typeparam>
     /// <typeparam name="TInstance">The type of instance</typeparam>
     [BurstCompatible]
-    public struct VDUpdater<TKey, TInstance>
-        where TKey : unmanaged, IEquatable<TKey>
-        where TInstance : unmanaged, IKeyedData<TKey>
+    public struct VDUpdater<TInstance>
+        where TInstance : unmanaged, IKeyedData
     {
         private const int UNSET_LANE_INDEX = -1;
 
@@ -131,7 +130,7 @@ namespace Anvil.Unity.DOTS.Data
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(VDUpdater<TKey, TInstance>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(VDUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
             m_State = UpdaterState.Ready;
@@ -150,7 +149,7 @@ namespace Anvil.Unity.DOTS.Data
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(VDUpdater<TKey, TInstance>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(VDUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);

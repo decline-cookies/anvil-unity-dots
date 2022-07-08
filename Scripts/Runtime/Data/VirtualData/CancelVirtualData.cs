@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -37,18 +38,17 @@ namespace Anvil.Unity.DOTS.Data
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class CancelVirtualData<TKey> : AbstractVirtualData<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
+    public class CancelVirtualData : AbstractVirtualData
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TKey"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
         /// </summary>
-        private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TKey>();
+        private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<uint>();
 
-        private UnsafeTypedStream<TKey> m_Pending;
-        private DeferredNativeArray<TKey> m_IterationTarget;
-        private UnsafeParallelHashMap<TKey, bool> m_Lookup;
+        private UnsafeTypedStream<uint> m_Pending;
+        private DeferredNativeArray<uint> m_IterationTarget;
+        private UnsafeParallelHashMap<uint, bool> m_Lookup;
 
         internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
@@ -62,11 +62,11 @@ namespace Anvil.Unity.DOTS.Data
 
         internal CancelVirtualData() : base()
         {
-            m_Pending = new UnsafeTypedStream<TKey>(Allocator.Persistent,
+            m_Pending = new UnsafeTypedStream<uint>(Allocator.Persistent,
                                                     Allocator.TempJob);
-            m_IterationTarget = new DeferredNativeArray<TKey>(Allocator.Persistent,
+            m_IterationTarget = new DeferredNativeArray<uint>(Allocator.Persistent,
                                                               Allocator.TempJob);
-            m_Lookup = new UnsafeParallelHashMap<TKey, bool>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Lookup = new UnsafeParallelHashMap<uint, bool>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -90,20 +90,20 @@ namespace Anvil.Unity.DOTS.Data
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal VDLookupReader<TKey, bool> CreateVDLookupReader()
+        internal VDLookupReader<bool> CreateVDLookupReader()
         {
-            return new VDLookupReader<TKey, bool>(m_Lookup);
+            return new VDLookupReader<bool>(m_Lookup);
         }
 
-        internal VDCancelWriter<TKey> CreateVDCancelWriter()
+        internal VDCancelWriter CreateVDCancelWriter()
         {
-            return new VDCancelWriter<TKey>(m_Pending.AsWriter());
+            return new VDCancelWriter(m_Pending.AsWriter());
         }
 
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData<TKey> cancelData)
+        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData cancelData)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateCancelLookupJob consolidateCancelLookupJob = new ConsolidateCancelLookupJob(m_Pending,
@@ -123,13 +123,13 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct ConsolidateCancelLookupJob : IJob
         {
-            private UnsafeTypedStream<TKey> m_Pending;
-            private DeferredNativeArray<TKey> m_Iteration;
-            private UnsafeParallelHashMap<TKey, bool> m_Lookup;
+            private UnsafeTypedStream<uint> m_Pending;
+            private DeferredNativeArray<uint> m_Iteration;
+            private UnsafeParallelHashMap<uint, bool> m_Lookup;
 
-            public ConsolidateCancelLookupJob(UnsafeTypedStream<TKey> pending,
-                                              DeferredNativeArray<TKey> iteration,
-                                              UnsafeParallelHashMap<TKey, bool> lookup)
+            public ConsolidateCancelLookupJob(UnsafeTypedStream<uint> pending,
+                                              DeferredNativeArray<uint> iteration,
+                                              UnsafeParallelHashMap<uint, bool> lookup)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
@@ -144,9 +144,11 @@ namespace Anvil.Unity.DOTS.Data
 
                 //Get the new counts
                 int pendingCount = m_Pending.Count();
+                
+                Debug.Log($"EXECUTE CANCEL - {m_Pending.GetType()} - ConsolidateForFrame - Pending Count: {pendingCount}");
 
                 //Allocate memory for arrays based on counts
-                NativeArray<TKey> iterationArray = m_Iteration.DeferredCreate(pendingCount);
+                NativeArray<uint> iterationArray = m_Iteration.DeferredCreate(pendingCount);
 
                 //Fast blit
                 m_Pending.CopyTo(ref iterationArray);
@@ -154,7 +156,7 @@ namespace Anvil.Unity.DOTS.Data
                 //Populate the lookup
                 for (int i = 0; i < pendingCount; ++i)
                 {
-                    TKey key = iterationArray[i];
+                    uint key = iterationArray[i];
                     m_Lookup.TryAdd(key, true);
                 }
 

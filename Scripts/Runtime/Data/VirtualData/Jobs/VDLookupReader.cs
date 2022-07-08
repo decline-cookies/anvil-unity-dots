@@ -1,26 +1,24 @@
-using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public struct VDLookupReader<TKey, TInstance>
-        where TKey : unmanaged, IEquatable<TKey>
+    public struct VDLookupReader<TInstance>
         where TInstance : unmanaged
     {
-        [ReadOnly] private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
+        [ReadOnly] private UnsafeParallelHashMap<uint, TInstance> m_Lookup;
 
-        internal VDLookupReader(UnsafeParallelHashMap<TKey, TInstance> lookup)
+        internal VDLookupReader(UnsafeParallelHashMap<uint, TInstance> lookup)
         {
             m_Lookup = lookup;
         }
 
-        public bool ContainsKey(TKey key)
+        public bool ContainsKey(uint key)
         {
             return m_Lookup.ContainsKey(key);
         }
 
-        public TInstance this[TKey key]
+        public TInstance this[uint key]
         {
             get => m_Lookup[key];
         }

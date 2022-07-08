@@ -4,10 +4,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal abstract class AbstractVDWrapper<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
+    internal abstract class AbstractVDWrapper
     {
-        public AbstractVirtualData<TKey> Data
+        public AbstractVirtualData Data
         {
             get;
         }
@@ -17,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        protected AbstractVDWrapper(AbstractVirtualData<TKey> data)
+        protected AbstractVDWrapper(AbstractVirtualData data)
         {
             Data = data;
             Type = data.GetType();

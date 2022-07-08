@@ -7,11 +7,11 @@ namespace Anvil.Unity.DOTS.Data
 {
     internal static class VirtualDataBulkSchedulingExtension
     {
-        internal static JobHandle BulkScheduleParallel<TDictionaryKey, TElement, TKey>(this Dictionary<TDictionaryKey, TElement>.ValueCollection valueCollection,
+        internal static JobHandle BulkScheduleParallel<TDictionaryKey, TElement>(this Dictionary<TDictionaryKey, TElement>.ValueCollection valueCollection,
                                                                                        JobHandle dependsOn,
-                                                                                       CancelVirtualData<TKey> cancelData,
-                                                                                       VirtualDataBulkScheduleDelegate<TElement, TKey> scheduleFunc)
-            where TKey : unmanaged, IEquatable<TKey>
+                                                                                       CancelVirtualData cancelData,
+                                                                                       VirtualDataBulkScheduleDelegate scheduleFunc)
+            where TElement : AbstractVirtualData
         {
             int len = valueCollection.Count;
             if (len == 0)

@@ -5,10 +5,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VDWrapperForIterate<TKey> : AbstractVDWrapper<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
+    internal class VDWrapperForIterate : AbstractVDWrapper
     {
-        public VDWrapperForIterate(AbstractVirtualData<TKey> data) : base(data)
+        public VDWrapperForIterate(AbstractVirtualData data) : base(data)
         {
         }
         

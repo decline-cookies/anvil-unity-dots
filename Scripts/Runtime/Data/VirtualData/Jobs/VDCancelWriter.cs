@@ -5,14 +5,13 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     [BurstCompatible]
-    public struct VDCancelWriter<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
+    public struct VDCancelWriter
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TKey>.Writer m_CancelWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<uint>.Writer m_CancelWriter;
 
-        private UnsafeTypedStream<TKey>.LaneWriter m_CancelLaneWriter;
+        private UnsafeTypedStream<uint>.LaneWriter m_CancelLaneWriter;
         private int m_LaneIndex;
         
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -25,7 +24,7 @@ namespace Anvil.Unity.DOTS.Data
         private CancelWriterState m_State;
 #endif
         
-        internal VDCancelWriter(UnsafeTypedStream<TKey>.Writer cancelWriter) : this()
+        internal VDCancelWriter(UnsafeTypedStream<uint>.Writer cancelWriter) : this()
         {
             m_CancelWriter = cancelWriter;
 
@@ -52,12 +51,12 @@ namespace Anvil.Unity.DOTS.Data
             m_CancelLaneWriter = m_CancelWriter.AsLaneWriter(m_LaneIndex);
         }
 
-        public void RequestCancel(TKey key)
+        public void RequestCancel(uint key)
         {
             RequestCancel(ref key);
         }
 
-        public void RequestCancel(ref TKey key)
+        public void RequestCancel(ref uint key)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == CancelWriterState.Uninitialized)

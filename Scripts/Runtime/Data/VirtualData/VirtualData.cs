@@ -1,11 +1,11 @@
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
-using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -37,9 +37,8 @@ namespace Anvil.Unity.DOTS.Data
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class VirtualData<TKey, TInstance> : AbstractVirtualData<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
-        where TInstance : unmanaged, IKeyedData<TKey>
+    public class VirtualData<TInstance> : AbstractVirtualData
+        where TInstance : unmanaged, IKeyedData
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
@@ -47,11 +46,11 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
 
-        internal static VirtualData<TKey, TInstance> Create(params AbstractVirtualData<TKey>[] sources)
+        internal static VirtualData<TInstance> Create(params AbstractVirtualData[] sources)
         {
-            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = new VirtualData<TInstance>();
 
-            foreach (AbstractVirtualData<TKey> source in sources)
+            foreach (AbstractVirtualData source in sources)
             {
                 virtualData.AddSource(source);
                 source.AddResultDestination(virtualData);
@@ -63,7 +62,7 @@ namespace Anvil.Unity.DOTS.Data
         private UnsafeTypedStream<TInstance> m_Pending;
         private DeferredNativeArray<TInstance> m_IterationTarget;
         private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
-        private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
+        private UnsafeParallelHashMap<uint, TInstance> m_Lookup;
 
         internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
@@ -78,7 +77,7 @@ namespace Anvil.Unity.DOTS.Data
                                                                    Allocator.TempJob);
             m_CancelledIterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                             Allocator.TempJob);
-            m_Lookup = new UnsafeParallelHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Lookup = new UnsafeParallelHashMap<uint, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -108,9 +107,9 @@ namespace Anvil.Unity.DOTS.Data
             return new VDReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
         
-        internal VDLookupReader<TKey, TInstance> CreateVDLookupReader()
+        internal VDLookupReader<TInstance> CreateVDLookupReader()
         {
-            return new VDLookupReader<TKey, TInstance>(m_Lookup);
+            return new VDLookupReader<TInstance>(m_Lookup);
         }
 
         internal VDResultsDestination<TInstance> CreateVDResultsDestination()
@@ -118,9 +117,9 @@ namespace Anvil.Unity.DOTS.Data
             return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
         }
 
-        internal VDUpdater<TKey, TInstance> CreateVDUpdater()
+        internal VDUpdater<TInstance> CreateVDUpdater()
         {
-            return new VDUpdater<TKey, TInstance>(m_Pending.AsWriter(),
+            return new VDUpdater<TInstance>(m_Pending.AsWriter(),
                                                   m_IterationTarget.AsDeferredJobArray());
         }
 
@@ -132,7 +131,7 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData<TKey> cancelData)
+        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData cancelData)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
@@ -156,14 +155,14 @@ namespace Anvil.Unity.DOTS.Data
         {
             private UnsafeTypedStream<TInstance> m_Pending;
             private DeferredNativeArray<TInstance> m_IterationTarget;
-            private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
-            private VDLookupReader<TKey, bool> m_CancelledLookup;
+            private UnsafeParallelHashMap<uint, TInstance> m_Lookup;
+            private VDLookupReader<bool> m_CancelledLookup;
             private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
                                         DeferredNativeArray<TInstance> iterationTarget,
-                                        UnsafeParallelHashMap<TKey, TInstance> lookup,
-                                        VDLookupReader<TKey, bool> cancelledLookup,
+                                        UnsafeParallelHashMap<uint, TInstance> lookup,
+                                        VDLookupReader<bool> cancelledLookup,
                                         DeferredNativeArray<TInstance> cancelledIterationTarget)
             {
                 m_Pending = pending;
@@ -183,6 +182,14 @@ namespace Anvil.Unity.DOTS.Data
                 //Get the new counts
                 int pendingCount = m_Pending.Count();
                 int pendingCancelledCount = m_CancelledLookup.Count();
+                
+                Debug.Log($"EXECUTE - ConsolidateForFrame - Pending Count: {pendingCount}, Pending Cancelled Count: {pendingCancelledCount}");
+                
+                //TODO: Trap for mismatch on pendingCount being 0 but cancelled also existing
+                if (pendingCount == 0)
+                {
+                    return;
+                }
                 
                 //Take optimized path if possible
                 if (pendingCancelledCount == 0)

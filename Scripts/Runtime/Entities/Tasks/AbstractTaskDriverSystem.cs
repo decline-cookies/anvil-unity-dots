@@ -10,27 +10,26 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
     /// </summary>
-    public abstract partial class AbstractTaskDriverSystem<TKey> : AbstractAnvilSystemBase
-        where TKey : unmanaged, IEquatable<TKey>
+    public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
-        private readonly List<AbstractTaskDriver<TKey>> m_TaskDrivers;
-        private readonly VirtualDataLookup<TKey> m_InstanceDataLookup;
-        private readonly List<JobTaskWorkConfig<TKey>> m_UpdateJobData;
-        private readonly List<JobTaskWorkConfig<TKey>> m_CancelJobData;
+        private readonly List<AbstractTaskDriver> m_TaskDrivers;
+        private readonly VirtualDataLookup m_InstanceDataLookup;
+        private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+        private readonly List<JobTaskWorkConfig> m_CancelJobData;
 
-        public CancelVirtualData<TKey> CancelData
+        public CancelVirtualData CancelData
         {
             get;
         }
 
         protected AbstractTaskDriverSystem()
         {
-            m_InstanceDataLookup = new VirtualDataLookup<TKey>();
-            CancelData = new CancelVirtualData<TKey>();
+            m_InstanceDataLookup = new VirtualDataLookup();
+            CancelData = new CancelVirtualData();
             
-            m_TaskDrivers = new List<AbstractTaskDriver<TKey>>();
-            m_UpdateJobData = new List<JobTaskWorkConfig<TKey>>();
-            m_CancelJobData = new List<JobTaskWorkConfig<TKey>>();
+            m_TaskDrivers = new List<AbstractTaskDriver>();
+            m_UpdateJobData = new List<JobTaskWorkConfig>();
+            m_CancelJobData = new List<JobTaskWorkConfig>();
         }
         
         protected override void OnDestroy()
@@ -47,37 +46,37 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        protected JobTaskWorkConfig<TKey> ConfigureUpdateJob(JobTaskWorkConfig<TKey>.ScheduleJobDelegate scheduleJobDelegate)
+        protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig<TKey> config = new JobTaskWorkConfig<TKey>(scheduleJobDelegate, this, false);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, false);
             m_UpdateJobData.Add(config);
             return config;
         }
         
-        protected JobTaskWorkConfig<TKey> ConfigureCancelJob(JobTaskWorkConfig<TKey>.ScheduleJobDelegate scheduleJobDelegate)
+        protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig<TKey> config = new JobTaskWorkConfig<TKey>(scheduleJobDelegate, this, true);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, true);
             m_CancelJobData.Add(config);
             return config;
         }
         
         //TODO: #39 - Some way to remove the update Job
 
-        protected VirtualData<TKey, TInstance> CreateData<TInstance>(params AbstractVirtualData<TKey>[] sources)
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected VirtualData<TInstance> CreateData<TInstance>(params AbstractVirtualData[] sources)
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
+            VirtualData<TInstance> virtualData = VirtualData<TInstance>.Create(sources);
             m_InstanceDataLookup.AddData(virtualData);
             return virtualData;
         }
 
-        protected VirtualData<TKey, TInstance> GetData<TInstance>()
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected VirtualData<TInstance> GetData<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
             return m_InstanceDataLookup.GetData<TInstance>();
         }
 
-        internal void RegisterTaskDriver(AbstractTaskDriver<TKey> taskDriver)
+        internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
             m_TaskDrivers.Add(taskDriver);
@@ -91,7 +90,7 @@ namespace Anvil.Unity.DOTS.Entities
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
             //Have drivers be given the chance to add to the Instance Data
-            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver<TKey>.POPULATE_SCHEDULE_DELEGATE);
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
             
             //Consolidate our cancel data
             dependsOn = CancelData.ConsolidateForFrame(dependsOn, null);
@@ -100,22 +99,22 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn, CancelData);
             
             //Handle anything that was cancelled and allow for generic work to happen in the derived class
-            dependsOn = JobHandle.CombineDependencies(m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig<TKey>.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE),
-                                                      m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig<TKey>.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE));
+            dependsOn = JobHandle.CombineDependencies(m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE),
+                                                      m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE));
             
             //Have drivers consolidate their result data
-            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver<TKey>.CONSOLIDATE_SCHEDULE_DELEGATE);
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
             
             //Have drivers handle anything that was cancelled and do their own generic work
-            dependsOn = JobHandle.CombineDependencies(m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver<TKey>.CANCEL_SCHEDULE_DELEGATE),
-                                                      m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver<TKey>.UPDATE_SCHEDULE_DELEGATE));
+            dependsOn = JobHandle.CombineDependencies(m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CANCEL_SCHEDULE_DELEGATE),
+                                                      m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE));
 
             //Ensure this system's dependency is written back
             return dependsOn;
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureTaskDriverSystemRelationship(AbstractTaskDriver<TKey> taskDriver)
+        private void Debug_EnsureTaskDriverSystemRelationship(AbstractTaskDriver taskDriver)
         {
             if (taskDriver.System != this)
             {

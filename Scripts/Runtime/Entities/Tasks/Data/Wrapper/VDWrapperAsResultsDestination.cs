@@ -4,10 +4,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VDWrapperAsResultsDestination<TKey> : AbstractVDWrapper<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
+    internal class VDWrapperAsResultsDestination : AbstractVDWrapper
     {
-        public VDWrapperAsResultsDestination(AbstractVirtualData<TKey> data) : base(data)
+        public VDWrapperAsResultsDestination(AbstractVirtualData data) : base(data)
         {
         }
 

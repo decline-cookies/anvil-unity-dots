@@ -9,8 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// Configuration object to schedule a job that will be executed during an
     /// <see cref="AbstractTaskDriver{TTaskDriverSystem}"/> or <see cref="AbstractTaskDriverSystem"/>'s update phase.
     /// </summary>
-    public abstract class AbstractTaskWorkConfig<TKey>
-        where TKey : unmanaged, IEquatable<TKey>
+    public abstract class AbstractTaskWorkConfig
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal enum DataUsage
@@ -36,27 +35,27 @@ namespace Anvil.Unity.DOTS.Entities
         private ConfigState m_ConfigState;
 #endif
 
-        internal List<AbstractVDWrapper<TKey>> DataWrappers
+        internal List<AbstractVDWrapper> DataWrappers
         {
             get;
         }
 
-        protected TaskWorkData<TKey> TaskWorkData
+        protected TaskWorkData TaskWorkData
         {
             get;
         }
 
-        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem<TKey> abstractTaskDriverSystem)
+        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
         {
-            DataWrappers = new List<AbstractVDWrapper<TKey>>();
-            TaskWorkData = new TaskWorkData<TKey>(abstractTaskDriverSystem);
+            DataWrappers = new List<AbstractVDWrapper>();
+            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_ConfigState = ConfigState.Configuring;
 #endif
         }
 
-        private void AddDataWrapper(AbstractVDWrapper<TKey> dataWrapper)
+        private void AddDataWrapper(AbstractVDWrapper dataWrapper)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_ConfigState != ConfigState.Configuring)
@@ -68,49 +67,49 @@ namespace Anvil.Unity.DOTS.Entities
             DataWrappers.Add(dataWrapper);
         }
         
-        protected void InternalRequireDataForAdd<TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
-            VDWrapperForAdd<TKey> wrapper = new VDWrapperForAdd<TKey>(data);
+            VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.AddAsync : DataUsage.Add);
 #endif
         }
         
-        protected void InternalRequireDataForIterate<TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
-            VDWrapperForIterate<TKey> wrapper = new VDWrapperForIterate<TKey>(data);
+            VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.IterateAsync : DataUsage.Iterate);
 #endif
         }
         
-        protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
-            VDWrapperForUpdate<TKey> wrapper = new VDWrapperForUpdate<TKey>(data);
+            VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.UpdateAsync : DataUsage.Update);
 #endif
         }
         
-        protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TKey, TResult> resultData, bool isAsync)
-            where TResult : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData, bool isAsync)
+            where TResult : unmanaged, IKeyedData
         {
-            VDWrapperAsResultsDestination<TKey> wrapper = new VDWrapperAsResultsDestination<TKey>(resultData);
+            VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.ResultsDestinationAsync : DataUsage.ResultsDestination);
 #endif
         }
 
-        protected void InternalRequireTaskDriverForCancel(AbstractTaskDriver<TKey> taskDriver, bool isAsync)
+        protected void InternalRequireTaskDriverForCancel(AbstractTaskDriver taskDriver, bool isAsync)
         {
-            VDWrapperForAdd<TKey> wrapper = new VDWrapperForAdd<TKey>(taskDriver.CancelData);
+            VDWrapperForAdd wrapper = new VDWrapperForAdd(taskDriver.CancelData);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.RequestCancelAsync : DataUsage.RequestCancel);
