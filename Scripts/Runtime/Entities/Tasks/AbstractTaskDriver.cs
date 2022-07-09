@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -38,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
         }
     }
-    
+
     /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}"/>
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
@@ -46,7 +49,9 @@ namespace Anvil.Unity.DOTS.Entities
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> UPDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Update), BindingFlags.Instance | BindingFlags.NonPublic);
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CANCEL_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Cancel), BindingFlags.Instance | BindingFlags.NonPublic);
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CONSOLIDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.NonPublic);
-        
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CONSOLIDATE_CANCEL_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(ConsolidateCancel), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractTaskDriver> PROPAGATE_CANCEL_TO_SUB_TASK_DRIVERS_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<BulkScheduleDelegate<AbstractTaskDriver>, AbstractTaskDriver>(nameof(PropagateCancelToSubTaskDrivers), BindingFlags.Instance | BindingFlags.NonPublic);
+
         private readonly VirtualDataLookup m_InstanceDataLookup;
 
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
@@ -56,6 +61,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
 
+        private readonly int m_Context;
+
         /// <summary>
         /// The <see cref="World"/> this TaskDriver belongs to.
         /// </summary>
@@ -63,14 +70,14 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}.System"/>
         public AbstractTaskDriverSystem System
         {
             get;
         }
 
-        internal CancelVirtualData CancelData
+        internal CancelData CancelData
         {
             get;
         }
@@ -79,9 +86,12 @@ namespace Anvil.Unity.DOTS.Entities
         {
             World = world;
             System = system;
-            
+
+            //Generate a unique ID for this TaskDriver
+            m_Context = System.GetNextID();
+
             m_InstanceDataLookup = new VirtualDataLookup();
-            CancelData = System.CancelData;
+            CancelData = new CancelData(m_Context);
 
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             m_PopulateJobData = new List<JobTaskWorkConfig>();
@@ -94,7 +104,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void DisposeSelf()
         {
             m_InstanceDataLookup.Dispose();
-
+            CancelData.Dispose();
 
             foreach (AbstractTaskDriver childTaskDriver in m_SubTaskDrivers)
             {
@@ -119,10 +129,10 @@ namespace Anvil.Unity.DOTS.Entities
         public MainThreadTaskWorkConfig CreateMainThreadTaskWork()
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
+            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System, m_Context);
             return m_ActiveMainThreadTaskWorkConfig;
         }
-        
+
         /// <summary>
         /// Releases this TaskDriver from performing work on the main thread.
         /// <see cref="CreateMainThreadTaskWork"/>
@@ -146,7 +156,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, false);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, m_Context);
             m_PopulateJobData.Add(config);
             return config;
         }
@@ -161,11 +171,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, false);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, m_Context);
             m_UpdateJobData.Add(config);
             return config;
         }
-        
+
         /// <summary>
         /// Configures a job to be scheduled with the required data as specified by the <see cref="JobTaskWorkConfig"/>
         /// When scheduling, it will ensure that the data has the correct access.
@@ -176,7 +186,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, true);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, m_Context);
             m_CancelJobData.Add(config);
             return config;
         }
@@ -205,10 +215,67 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle cancelAccess = CancelData.AccessController.AcquireAsync(AccessType.SharedRead);
             JobHandle consolidateHandle = m_InstanceDataLookup.ConsolidateForFrame(JobHandle.CombineDependencies(dependsOn, cancelAccess), CancelData);
             CancelData.AccessController.ReleaseAsync(consolidateHandle);
-            
+
             return consolidateHandle;
         }
-        
+
+        private JobHandle ConsolidateCancel(JobHandle dependsOn)
+        {
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
+            JobHandle cancelAccess = CancelData.AccessController.AcquireAsync(AccessType.ExclusiveWrite);
+            JobHandle systemCancelAccess = System.CancelData.AccessController.AcquireAsync(AccessType.SharedWrite);
+
+            ConsolidateTaskDriverCancelDataJob taskDriverCancelDataJob = new ConsolidateTaskDriverCancelDataJob(CancelData, 
+                                                                                                                System.CancelData.CreateVDCancelWriter(m_Context));
+
+            dependsOn = JobHandle.CombineDependencies(dependsOn,
+                                                      cancelAccess,
+                                                      systemCancelAccess);
+            dependsOn = taskDriverCancelDataJob.Schedule(dependsOn);
+
+            CancelData.AccessController.ReleaseAsync(dependsOn);
+            System.CancelData.AccessController.ReleaseAsync(dependsOn);
+
+            return dependsOn;
+        }
+
+        private JobHandle PropagateCancelToSubTaskDrivers(JobHandle dependsOn)
+        {
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
+            
+            int len = m_SubTaskDrivers.Count;
+            if (len == 0)
+            {
+                return dependsOn;
+            }
+            
+            dependsOn = JobHandle.CombineDependencies(dependsOn,
+                                                      CancelData.AccessController.AcquireAsync(AccessType.SharedRead));
+
+            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            
+            for(int i = 0; i < len; ++i)
+            {
+                AbstractTaskDriver subTaskDriver = m_SubTaskDrivers[i];
+                JobHandle subTaskDriverCancelAccess = subTaskDriver.CancelData.AccessController.AcquireAsync(AccessType.SharedWrite);
+                PropagateCancelToSubTaskDriverJob propagateJob = new PropagateCancelToSubTaskDriverJob(CancelData.CreateVDReader(),
+                                                                                                       subTaskDriver.CancelData.CreateVDCancelWriter(m_Context));
+                JobHandle propagateHandle = propagateJob.ScheduleParallel(CancelData.ScheduleInfo,
+                                                                          CancelData.MaxElementsPerChunk,
+                                                                          JobHandle.CombineDependencies(dependsOn, subTaskDriverCancelAccess));
+                
+                subTaskDriver.CancelData.AccessController.ReleaseAsync(propagateHandle);
+                
+                dependencies[i] = propagateHandle;
+            }
+
+            dependsOn = JobHandle.CombineDependencies(dependencies);
+            
+            CancelData.AccessController.ReleaseAsync(dependsOn);
+            
+            return dependsOn;
+        }
+
         protected void RegisterSubTaskDriver(AbstractTaskDriver subTaskDriver)
         {
             m_SubTaskDrivers.Add(subTaskDriver);
@@ -228,6 +295,90 @@ namespace Anvil.Unity.DOTS.Entities
             return virtualData;
         }
 
+        //*************************************************************************************************************
+        // JOBS
+        //*************************************************************************************************************
+
+        [BurstCompile]
+        private struct PropagateCancelToSubTaskDriverJob : IAnvilJobForDefer
+        {
+            [ReadOnly] private readonly VDReader<VDID> m_ParentTaskDriverCancelReader;
+            private VDCancelWriter m_SubTaskDriverCancelWriter;
+
+            public PropagateCancelToSubTaskDriverJob(VDReader<VDID> parentTaskDriverCancelReader, 
+                                                     VDCancelWriter subTaskDriverCancelWriter)
+            {
+                m_ParentTaskDriverCancelReader = parentTaskDriverCancelReader;
+                m_SubTaskDriverCancelWriter = subTaskDriverCancelWriter;
+            }
+
+            public void InitForThread(int nativeThreadIndex)
+            {
+                m_SubTaskDriverCancelWriter.InitForThread(nativeThreadIndex);
+            }
+
+            public void Execute(int index)
+            {
+                VDID id = m_ParentTaskDriverCancelReader[index];
+                m_SubTaskDriverCancelWriter.RequestCancel(new VDID(id.Entity));
+            }
+        }
+        
+        
+        [BurstCompile]
+        private struct ConsolidateTaskDriverCancelDataJob : IAnvilJob
+        {
+            private UnsafeTypedStream<VDID> m_Pending;
+            private DeferredNativeArray<VDID> m_IterationTarget;
+            private UnsafeParallelHashMap<VDID, bool> m_Lookup;
+            private VDCancelWriter m_SystemCancelWriter;
+
+            public ConsolidateTaskDriverCancelDataJob(CancelData taskDriverCancelData,
+                                                      VDCancelWriter systemCancelWriter)
+            {
+                m_Pending = taskDriverCancelData.Pending;
+                m_IterationTarget = taskDriverCancelData.IterationTarget;
+                m_Lookup = taskDriverCancelData.Lookup;
+                m_SystemCancelWriter = systemCancelWriter;
+            }
+
+            public void InitForThread(int nativeThreadIndex)
+            {
+                m_SystemCancelWriter.InitForThread(nativeThreadIndex);
+            }
+
+            public void Execute()
+            {
+                //Clear previously consolidated 
+                m_Lookup.Clear();
+                m_IterationTarget.Clear();
+
+                //Get the new counts
+                int pendingCount = m_Pending.Count();
+
+                //Allocate memory for arrays based on counts
+                NativeArray<VDID> iterationArray = m_IterationTarget.DeferredCreate(pendingCount);
+
+                //Fast blit
+                m_Pending.CopyTo(ref iterationArray);
+
+                //Populate the lookup
+                for (int i = 0; i < pendingCount; ++i)
+                {
+                    VDID id = iterationArray[i];
+                    m_Lookup.TryAdd(id, true);
+                    //Also populate the system
+                    m_SystemCancelWriter.RequestCancel(ref id);
+                }
+
+                //Clear pending for next frame
+                m_Pending.Clear();
+            }
+        }
+
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoMainThreadWorkCurrentlyActive()

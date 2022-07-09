@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -14,11 +15,12 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TInstance">The type of instance to add</typeparam>
     [BurstCompatible]
     public struct VDWriter<TInstance>
-        where TInstance : unmanaged
+        where TInstance : unmanaged, IKeyedData
     {
         private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_InstanceWriter;
+        private readonly int m_Context;
 
         private UnsafeTypedStream<TInstance>.LaneWriter m_InstanceLaneWriter;
         private int m_LaneIndex;
@@ -34,9 +36,10 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
 
-        internal VDWriter(UnsafeTypedStream<TInstance>.Writer instanceWriter) : this()
+        internal VDWriter(UnsafeTypedStream<TInstance>.Writer instanceWriter, int context) : this()
         {
             m_InstanceWriter = instanceWriter;
+            m_Context = context;
 
             m_InstanceLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -86,6 +89,9 @@ namespace Anvil.Unity.DOTS.Data
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
             }
 #endif
+            //Injects the context
+            instance.ID = new VDID(instance.ID.Entity, m_Context);
+            
             m_InstanceLaneWriter.Write(ref instance);
         }
     }

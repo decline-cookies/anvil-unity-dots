@@ -12,12 +12,16 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
+        private const int SYSTEM_LEVEL_CANCEL_DATA_ID = -1;
+        
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly VirtualDataLookup m_InstanceDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
         private readonly List<JobTaskWorkConfig> m_CancelJobData;
 
-        public CancelVirtualData CancelData
+        private int m_TaskDriverID;
+
+        internal CancelData CancelData
         {
             get;
         }
@@ -25,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected AbstractTaskDriverSystem()
         {
             m_InstanceDataLookup = new VirtualDataLookup();
-            CancelData = new CancelVirtualData();
+            CancelData = new CancelData(SYSTEM_LEVEL_CANCEL_DATA_ID);
             
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
@@ -46,16 +50,24 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
+        internal int GetNextID()
+        {
+            //TODO: Make this robust
+            int id = m_TaskDriverID;
+            m_TaskDriverID++;
+            return id;
+        }
+
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, false);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CANCEL_DATA_ID);
             m_UpdateJobData.Add(config);
             return config;
         }
         
         protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, true);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CANCEL_DATA_ID);
             m_CancelJobData.Add(config);
             return config;
         }
@@ -89,12 +101,16 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            //Have drivers be given the chance to add to the Instance Data
-            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
+            //Consolidate all the CancelData for all TaskDrivers and write to the System Data at the same time
+            dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_CANCEL_SCHEDULE_DELEGATE);
             
-            //Consolidate our cancel data
-            dependsOn = CancelData.ConsolidateForFrame(dependsOn, null);
-            
+            //Consolidate our system cancel data,
+            //Have drivers be given the chance to add to the instance data
+            //Propagate the TaskDriver cancel data to any subtask drivers they may have
+            dependsOn = JobHandle.CombineDependencies(CancelData.ConsolidateForFrame(dependsOn),
+                                                      m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE),
+                                                      m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.PROPAGATE_CANCEL_TO_SUB_TASK_DRIVERS_SCHEDULE_DELEGATE));
+
             //Consolidate our instance data to operate on it
             dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn, CancelData);
             

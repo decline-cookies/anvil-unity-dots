@@ -1,5 +1,3 @@
-using System;
-
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
@@ -12,9 +10,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// The lookup key for this data
         /// </summary>
-        public uint Key
+        public VDID ID
         {
             get;
+            set;
         }
     }
 }

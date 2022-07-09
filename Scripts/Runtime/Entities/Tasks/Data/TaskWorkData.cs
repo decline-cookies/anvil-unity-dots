@@ -18,6 +18,8 @@ namespace Anvil.Unity.DOTS.Entities
         private static readonly int SYNCHRONOUS_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
         
         private readonly Dictionary<Type, AbstractVDWrapper> m_WrappedDataLookup;
+        private readonly Dictionary<Type, CancelData> m_CancelDataLookup;
+        private readonly int m_Context;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private readonly Dictionary<Type, AbstractTaskWorkConfig.DataUsage> m_DataUsageByType;
 #endif
@@ -48,11 +50,13 @@ namespace Anvil.Unity.DOTS.Entities
             get => ref World.Time;
         }
 
-        internal TaskWorkData(AbstractTaskDriverSystem system)
+        internal TaskWorkData(AbstractTaskDriverSystem system, int context)
         {
             System = system;
+            m_Context = context;
             World = System.World;
             m_WrappedDataLookup = new Dictionary<Type, AbstractVDWrapper>();
+            m_CancelDataLookup = new Dictionary<Type, CancelData>();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_DataUsageByType = new Dictionary<Type, AbstractTaskWorkConfig.DataUsage>();
 #endif
@@ -68,6 +72,18 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
             m_WrappedDataLookup.Add(dataWrapper.Type, dataWrapper);
         }
+        
+        internal void AddCancelData(CancelData cancelData)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_CancelDataLookup.ContainsKey(cancelData.Type))
+            {
+                throw new InvalidOperationException($"{this} already contains cancel data registered for {cancelData.Type}. Please ensure that data is not registered more than once.");
+            }
+#endif
+            m_CancelDataLookup.Add(cancelData.Type, cancelData);
+        }
+
 
         private VirtualData<TInstance> GetVirtualData<TInstance>()
             where TInstance : unmanaged, IKeyedData
@@ -83,18 +99,18 @@ namespace Anvil.Unity.DOTS.Entities
             return (VirtualData<TInstance>)wrapper.Data;
         }
 
-        private CancelVirtualData GetCancelData()
+        private CancelData GetCancelData()
         {
             //TODO: Type optimizations - static
-            Type type = typeof(CancelVirtualData);
+            Type type = typeof(CancelData);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (!m_WrappedDataLookup.ContainsKey(type))
+            if (!m_CancelDataLookup.ContainsKey(type))
             {
-                throw new InvalidOperationException($"Tried to get {nameof(CancelVirtualData)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
+                throw new InvalidOperationException($"Tried to get {nameof(CancelData)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
             }
 #endif
-            AbstractVDWrapper wrapper = m_WrappedDataLookup[type];
-            return (CancelVirtualData)wrapper.Data;
+            CancelData cancelData = m_CancelDataLookup[type];
+            return cancelData;
         }
 
         /// <summary>
@@ -227,7 +243,7 @@ namespace Anvil.Unity.DOTS.Entities
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
 #endif
             
-            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             return writer;
         }
         
@@ -246,19 +262,19 @@ namespace Anvil.Unity.DOTS.Entities
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
 #endif
             
-            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             writer.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return writer;
         }
 
         public VDCancelWriter GetVDCancelWriterAsync()
         {
-            CancelVirtualData cancelData = GetCancelData();
+            CancelData cancelData = GetCancelData();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(cancelData.Type, AbstractTaskWorkConfig.DataUsage.RequestCancelAsync);
 #endif
 
-            VDCancelWriter cancelWriter = cancelData.CreateVDCancelWriter();
+            VDCancelWriter cancelWriter = cancelData.CreateVDCancelWriter(m_Context);
             return cancelWriter;
         }
 

@@ -9,9 +9,10 @@ namespace Anvil.Unity.DOTS.Data
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<uint>.Writer m_CancelWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<VDID>.Writer m_CancelWriter;
+        private readonly int m_Context;
 
-        private UnsafeTypedStream<uint>.LaneWriter m_CancelLaneWriter;
+        private UnsafeTypedStream<VDID>.LaneWriter m_CancelLaneWriter;
         private int m_LaneIndex;
         
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -24,9 +25,10 @@ namespace Anvil.Unity.DOTS.Data
         private CancelWriterState m_State;
 #endif
         
-        internal VDCancelWriter(UnsafeTypedStream<uint>.Writer cancelWriter) : this()
+        internal VDCancelWriter(UnsafeTypedStream<VDID>.Writer cancelWriter, int context) : this()
         {
             m_CancelWriter = cancelWriter;
+            m_Context = context;
 
             m_CancelLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -51,12 +53,12 @@ namespace Anvil.Unity.DOTS.Data
             m_CancelLaneWriter = m_CancelWriter.AsLaneWriter(m_LaneIndex);
         }
 
-        public void RequestCancel(uint key)
+        public void RequestCancel(VDID id)
         {
-            RequestCancel(ref key);
+            RequestCancel(ref id);
         }
 
-        public void RequestCancel(ref uint key)
+        public void RequestCancel(ref VDID id)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == CancelWriterState.Uninitialized)
@@ -64,7 +66,10 @@ namespace Anvil.Unity.DOTS.Data
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to request a cancel");
             }
 #endif
-            m_CancelLaneWriter.Write(ref key);
+            
+            id.Context = m_Context;
+            
+            m_CancelLaneWriter.Write(ref id);
         }
         
     }

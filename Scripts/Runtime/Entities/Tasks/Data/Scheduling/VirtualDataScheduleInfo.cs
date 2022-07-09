@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public VirtualDataScheduleInfo(VirtualData<TInstance> data, BatchStrategy batchStrategy, bool isForCancel)
+        public VirtualDataScheduleInfo(VirtualData<TInstance> data, BatchStrategy batchStrategy)
         {
             DeferredNativeArrayScheduleInfo = data.ScheduleInfo;
 

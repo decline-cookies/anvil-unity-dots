@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Data
         /// A <see cref="JobHandle"/> that represents when all <see cref="VirtualData{TKey,TInstance}"/>
         /// consolidation is complete.
         /// </returns>
-        public JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData cancelData)
+        public JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelData cancelData)
         {
             return m_DataLookup.Values.BulkScheduleParallel(dependsOn, cancelData, AbstractVirtualData.CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE);
         }

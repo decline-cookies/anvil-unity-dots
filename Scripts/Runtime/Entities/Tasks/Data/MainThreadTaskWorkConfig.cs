@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public class MainThreadTaskWorkConfig : AbstractTaskWorkConfig
     {
-        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
+        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, int context) : base(abstractTaskDriverSystem, context)
         {
         }
 

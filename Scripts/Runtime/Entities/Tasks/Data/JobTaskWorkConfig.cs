@@ -19,15 +19,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// The scheduling callback that is called when the job struct needs to be created and run through the job scheduler.
         /// </summary>
         public delegate JobHandle ScheduleJobDelegate(JobHandle dependsOn, TaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo);
-
-        private readonly bool m_IsForCancel;
+        
         private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem, bool isForCancel) : base(abstractTaskDriverSystem)
+        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem, int context) : base(abstractTaskDriverSystem, context)
         {
             m_ScheduleJobDelegate = scheduleJobDelegate;
-            m_IsForCancel = isForCancel;
         }
 
         /// <summary>
@@ -46,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             Debug_EnsureNoDuplicateScheduleInfo();
-            m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy, m_IsForCancel);
+            m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy);
             return this;
         }
 

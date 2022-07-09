@@ -6,21 +6,21 @@ namespace Anvil.Unity.DOTS.Data
     public struct VDLookupReader<TInstance>
         where TInstance : unmanaged
     {
-        [ReadOnly] private UnsafeParallelHashMap<uint, TInstance> m_Lookup;
+        [ReadOnly] private UnsafeParallelHashMap<VDID, TInstance> m_Lookup;
 
-        internal VDLookupReader(UnsafeParallelHashMap<uint, TInstance> lookup)
+        internal VDLookupReader(UnsafeParallelHashMap<VDID, TInstance> lookup)
         {
             m_Lookup = lookup;
         }
 
-        public bool ContainsKey(uint key)
+        public bool ContainsKey(VDID id)
         {
-            return m_Lookup.ContainsKey(key);
+            return m_Lookup.ContainsKey(id);
         }
 
-        public TInstance this[uint key]
+        public TInstance this[VDID id]
         {
-            get => m_Lookup[key];
+            get => m_Lookup[id];
         }
 
         public int Count()

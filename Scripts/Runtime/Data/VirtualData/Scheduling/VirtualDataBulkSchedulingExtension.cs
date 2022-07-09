@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Data
     {
         internal static JobHandle BulkScheduleParallel<TDictionaryKey, TElement>(this Dictionary<TDictionaryKey, TElement>.ValueCollection valueCollection,
                                                                                        JobHandle dependsOn,
-                                                                                       CancelVirtualData cancelData,
+                                                                                       CancelData cancelData,
                                                                                        VirtualDataBulkScheduleDelegate scheduleFunc)
             where TElement : AbstractVirtualData
         {

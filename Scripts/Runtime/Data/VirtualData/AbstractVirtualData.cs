@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private readonly List<AbstractVirtualData> m_Sources;
         private readonly List<AbstractVirtualData> m_ResultDestinations;
+        
 
         internal AccessController AccessController { get; }
         internal Type Type { get; }
@@ -140,6 +141,6 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal abstract JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelVirtualData cancelData);
+        internal abstract JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelData cancelData);
     }
 }

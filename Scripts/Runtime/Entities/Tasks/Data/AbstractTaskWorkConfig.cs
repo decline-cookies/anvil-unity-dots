@@ -2,6 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -40,15 +41,24 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
+        private List<CancelData> CancelData_MAYBE_NOT_NEEDED
+        {
+            get;
+        }
+
         protected TaskWorkData TaskWorkData
         {
             get;
         }
 
-        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
+        private readonly int m_Context;
+
+        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, int context)
         {
+            m_Context = context;
             DataWrappers = new List<AbstractVDWrapper>();
-            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem);
+            CancelData_MAYBE_NOT_NEEDED = new List<CancelData>();
+            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem, m_Context);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_ConfigState = ConfigState.Configuring;
@@ -65,6 +75,18 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
             TaskWorkData.AddDataWrapper(dataWrapper);
             DataWrappers.Add(dataWrapper);
+        }
+
+        private void AddCancelData(CancelData cancelData)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_ConfigState != ConfigState.Configuring)
+            {
+                throw new InvalidOperationException($"{this} is trying to add a cancel data of {cancelData.Type} but the configuration phase is complete!");
+            }
+#endif
+            TaskWorkData.AddCancelData(cancelData);
+            CancelData_MAYBE_NOT_NEEDED.Add(cancelData);
         }
         
         protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
@@ -109,10 +131,9 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected void InternalRequireTaskDriverForCancel(AbstractTaskDriver taskDriver, bool isAsync)
         {
-            VDWrapperForAdd wrapper = new VDWrapperForAdd(taskDriver.CancelData);
-            AddDataWrapper(wrapper);
+            AddCancelData(taskDriver.CancelData);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.RequestCancelAsync : DataUsage.RequestCancel);
+            Debug_NotifyWorkDataOfUsage(taskDriver.CancelData.Type, isAsync ? DataUsage.RequestCancelAsync : DataUsage.RequestCancel);
 #endif
         }
 
