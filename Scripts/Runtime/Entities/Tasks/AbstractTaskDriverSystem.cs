@@ -96,6 +96,8 @@ namespace Anvil.Unity.DOTS.Entities
         
         protected override void OnUpdate()
         {
+            Debug_EnsureNoDataLoss(m_InstanceDataLookup, m_UpdateJobData);
+            
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
@@ -140,6 +142,31 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_TaskDrivers.Contains(taskDriver))
             {
                 throw new InvalidOperationException($"Trying to add {taskDriver} to {this}'s list of Task Drivers but it is already there!");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDataLoss(VirtualDataLookup virtualDataLookup, List<JobTaskWorkConfig> updateJobs)
+        {
+            Dictionary<Type, AbstractVirtualData>.KeyCollection dataTypes = virtualDataLookup.DataTypes;
+            HashSet<Type> jobTypes = new HashSet<Type>();
+
+            foreach (JobTaskWorkConfig updateJob in updateJobs)
+            {
+                Dictionary<Type, AbstractVDWrapper>.KeyCollection updateJobDataTypes = updateJob.Debug_TaskWorkData.DataTypes;
+                foreach (Type type in updateJobDataTypes)
+                {
+                    jobTypes.Add(type);
+                }
+            }
+            
+            //TODO: Should we ensure that we have actually scheduled a VDUpdater? Probably?
+            foreach (Type dataType in dataTypes)
+            {
+                if (!jobTypes.Contains(dataType))
+                {
+                    throw new InvalidOperationException($"{this} has data registered of type {dataType} but there is no Update Job that operates on that type! This data will never be handled.");
+                }
             }
         }
     }

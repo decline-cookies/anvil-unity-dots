@@ -24,7 +24,9 @@ namespace Anvil.Unity.DOTS.Entities
             ResultsDestinationAsync,
             ResultsDestination,
             RequestCancelAsync,
-            RequestCancel
+            RequestCancel,
+            CancelIterateAsync,
+            CancelIterate
         }
 
         private enum ConfigState
@@ -34,6 +36,11 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private ConfigState m_ConfigState;
+
+        internal TaskWorkData Debug_TaskWorkData
+        {
+            get => TaskWorkData;
+        }
 #endif
 
         internal List<AbstractVDWrapper> DataWrappers
@@ -106,6 +113,16 @@ namespace Anvil.Unity.DOTS.Entities
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.IterateAsync : DataUsage.Iterate);
+#endif
+        }
+        
+        protected void InternalRequireCancelDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
+        {
+            VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.CancelIterateAsync : DataUsage.CancelIterate);
 #endif
         }
         

@@ -16,14 +16,14 @@ namespace Anvil.Unity.DOTS.Entities
         //We don't have to be on the main thread, but it makes sense as a good default
         // ReSharper disable once StaticMemberInGenericType
         private static readonly int SYNCHRONOUS_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
-        
+
         private readonly Dictionary<Type, AbstractVDWrapper> m_WrappedDataLookup;
         private readonly Dictionary<Type, CancelData> m_CancelDataLookup;
         private readonly int m_Context;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private readonly Dictionary<Type, AbstractTaskWorkConfig.DataUsage> m_DataUsageByType;
 #endif
-        
+
         /// <summary>
         /// The <see cref="AbstractTaskDriverSystem"/> this job is being scheduled during.
         /// Calls to <see cref="SystemBase.GetComponentDataFromEntity{T}"/> and similar will attribute dependencies
@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         /// <summary>
         /// The <see cref="World"/> this job is being scheduled under.
         /// </summary>
@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         /// <summary>
         /// Helper function for accessing the <see cref="TimeData"/> normally found on <see cref="SystemBase.Time"/>
         /// </summary>
@@ -49,6 +49,13 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => ref World.Time;
         }
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        internal Dictionary<Type, AbstractVDWrapper>.KeyCollection DataTypes
+        {
+            get => m_WrappedDataLookup.Keys;
+        }
+#endif
 
         internal TaskWorkData(AbstractTaskDriverSystem system, int context)
         {
@@ -72,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
             m_WrappedDataLookup.Add(dataWrapper.Type, dataWrapper);
         }
-        
+
         internal void AddCancelData(CancelData cancelData)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -123,15 +130,28 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateAsync);
 #endif
-            
+
             VDReader<TInstance> reader = virtualData.CreateVDReader();
             return reader;
         }
-        
+
+        public VDReader<TInstance> GetVDCancelReaderAsync<TInstance>()
+            where TInstance : unmanaged, IKeyedData
+        {
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.CancelIterateAsync);
+#endif
+
+            VDReader<TInstance> reader = virtualData.CreateVDCancelReader();
+            return reader;
+        }
+
         /// <summary>
         /// Returns a <see cref="VDReader{TInstance}"/> for synchronous use.
         /// </summary>
@@ -142,11 +162,11 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Iterate);
 #endif
-            
+
             VDReader<TInstance> reader = virtualData.CreateVDReader();
             return reader;
         }
@@ -161,15 +181,15 @@ namespace Anvil.Unity.DOTS.Entities
             where TResult : unmanaged, IKeyedData
         {
             VirtualData<TResult> virtualData = GetVirtualData<TResult>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestinationAsync);
 #endif
-            
+
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
             return resultsDestination;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDResultsDestination{TResult}"/> for synchronous use.
         /// </summary>
@@ -180,15 +200,15 @@ namespace Anvil.Unity.DOTS.Entities
             where TResult : unmanaged, IKeyedData
         {
             VirtualData<TResult> virtualData = GetVirtualData<TResult>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestination);
 #endif
-            
+
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
             return resultsDestination;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDUpdater{TKey, TInstance}"/> for use in a job.
         /// </summary>
@@ -199,15 +219,15 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.UpdateAsync);
 #endif
-            
+
             VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
             return updater;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDUpdater{TKey, TInstance}"/> for synchronous use.
         /// </summary>
@@ -218,16 +238,16 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Update);
 #endif
-            
+
             VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
             updater.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return updater;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDWriter{TInstance}"/> for use in a job.
         /// </summary>
@@ -238,15 +258,15 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
 #endif
-            
+
             VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             return writer;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDWriter{TInstance}"/> for synchronous use.
         /// </summary>
@@ -257,11 +277,11 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
-            
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
 #endif
-            
+
             VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             writer.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return writer;

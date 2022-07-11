@@ -44,7 +44,15 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             Debug_EnsureNoDuplicateScheduleInfo();
-            m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy);
+            m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy, false);
+            return this;
+        }
+
+        public JobTaskWorkConfig ScheduleOnForCancel<TInstance>(VirtualData<TInstance> data, BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IKeyedData
+        {
+            Debug_EnsureNoDuplicateScheduleInfo();
+            m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy, true);
             return this;
         }
 
@@ -116,6 +124,13 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForIterate(data, true);
+            return this;
+        }
+        
+        public JobTaskWorkConfig RequireCancelDataForIterateAsync<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
+        {
+            InternalRequireCancelDataForIterate(data, true);
             return this;
         }
 

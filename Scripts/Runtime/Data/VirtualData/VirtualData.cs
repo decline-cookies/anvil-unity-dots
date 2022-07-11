@@ -69,6 +69,11 @@ namespace Anvil.Unity.DOTS.Data
             get => m_IterationTarget.ScheduleInfo;
         }
 
+        internal DeferredNativeArrayScheduleInfo CancelScheduleInfo
+        {
+            get => m_CancelledIterationTarget.ScheduleInfo;
+        }
+
         private VirtualData() : base()
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
@@ -105,6 +110,11 @@ namespace Anvil.Unity.DOTS.Data
         internal VDReader<TInstance> CreateVDReader()
         {
             return new VDReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
+        }
+        
+        internal VDReader<TInstance> CreateVDCancelReader()
+        {
+            return new VDReader<TInstance>(m_CancelledIterationTarget.AsDeferredJobArray());
         }
 
         internal VDLookupReader<TInstance> CreateVDLookupReader()
