@@ -194,15 +194,12 @@ namespace Anvil.Unity.DOTS.Data
                 //Get the new counts
                 int pendingCancelledCount = m_CancelledLookup.Count();
                 int pendingCount = m_Pending.Count();
-                
+
                 //Nothing for us to do if our count is 0
                 if (pendingCount == 0)
                 {
                     return;
                 }
-
-                //Revise pending count to take into account those that were cancelled
-                pendingCount -= pendingCancelledCount;
 
                 //Take optimized path if possible
                 if (pendingCancelledCount == 0)
@@ -211,7 +208,7 @@ namespace Anvil.Unity.DOTS.Data
                 }
                 else
                 {
-                    ConsolidateWithCancel(pendingCount, pendingCancelledCount);
+                    ConsolidateWithCancel(pendingCancelledCount);
                 }
 
                 //Clear pending for next frame
@@ -234,14 +231,15 @@ namespace Anvil.Unity.DOTS.Data
                 }
             }
 
-            private void ConsolidateWithCancel(int pendingCount, int pendingCancelledCount)
+            private void ConsolidateWithCancel(int pendingCancelledCount)
             {
                 //Allocate memory for array based on counts
-                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(pendingCount);
+                UnsafeTypedStream<TInstance> iterationBuildUp = new UnsafeTypedStream<TInstance>(Allocator.Temp, 1);
+                UnsafeTypedStream<TInstance>.LaneWriter iterationBuildUpLaneWriter = iterationBuildUp.AsLaneWriter(0);
                 NativeArray<TInstance> cancelledIterationArray = m_CancelledIterationTarget.DeferredCreate(pendingCancelledCount);
 
                 //Build up the surviving iteration array and lookup
-                int iterationIndex = 0;
+                int iterationCount = 0;
                 int cancelledIterationIndex = 0;
                 for (int laneIndex = 0; laneIndex < m_Pending.LaneCount; ++laneIndex)
                 {
@@ -255,12 +253,16 @@ namespace Anvil.Unity.DOTS.Data
                             cancelledIterationIndex++;
                             continue;
                         }
-
-                        iterationArray[iterationIndex] = instance;
+                        
+                        iterationBuildUpLaneWriter.Write(instance);
                         m_Lookup.TryAdd(instance.ContextID, instance);
-                        iterationIndex++;
+                        iterationCount++;
                     }
                 }
+                
+                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(iterationCount);
+                //Fast blit
+                iterationBuildUp.CopyTo(ref iterationArray);
             }
         }
 
@@ -280,7 +282,7 @@ namespace Anvil.Unity.DOTS.Data
 
             private VDUpdater<TInstance> m_Updater;
 
-            public KeepPersistentJob(VDUpdater<TInstance> updater)
+            private KeepPersistentJob(VDUpdater<TInstance> updater)
             {
                 m_Updater = updater;
             }
