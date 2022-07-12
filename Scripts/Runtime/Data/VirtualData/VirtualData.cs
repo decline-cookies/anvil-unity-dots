@@ -7,7 +7,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
 
 //TODO: DISCUSS - Namespace
 
@@ -165,6 +164,7 @@ namespace Anvil.Unity.DOTS.Data
             private DeferredNativeArray<TInstance> m_IterationTarget;
             private UnsafeParallelHashMap<VDContextID, TInstance> m_Lookup;
             private VDLookupReader<bool> m_CancelledLookup;
+            //TODO: DISCUSS - Split this out into separate data 
             private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
@@ -192,17 +192,17 @@ namespace Anvil.Unity.DOTS.Data
                 m_CancelledIterationTarget.Clear();
 
                 //Get the new counts
-                int pendingCount = m_Pending.Count();
                 int pendingCancelledCount = m_CancelledLookup.Count();
-
-                //Revise pending count to take into account those that were cancelled
-                pendingCount = math.max(pendingCount, pendingCount - pendingCancelledCount);
-
+                int pendingCount = m_Pending.Count();
+                
                 //Nothing for us to do if our count is 0
                 if (pendingCount == 0)
                 {
                     return;
                 }
+
+                //Revise pending count to take into account those that were cancelled
+                pendingCount -= pendingCancelledCount;
 
                 //Take optimized path if possible
                 if (pendingCancelledCount == 0)

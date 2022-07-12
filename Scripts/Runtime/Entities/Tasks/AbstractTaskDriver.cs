@@ -11,6 +11,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -379,7 +380,7 @@ namespace Anvil.Unity.DOTS.Entities
                 for (int i = 0; i < pendingCount; ++i)
                 {
                     VDContextID id = iterationArray[i];
-                    m_Lookup.TryAdd(id, true);
+                    m_Lookup.TryAdd(id, true); 
                     //Also populate the system
                     m_SystemCancelWriter.Cancel(ref id);
                 }

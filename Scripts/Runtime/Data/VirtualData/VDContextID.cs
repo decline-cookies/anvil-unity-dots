@@ -53,7 +53,11 @@ namespace Anvil.Unity.DOTS.Data
 
         public override int GetHashCode()
         {
-            return (Entity, Context).GetHashCode();
+            //Taken from ValueTuple.cs GetHashCode. 
+            //https://github.com/dotnet/roslyn/blob/main/src/Compilers/Test/Resources/Core/NetFX/ValueTuple/ValueTuple.cs
+            //Unfortunately we can't use directly because it has a static Random class it creates which doesn't jive with Burst
+            uint rol5 = ((uint)Context << 5) | ((uint)Context >> 27);
+            return ((int)rol5 + Context) ^ Entity.Index;
         }
 
         public override string ToString()
