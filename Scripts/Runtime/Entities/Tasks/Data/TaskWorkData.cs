@@ -13,8 +13,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public class TaskWorkData
     {
+        //TODO: DISCUSS Interfaces? Or Specific types of TaskWorkData to limit what you do?
         //We don't have to be on the main thread, but it makes sense as a good default
-        // ReSharper disable once StaticMemberInGenericType
         private static readonly int SYNCHRONOUS_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
 
         private readonly Dictionary<Type, AbstractVDWrapper> m_WrappedDataLookup;
@@ -51,9 +51,9 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        internal Dictionary<Type, AbstractVDWrapper>.KeyCollection DataTypes
+        internal Dictionary<Type, AbstractVDWrapper> Debug_WrappedDataLookup
         {
-            get => m_WrappedDataLookup.Keys;
+            get => m_WrappedDataLookup;
         }
 #endif
 
@@ -106,10 +106,8 @@ namespace Anvil.Unity.DOTS.Entities
             return (VirtualData<TInstance>)wrapper.Data;
         }
 
-        private CancelData GetCancelData()
+        private CancelData GetCancelData(Type type)
         {
-            //TODO: Type optimizations - static
-            Type type = typeof(CancelData);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (!m_CancelDataLookup.ContainsKey(type))
             {
@@ -132,7 +130,7 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateAsync);
 #endif
 
             VDReader<TInstance> reader = virtualData.CreateVDReader();
@@ -145,10 +143,10 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.CancelIterateAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateCancelledAsync);
 #endif
 
-            VDReader<TInstance> reader = virtualData.CreateVDCancelReader();
+            VDReader<TInstance> reader = virtualData.CreateVDCancelledReader();
             return reader;
         }
 
@@ -164,7 +162,7 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Iterate);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Iterate);
 #endif
 
             VDReader<TInstance> reader = virtualData.CreateVDReader();
@@ -183,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TResult> virtualData = GetVirtualData<TResult>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestinationAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestinationAsync);
 #endif
 
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
@@ -202,7 +200,7 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TResult> virtualData = GetVirtualData<TResult>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestination);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestination);
 #endif
 
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
@@ -221,7 +219,8 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.UpdateAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.UpdateAsync);
+            Debug_CheckForResultsDestinations(virtualData);
 #endif
 
             VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
@@ -240,7 +239,8 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Update);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Update);
+            Debug_CheckForResultsDestinations(virtualData);
 #endif
 
             VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
@@ -260,7 +260,7 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
 #endif
 
             VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
@@ -279,7 +279,7 @@ namespace Anvil.Unity.DOTS.Entities
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
 #endif
 
             VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
@@ -287,16 +287,17 @@ namespace Anvil.Unity.DOTS.Entities
             return writer;
         }
 
-        public VDCancelWriter GetVDCancelWriterAsync()
+        public VDCancelWriter GetVDCancelWriterAsync<T>()
         {
-            CancelData cancelData = GetCancelData();
+            CancelData cancelData = GetCancelData(typeof(T));
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(cancelData.Type, AbstractTaskWorkConfig.DataUsage.RequestCancelAsync);
+            Debug_CheckUsage(cancelData.Type, AbstractTaskWorkConfig.DataUsage.RequestCancelAsync);
 #endif
 
             VDCancelWriter cancelWriter = cancelData.CreateVDCancelWriter(m_Context);
             return cancelWriter;
         }
+        
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal void Debug_NotifyWorkDataOfUsage(Type type, AbstractTaskWorkConfig.DataUsage usage)
@@ -304,12 +305,26 @@ namespace Anvil.Unity.DOTS.Entities
             m_DataUsageByType.Add(type, usage);
         }
 
-        private void CheckUsage(Type type, AbstractTaskWorkConfig.DataUsage expectedUsage)
+        private void Debug_CheckUsage(Type type, AbstractTaskWorkConfig.DataUsage expectedUsage)
         {
             AbstractTaskWorkConfig.DataUsage dataUsage = m_DataUsageByType[type];
             if (dataUsage != expectedUsage)
             {
                 throw new InvalidOperationException($"Trying to get data of {type} with usage of {expectedUsage} but data was required with {dataUsage}. Check the configuration for the right \"Require\" calls.");
+            }
+        }
+        
+        private void Debug_CheckForResultsDestinations<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
+        {
+            if (!typeof(IVirtualDataInstance).IsAssignableFrom(typeof(TInstance)))
+            {
+                return;
+            }
+
+            if (data.Debug_ResultDestinationsCount == 0)
+            {
+                throw new InvalidOperationException($"Data of {typeof(TInstance)} is to be used in an Update Job and will write results. However the results data was not constructed with a source! Check the creation of the results data.");
             }
         }
 #endif

@@ -24,7 +24,6 @@ namespace Anvil.Unity.DOTS.Data
             where TResult : unmanaged
         {
             VDResultsWriter<TResult> resultsWriter = instance.ResultsDestination.AsResultsWriter();
-            //TODO: Injection?
             resultsWriter.Add(ref result, updater.LaneIndex);
             updater.Resolve();
         }

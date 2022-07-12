@@ -135,8 +135,7 @@ namespace Anvil.Unity.DOTS.Data
 
             m_State = UpdaterState.Ready;
 #endif
-            //TODO: Injection?
-            
+
             m_ContinueLaneWriter.Write(ref instance);
         }
 

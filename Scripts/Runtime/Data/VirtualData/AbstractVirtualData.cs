@@ -18,13 +18,25 @@ namespace Anvil.Unity.DOTS.Data
 
         private readonly List<AbstractVirtualData> m_Sources;
         private readonly List<AbstractVirtualData> m_ResultDestinations;
-        
 
         internal AccessController AccessController { get; }
         internal Type Type { get; }
 
-        protected AbstractVirtualData()
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        internal int Debug_ResultDestinationsCount
         {
+            get => m_ResultDestinations.Count;
+        }
+#endif
+
+        internal VirtualDataIntent Intent
+        {
+            get;
+        }
+
+        protected AbstractVirtualData(VirtualDataIntent intent)
+        {
+            Intent = intent;
             m_Sources = new List<AbstractVirtualData>();
             m_ResultDestinations = new List<AbstractVirtualData>();
             AccessController = new AccessController();
@@ -41,7 +53,7 @@ namespace Anvil.Unity.DOTS.Data
 
             base.DisposeSelf();
         }
-        
+
         //*************************************************************************************************************
         // RELATIONSHIPS
         //*************************************************************************************************************

@@ -12,14 +12,18 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
-        private const int SYSTEM_LEVEL_CANCEL_DATA_ID = -1;
-        
+        private const int SYSTEM_LEVEL_CONTEXT = -2;
+
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly VirtualDataLookup m_InstanceDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
-        private readonly List<JobTaskWorkConfig> m_CancelJobData;
+        private readonly List<JobTaskWorkConfig> m_HandleCancelledJobData;
 
         private int m_TaskDriverID;
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        private bool m_HasCheckedUpdateJobsForDataLoss;
+#endif
 
         internal CancelData CancelData
         {
@@ -29,21 +33,21 @@ namespace Anvil.Unity.DOTS.Entities
         protected AbstractTaskDriverSystem()
         {
             m_InstanceDataLookup = new VirtualDataLookup();
-            CancelData = new CancelData(SYSTEM_LEVEL_CANCEL_DATA_ID);
-            
+            CancelData = new CancelData(this);
+
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
-            m_CancelJobData = new List<JobTaskWorkConfig>();
+            m_HandleCancelledJobData = new List<JobTaskWorkConfig>();
         }
-        
+
         protected override void OnDestroy()
         {
             m_InstanceDataLookup.Dispose();
             CancelData.Dispose();
-            
+
             m_UpdateJobData.Clear();
-            m_CancelJobData.Clear();
-            
+            m_HandleCancelledJobData.Clear();
+
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
             m_TaskDrivers.Clear();
 
@@ -52,7 +56,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal int GetNextID()
         {
-            //TODO: Make this robust
+            //TODO: DISCUSS - Make this robust
             int id = m_TaskDriverID;
             m_TaskDriverID++;
             return id;
@@ -60,25 +64,34 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CANCEL_DATA_ID);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CONTEXT);
             m_UpdateJobData.Add(config);
             return config;
         }
-        
-        protected JobTaskWorkConfig ConfigureCancelJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
+
+        protected JobTaskWorkConfig ConfigureHandleCancelledJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CANCEL_DATA_ID);
-            m_CancelJobData.Add(config);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CONTEXT);
+            m_HandleCancelledJobData.Add(config);
             return config;
         }
-        
+
         //TODO: #39 - Some way to remove the update Job
 
-        protected VirtualData<TInstance> CreateData<TInstance>(params AbstractVirtualData[] sources)
+        protected VirtualData<TInstance> CreateData<TInstance>(VirtualDataIntent intent, params AbstractVirtualData[] sources)
             where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TInstance> virtualData = VirtualData<TInstance>.Create(sources);
+            VirtualData<TInstance> virtualData = new VirtualData<TInstance>(intent, sources);
             m_InstanceDataLookup.AddData(virtualData);
+            
+            //TODO: Similarities on AbstractTaskDriver
+            //Add helper simple job to keep the data around each frame
+            if (intent == VirtualDataIntent.Persistent)
+            {
+                ConfigureUpdateJob(VirtualData<TInstance>.KeepPersistentJob.Schedule)
+                   .ScheduleOn(virtualData, BatchStrategy.MaximizeChunk)
+                   .RequireDataForUpdateAsync(virtualData);
+            }
             return virtualData;
         }
 
@@ -93,44 +106,45 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
             m_TaskDrivers.Add(taskDriver);
         }
-        
+
         protected override void OnUpdate()
         {
-            Debug_EnsureNoDataLoss(m_InstanceDataLookup, m_UpdateJobData);
-            
+            JobTaskWorkConfig.Debug_EnsureNoDataLoss(this, m_InstanceDataLookup, m_UpdateJobData, ref m_HasCheckedUpdateJobsForDataLoss);
+            //TODO: DISCUSS - Should we ensure no CancelData loss?
+
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            //Consolidate all the CancelData for all TaskDrivers and write to the System Data at the same time
+            //Consolidate all the CancelData for all TaskDrivers and write to the system level CancelData at the same time
             dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_CANCEL_SCHEDULE_DELEGATE);
-            
-            //Consolidate our system cancel data,
+
+            //Consolidate our system level CancelData,
             //Have drivers be given the chance to add to the instance data
-            //Propagate the TaskDriver cancel data to any subtask drivers they may have
+            //Propagate the TaskDriver cancel data to any subtask drivers
             dependsOn = JobHandle.CombineDependencies(CancelData.ConsolidateForFrame(dependsOn),
                                                       m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE),
                                                       m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.PROPAGATE_CANCEL_TO_SUB_TASK_DRIVERS_SCHEDULE_DELEGATE));
 
             //Consolidate our instance data to operate on it
             dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn, CancelData);
-            
+
             //Handle anything that was cancelled and allow for generic work to happen in the derived class
-            dependsOn = JobHandle.CombineDependencies(m_CancelJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE),
+            dependsOn = JobHandle.CombineDependencies(m_HandleCancelledJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE),
                                                       m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE));
-            
-            //Have drivers consolidate their result data
+
+            //Have drivers consolidate their instance data
             dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
-            
-            //Have drivers handle anything that was cancelled and do their own generic work
-            dependsOn = JobHandle.CombineDependencies(m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CANCEL_SCHEDULE_DELEGATE),
+
+            //Have drivers handle anything that was cancelled and do their own generic update work
+            dependsOn = JobHandle.CombineDependencies(m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.HANDLE_CANCELLED_SCHEDULE_DELEGATE),
                                                       m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE));
 
             //Ensure this system's dependency is written back
             return dependsOn;
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureTaskDriverSystemRelationship(AbstractTaskDriver taskDriver)
         {
@@ -145,29 +159,6 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDataLoss(VirtualDataLookup virtualDataLookup, List<JobTaskWorkConfig> updateJobs)
-        {
-            Dictionary<Type, AbstractVirtualData>.KeyCollection dataTypes = virtualDataLookup.DataTypes;
-            HashSet<Type> jobTypes = new HashSet<Type>();
-
-            foreach (JobTaskWorkConfig updateJob in updateJobs)
-            {
-                Dictionary<Type, AbstractVDWrapper>.KeyCollection updateJobDataTypes = updateJob.Debug_TaskWorkData.DataTypes;
-                foreach (Type type in updateJobDataTypes)
-                {
-                    jobTypes.Add(type);
-                }
-            }
-            
-            //TODO: Should we ensure that we have actually scheduled a VDUpdater? Probably?
-            foreach (Type dataType in dataTypes)
-            {
-                if (!jobTypes.Contains(dataType))
-                {
-                    throw new InvalidOperationException($"{this} has data registered of type {dataType} but there is no Update Job that operates on that type! This data will never be handled.");
-                }
-            }
-        }
+        
     }
 }

@@ -13,9 +13,9 @@ namespace Anvil.Unity.DOTS.Data
         private readonly Dictionary<Type, AbstractVirtualData> m_DataLookup;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        internal Dictionary<Type, AbstractVirtualData>.KeyCollection DataTypes
+        internal Dictionary<Type, AbstractVirtualData> Debug_DataLookup
         {
-            get => m_DataLookup.Keys;
+            get => m_DataLookup;
         }
 #endif
 

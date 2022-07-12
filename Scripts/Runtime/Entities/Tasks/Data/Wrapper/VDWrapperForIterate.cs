@@ -1,6 +1,5 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities

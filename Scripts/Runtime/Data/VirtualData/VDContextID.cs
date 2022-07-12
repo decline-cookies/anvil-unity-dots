@@ -3,16 +3,16 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    public struct VDID : IEquatable<VDID>
+    public struct VDContextID : IEquatable<VDContextID>
     {
         public const int UNSET_CONTEXT = -1;
         
-        public static bool operator==(VDID lhs, VDID rhs)
+        public static bool operator==(VDContextID lhs, VDContextID rhs)
         {
             return lhs.Entity == rhs.Entity && lhs.Context == rhs.Context;
         }
         
-        public static bool operator!=(VDID lhs, VDID rhs)
+        public static bool operator!=(VDContextID lhs, VDContextID rhs)
         {
             return !(lhs == rhs);
         }
@@ -28,26 +28,26 @@ namespace Anvil.Unity.DOTS.Data
             internal set;
         }
 
-        public VDID(Entity entity)
+        public VDContextID(Entity entity)
         {
             Entity = entity;
             Context = UNSET_CONTEXT;
         }
 
-        internal VDID(Entity entity, int context)
+        internal VDContextID(VDContextID contextID, int context)
         {
-            Entity = entity;
+            Entity = contextID.Entity;
             Context = context;
         }
 
-        public bool Equals(VDID other)
+        public bool Equals(VDContextID other)
         {
             return Entity == other.Entity && Context == other.Context;
         }
         
         public override bool Equals(object compare)
         {
-            return compare is VDID id && Equals(id);
+            return compare is VDContextID id && Equals(id);
         }
 
         public override int GetHashCode()

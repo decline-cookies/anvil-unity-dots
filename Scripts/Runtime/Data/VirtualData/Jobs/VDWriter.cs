@@ -89,8 +89,8 @@ namespace Anvil.Unity.DOTS.Data
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
             }
 #endif
-            //Injects the context
-            instance.ID = new VDID(instance.ID.Entity, m_Context);
+            //Updates the context
+            instance.ContextID = new VDContextID(instance.ContextID, m_Context);
             
             m_InstanceLaneWriter.Write(ref instance);
         }

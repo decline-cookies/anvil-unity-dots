@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Data
     /// that can write out a result when it has completed updating.
     /// </summary>
     /// <typeparam name="TResult">The type of result to write</typeparam>
-    public interface IVirtualDataInstance<TResult>
+    public interface IVirtualDataInstance<TResult> : IVirtualDataInstance
         where TResult : unmanaged
     {
         /// <summary>
@@ -15,5 +15,9 @@ namespace Anvil.Unity.DOTS.Data
         {
             get;
         }
+    }
+
+    public interface IVirtualDataInstance
+    {
     }
 }

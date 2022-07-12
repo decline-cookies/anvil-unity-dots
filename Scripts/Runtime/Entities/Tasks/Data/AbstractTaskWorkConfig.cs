@@ -2,7 +2,6 @@ using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -25,8 +24,8 @@ namespace Anvil.Unity.DOTS.Entities
             ResultsDestination,
             RequestCancelAsync,
             RequestCancel,
-            CancelIterateAsync,
-            CancelIterate
+            IterateCancelledAsync,
+            IterateCancelled
         }
 
         private enum ConfigState
@@ -48,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        private List<CancelData> CancelData_MAYBE_NOT_NEEDED
+        private List<CancelData> CancelData
         {
             get;
         }
@@ -64,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_Context = context;
             DataWrappers = new List<AbstractVDWrapper>();
-            CancelData_MAYBE_NOT_NEEDED = new List<CancelData>();
+            CancelData = new List<CancelData>();
             TaskWorkData = new TaskWorkData(abstractTaskDriverSystem, m_Context);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -93,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
 #endif
             TaskWorkData.AddCancelData(cancelData);
-            CancelData_MAYBE_NOT_NEEDED.Add(cancelData);
+            CancelData.Add(cancelData);
         }
         
         protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
@@ -116,13 +115,13 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
         
-        protected void InternalRequireCancelDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+        protected void InternalRequireCancelledDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
             where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.CancelIterateAsync : DataUsage.CancelIterate);
+            Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.IterateCancelledAsync : DataUsage.IterateCancelled);
 #endif
         }
         
@@ -146,7 +145,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireTaskDriverForCancel(AbstractTaskDriver taskDriver, bool isAsync)
+        protected void InternalRequireTaskDriverForCancelling(AbstractTaskDriver taskDriver, bool isAsync)
         {
             AddCancelData(taskDriver.CancelData);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS

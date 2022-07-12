@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Unity.Collections;
@@ -47,7 +48,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy, false);
             return this;
         }
-
+        
+        //TODO: DISCUSS - CancelTaskWorkConfig vs JobTaskWorkConfig and abstract
         public JobTaskWorkConfig ScheduleOnForCancel<TInstance>(VirtualData<TInstance> data, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IKeyedData
         {
@@ -127,12 +129,14 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
         
-        public JobTaskWorkConfig RequireCancelDataForIterateAsync<TInstance>(VirtualData<TInstance> data)
+        public JobTaskWorkConfig RequireCancelledDataForIterateAsync<TInstance>(VirtualData<TInstance> data)
             where TInstance : unmanaged, IKeyedData
         {
-            InternalRequireCancelDataForIterate(data, true);
+            InternalRequireCancelledDataForIterate(data, true);
             return this;
         }
+        
+        //TODO: Need to ensure all synchronous calls exist
 
         /// <summary>
         /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
@@ -167,9 +171,9 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobTaskWorkConfig RequireTaskDriverForCancelAsync(AbstractTaskDriver taskDriver)
+        public JobTaskWorkConfig RequireTaskDriverForCancellingAsync(AbstractTaskDriver taskDriver)
         {
-            InternalRequireTaskDriverForCancel(taskDriver, true);
+            InternalRequireTaskDriverForCancelling(taskDriver, true);
             return this;
         }
 
@@ -207,6 +211,41 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // SAFETY CHECKS
         //*************************************************************************************************************
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal static void Debug_EnsureNoDataLoss(object context, VirtualDataLookup virtualDataLookup, List<JobTaskWorkConfig> updateJobs, ref bool hasCheckedUpdateJobsForDataLoss)
+        {
+            //Only want to check this once since it won't change and we don't need to do this long check every frame
+            if (hasCheckedUpdateJobsForDataLoss)
+            {
+                return;
+            }
+
+            hasCheckedUpdateJobsForDataLoss = true;
+            
+            Dictionary<Type, AbstractVirtualData> dataLookup = virtualDataLookup.Debug_DataLookup;
+            HashSet<Type> updaterJobTypes = new HashSet<Type>();
+
+            foreach (JobTaskWorkConfig updateJob in updateJobs)
+            {
+                Dictionary<Type, AbstractVDWrapper> wrappedDataLookup = updateJob.Debug_TaskWorkData.Debug_WrappedDataLookup;
+                foreach (KeyValuePair<Type, AbstractVDWrapper> entry in wrappedDataLookup)
+                {
+                    if (entry.Value is VDWrapperForUpdate)
+                    {
+                        updaterJobTypes.Add(entry.Key);
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<Type, AbstractVirtualData> entry in dataLookup)
+            {
+                if (!updaterJobTypes.Contains(entry.Key) && entry.Value.Intent != VirtualDataIntent.OneShot)
+                {
+                    throw new InvalidOperationException($"{context} has data registered of type {entry.Key} but there is no Update Job that uses a VDUpdater that operates on that type! This data will never be handled.");
+                }
+            }
+        }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoDuplicateScheduleInfo()
