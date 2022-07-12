@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Data
@@ -53,6 +54,21 @@ namespace Anvil.Unity.DOTS.Data
         public override int GetHashCode()
         {
             return (Entity, Context).GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return $"{Entity.ToString()} - Context: {Context}";
+        }
+        
+        [BurstCompatible]
+        public FixedString64Bytes ToFixedString()
+        {
+            FixedString64Bytes fs = new FixedString64Bytes();
+            fs.Append(Entity.ToFixedString());
+            fs.Append((FixedString32Bytes)" - Context: ");
+            fs.Append(Context);
+            return fs;
         }
     }
 }
