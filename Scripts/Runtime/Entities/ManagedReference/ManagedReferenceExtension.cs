@@ -31,5 +31,10 @@ namespace Anvil.Unity.DOTS.Entities
             ManagedReference<T> refComponent = entityManager.GetComponentData<ManagedReference<T>>(entity);
             Debug.Assert(refComponent.Resolve() == instance);
         }
+
+        public static void RequireManagedSingletonForUpdate<T>(this SystemBase system) where T : class, IComponentReferencable
+        {
+            system.RequireSingletonForUpdate<ManagedReference<T>>();
+        }
     }
 }
