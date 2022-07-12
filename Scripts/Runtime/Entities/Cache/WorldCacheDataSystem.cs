@@ -13,9 +13,11 @@ namespace Anvil.Unity.DOTS.Entities
             private set;
         }
 
-        protected override void Init()
+        protected override void OnCreate()
         {
             WorldCache = new WorldCache(World);
+
+            base.OnCreate();
         }
 
         protected override void OnDestroy()
