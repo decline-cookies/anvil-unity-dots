@@ -37,8 +37,10 @@ namespace Anvil.Unity.DOTS.Entities
             return m_LookupByComponentType.GetOrCreate<T>();
         }
 
-        protected override void Init()
+        protected override void OnCreate()
         {
+            base.OnCreate();
+
             m_LookupByComponentType = new LookupByComponentType(World);
         }
 

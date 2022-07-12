@@ -8,14 +8,11 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractDataSystem : AbstractAnvilSystemBase
     {
-        protected sealed override void OnCreate()
+        protected override void OnCreate()
         {
             base.OnCreate();
-            Init();
             Enabled = false;
         }
-
-        protected abstract void Init();
 
         protected sealed override void OnUpdate()
         {
