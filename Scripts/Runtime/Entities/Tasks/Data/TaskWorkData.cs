@@ -13,14 +13,17 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public class TaskWorkData
     {
+        //TODO: DISCUSS Interfaces? Or Specific types of TaskWorkData to limit what you do?
         //We don't have to be on the main thread, but it makes sense as a good default
         private static readonly int SYNCHRONOUS_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
-        
+
         private readonly Dictionary<Type, AbstractVDWrapper> m_WrappedDataLookup;
+        private readonly Dictionary<Type, CancelData> m_CancelDataLookup;
+        private readonly int m_Context;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private readonly Dictionary<Type, AbstractTaskWorkConfig.DataUsage> m_DataUsageByType;
 #endif
-        
+
         /// <summary>
         /// The <see cref="AbstractTaskDriverSystem"/> this job is being scheduled during.
         /// Calls to <see cref="SystemBase.GetComponentDataFromEntity{T}"/> and similar will attribute dependencies
@@ -30,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         /// <summary>
         /// The <see cref="World"/> this job is being scheduled under.
         /// </summary>
@@ -38,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         /// <summary>
         /// Helper function for accessing the <see cref="TimeData"/> normally found on <see cref="SystemBase.Time"/>
         /// </summary>
@@ -47,11 +50,20 @@ namespace Anvil.Unity.DOTS.Entities
             get => ref World.Time;
         }
 
-        internal TaskWorkData(AbstractTaskDriverSystem system)
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        internal Dictionary<Type, AbstractVDWrapper> Debug_WrappedDataLookup
+        {
+            get => m_WrappedDataLookup;
+        }
+#endif
+
+        internal TaskWorkData(AbstractTaskDriverSystem system, int context)
         {
             System = system;
+            m_Context = context;
             World = System.World;
             m_WrappedDataLookup = new Dictionary<Type, AbstractVDWrapper>();
+            m_CancelDataLookup = new Dictionary<Type, CancelData>();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_DataUsageByType = new Dictionary<Type, AbstractTaskWorkConfig.DataUsage>();
 #endif
@@ -68,57 +80,91 @@ namespace Anvil.Unity.DOTS.Entities
             m_WrappedDataLookup.Add(dataWrapper.Type, dataWrapper);
         }
 
-        private VirtualData<TKey, TInstance> GetVirtualData<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        internal void AddCancelData(CancelData cancelData)
         {
-            Type type = typeof(VirtualData<TKey, TInstance>);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_CancelDataLookup.ContainsKey(cancelData.Type))
+            {
+                throw new InvalidOperationException($"{this} already contains cancel data registered for {cancelData.Type}. Please ensure that data is not registered more than once.");
+            }
+#endif
+            m_CancelDataLookup.Add(cancelData.Type, cancelData);
+        }
+
+
+        private VirtualData<TInstance> GetVirtualData<TInstance>()
+            where TInstance : unmanaged, IKeyedData
+        {
+            Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (!m_WrappedDataLookup.ContainsKey(type))
             {
-                throw new InvalidOperationException($"Tried to get {nameof(VirtualData<TKey, TInstance>)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
+                throw new InvalidOperationException($"Tried to get {nameof(VirtualData<TInstance>)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
             }
 #endif
             AbstractVDWrapper wrapper = m_WrappedDataLookup[type];
-            return (VirtualData<TKey, TInstance>)wrapper.Data;
+            return (VirtualData<TInstance>)wrapper.Data;
         }
-        
+
+        private CancelData GetCancelData(Type type)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (!m_CancelDataLookup.ContainsKey(type))
+            {
+                throw new InvalidOperationException($"Tried to get {nameof(CancelData)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
+            }
+#endif
+            CancelData cancelData = m_CancelDataLookup[type];
+            return cancelData;
+        }
+
         /// <summary>
         /// Returns a <see cref="VDReader{TInstance}"/> for use in a job.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDReader{TInstance}"/></returns>
-        public VDReader<TInstance> GetVDReaderAsync<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDReader<TInstance> GetVDReaderAsync<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
-            
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateAsync);
 #endif
-            
+
             VDReader<TInstance> reader = virtualData.CreateVDReader();
             return reader;
         }
-        
+
+        public VDReader<TInstance> GetVDCancelReaderAsync<TInstance>()
+            where TInstance : unmanaged, IKeyedData
+        {
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateCancelledAsync);
+#endif
+
+            VDReader<TInstance> reader = virtualData.CreateVDCancelledReader();
+            return reader;
+        }
+
         /// <summary>
         /// Returns a <see cref="VDReader{TInstance}"/> for synchronous use.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDReader{TInstance}"/></returns>
-        public VDReader<TInstance> GetVDReader<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDReader<TInstance> GetVDReader<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
-            
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Iterate);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Iterate);
 #endif
-            
+
             VDReader<TInstance> reader = virtualData.CreateVDReader();
             return reader;
         }
@@ -129,121 +175,129 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the data</typeparam>
         /// <returns>The <see cref="VDResultsDestination{TResult}"/></returns>
-        public VDResultsDestination<TResult> GetVDResultsDestinationAsync<TKey, TResult>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
+        public VDResultsDestination<TResult> GetVDResultsDestinationAsync<TResult>()
+            where TResult : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TResult> virtualData = GetVirtualData<TKey, TResult>();
-            
+            VirtualData<TResult> virtualData = GetVirtualData<TResult>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestinationAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestinationAsync);
 #endif
-            
+
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
             return resultsDestination;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDResultsDestination{TResult}"/> for synchronous use.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the data</typeparam>
         /// <returns>The <see cref="VDResultsDestination{TResult}"/></returns>
-        public VDResultsDestination<TResult> GetVDResultsDestination<TKey, TResult>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
+        public VDResultsDestination<TResult> GetVDResultsDestination<TResult>()
+            where TResult : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TResult> virtualData = GetVirtualData<TKey, TResult>();
-            
+            VirtualData<TResult> virtualData = GetVirtualData<TResult>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestination);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.ResultsDestination);
 #endif
-            
+
             VDResultsDestination<TResult> resultsDestination = virtualData.CreateVDResultsDestination();
             return resultsDestination;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDUpdater{TKey, TInstance}"/> for use in a job.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
-        public virtual VDUpdater<TKey, TInstance> GetVDUpdaterAsync<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDUpdater<TInstance> GetVDUpdaterAsync<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
-            
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.UpdateAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.UpdateAsync);
+            Debug_CheckForResultsDestinations(virtualData);
 #endif
-            
-            VDUpdater<TKey, TInstance> updater = virtualData.CreateVDUpdater();
+
+            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
             return updater;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDUpdater{TKey, TInstance}"/> for synchronous use.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
-        public virtual VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDUpdater<TInstance> GetVDUpdater<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
-            
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Update);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Update);
+            Debug_CheckForResultsDestinations(virtualData);
 #endif
-            
-            VDUpdater<TKey, TInstance> updater = virtualData.CreateVDUpdater();
+
+            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
             updater.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return updater;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDWriter{TInstance}"/> for use in a job.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
-        public virtual VDWriter<TInstance> GetVDWriterAsync<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDWriter<TInstance> GetVDWriterAsync<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
-            
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
 #endif
-            
-            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             return writer;
         }
-        
+
         /// <summary>
         /// Returns a <see cref="VDWriter{TInstance}"/> for synchronous use.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
-        public virtual VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDWriter<TInstance> GetVDWriter<TInstance>()
+            where TInstance : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
-            
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
+            Debug_CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
 #endif
-            
-            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             writer.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return writer;
         }
+
+        public VDCancelWriter GetVDCancelWriterAsync<T>()
+        {
+            CancelData cancelData = GetCancelData(typeof(T));
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug_CheckUsage(cancelData.Type, AbstractTaskWorkConfig.DataUsage.RequestCancelAsync);
+#endif
+
+            VDCancelWriter cancelWriter = cancelData.CreateVDCancelWriter(m_Context);
+            return cancelWriter;
+        }
+        
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal void Debug_NotifyWorkDataOfUsage(Type type, AbstractTaskWorkConfig.DataUsage usage)
@@ -251,12 +305,26 @@ namespace Anvil.Unity.DOTS.Entities
             m_DataUsageByType.Add(type, usage);
         }
 
-        private void CheckUsage(Type type, AbstractTaskWorkConfig.DataUsage expectedUsage)
+        private void Debug_CheckUsage(Type type, AbstractTaskWorkConfig.DataUsage expectedUsage)
         {
             AbstractTaskWorkConfig.DataUsage dataUsage = m_DataUsageByType[type];
             if (dataUsage != expectedUsage)
             {
                 throw new InvalidOperationException($"Trying to get data of {type} with usage of {expectedUsage} but data was required with {dataUsage}. Check the configuration for the right \"Require\" calls.");
+            }
+        }
+        
+        private void Debug_CheckForResultsDestinations<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
+        {
+            if (!typeof(IVirtualDataInstance).IsAssignableFrom(typeof(TInstance)))
+            {
+                return;
+            }
+
+            if (data.Debug_ResultDestinationsCount == 0)
+            {
+                throw new InvalidOperationException($"Data of {typeof(TInstance)} is to be used in an Update Job and will write results. However the results data was not constructed with a source! Check the creation of the results data.");
             }
         }
 #endif

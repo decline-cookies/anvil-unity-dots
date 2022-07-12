@@ -20,14 +20,15 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="bindingFlags">The binding flags of the method</param>
         /// <typeparam name="T">The type the method is found on</typeparam>
         /// <returns>The created <see cref="BulkScheduleDelegate{T}"/></returns>
-        public static BulkScheduleDelegate<T> CreateSchedulingDelegate<T>(string methodName, BindingFlags bindingFlags)
+        public static TDelegate CreateSchedulingDelegate<TDelegate, T>(string methodName, BindingFlags bindingFlags)
+            where TDelegate : Delegate
         {
             MethodInfo methodInfo = typeof(T).GetMethod(methodName, bindingFlags);
             if (methodInfo == null)
             {
-                throw new InvalidOperationException($"Tried to create a {nameof(BulkScheduleDelegate<T>)} on {typeof(T)} for a method named {methodName} but none exists with the passed binding flags!");
+                throw new InvalidOperationException($"Tried to create a {typeof(TDelegate)} on {typeof(T)} for a method named {methodName} but none exists with the passed binding flags!");
             }
-            return (BulkScheduleDelegate<T>)Delegate.CreateDelegate(typeof(BulkScheduleDelegate<T>), methodInfo);
+            return (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), methodInfo);
         }
     }
 }

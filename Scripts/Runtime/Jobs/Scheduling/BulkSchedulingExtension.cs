@@ -60,7 +60,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
             return JobHandle.CombineDependencies(dependencies);
         }
-        
+
         /// <summary>
         /// Calls the <see cref="BulkScheduleDelegate{T}"/> for every item in the collection to schedule a job.
         /// These jobs will be scheduled sequentially with the first job starting after <paramref name="dependsOn"/>

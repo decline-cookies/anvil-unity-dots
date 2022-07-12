@@ -1,10 +1,14 @@
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Diagnostics;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
+
+//TODO: DISCUSS - Namespace
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -36,9 +40,8 @@ namespace Anvil.Unity.DOTS.Data
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class VirtualData<TKey, TInstance> : AbstractVirtualData
-        where TKey : unmanaged, IEquatable<TKey>
-        where TInstance : unmanaged, IKeyedData<TKey>
+    public class VirtualData<TInstance> : AbstractVirtualData
+        where TInstance : unmanaged, IKeyedData
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
@@ -46,38 +49,36 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
 
-        internal static VirtualData<TKey, TInstance> Create(params AbstractVirtualData[] sources)
-        {
-            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>();
-
-            foreach (AbstractVirtualData source in sources)
-            {
-                virtualData.AddSource(source);
-                source.AddResultDestination(virtualData);
-            }
-
-            return virtualData;
-        }
-
         private UnsafeTypedStream<TInstance> m_Pending;
         private DeferredNativeArray<TInstance> m_IterationTarget;
-        private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
+        private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
+        private UnsafeParallelHashMap<VDContextID, TInstance> m_Lookup;
 
-
-        public DeferredNativeArrayScheduleInfo ScheduleInfo
+        internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
         }
 
+        internal DeferredNativeArrayScheduleInfo CancelledScheduleInfo
+        {
+            get => m_CancelledIterationTarget.ScheduleInfo;
+        }
 
-        private VirtualData() : base()
+        internal VirtualData(VirtualDataIntent intent, params AbstractVirtualData[] sources) : base(intent)
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.TempJob);
             m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                    Allocator.TempJob);
+            m_CancelledIterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
+                                                                            Allocator.TempJob);
+            m_Lookup = new UnsafeParallelHashMap<VDContextID, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
 
-            m_Lookup = new UnsafeParallelHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            foreach (AbstractVirtualData source in sources)
+            {
+                AddSource(source);
+                source.AddResultDestination(this);
+            }
         }
 
         protected override void DisposeSelf()
@@ -85,6 +86,7 @@ namespace Anvil.Unity.DOTS.Data
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
             m_IterationTarget.Dispose();
+            m_CancelledIterationTarget.Dispose();
             m_Lookup.Dispose();
 
             base.DisposeSelf();
@@ -106,31 +108,44 @@ namespace Anvil.Unity.DOTS.Data
             return new VDReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
+        internal VDReader<TInstance> CreateVDCancelledReader()
+        {
+            return new VDReader<TInstance>(m_CancelledIterationTarget.AsDeferredJobArray());
+        }
+
+        internal VDLookupReader<TInstance> CreateVDLookupReader()
+        {
+            return new VDLookupReader<TInstance>(m_Lookup);
+        }
+
         internal VDResultsDestination<TInstance> CreateVDResultsDestination()
         {
             return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
         }
 
-        internal VDUpdater<TKey, TInstance> CreateVDUpdater()
+        internal VDUpdater<TInstance> CreateVDUpdater()
         {
-            return new VDUpdater<TKey, TInstance>(m_Pending.AsWriter(),
-                                                  m_IterationTarget.AsDeferredJobArray());
+            return new VDUpdater<TInstance>(m_Pending.AsWriter(),
+                                            m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal VDWriter<TInstance> CreateVDWriter()
+        internal VDWriter<TInstance> CreateVDWriter(int context)
         {
-            return new VDWriter<TInstance>(m_Pending.AsWriter());
+            Debug_EnsureContextIsSet(context);
+            return new VDWriter<TInstance>(m_Pending.AsWriter(), context);
         }
 
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelData cancelData)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
                                                                                  m_IterationTarget,
-                                                                                 m_Lookup);
+                                                                                 m_Lookup,
+                                                                                 cancelData.CreateVDLookupReader(),
+                                                                                 m_CancelledIterationTarget);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
             AccessController.ReleaseAsync(consolidateHandle);
@@ -143,35 +158,156 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
 
         [BurstCompile]
-        private struct ConsolidateLookupJob : IJob
+        private struct ConsolidateLookupJob : IAnvilJob
         {
             private UnsafeTypedStream<TInstance> m_Pending;
-            private DeferredNativeArray<TInstance> m_Iteration;
-            private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
+            private DeferredNativeArray<TInstance> m_IterationTarget;
+            private UnsafeParallelHashMap<VDContextID, TInstance> m_Lookup;
+            private VDLookupReader<bool> m_CancelledLookup;
+            //TODO: DISCUSS - Split this out into separate data 
+            private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
-                                        DeferredNativeArray<TInstance> iteration,
-                                        UnsafeParallelHashMap<TKey, TInstance> lookup)
+                                        DeferredNativeArray<TInstance> iterationTarget,
+                                        UnsafeParallelHashMap<VDContextID, TInstance> lookup,
+                                        VDLookupReader<bool> cancelledLookup,
+                                        DeferredNativeArray<TInstance> cancelledIterationTarget)
             {
                 m_Pending = pending;
-                m_Iteration = iteration;
+                m_IterationTarget = iterationTarget;
                 m_Lookup = lookup;
+                m_CancelledLookup = cancelledLookup;
+                m_CancelledIterationTarget = cancelledIterationTarget;
+            }
+
+            public void InitForThread(int nativeThreadIndex)
+            {
             }
 
             public void Execute()
             {
+                //Clear previously consolidated 
                 m_Lookup.Clear();
-                m_Iteration.Clear();
+                m_IterationTarget.Clear();
+                m_CancelledIterationTarget.Clear();
 
-                NativeArray<TInstance> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
-                m_Pending.CopyTo(ref iterationArray);
-                m_Pending.Clear();
+                //Get the new counts
+                int pendingCancelledCount = m_CancelledLookup.Count();
+                int pendingCount = m_Pending.Count();
 
-                for (int i = 0; i < iterationArray.Length; ++i)
+                //Nothing for us to do if our count is 0
+                if (pendingCount == 0)
                 {
-                    TInstance value = iterationArray[i];
-                    m_Lookup.TryAdd(value.Key, value);
+                    return;
                 }
+
+                //Take optimized path if possible
+                if (pendingCancelledCount == 0)
+                {
+                    ConsolidateWithoutCancel(pendingCount);
+                }
+                else
+                {
+                    ConsolidateWithCancel(pendingCancelledCount);
+                }
+
+                //Clear pending for next frame
+                m_Pending.Clear();
+            }
+
+            private void ConsolidateWithoutCancel(int pendingCount)
+            {
+                //Allocate memory for array based on count
+                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(pendingCount);
+
+                //Fast blit
+                m_Pending.CopyTo(ref iterationArray);
+
+                //Populate the lookup
+                for (int i = 0; i < pendingCount; ++i)
+                {
+                    TInstance instance = iterationArray[i];
+                    m_Lookup.TryAdd(instance.ContextID, instance);
+                }
+            }
+
+            private void ConsolidateWithCancel(int pendingCancelledCount)
+            {
+                //Allocate memory for array based on counts
+                UnsafeTypedStream<TInstance> iterationBuildUp = new UnsafeTypedStream<TInstance>(Allocator.Temp, 1);
+                UnsafeTypedStream<TInstance>.LaneWriter iterationBuildUpLaneWriter = iterationBuildUp.AsLaneWriter(0);
+                NativeArray<TInstance> cancelledIterationArray = m_CancelledIterationTarget.DeferredCreate(pendingCancelledCount);
+
+                //Build up the surviving iteration array and lookup
+                int iterationCount = 0;
+                int cancelledIterationIndex = 0;
+                for (int laneIndex = 0; laneIndex < m_Pending.LaneCount; ++laneIndex)
+                {
+                    UnsafeTypedStream<TInstance>.LaneReader laneReader = m_Pending.AsLaneReader(laneIndex);
+                    for (int i = 0; i < laneReader.Count; ++i)
+                    {
+                        TInstance instance = laneReader.Read();
+                        if (m_CancelledLookup.ContainsKey(instance.ContextID))
+                        {
+                            cancelledIterationArray[cancelledIterationIndex] = instance;
+                            cancelledIterationIndex++;
+                            continue;
+                        }
+                        
+                        iterationBuildUpLaneWriter.Write(instance);
+                        m_Lookup.TryAdd(instance.ContextID, instance);
+                        iterationCount++;
+                    }
+                }
+                
+                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(iterationCount);
+                //Fast blit
+                iterationBuildUp.CopyTo(ref iterationArray);
+            }
+        }
+
+        [BurstCompile]
+        internal struct KeepPersistentJob : IAnvilJobForDefer
+        {
+            // BEGIN SCHEDULING -----------------------------------------------------------------------------
+            internal static JobHandle Schedule(JobHandle dependsOn, TaskWorkData jobTaskWorkData, IScheduleInfo scheduleInfo)
+            {
+                KeepPersistentJob keepPersistentJob = new KeepPersistentJob(jobTaskWorkData.GetVDUpdaterAsync<TInstance>());
+                return keepPersistentJob.ScheduleParallel(scheduleInfo.DeferredNativeArrayScheduleInfo,
+                                                          scheduleInfo.BatchSize,
+                                                          dependsOn);
+            }
+            // END SCHEDULING -------------------------------------------------------------------------------
+
+
+            private VDUpdater<TInstance> m_Updater;
+
+            private KeepPersistentJob(VDUpdater<TInstance> updater)
+            {
+                m_Updater = updater;
+            }
+
+            public void InitForThread(int nativeThreadIndex)
+            {
+                m_Updater.InitForThread(nativeThreadIndex);
+            }
+
+            public void Execute(int index)
+            {
+                m_Updater[index].ContinueOn(ref m_Updater);
+            }
+        }
+
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureContextIsSet(int context)
+        {
+            if (context == VDContextID.UNSET_CONTEXT)
+            {
+                throw new InvalidOperationException($"Context for {typeof(TInstance)} is not set!");
             }
         }
     }

@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Data
     /// </summary>
     public abstract class AbstractVirtualData : AbstractAnvilBase
     {
-        internal static readonly BulkScheduleDelegate<AbstractVirtualData> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractVirtualData>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly VirtualDataBulkScheduleDelegate CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<VirtualDataBulkScheduleDelegate, AbstractVirtualData>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly List<AbstractVirtualData> m_Sources;
         private readonly List<AbstractVirtualData> m_ResultDestinations;
@@ -22,8 +22,21 @@ namespace Anvil.Unity.DOTS.Data
         internal AccessController AccessController { get; }
         internal Type Type { get; }
 
-        protected AbstractVirtualData()
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        internal int Debug_ResultDestinationsCount
         {
+            get => m_ResultDestinations.Count;
+        }
+#endif
+
+        internal VirtualDataIntent Intent
+        {
+            get;
+        }
+
+        protected AbstractVirtualData(VirtualDataIntent intent)
+        {
+            Intent = intent;
             m_Sources = new List<AbstractVirtualData>();
             m_ResultDestinations = new List<AbstractVirtualData>();
             AccessController = new AccessController();
@@ -40,7 +53,7 @@ namespace Anvil.Unity.DOTS.Data
 
             base.DisposeSelf();
         }
-        
+
         //*************************************************************************************************************
         // RELATIONSHIPS
         //*************************************************************************************************************
@@ -140,6 +153,6 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
+        internal abstract JobHandle ConsolidateForFrame(JobHandle dependsOn, CancelData cancelData);
     }
 }

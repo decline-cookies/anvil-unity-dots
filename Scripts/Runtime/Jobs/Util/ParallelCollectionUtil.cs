@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Jobs
         private static void Init()
         {
             JOB_WORKER_MAXIMUM_COUNT.Data = JobsUtility.JobWorkerMaximumCount;
-            CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 1;
+            CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 2;
 
             Debug.Assert(JOB_WORKER_MAXIMUM_COUNT.Data > 0);
         }

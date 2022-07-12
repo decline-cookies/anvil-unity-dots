@@ -21,7 +21,11 @@ namespace Anvil.Unity.DOTS.Entities
             UpdateAsync,
             Update,
             ResultsDestinationAsync,
-            ResultsDestination
+            ResultsDestination,
+            RequestCancelAsync,
+            RequestCancel,
+            IterateCancelledAsync,
+            IterateCancelled
         }
 
         private enum ConfigState
@@ -31,9 +35,19 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private ConfigState m_ConfigState;
+
+        internal TaskWorkData Debug_TaskWorkData
+        {
+            get => TaskWorkData;
+        }
 #endif
 
         internal List<AbstractVDWrapper> DataWrappers
+        {
+            get;
+        }
+
+        private List<CancelData> CancelData
         {
             get;
         }
@@ -43,10 +57,14 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
+        private readonly int m_Context;
+
+        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, int context)
         {
+            m_Context = context;
             DataWrappers = new List<AbstractVDWrapper>();
-            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem);
+            CancelData = new List<CancelData>();
+            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem, m_Context);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_ConfigState = ConfigState.Configuring;
@@ -64,10 +82,21 @@ namespace Anvil.Unity.DOTS.Entities
             TaskWorkData.AddDataWrapper(dataWrapper);
             DataWrappers.Add(dataWrapper);
         }
+
+        private void AddCancelData(CancelData cancelData)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_ConfigState != ConfigState.Configuring)
+            {
+                throw new InvalidOperationException($"{this} is trying to add a cancel data of {cancelData.Type} but the configuration phase is complete!");
+            }
+#endif
+            TaskWorkData.AddCancelData(cancelData);
+            CancelData.Add(cancelData);
+        }
         
-        protected void InternalRequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
             AddDataWrapper(wrapper);
@@ -76,9 +105,8 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
         
-        protected void InternalRequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
             AddDataWrapper(wrapper);
@@ -87,9 +115,18 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
         
-        protected void InternalRequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireCancelledDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
+        {
+            VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
+            AddDataWrapper(wrapper);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.IterateCancelledAsync : DataUsage.IterateCancelled);
+#endif
+        }
+        
+        protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
             AddDataWrapper(wrapper);
@@ -98,14 +135,21 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
         
-        protected void InternalRequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData, bool isAsync)
+            where TResult : unmanaged, IKeyedData
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.ResultsDestinationAsync : DataUsage.ResultsDestination);
+#endif
+        }
+
+        protected void InternalRequireTaskDriverForCancelling(AbstractTaskDriver taskDriver, bool isAsync)
+        {
+            AddCancelData(taskDriver.CancelData);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            Debug_NotifyWorkDataOfUsage(taskDriver.CancelData.Type, isAsync ? DataUsage.RequestCancelAsync : DataUsage.RequestCancel);
 #endif
         }
 
