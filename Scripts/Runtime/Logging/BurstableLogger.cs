@@ -50,7 +50,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// Thrown if there is an unknown error encountered when configuring the prefix string.
         /// </exception>
         [NotBurstCompatible]
-        public BurstableLogger(Log.Logger logger, string appendToMessagePrefix)
+        public BurstableLogger(Logger logger, string appendToMessagePrefix)
         {
             m_ThreadIndex = UNSET_THREAD_INDEX;
             string managedMessagePrefix = logger.MessagePrefix + appendToMessagePrefix;

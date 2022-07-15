@@ -185,7 +185,7 @@ namespace Anvil.Unity.DOTS.Entities
 #if LOG_VERBOSE
                 UnityEngine.Debug.LogWarning($"Sorting {nameof(PlayerLoopSystem)}s. Warning expected with systems trying to position against ${nameof(EndSimulationEntityCommandBufferSystem)}");
 #else
-                Log.SupressLogging = true;
+                Log.SuppressLogging = true;
 #endif
                 SortAllGroupsInWorld(world);
             }
@@ -195,7 +195,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
             finally
             {
-                Log.SupressLogging = false;
+                Log.SuppressLogging = false;
             }
         }
 

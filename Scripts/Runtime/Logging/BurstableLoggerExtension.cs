@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Logging
     /// <summary>
     /// A collection of DOTS specific extension methods for <see cref="Log.Logger"/>.
     /// </summary>
-    public static class LoggerExtension
+    public static class BurstableLoggerExtension
     {
         /// <summary>
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from the
@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// (max length: <see cref="FixedString32Bytes.Capacity"/>)
         /// </param>
         /// <returns>A <see cref="BurstableLogger{FixedString32Bytes}" /> instance.</returns>
-        public static BurstableLogger<FixedString32Bytes> AsBurstable(this in Log.Logger logger, string appendToMessagePrefix = null)
+        public static BurstableLogger<FixedString32Bytes> AsBurstable(this in Logger logger, string appendToMessagePrefix = null)
         {
             return AsBurstable<FixedString32Bytes>(logger, appendToMessagePrefix);
         }
@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// (max length: <see cref="PrefixStringType.Capacity"/>)
         /// </param>
         /// <returns>A <see cref="BurstableLogger{PrefixStringType}" /> instance.</returns>
-        public static BurstableLogger<TPrefixStringType> AsBurstable<TPrefixStringType>(this in Log.Logger logger, string appendToMessagePrefix = null) where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
+        public static BurstableLogger<TPrefixStringType> AsBurstable<TPrefixStringType>(this in Logger logger, string appendToMessagePrefix = null) where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
         {
             return new BurstableLogger<TPrefixStringType>(logger, appendToMessagePrefix);
         }
