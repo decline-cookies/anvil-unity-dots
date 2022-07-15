@@ -67,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public static class WorldUtil
     {
-        // No need to reset between play sessions because PlayerLoop systems are stateless and 
+        // No need to reset between play sessions because PlayerLoop systems are stateless and
         // persist between sessions when domain reloading is disabled.
         private static bool s_AreCustomPlayerLoopPhasesAdded = false;
 
@@ -107,12 +107,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="world">The world to create top level groups in.</param>
         /// <param name="topLevelGroupTypes">
-        /// A collection of value pairs where the first value is the PlayerLoop phase to place the system in and the second value is the 
+        /// A collection of value pairs where the first value is the PlayerLoop phase to place the system in and the second value is the
         /// system to create.
         /// </param>
         /// <returns>A collection of the system groups created.</returns>
         /// <remarks>
-        /// Groups must not already exist in the world. This is a limitation of our ability to detect whether a system has already been 
+        /// Groups must not already exist in the world. This is a limitation of our ability to detect whether a system has already been
         /// added to the palyer loop.
         /// </remarks>
         public static ComponentSystemGroup[] AddTopLevelGroupsToCurrentPlayerLoop(World world, (Type PlayerLoopSystemType, Type SystemGroupType)[] topLevelGroupTypes)
@@ -144,7 +144,7 @@ namespace Anvil.Unity.DOTS.Entities
         public static void SortAllGroupsInWorld(World world)
         {
             // This implementation is a bit overkill since calling ComponentSystemGroup.SortSystems() calls recursively down to subgroups
-            // but the way ScriptBehaviourUpdateOrder adds systems to the PlayerLoop prevents us from inspecting instances and any logic 
+            // but the way ScriptBehaviourUpdateOrder adds systems to the PlayerLoop prevents us from inspecting instances and any logic
             // to calculate which systems are top level (check if not a child of other systems) is likely more expensive than just overcalling SortSystems().
             // SortSystems exits early if no sorting is required.
             foreach (ComponentSystemBase system in world.Systems)
@@ -159,7 +159,7 @@ namespace Anvil.Unity.DOTS.Entities
         };
         /// <summary>
         /// Optimizes a <see cref="World"/>'s <see cref="ComponentSystemGroup"/>s for multi-world applications.
-        /// Groups end command buffers into their own <see cref="PlayerLoop"/> phase just after their default phase. 
+        /// Groups end command buffers into their own <see cref="PlayerLoop"/> phase just after their default phase.
         /// (Ex: <see cref="Update"/> -> <see cref="PostUpdate_Anvil"/>)
         /// This allows end command buffers for all worlds to be evaluated after all worlds have scheduled their work for the phase.
         /// The result is that other worlds can compute their jobified work while one world is executing its end command buffer on the main thread.
