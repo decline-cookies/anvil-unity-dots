@@ -5,6 +5,7 @@ using UnityEngine;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using Logger = Anvil.CSharp.Logging.Logger;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -15,12 +16,12 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractAnvilSystemBase : SystemBase
     {
-        private Log.Logger? m_Logger;
+        private Logger? m_Logger;
         /// <summary>
         /// Returns a <see cref="Log.Logger"/> for this instance to emit log messages with.
         /// Lazy instantiated.
         /// </summary>
-        protected Log.Logger Logger
+        protected Logger Logger
         {
             get => m_Logger ?? (m_Logger = Log.GetLogger(this)).Value;
             set => m_Logger = value;
