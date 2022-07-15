@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// The base class for Systems when using the Anvil Framework.
-    /// Adds some convenience functionality non-release safety checks for 
+    /// Adds some convenience functionality non-release safety checks for
     /// <see cref="SystemBase"/> implementations.
     /// </summary>
     public abstract partial class AbstractAnvilSystemBase : SystemBase
@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         // ----- Copy From Buffers ----- //
         /// <summary>
-        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to 
+        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to
         /// a <see cref="NativeArray{T}" /> after <see cref="Dependency"/> has completed.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
@@ -113,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to 
+        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to
         /// a <see cref="NativeArray{T}" /> after the provided <see cref="JobHandle"/> has completed.
         /// </summary>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// A system group to house a <see cref="World"/>s <see cref="EndInitializationEntityCommandBufferSystem"/>.
-    /// Used for mutli-world playerloop optimization.
+    /// Used for multi-world player loop optimization.
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
 
     /// <summary>
     /// A system group to house a <see cref="World"/>s <see cref="EndSimulationEntityCommandBufferSystem"/>.
-    /// Used for mutli-world playerloop optimization.
+    /// Used for multi-world player loop optimization.
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
@@ -67,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public static class WorldUtil
     {
-        // No need to reset between play sessions because PlayerLoop systems are stateless and 
+        // No need to reset between play sessions because PlayerLoop systems are stateless and
         // persist between sessions when domain reloading is disabled.
         private static bool s_AreCustomPlayerLoopPhasesAdded = false;
 
@@ -103,17 +103,18 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Create a collection of top level <see cref="ComponentSystemGroup" />s and add them to the current <see cref="PlayerLoop"/>.
+        /// Create a collection of top level <see cref="ComponentSystemGroup" />s and add them to the current
+        /// <see cref="PlayerLoop"/>.
         /// </summary>
         /// <param name="world">The world to create top level groups in.</param>
         /// <param name="topLevelGroupTypes">
-        /// A collection of value pairs where the first value is the PlayerLoop phase to place the system in and the second value is the 
-        /// system to create.
+        /// A collection of value pairs where the first value is the PlayerLoop phase to place the system in and the
+        /// second value is the system to create.
         /// </param>
         /// <returns>A collection of the system groups created.</returns>
         /// <remarks>
-        /// Groups must not already exist in the world. This is a limitation of our ability to detect whether a system has already been 
-        /// added to the palyer loop.
+        /// Groups must not already exist in the world. This is a limitation of our ability to detect whether a system
+        /// has already been added to the player loop.
         /// </remarks>
         public static ComponentSystemGroup[] AddTopLevelGroupsToCurrentPlayerLoop(World world, (Type PlayerLoopSystemType, Type SystemGroupType)[] topLevelGroupTypes)
         {
@@ -143,10 +144,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         public static void SortAllGroupsInWorld(World world)
         {
-            // This implementation is a bit overkill since calling ComponentSystemGroup.SortSystems() calls recursively down to subgroups
-            // but the way ScriptBehaviourUpdateOrder adds systems to the PlayerLoop prevents us from inspecting instances and any logic 
-            // to calculate which systems are top level (check if not a child of other systems) is likely more expensive than just overcalling SortSystems().
-            // SortSystems exits early if no sorting is required.
+            // This implementation is a bit overkill since calling ComponentSystemGroup.SortSystems() calls recursively
+            // down to subgroups but the way ScriptBehaviourUpdateOrder adds systems to the PlayerLoop prevents us from
+            // inspecting instances and any logic to calculate which systems are top level (check if not a child of
+            // other systems) is likely more expensive than just over calling SortSystems(). SortSystems exits early if
+            // no sorting is required.
             foreach (ComponentSystemBase system in world.Systems)
             {
                 (system as ComponentSystemGroup)?.SortSystems();
@@ -159,15 +161,17 @@ namespace Anvil.Unity.DOTS.Entities
         };
         /// <summary>
         /// Optimizes a <see cref="World"/>'s <see cref="ComponentSystemGroup"/>s for multi-world applications.
-        /// Groups end command buffers into their own <see cref="PlayerLoop"/> phase just after their default phase. 
+        /// Groups end command buffers into their own <see cref="PlayerLoop"/> phase just after their default phase.
         /// (Ex: <see cref="Update"/> -> <see cref="PostUpdate_Anvil"/>)
-        /// This allows end command buffers for all worlds to be evaluated after all worlds have scheduled their work for the phase.
-        /// The result is that other worlds can compute their jobified work while one world is executing its end command buffer on the main thread.
+        /// This allows end command buffers for all worlds to be evaluated after all worlds have scheduled their work
+        /// for the phase. The result is that other worlds can compute their jobified work while one world is executing
+        /// its end command buffer on the main thread.
         /// </summary>
         /// <param name="world">The world instance to optimize.</param>
         /// <remarks>
-        /// This method doesn't move <see cref="EndFixedStepSimulationEntityCommandBufferSystem"/> because it's embedded in the <see cref="SimulationSystemGroup"/>.
-        /// making it impractical to group with the other worlds. There shouldn't be any expensive work in that command buffer anyway.
+        /// This method doesn't move <see cref="EndFixedStepSimulationEntityCommandBufferSystem"/> because it's embedded
+        /// in the <see cref="SimulationSystemGroup"/>; making it impractical to group with the other worlds. There
+        /// shouldn't be any expensive work in that command buffer anyway.
         /// </remarks>
         public static void OptimizeWorldForMultiWorldInCurrentPlayerLoop(World world)
         {
