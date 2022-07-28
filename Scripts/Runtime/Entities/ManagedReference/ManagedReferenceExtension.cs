@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if(preventOverwrite && entityManager.HasComponent<ManagedReference<T>>(entity))
             {
-                throw new InvalidOperationException($"Managed ref for {nameof(T)} already exists in {nameof(World)}:{entityManager.World.Name}. Set {nameof(preventOverwrite)} to false to allow overwriting.");
+                throw new InvalidOperationException($"Managed ref for {nameof(T)} already exists in {nameof(World)}:{entityManager.World.Name} on {nameof(Entity)}:{entity}. Set {nameof(preventOverwrite)} to false to allow overwriting.");
             }
 
             entityManager.AddComponentData(entity, instance.AsComponentDataReference());
