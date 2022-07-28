@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Data
 {
     public abstract class AbstractComponentReferencable : AbstractAnvilBase, IComponentReferencable
     {
-        public AbstractComponentReferencable()
+        protected AbstractComponentReferencable()
         {
             ManagedReferenceStore.RegisterReference(this);
         }
