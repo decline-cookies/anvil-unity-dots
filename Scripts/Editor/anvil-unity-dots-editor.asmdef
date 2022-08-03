@@ -1,5 +1,6 @@
 {
     "name": "anvil-unity-dots-editor",
+    "rootNamespace": "Anvil.Unity.DOTS.Editor",
     "references": [
         "anvil-csharp-core",
         "anvil-unity-core-editor",
