@@ -223,7 +223,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_CheckForResultsDestinations(virtualData);
 #endif
 
-            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
+            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater(System.CancelData.CreateVDLookupReader());
             return updater;
         }
 
@@ -243,7 +243,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_CheckForResultsDestinations(virtualData);
 #endif
 
-            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater();
+            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater(System.CancelData.CreateVDLookupReader());
             updater.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return updater;
         }

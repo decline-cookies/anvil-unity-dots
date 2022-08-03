@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Data
         private CancelData()
         {
             Pending = new UnsafeTypedStream<VDContextID>(Allocator.Persistent,
-                                                         Allocator.TempJob);
+                                                         Allocator.Persistent);
             IterationTarget = new DeferredNativeArray<VDContextID>(Allocator.Persistent,
                                                                    Allocator.TempJob);
             Lookup = new UnsafeParallelHashMap<VDContextID, bool>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);

@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -50,9 +49,10 @@ namespace Anvil.Unity.DOTS.Data
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
 
         private UnsafeTypedStream<TInstance> m_Pending;
+        private UnsafeTypedStream<TInstance> m_PendingCancelled;
+
         private DeferredNativeArray<TInstance> m_IterationTarget;
         private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
-        private UnsafeParallelHashMap<VDContextID, TInstance> m_Lookup;
 
         internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
@@ -67,12 +67,14 @@ namespace Anvil.Unity.DOTS.Data
         internal VirtualData(VirtualDataIntent intent, params AbstractVirtualData[] sources) : base(intent)
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
-                                                         Allocator.TempJob);
+                                                         Allocator.Persistent);
+            m_PendingCancelled = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
+                                                                  Allocator.Persistent);
+
             m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                    Allocator.TempJob);
             m_CancelledIterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                             Allocator.TempJob);
-            m_Lookup = new UnsafeParallelHashMap<VDContextID, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
 
             foreach (AbstractVirtualData source in sources)
             {
@@ -85,9 +87,9 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
+            m_PendingCancelled.Dispose();
             m_IterationTarget.Dispose();
             m_CancelledIterationTarget.Dispose();
-            m_Lookup.Dispose();
 
             base.DisposeSelf();
         }
@@ -113,19 +115,16 @@ namespace Anvil.Unity.DOTS.Data
             return new VDReader<TInstance>(m_CancelledIterationTarget.AsDeferredJobArray());
         }
 
-        internal VDLookupReader<TInstance> CreateVDLookupReader()
-        {
-            return new VDLookupReader<TInstance>(m_Lookup);
-        }
-
         internal VDResultsDestination<TInstance> CreateVDResultsDestination()
         {
             return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
         }
 
-        internal VDUpdater<TInstance> CreateVDUpdater()
+        internal VDUpdater<TInstance> CreateVDUpdater(VDLookupReader<bool> cancelLookup)
         {
             return new VDUpdater<TInstance>(m_Pending.AsWriter(),
+                                            m_PendingCancelled.AsWriter(),
+                                            cancelLookup,
                                             m_IterationTarget.AsDeferredJobArray());
         }
 
@@ -142,9 +141,8 @@ namespace Anvil.Unity.DOTS.Data
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
+                                                                                 m_PendingCancelled,
                                                                                  m_IterationTarget,
-                                                                                 m_Lookup,
-                                                                                 cancelData.CreateVDLookupReader(),
                                                                                  m_CancelledIterationTarget);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
@@ -161,22 +159,18 @@ namespace Anvil.Unity.DOTS.Data
         private struct ConsolidateLookupJob : IAnvilJob
         {
             private UnsafeTypedStream<TInstance> m_Pending;
+            private UnsafeTypedStream<TInstance> m_PendingCancelled;
             private DeferredNativeArray<TInstance> m_IterationTarget;
-            private UnsafeParallelHashMap<VDContextID, TInstance> m_Lookup;
-            private VDLookupReader<bool> m_CancelledLookup;
-            //TODO: DISCUSS - Split this out into separate data 
             private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
 
             public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
+                                        UnsafeTypedStream<TInstance> pendingCancelled,
                                         DeferredNativeArray<TInstance> iterationTarget,
-                                        UnsafeParallelHashMap<VDContextID, TInstance> lookup,
-                                        VDLookupReader<bool> cancelledLookup,
                                         DeferredNativeArray<TInstance> cancelledIterationTarget)
             {
                 m_Pending = pending;
+                m_PendingCancelled = pendingCancelled;
                 m_IterationTarget = iterationTarget;
-                m_Lookup = lookup;
-                m_CancelledLookup = cancelledLookup;
                 m_CancelledIterationTarget = cancelledIterationTarget;
             }
 
@@ -187,82 +181,18 @@ namespace Anvil.Unity.DOTS.Data
             public void Execute()
             {
                 //Clear previously consolidated 
-                m_Lookup.Clear();
                 m_IterationTarget.Clear();
                 m_CancelledIterationTarget.Clear();
-
-                //Get the new counts
-                int pendingCancelledCount = m_CancelledLookup.Count();
-                int pendingCount = m_Pending.Count();
-
-                //Nothing for us to do if our count is 0
-                if (pendingCount == 0)
-                {
-                    return;
-                }
-
-                //Take optimized path if possible
-                if (pendingCancelledCount == 0)
-                {
-                    ConsolidateWithoutCancel(pendingCount);
-                }
-                else
-                {
-                    ConsolidateWithCancel(pendingCancelledCount);
-                }
-
-                //Clear pending for next frame
-                m_Pending.Clear();
-            }
-
-            private void ConsolidateWithoutCancel(int pendingCount)
-            {
-                //Allocate memory for array based on count
-                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(pendingCount);
-
-                //Fast blit
-                m_Pending.CopyTo(ref iterationArray);
-
-                //Populate the lookup
-                for (int i = 0; i < pendingCount; ++i)
-                {
-                    TInstance instance = iterationArray[i];
-                    m_Lookup.TryAdd(instance.ContextID, instance);
-                }
-            }
-
-            private void ConsolidateWithCancel(int pendingCancelledCount)
-            {
-                //Allocate memory for array based on counts
-                UnsafeTypedStream<TInstance> iterationBuildUp = new UnsafeTypedStream<TInstance>(Allocator.Temp, 1);
-                UnsafeTypedStream<TInstance>.LaneWriter iterationBuildUpLaneWriter = iterationBuildUp.AsLaneWriter(0);
-                NativeArray<TInstance> cancelledIterationArray = m_CancelledIterationTarget.DeferredCreate(pendingCancelledCount);
-
-                //Build up the surviving iteration array and lookup
-                int iterationCount = 0;
-                int cancelledIterationIndex = 0;
-                for (int laneIndex = 0; laneIndex < m_Pending.LaneCount; ++laneIndex)
-                {
-                    UnsafeTypedStream<TInstance>.LaneReader laneReader = m_Pending.AsLaneReader(laneIndex);
-                    for (int i = 0; i < laneReader.Count; ++i)
-                    {
-                        TInstance instance = laneReader.Read();
-                        if (m_CancelledLookup.ContainsKey(instance.ContextID))
-                        {
-                            cancelledIterationArray[cancelledIterationIndex] = instance;
-                            cancelledIterationIndex++;
-                            continue;
-                        }
-                        
-                        iterationBuildUpLaneWriter.Write(instance);
-                        m_Lookup.TryAdd(instance.ContextID, instance);
-                        iterationCount++;
-                    }
-                }
                 
-                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(iterationCount);
-                //Fast blit
-                iterationBuildUp.CopyTo(ref iterationArray);
+                NativeArray<TInstance> cancelledArray = m_CancelledIterationTarget.DeferredCreate(m_PendingCancelled.Count());
+                m_PendingCancelled.CopyTo(ref cancelledArray);
+
+                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(m_Pending.Count());
+                m_Pending.CopyTo(ref iterationArray);
+                
+                // //Clear pending for next frame
+                m_Pending.Clear();
+                m_PendingCancelled.Clear();
             }
         }
 
@@ -294,7 +224,11 @@ namespace Anvil.Unity.DOTS.Data
 
             public void Execute(int index)
             {
-                m_Updater[index].ContinueOn(ref m_Updater);
+                if (!m_Updater.TryGetInstance(index, out TInstance instance))
+                {
+                    return;
+                }
+                instance.ContinueOn(ref m_Updater);
             }
         }
 

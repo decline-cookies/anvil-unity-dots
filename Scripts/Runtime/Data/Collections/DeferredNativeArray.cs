@@ -288,6 +288,25 @@ namespace Anvil.Unity.DOTS.Data
             JobHandle jobHandle = clearJob.Schedule(inputDeps);
             return jobHandle;
         }
+        
+        public unsafe void DeferredCreate(NativeArray<T> createdArray)
+        {
+            //TODO: Add asserts from the other DeferredCreate
+            //TODO: Check to make sure Allocator is the same.
+           
+            //Update the buffer info
+            m_BufferInfo->Length = createdArray.Length;
+            m_BufferInfo->Buffer = NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(createdArray);
+           
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            //Get rid of the old handle from the array that came in
+            AtomicSafetyHandle safetyHandle = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(createdArray);
+            AtomicSafetyHandle.Release(safetyHandle);
+           
+            //Inject our own
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref createdArray, m_Safety);
+#endif
+        }
 
         /// <summary>
         /// Creates the actual array for when you know the length.

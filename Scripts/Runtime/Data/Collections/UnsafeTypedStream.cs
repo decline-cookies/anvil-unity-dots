@@ -1,5 +1,8 @@
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
 using Unity.Burst;
@@ -196,8 +199,7 @@ namespace Anvil.Unity.DOTS.Data
             m_BufferInfo->LaneCount = laneCount;
 
             m_BufferInfo->LaneInfos = (LaneInfo*)UnsafeUtility.Malloc(LaneInfo.SIZE * m_BufferInfo->LaneCount, LaneInfo.SIZE, allocator);
-
-            //TODO: #16 - Look into creating an enumerator like NativeArray to allow for foreach - https://github.com/decline-cookies/anvil-unity-dots/pull/14/files#r842968034
+            
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 LaneInfo* lane = m_BufferInfo->LaneInfos + i;
@@ -220,7 +222,7 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
-            Clear();
+            ClearAndReduceCapacity();
 
             Allocator allocator = m_BufferInfo->Allocator;
             UnsafeUtility.Free(m_BufferInfo->LaneInfos, allocator);
@@ -234,7 +236,7 @@ namespace Anvil.Unity.DOTS.Data
         /// Clears all data in the collection
         /// </summary>
         [WriteAccessRequired]
-        public void Clear()
+        public void ClearAndReduceCapacity()
         {
             if (!IsCreated)
             {
@@ -264,6 +266,38 @@ namespace Anvil.Unity.DOTS.Data
                 lane->Count = 0;
             }
         }
+        
+        [WriteAccessRequired]
+        public void Clear()
+        {
+            if (!IsCreated)
+            {
+                return;
+            }
+
+            for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
+            {
+                LaneInfo* lane = m_BufferInfo->LaneInfos + i;
+                //Reset current writer block to the first block and reset writer heads and counts
+                lane->CurrentWriterBlock = lane->FirstBlock;
+                if (lane->CurrentWriterBlock == null)
+                {
+                    lane->WriterHead = null;
+                    lane->WriterEndOfBlock = null;
+                }
+                else
+                {
+                    lane->WriterHead = lane->CurrentWriterBlock->Data;
+                    lane->WriterEndOfBlock = lane->WriterHead + m_BufferInfo->BlockSize;
+                }
+                lane->Count = 0;
+            }
+        }
+        
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(m_BufferInfo);
+        }
 
         /// <summary>
         /// Schedules the disposal of the collection.
@@ -287,6 +321,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <returns>A <see cref="JobHandle"/> for when clearing is complete</returns>
         public JobHandle Clear(JobHandle inputDeps)
         {
+            //TODO: Handle the clear capacity variant
             ClearJob clearJob = new ClearJob(this);
             return clearJob.Schedule(inputDeps);
         }
@@ -366,6 +401,7 @@ namespace Anvil.Unity.DOTS.Data
         public LaneWriter AsLaneWriter(int laneIndex)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+            //TODO: Convert to exceptions
             Assert.IsTrue(IsCreated);
             Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
@@ -460,6 +496,7 @@ namespace Anvil.Unity.DOTS.Data
             public LaneWriter AsLaneWriter(int laneIndex)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+                //TODO: Convert to exceptions
                 Assert.IsTrue(IsCreated);
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
@@ -517,26 +554,37 @@ namespace Anvil.Unity.DOTS.Data
                 {
                     return;
                 }
-
-                //Create the new block
-                BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->BlockAllocator);
-                blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->BlockAllocator);
-                blockPointer->Next = null;
-
-                //Update lane writing info
-                m_Lane->WriterHead = blockPointer->Data;
-                m_Lane->WriterEndOfBlock = blockPointer->Data + m_BufferInfo->BlockSize;
-
-                //If this is the first block for the lane, we'll assign that
-                if (m_Lane->FirstBlock == null)
+                
+                //If we've never allocated a block for this lane or we're at the end of blocks to allocate and we need a new one...
+                if (m_Lane->CurrentWriterBlock == null || m_Lane->CurrentWriterBlock->Next == null)
                 {
-                    m_Lane->CurrentWriterBlock = m_Lane->FirstBlock = blockPointer;
+                    //Create the new block
+                    BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->BlockAllocator);
+                    blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->BlockAllocator);
+                    blockPointer->Next = null;
+
+                    //Update lane writing info
+                    m_Lane->WriterHead = blockPointer->Data;
+                    m_Lane->WriterEndOfBlock = blockPointer->Data + m_BufferInfo->BlockSize;
+
+                    //If this is the first block for the lane, we'll assign that
+                    if (m_Lane->FirstBlock == null)
+                    {
+                        m_Lane->CurrentWriterBlock = m_Lane->FirstBlock = blockPointer;
+                    }
+                    //Otherwise we'll update our linked list of blocks
+                    else
+                    {
+                        m_Lane->CurrentWriterBlock->Next = blockPointer;
+                        m_Lane->CurrentWriterBlock = blockPointer;
+                    }
                 }
-                //Otherwise we'll update our linked list of blocks
+                //We already had the blocks allocated, so we can just jump to the next block
                 else
                 {
-                    m_Lane->CurrentWriterBlock->Next = blockPointer;
-                    m_Lane->CurrentWriterBlock = blockPointer;
+                    m_Lane->CurrentWriterBlock = m_Lane->CurrentWriterBlock->Next;
+                    m_Lane->WriterHead = m_Lane->CurrentWriterBlock->Data;
+                    m_Lane->WriterEndOfBlock = m_Lane->WriterHead + m_BufferInfo->BlockSize;
                 }
             }
         }
@@ -588,6 +636,11 @@ namespace Anvil.Unity.DOTS.Data
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
                 return new LaneReader(m_BufferInfo, laneIndex);
+            }
+            
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(m_BufferInfo);
             }
 
             /// <summary>
@@ -745,6 +798,76 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
                 return ref UnsafeUtility.AsRef<T>(m_ReaderHead);
+            }
+        }
+        
+        //*************************************************************************************************************
+        // ENUMERATOR
+        //*************************************************************************************************************
+        
+        [BurstCompile]
+        public struct Enumerator : IEnumerator<T>
+        {
+            [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
+            private int m_LaneIndex;
+            private LaneReader m_LaneReader;
+            private int m_ArrayIndex;
+            
+            public T Current
+            {
+                get => m_LaneReader.Read();
+            }
+            internal unsafe Enumerator(BufferInfo* bufferInfo)
+            {
+                m_BufferInfo = bufferInfo;
+                m_LaneIndex = 0;
+                m_ArrayIndex = -1;
+                m_LaneReader = new LaneReader(m_BufferInfo, m_LaneIndex);
+            }
+
+            public bool MoveNext()
+            {
+                //Progress the array index
+                m_ArrayIndex++;
+                //So long as our lane reader has an entry we're good
+                if (m_ArrayIndex < m_LaneReader.Count)
+                {
+                    return true;
+                }
+                
+                //Otherwise we need to find the next lane that has something
+                m_LaneIndex++;
+                for (; m_LaneIndex < m_BufferInfo->LaneCount; ++m_LaneIndex)
+                {
+                    //Update lane reader and array index
+                    m_LaneReader = new LaneReader(m_BufferInfo, m_LaneIndex);
+                    m_ArrayIndex = 0;
+                    //If we find a lane that has something we're good
+                    if (m_ArrayIndex < m_LaneReader.Count)
+                    {
+                        return true;
+                    }
+                }
+                
+                //We've gone through all lanes and nothing is left, we're done
+                return false;
+            }
+
+            public void Reset()
+            {
+                m_LaneIndex = 0;
+                m_ArrayIndex = -1;
+                m_LaneReader = new LaneReader(m_BufferInfo, m_LaneIndex);
+            }
+
+            object IEnumerator.Current
+            {
+                get => Current;
+            }
+
+            public void Dispose()
+            {
+                //Does nothing
             }
         }
 
