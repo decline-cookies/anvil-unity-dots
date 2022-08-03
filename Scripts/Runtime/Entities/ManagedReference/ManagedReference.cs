@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="T">The type of the managed instance that is referenced.</typeparam>
     public readonly struct ManagedReference<T> : IComponentData where T : class, IComponentReferencable
     {
-        private readonly int ManagedContextHash;
+        private readonly int m_ManagedContextHash;
 
         /// <summary>
         /// Creates a new managed reference from an <see cref="IComponentReferencable"/> instance.
@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="instance">The instance to hold reference too.</param>
         public ManagedReference(T instance)
         {
-            ManagedContextHash = ManagedReferenceStore.GetHash(instance);
+            m_ManagedContextHash = ManagedReferenceStore.GetHash(instance);
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <returns>The managed instance that this structure represents.</returns>
         public T Resolve()
         {
-            return ManagedReferenceStore.Get<T>(ManagedContextHash);
+            return ManagedReferenceStore.Get<T>(m_ManagedContextHash);
         }
     }
 }
