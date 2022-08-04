@@ -49,7 +49,6 @@ namespace Anvil.Unity.DOTS.Data
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
 
         private UnsafeTypedStream<TInstance> m_Pending;
-        private UnsafeTypedStream<TInstance> m_PendingCancelled;
 
         private DeferredNativeArray<TInstance> m_IterationTarget;
         private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
@@ -68,8 +67,6 @@ namespace Anvil.Unity.DOTS.Data
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.Persistent);
-            m_PendingCancelled = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
-                                                                  Allocator.Persistent);
 
             m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
                                                                    Allocator.TempJob);
@@ -87,7 +84,6 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
-            m_PendingCancelled.Dispose();
             m_IterationTarget.Dispose();
             m_CancelledIterationTarget.Dispose();
 
@@ -139,23 +135,9 @@ namespace Anvil.Unity.DOTS.Data
         {
             dependsOn = JobHandle.CombineDependencies(AccessController.AcquireAsync(AccessType.ExclusiveWrite),
                                                       dependsOn);
-
-            ConsolidatePendingJob consolidatePendingJob = new ConsolidatePendingJob(m_Pending,
-                                                                                    m_IterationTarget);
-
-            dependsOn = consolidatePendingJob.Schedule(dependsOn);
-
-            SortCancelledJob sortCancelledJob = new SortCancelledJob(m_IterationTarget.AsDeferredJobArray(),
-                                                                     cancelData.CreateVDLookupReader(),
-                                                                     m_Pending.AsWriter(),
-                                                                     m_PendingCancelled.AsWriter());
-            dependsOn = sortCancelledJob.ScheduleParallel(m_IterationTarget.ScheduleInfo,
-                                                          MAX_ELEMENTS_PER_CHUNK,
-                                                          dependsOn);
-
-
+            
             ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,
-                                                               m_PendingCancelled,
+                                                               cancelData.CreateVDLookupReader(),
                                                                m_IterationTarget,
                                                                m_CancelledIterationTarget);
             dependsOn = consolidateJob.Schedule(dependsOn);
@@ -168,110 +150,33 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
-
+        
         [BurstCompile]
-        private struct ConsolidatePendingJob : IAnvilJob
+        private struct ConsolidateJob : IAnvilJob
         {
-            [ReadOnly] private UnsafeTypedStream<TInstance> m_Pending;
-            private DeferredNativeArray<TInstance> m_IterationTarget;
-
-            public ConsolidatePendingJob(UnsafeTypedStream<TInstance> pending,
-                                         DeferredNativeArray<TInstance> iterationTarget)
-            {
-                m_Pending = pending;
-                m_IterationTarget = iterationTarget;
-            }
-
-            public void InitForThread(int nativeThreadIndex)
-            {
-            }
-
-            public void Execute()
-            {
-                m_IterationTarget.Clear();
-
-                NativeArray<TInstance> array = m_IterationTarget.DeferredCreate(m_Pending.Count());
-                m_Pending.CopyTo(ref array);
-
-                m_Pending.Clear();
-            }
-        }
-
-
-        [BurstCompile]
-        private struct SortCancelledJob : IAnvilJobForDefer
-        {
-            [ReadOnly] private readonly NativeArray<TInstance> m_IterationArray;
             [ReadOnly] private VDLookupReader<bool> m_CancelLookup;
-
-            [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_PendingLiveWriter;
-            [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_PendingCancelledWriter;
-
-            private UnsafeTypedStream<TInstance>.LaneWriter m_PendingLiveLaneWriter;
-            private UnsafeTypedStream<TInstance>.LaneWriter m_PendingCancelledLaneWriter;
+            private UnsafeTypedStream<TInstance> m_Pending;
+            private DeferredNativeArray<TInstance> m_IterationTarget;
+            private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
 
             private int m_CancelLookupCount;
 
-            public SortCancelledJob(NativeArray<TInstance> iterationArray,
-                                    VDLookupReader<bool> cancelLookup,
-                                    UnsafeTypedStream<TInstance>.Writer pendingLiveWriter,
-                                    UnsafeTypedStream<TInstance>.Writer pendingCancelledWriter)
+            public ConsolidateJob(UnsafeTypedStream<TInstance> pending,
+                                  VDLookupReader<bool> cancelLookup,
+                                  DeferredNativeArray<TInstance> iterationTarget,
+                                  DeferredNativeArray<TInstance> cancelledIterationTarget)
             {
-                m_IterationArray = iterationArray;
+                m_Pending = pending;
                 m_CancelLookup = cancelLookup;
-                m_PendingLiveWriter = pendingLiveWriter;
-                m_PendingCancelledWriter = pendingCancelledWriter;
-
-                m_PendingLiveLaneWriter = default;
-                m_PendingCancelledLaneWriter = default;
+                m_IterationTarget = iterationTarget;
+                m_CancelledIterationTarget = cancelledIterationTarget;
 
                 m_CancelLookupCount = 0;
             }
 
             public void InitForThread(int nativeThreadIndex)
             {
-                int laneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-                m_PendingLiveLaneWriter = m_PendingLiveWriter.AsLaneWriter(laneIndex);
-                m_PendingCancelledLaneWriter = m_PendingCancelledWriter.AsLaneWriter(laneIndex);
                 m_CancelLookupCount = m_CancelLookup.Count();
-            }
-
-            public void Execute(int index)
-            {
-                TInstance instance = m_IterationArray[index];
-                if (m_CancelLookupCount > 0
-                 && m_CancelLookup.ContainsKey(instance.ContextID))
-                {
-                    m_PendingCancelledLaneWriter.Write(instance);
-                }
-                else
-                {
-                    m_PendingLiveLaneWriter.Write(instance);
-                }
-            }
-        }
-
-        [BurstCompile]
-        private struct ConsolidateJob : IAnvilJob
-        {
-            private UnsafeTypedStream<TInstance> m_PendingLive;
-            private UnsafeTypedStream<TInstance> m_PendingCancelled;
-            private DeferredNativeArray<TInstance> m_IterationTarget;
-            private DeferredNativeArray<TInstance> m_CancelledIterationTarget;
-
-            public ConsolidateJob(UnsafeTypedStream<TInstance> pendingLive,
-                                  UnsafeTypedStream<TInstance> pendingCancelled,
-                                  DeferredNativeArray<TInstance> iterationTarget,
-                                  DeferredNativeArray<TInstance> cancelledIterationTarget)
-            {
-                m_PendingLive = pendingLive;
-                m_PendingCancelled = pendingCancelled;
-                m_IterationTarget = iterationTarget;
-                m_CancelledIterationTarget = cancelledIterationTarget;
-            }
-
-            public void InitForThread(int nativeThreadIndex)
-            {
             }
 
             public void Execute()
@@ -280,15 +185,42 @@ namespace Anvil.Unity.DOTS.Data
                 m_IterationTarget.Clear();
                 m_CancelledIterationTarget.Clear();
 
-                NativeArray<TInstance> cancelledArray = m_CancelledIterationTarget.DeferredCreate(m_PendingCancelled.Count());
-                m_PendingCancelled.CopyTo(ref cancelledArray);
-
-                NativeArray<TInstance> iterationArray = m_IterationTarget.DeferredCreate(m_PendingLive.Count());
-                m_PendingLive.CopyTo(ref iterationArray);
+                NativeArray<TInstance> pendingArray = m_Pending.ToNativeArray(Allocator.Temp);
 
                 //Clear pending for next frame
-                m_PendingLive.Clear();
-                m_PendingCancelled.Clear();
+                m_Pending.Clear();
+                
+                int cancelIndex = 0;
+                for (int i = 0; i < pendingArray.Length; ++i)
+                {
+                    TInstance instance = pendingArray[i];
+                    if (m_CancelLookupCount <= 0
+                     || !m_CancelLookup.ContainsKey(instance.ContextID))
+                    {
+                        continue;
+                    }
+                    
+                    TInstance swapInstance = pendingArray[cancelIndex];
+                    pendingArray[i] = swapInstance;
+                    pendingArray[cancelIndex] = instance;
+                    cancelIndex++;
+                }
+
+                int liveLength = pendingArray.Length - cancelIndex;
+
+                NativeArray<TInstance> cancelArray = m_CancelledIterationTarget.DeferredCreate(cancelIndex);
+                NativeArray<TInstance>.Copy(pendingArray, 
+                                            0, 
+                                            cancelArray, 
+                                            0, 
+                                            cancelIndex);
+
+                NativeArray<TInstance> liveArray = m_IterationTarget.DeferredCreate(liveLength);
+                NativeArray<TInstance>.Copy(pendingArray, 
+                                            cancelIndex, 
+                                            liveArray, 
+                                            0, 
+                                            liveLength);
             }
         }
 
