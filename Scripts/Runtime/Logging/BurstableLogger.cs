@@ -17,9 +17,9 @@ namespace Anvil.Unity.DOTS.Logging
     /// (usually <see cref="FixedString32Bytes" />)
     /// </typeparam>
     /// <remarks>
-    /// In the future, the goal of this type is to provide all the same information that 
-    /// <see cref="Log.Logger" /> provides. That is not possible with Burst today but should be 
-    /// possible in the future without making any changes at the consuming end. At the moment, the 
+    /// In the future, the goal of this type is to provide all the same information that
+    /// <see cref="Log.Logger" /> provides. That is not possible with Burst today but should be
+    /// possible in the future without making any changes at the consuming end. At the moment, the
     /// contextual information is added when the message passes through <see cref="UnityLogListener"/>.
     /// This information will appear in the output of all active <see cref="ILogHandler" /> implementations.
     /// except for the Editor console (<see cref="UnityLogHandler"/>).
@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Logging
         private readonly int m_ThreadIndex;
 
         /// <summary>
-        /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from a 
+        /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from a
         /// <see cref="Log.Logger" /> instance.
         /// </summary>
         /// <param name="logger">The <see cref="Log.Logger" /> to copy configuration from.</param>
@@ -50,7 +50,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// Thrown if there is an unknown error encountered when configuring the prefix string.
         /// </exception>
         [NotBurstCompatible]
-        public BurstableLogger(Log.Logger logger, string appendToMessagePrefix)
+        public BurstableLogger(Logger logger, string appendToMessagePrefix)
         {
             m_ThreadIndex = UNSET_THREAD_INDEX;
             string managedMessagePrefix = logger.MessagePrefix + appendToMessagePrefix;
