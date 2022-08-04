@@ -23,14 +23,9 @@ namespace Anvil.Unity.DOTS.Data
         private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_ContinueWriter;
-        [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_CancelWriter;
-        [ReadOnly] private VDLookupReader<bool> m_CancelLookup;
         [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
 
         private UnsafeTypedStream<TInstance>.LaneWriter m_ContinueLaneWriter;
-        private UnsafeTypedStream<TInstance>.LaneWriter m_CancelLaneWriter;
-
-        private int m_CancelLookupCount;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private enum UpdaterState
@@ -50,20 +45,13 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         internal VDUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
-                           UnsafeTypedStream<TInstance>.Writer cancelWriter,
-                           VDLookupReader<bool> cancelLookup,
                            NativeArray<TInstance> iteration)
         {
             m_ContinueWriter = continueWriter;
-            m_CancelWriter = cancelWriter;
-            m_CancelLookup = cancelLookup;
             m_Iteration = iteration;
 
             m_ContinueLaneWriter = default;
-            m_CancelLaneWriter = default;
             LaneIndex = UNSET_LANE_INDEX;
-
-            m_CancelLookupCount = 0;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_State = UpdaterState.Uninitialized;
@@ -92,83 +80,34 @@ namespace Anvil.Unity.DOTS.Data
 
             LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(LaneIndex);
-            m_CancelLaneWriter = m_CancelWriter.AsLaneWriter(LaneIndex);
-
-            m_CancelLookupCount = m_CancelLookup.Count();
-        }
-
-        public bool TryGetInstance(int index, out TInstance instance)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (m_State == UpdaterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to get an element.");
-            }
-
-            if (m_State == UpdaterState.Modifying)
-            {
-                throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(VirtualDataExtensions.ContinueOn)} or {nameof(VirtualDataExtensions.Resolve)} gets called before the next iteration.");
-            }
-
-            m_State = UpdaterState.Modifying;
-#endif
-            instance = m_Iteration[index];
-
-            if (m_CancelLookupCount > 0 && m_CancelLookup.ContainsKey(instance.ContextID))
-            {
-                Cancel(ref instance);
-                return false;
-            }
-
-            return true;
-        }
-
-        private void Cancel(ref TInstance instance)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (m_State == UpdaterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to continue an element.");
-            }
-
-            if (m_State == UpdaterState.Ready)
-            {
-                throw new InvalidOperationException($"Attempting to call {nameof(Cancel)} on a {instance} but that element didn't come from this {nameof(VDUpdater<TInstance>)}. Please ensure that the indexer was called first.");
-            }
-
-            m_State = UpdaterState.Ready;
-#endif
-            m_CancelLaneWriter.Write(ref instance);
         }
 
         /// <summary>
         /// Gets a <typeparamref name="TInstance"/> at the specified index.
         /// </summary>
         /// <param name="index">The index to the backing array</param>
-//         public TInstance this[int index]
-//         {
-//             get
-//             {
-// #if ENABLE_UNITY_COLLECTIONS_CHECKS
-//                 // ReSharper disable once ConvertIfStatementToSwitchStatement
-//                 if (m_State == UpdaterState.Uninitialized)
-//                 {
-//                     throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to get an element.");
-//                 }
-//
-//                 if (m_State == UpdaterState.Modifying)
-//                 {
-//                     throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(VirtualDataExtensions.ContinueOn)} or {nameof(VirtualDataExtensions.Resolve)} gets called before the next iteration.");
-//                 }
-//
-//                 m_State = UpdaterState.Modifying;
-// #endif
-//
-//                 return m_Iteration[index];
-//             }
-//         }
+        public TInstance this[int index]
+        {
+            get
+            {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                // ReSharper disable once ConvertIfStatementToSwitchStatement
+                if (m_State == UpdaterState.Uninitialized)
+                {
+                    throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to get an element.");
+                }
+
+                if (m_State == UpdaterState.Modifying)
+                {
+                    throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(VirtualDataExtensions.ContinueOn)} or {nameof(VirtualDataExtensions.Resolve)} gets called before the next iteration.");
+                }
+
+                m_State = UpdaterState.Modifying;
+#endif
+
+                return m_Iteration[index];
+            }
+        }
 
         /// <summary>
         /// Signals that this instance should be updated again next frame.
