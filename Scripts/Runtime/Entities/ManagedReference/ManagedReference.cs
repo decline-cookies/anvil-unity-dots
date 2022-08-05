@@ -1,4 +1,5 @@
 using Unity.Entities;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -9,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <typeparam name="T">The type of the managed instance that is referenced.</typeparam>
     public readonly struct ManagedReference<T> : IComponentData where T : class, IComponentReferencable
     {
-        private readonly int m_ManagedContextHash;
+        private readonly uint m_ManagedReferenceID;
 
         /// <summary>
         /// Creates a new managed reference from an <see cref="IComponentReferencable"/> instance.
@@ -17,7 +18,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="instance">The instance to hold reference too.</param>
         public ManagedReference(T instance)
         {
-            m_ManagedContextHash = ManagedReferenceStore.GetHash(instance);
+            m_ManagedReferenceID = ManagedReferenceStore.GetID(instance);
+
+            // Shouldn't ever happen but we want to know since there are equality checks that depend on the default
+            // instance being unique to any properly initialized instance.
+            Debug.Assert(!Equals(default(ManagedReference<T>)));
         }
 
         /// <summary>
@@ -26,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The managed instance that this structure represents.</returns>
         public T Resolve()
         {
-            return ManagedReferenceStore.Get<T>(m_ManagedContextHash);
+            return ManagedReferenceStore.Get<T>(m_ManagedReferenceID);
         }
     }
 }
