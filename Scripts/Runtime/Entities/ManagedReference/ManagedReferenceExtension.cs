@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using Anvil.Unity.DOTS.Data;
 using Unity.Entities;
 using Debug = UnityEngine.Debug;
 

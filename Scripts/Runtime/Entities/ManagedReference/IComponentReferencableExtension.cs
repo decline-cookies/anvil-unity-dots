@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// A collection of methods to use with <see cref="IComponentReferencable"/> instances.

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// A static store of all <see cref="IComponentReferencable"/> instances. Used to get instances by hash.

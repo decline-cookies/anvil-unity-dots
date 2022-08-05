@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Identifies that a managed instance is registered to <see cref="ManagedReferenceStore"/> and can be represented

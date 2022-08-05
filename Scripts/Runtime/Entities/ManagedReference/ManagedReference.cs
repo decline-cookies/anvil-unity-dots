@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Holds reference to a managed instance that is registered with <see cref="ManagedReferenceStore"/> in a valid

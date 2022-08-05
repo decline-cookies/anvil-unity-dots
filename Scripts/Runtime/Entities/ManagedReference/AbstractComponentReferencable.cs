@@ -1,6 +1,6 @@
 using Anvil.CSharp.Core;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// A convenient implementation of <see cref="IComponentReferencable"/> that automatically registers and
