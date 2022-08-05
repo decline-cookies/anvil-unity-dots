@@ -17,8 +17,20 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="entityManager">The <see cref="EntityManager"/> for the <see cref="Entity"/>.</param>
         /// <param name="entity">The <see cref="Entity"/> to add the reference too.</param>
         /// <param name="instance">The instance to reference.</param>
+        /// <typeparam name="T">The type of the managed instance.</typeparam>
+        public static void AddManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance) where T : class, IComponentReferencable
+        {
+            entityManager.AddComponentData(entity, instance.AsComponentDataReference());
+        }
+
+        /// <summary>
+        /// Sets an <see cref="IComponentReferencable"/> instance reference on a provided <see cref="Entity"/>
+        /// </summary>
+        /// <param name="entityManager">The <see cref="EntityManager"/> for the <see cref="Entity"/>.</param>
+        /// <param name="entity">The <see cref="Entity"/> to set the reference on.</param>
+        /// <param name="instance">The instance to reference.</param>
         /// <param name="preventOverwrite">
-        /// (Default: true) When true the method will throw an exception if a <see cref="ManagedReference{T}"/> of the
+        /// (Default: false) When true the method will throw an exception if a <see cref="ManagedReference{T}"/> of the
         /// same type already exists on the entity.
         /// </param>
         /// <typeparam name="T">The type of the managed instance.</typeparam>
@@ -26,14 +38,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// Thrown when <see cref="preventOverwrite"/> is true and a <see cref="ManagedReference{T}"/> of the same type
         /// already exists on the <see cref="Entity"/>.
         /// </exception>
-        public static void AddManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance, bool preventOverwrite = true) where T : class, IComponentReferencable
+        public static void SetManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance, bool preventOverwrite = false) where T : class, IComponentReferencable
         {
-            if(preventOverwrite && entityManager.HasComponent<ManagedReference<T>>(entity))
+            if(preventOverwrite && !entityManager.GetComponentData<ManagedReference<T>>(entity).Equals(default(ManagedReference<T>)))
             {
                 throw new InvalidOperationException($"Managed ref for {nameof(T)} already exists in {nameof(World)}:{entityManager.World.Name} on {nameof(Entity)}:{entity}. Set {nameof(preventOverwrite)} to false to allow overwriting.");
             }
 
-            entityManager.AddComponentData(entity, instance.AsComponentDataReference());
+            entityManager.SetComponentData(entity, instance.AsComponentDataReference());
         }
 
         /// <summary>
