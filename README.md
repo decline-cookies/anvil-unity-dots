@@ -1,3 +1,5 @@
+![GitHub](https://img.shields.io/github/license/decline-cookies/anvil-csharp-core)
+
 # anvil-unity-dots
 
 An opinionated collection of systems and utilities that add [Unity](https://unity.com) [DOTS](https://unity.com/dots) specific implementations on top of Anvil.
