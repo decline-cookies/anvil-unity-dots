@@ -19,21 +19,31 @@ namespace Anvil.Unity.DOTS.Data
     /// </remarks>
     public unsafe struct DeferredNativeArrayScheduleInfo
     {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal void* SafetyHandlePtr
         {
             get;
         }
+#endif
 
         internal void* BufferPtr
         {
             get;
         }
 
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal DeferredNativeArrayScheduleInfo(void* safetyHandlePtr, void* bufferPtr)
         {
             SafetyHandlePtr = safetyHandlePtr;
             BufferPtr = bufferPtr;
         }
+#else
+        internal DeferredNativeArrayScheduleInfo(void* bufferPtr)
+        {
+            BufferPtr = bufferPtr;
+        }
+#endif
+
     }
 
     /// <summary>
@@ -88,6 +98,7 @@ namespace Anvil.Unity.DOTS.Data
         private static readonly int SIZE = UnsafeUtility.SizeOf<T>();
         private static readonly int ALIGNMENT = UnsafeUtility.AlignOf<T>();
 
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
         // ReSharper disable once StaticMemberInGenericType
         private static int s_StaticSafetyId;
 
@@ -101,6 +112,7 @@ namespace Anvil.Unity.DOTS.Data
 
             AtomicSafetyHandle.SetStaticSafetyId(ref handle, s_StaticSafetyId);
         }
+#endif
 
         [BurstDiscard]
         private static void AssertValidElementType()
@@ -130,8 +142,10 @@ namespace Anvil.Unity.DOTS.Data
 
             array.m_Allocator = allocator;
 
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
             DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, allocator);
             InitStaticSafetyId(ref array.m_Safety);
+#endif
         }
 
         private static unsafe void ClearBufferInfo(BufferInfo* bufferInfo)
@@ -163,10 +177,13 @@ namespace Anvil.Unity.DOTS.Data
         //*************************************************************************************************************
 
         [NativeDisableUnsafePtrRestriction] private unsafe BufferInfo* m_BufferInfo;
-
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
         [NativeSetClassTypeToNullOnSchedule] private DisposeSentinel m_DisposeSentinel;
+#endif
 
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
         private AtomicSafetyHandle m_Safety;
+#endif
         private Allocator m_Allocator;
 
         /// <summary>
@@ -195,8 +212,12 @@ namespace Anvil.Unity.DOTS.Data
         public unsafe DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get =>
-                new DeferredNativeArrayScheduleInfo(UnsafeUtility.AddressOf(ref m_Safety),
-                                                    m_BufferInfo);
+                new DeferredNativeArrayScheduleInfo(
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                    UnsafeUtility.AddressOf(ref m_Safety),
+#endif
+                    m_BufferInfo
+                    );
         }
 
         /// <summary>
@@ -235,7 +256,9 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
             DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+#endif
             DisposeBufferInfo(m_BufferInfo, m_Allocator);
             m_BufferInfo = null;
         }
@@ -264,10 +287,12 @@ namespace Anvil.Unity.DOTS.Data
                 return default;
             }
 
-            DisposeSentinel.Clear(ref m_DisposeSentinel);
             DisposeJob disposeJob = new DisposeJob(m_BufferInfo, m_Allocator);
             JobHandle jobHandle = disposeJob.Schedule(inputDeps);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            DisposeSentinel.Clear(ref m_DisposeSentinel);
             AtomicSafetyHandle.Release(m_Safety);
+#endif
             m_BufferInfo = null;
             return jobHandle;
         }
@@ -301,7 +326,7 @@ namespace Anvil.Unity.DOTS.Data
             //which could leak memory. We can call this again if we've scheduled or performed a Clear.
             //If this triggers, we have been disposed or never created
             Debug.Assert(m_BufferInfo != null);
-            //If this triggers, we called DeferredCreate twice. 
+            //If this triggers, we called DeferredCreate twice.
             //Check scheduling to ensure that a Clear job happened in between the jobs that do a DeferredCreate
             Debug.Assert(m_BufferInfo->Buffer == null);
 
@@ -342,7 +367,7 @@ namespace Anvil.Unity.DOTS.Data
 #endif
             byte* buffer = (byte*)m_BufferInfo;
             // Unity uses this as an indicator to the internal Job Scheduling code that it needs to defer scheduling until
-            // the array length is actually known. 
+            // the array length is actually known.
             buffer += 1;
             NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(buffer, 0, Allocator.Invalid);
 
