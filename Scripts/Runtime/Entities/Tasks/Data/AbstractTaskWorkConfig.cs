@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities
             TaskWorkData.AddDataWrapper(dataWrapper);
             DataWrappers.Add(dataWrapper);
         }
-        
+
         protected void InternalRequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -75,7 +75,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.AddAsync : DataUsage.Add);
 #endif
         }
-        
+
         protected void InternalRequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -86,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.IterateAsync : DataUsage.Iterate);
 #endif
         }
-        
+
         protected void InternalRequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -97,7 +97,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.UpdateAsync : DataUsage.Update);
 #endif
         }
-        
+
         protected void InternalRequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData, bool isAsync)
             where TKey : unmanaged, IEquatable<TKey>
             where TResult : unmanaged, IKeyedData<TKey>
@@ -116,14 +116,23 @@ namespace Anvil.Unity.DOTS.Entities
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal void Debug_SetConfigurationStateComplete()
         {
+// HACK: This shouldn't be required in addition to the `Conditional` attribute above but Unity's build system doesn't
+// seem to respect the attribute.
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_ConfigState = ConfigState.Executing;
+#endif
         }
 
+
+// HACK: This shouldn't be required in addition to the `Conditional` attribute above but Unity's build system doesn't
+// seem to respect the attribute.
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_NotifyWorkDataOfUsage(Type type, DataUsage usage)
         {
             TaskWorkData.Debug_NotifyWorkDataOfUsage(type, usage);
         }
 #endif
+
     }
 }

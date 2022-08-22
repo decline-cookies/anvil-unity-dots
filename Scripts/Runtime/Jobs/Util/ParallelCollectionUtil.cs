@@ -90,12 +90,12 @@ namespace Anvil.Unity.DOTS.Jobs
         /// some value above <see cref="JobsUtility.JobWorkerMaximumCount"/>.
         /// 2. The scheduler may place your job on a profiler thread in the editor. In this case the native thread
         /// index will also be some value above <see cref="JobsUtility.JobWorkerMaximumCount"/>
-        /// It is unknown why this is. 
+        /// It is unknown why this is.
         ///
         /// Our goal is to have a tightly packed collection so in the example of an 8 core machine with
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> equal to 15, we would have the following mapping.
         ///
-        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, X 
+        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, X
         /// index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15
         ///
         /// We have a tightly packed collection with index 0 through 15 for a total of 16 buckets.
@@ -111,9 +111,9 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(nativeThreadIndex > 0 && nativeThreadIndex <= JobsUtility.MaxJobThreadCount);
             return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
         }
-        
+
         /// <summary>
-        /// Returns the index to use when operating on the main thread 
+        /// Returns the index to use when operating on the main thread
         /// </summary>
         /// <remarks>
         /// This function assumes that the collection being used was sized appropriately via
@@ -127,11 +127,16 @@ namespace Anvil.Unity.DOTS.Jobs
             return mainThreadIndex;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+
         [BurstDiscard]
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void DetectMultipleXThreads(int nativeThreadIndex)
         {
+// HACK: This shouldn't be required in addition to the `Conditional` attribute above but Unity's build system doesn't
+// seem to respect the attribute.
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
             ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
+#endif
         }
 
     }
