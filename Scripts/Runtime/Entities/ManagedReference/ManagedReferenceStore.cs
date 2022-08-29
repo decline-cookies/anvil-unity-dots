@@ -12,20 +12,25 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public static class ManagedReferenceStore
     {
-        private static readonly Logger s_Logger = Log.GetStaticLogger(typeof(ManagedReferenceStore));
-        private static readonly Dictionary<uint, IComponentReferencable> s_IDToInstance = new Dictionary<uint, IComponentReferencable>();
-        private static readonly Dictionary<IComponentReferencable, uint> s_InstanceToID = new Dictionary<IComponentReferencable, uint>();
+        private static readonly Logger s_Logger;
+        private static readonly Dictionary<uint, IComponentReferencable> s_IDToInstance;
+        private static readonly Dictionary<IComponentReferencable, uint> s_InstanceToID;
         private static IDProvider s_IDProvider;
 
-#if UNITY_EDITOR
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static ManagedReferenceStore()
+        {
+            s_Logger = Log.GetStaticLogger(typeof(ManagedReferenceStore));
+            s_IDToInstance = new Dictionary<uint, IComponentReferencable>();
+            s_InstanceToID = new Dictionary<IComponentReferencable, uint>();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         private static void Init()
         {
             s_IDProvider = new IDProvider(uint.MaxValue - 1_000_000);
             s_IDToInstance.Clear();
             s_InstanceToID.Clear();
         }
-#endif
 
         /// <summary>
         /// Registers a managed instance so it can be resolved by a <see cref="ManagedReference{T}"/>.
