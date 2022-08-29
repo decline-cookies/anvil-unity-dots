@@ -22,11 +22,9 @@ namespace Anvil.Unity.DOTS.Entities
             s_Logger = Log.GetStaticLogger(typeof(ManagedReferenceStore));
             s_IDToInstance = new Dictionary<uint, IComponentReferencable>();
             s_InstanceToID = new Dictionary<IComponentReferencable, uint>();
-
-            Init();
         }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         private static void Init()
         {
             s_IDProvider = new IDProvider(uint.MaxValue - 1_000_000);
