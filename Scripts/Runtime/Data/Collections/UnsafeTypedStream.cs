@@ -426,6 +426,12 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompatible]
         public readonly struct Writer
         {
+            internal static Writer CreateFromPointer(void* ptr)
+            {
+                Writer writer = new Writer(ptr);
+                return writer;
+            }
+            
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
 
             /// <summary>
@@ -447,6 +453,16 @@ namespace Anvil.Unity.DOTS.Data
             internal Writer(ref UnsafeTypedStream<T> unsafeTypedStream)
             {
                 m_BufferInfo = unsafeTypedStream.m_BufferInfo;
+            }
+
+            private Writer(void* bufferInfoPtr)
+            {
+                m_BufferInfo = (BufferInfo*)bufferInfoPtr;
+            }
+
+            internal void* GetPointer()
+            {
+                return m_BufferInfo;
             }
 
             /// <summary>

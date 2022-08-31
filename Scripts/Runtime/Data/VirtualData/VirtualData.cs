@@ -46,17 +46,26 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
 
-        internal static VirtualData<TKey, TInstance> Create(params AbstractVirtualData[] sources)
+        private const byte UNSET_RESULT_DESTINATION_TYPE = byte.MaxValue;
+
+        private VDResultsDestinationLookup m_ResultsDestinationLookup;
+
+        internal static VirtualData<TKey, TInstance> Create()
         {
-            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>();
-
-            foreach (AbstractVirtualData source in sources)
-            {
-                virtualData.AddSource(source);
-                source.AddResultDestination(virtualData);
-            }
-
+            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>(UNSET_RESULT_DESTINATION_TYPE);
             return virtualData;
+        }
+
+        internal static VirtualData<TKey, TInstance> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractVirtualData source)
+            where TResultDestinationType : Enum
+        {
+            byte value = (byte)(object)resultDestinationType;
+            VirtualData<TKey, TInstance> resultDestinationData = new VirtualData<TKey, TInstance>(value);
+            
+            resultDestinationData.SetSource(source);
+            source.AddResultDestination(value, resultDestinationData);
+            
+            return resultDestinationData;
         }
 
         private UnsafeTypedStream<TInstance> m_Pending;
@@ -70,7 +79,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
 
-        private VirtualData() : base()
+        private VirtualData(byte resultDestinationType) : base(resultDestinationType)
         {
             m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
                                                          Allocator.TempJob);
@@ -82,12 +91,22 @@ namespace Anvil.Unity.DOTS.Data
 
         protected override void DisposeSelf()
         {
+            if (m_ResultsDestinationLookup.IsCreated)
+            {
+                m_ResultsDestinationLookup.Dispose();
+            }
+            
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
             m_IterationTarget.Dispose();
             m_Lookup.Dispose();
 
             base.DisposeSelf();
+        }
+
+        internal override unsafe void* GetWriterPointer()
+        {
+            return m_Pending.AsWriter().GetPointer();
         }
 
         //*************************************************************************************************************
@@ -120,6 +139,16 @@ namespace Anvil.Unity.DOTS.Data
         internal VDWriter<TInstance> CreateVDWriter()
         {
             return new VDWriter<TInstance>(m_Pending.AsWriter());
+        }
+
+        internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
+        {
+            if (!m_ResultsDestinationLookup.IsCreated)
+            {
+                m_ResultsDestinationLookup = new VDResultsDestinationLookup(ResultDestinations);
+            }
+
+            return m_ResultsDestinationLookup;
         }
 
         //*************************************************************************************************************

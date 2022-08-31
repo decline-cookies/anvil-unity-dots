@@ -83,27 +83,11 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        /// <summary>
-        /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
-        /// Add context as well as a <see cref="VirtualData{TKey,TInstance}"/> that will be used as a results
-        /// destination.
-        /// </summary>
-        /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> that requires access.</param>
-        /// <param name="resultsDestination">
-        /// The <see cref="VirtualData{TKey,TInstance}"/> to use as a results destination.
-        /// NOTE: No access is necessary for this as it is just being used to point to where to write later on.
-        /// </param>
-        /// <typeparam name="TKey">The type of the key</typeparam>
-        /// <typeparam name="TInstance">The type of the data</typeparam>
-        /// <typeparam name="TResult">The type of the result data</typeparam>
-        /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance, TResult>(VirtualData<TKey, TInstance> data, VirtualData<TKey, TResult> resultsDestination)
+        public JobTaskWorkConfig RequireResultsDestinationLookup<TKey, TInstance>(VirtualData<TKey, TInstance> data)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
         {
-            RequireDataForAddAsync(data);
-            RequireDataAsResultsDestination(resultsDestination);
+            InternalRequireResultsDestinationLookup(data, true);
             return this;
         }
 

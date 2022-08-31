@@ -1,4 +1,3 @@
-using Anvil.CSharp.Command;
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
@@ -11,21 +10,20 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    /// <summary>
-    /// Task Drivers are the Data Oriented Design method of <see cref="AbstractCommand"/> in the Object Oriented Design
-    /// Whereas a Command instance would be created to take an element of data through some specific logic steps
-    /// to then output a result, a TaskDriver exists as a definition or route that all elements of data pass through to
-    /// accomplish the same logical steps.
-    /// Custom "Populate" jobs allow for getting elements of data into the TaskDriver.
-    /// Custom "Update" jobs allow for stitching together sub task drivers input/output data.
-    /// </summary>
-    /// <typeparam name="TTaskDriverSystem">
-    /// The <see cref="AbstractTaskDriverSystem"/> this TaskDriver belongs to. This ensures that the TaskDriver is
-    /// executed during the System's update phase and that job dependencies are written to the correct system.
-    /// </typeparam>
-    public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver
-        where TTaskDriverSystem : AbstractTaskDriverSystem
+    //TODO: DOCS
+    public abstract class AbstractTaskDriver<TTaskDriverSystem, TKey, TTaskData, TResultDestinationType> : AbstractTaskDriver
+        where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TTaskData>
+        where TKey : unmanaged, IEquatable<TKey>
+        where TTaskData : unmanaged, IKeyedData<TKey>, ITaskData
+        where TResultDestinationType : Enum
     {
+        private readonly VirtualDataLookup m_ResultsData;
+
+        public VirtualData<TKey, TTaskData> TaskData
+        {
+            get => System.TaskData;
+        }
+
         /// <summary>
         /// The <see cref="AbstractTaskDriverSystem"/> this TaskDriver belongs to.
         /// </summary>
@@ -36,17 +34,38 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskDriverSystem>())
         {
+            m_ResultsData = new VirtualDataLookup();
+        }
+
+        protected override void DisposeSelf()
+        {
+            m_ResultsData.Dispose();
+            base.DisposeSelf();
+        }
+
+        protected VirtualData<TKey, TTaskResultData> CreateResultsData<TTaskResultData>(TResultDestinationType resultDestinationType)
+            where TTaskResultData : unmanaged, IKeyedData<TKey>
+        {
+            VirtualData<TKey, TTaskResultData> virtualData = VirtualData<TKey, TTaskResultData>.CreateAsResultsDestination(resultDestinationType, TaskData);
+            m_ResultsData.AddData(virtualData);
+
+            return virtualData;
+        }
+
+        protected sealed override JobHandle Consolidate(JobHandle dependsOn)
+        {
+            Debug_EnsureNoMainThreadWorkCurrentlyActive();
+            JobHandle consolidateHandle = m_ResultsData.ConsolidateForFrame(dependsOn);
+            return consolidateHandle;
         }
     }
     
-    /// <inheritdoc cref="AbstractTaskDriver{TTaskDriverSystem}"/>
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> POPULATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Populate), BindingFlags.Instance | BindingFlags.NonPublic);
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> UPDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Update), BindingFlags.Instance | BindingFlags.NonPublic);
         internal static readonly BulkScheduleDelegate<AbstractTaskDriver> CONSOLIDATE_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractTaskDriver>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.NonPublic);
-        
-        private readonly VirtualDataLookup m_InstanceData;
+
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly List<JobTaskWorkConfig> m_PopulateJobData;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
@@ -71,7 +90,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             World = world;
             System = system;
-            m_InstanceData = new VirtualDataLookup();
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             m_PopulateJobData = new List<JobTaskWorkConfig>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
@@ -81,8 +99,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void DisposeSelf()
         {
-            m_InstanceData.Dispose();
-
             foreach (AbstractTaskDriver childTaskDriver in m_SubTaskDrivers)
             {
                 childTaskDriver.Dispose();
@@ -164,37 +180,15 @@ namespace Anvil.Unity.DOTS.Entities
             return m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
         }
 
-        private JobHandle Consolidate(JobHandle dependsOn)
-        {
-            Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            JobHandle consolidateHandle = m_InstanceData.ConsolidateForFrame(dependsOn);
-            return consolidateHandle;
-        }
-        
+        protected abstract JobHandle Consolidate(JobHandle dependsOn);
+
         protected void RegisterSubTaskDriver(AbstractTaskDriver subTaskDriver)
         {
             m_SubTaskDrivers.Add(subTaskDriver);
         }
         
-        protected VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
-        {
-            return m_InstanceData.GetData<TKey, TInstance>();
-        }
-
-        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
-        {
-            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
-            m_InstanceData.AddData(virtualData);
-            return virtualData;
-        }
-        
-        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoMainThreadWorkCurrentlyActive()
+        protected void Debug_EnsureNoMainThreadWorkCurrentlyActive()
         {
             if (m_ActiveMainThreadTaskWorkConfig != null)
             {

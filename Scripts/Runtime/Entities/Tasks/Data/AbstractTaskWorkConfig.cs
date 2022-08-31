@@ -21,7 +21,9 @@ namespace Anvil.Unity.DOTS.Entities
             UpdateAsync,
             Update,
             ResultsDestinationAsync,
-            ResultsDestination
+            ResultsDestination,
+            ResultsDestinationLookupAsync,
+            ResultsDestinationLookup
         }
 
         private enum ConfigState
@@ -73,6 +75,17 @@ namespace Anvil.Unity.DOTS.Entities
             AddDataWrapper(wrapper);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.AddAsync : DataUsage.Add);
+#endif
+        }
+
+        protected void InternalRequireResultsDestinationLookup<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
+            where TKey : unmanaged, IEquatable<TKey>
+            where TInstance : unmanaged, IKeyedData<TKey>
+        {
+            //There's no need to add a wrapper since we don't need to actually get the data, we're just getting the pointers for writing results
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            //TODO: Fix this
+            // Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.ResultsDestinationLookupAsync : DataUsage.ResultsDestinationLookup);
 #endif
         }
 
