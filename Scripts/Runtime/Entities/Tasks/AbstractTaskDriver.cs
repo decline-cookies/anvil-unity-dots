@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
     //TODO: DOCS
     public abstract class AbstractTaskDriver<TTaskDriverSystem, TTaskData, TResultDestinationType> : AbstractTaskDriver
         where TTaskDriverSystem : AbstractTaskDriverSystem<TTaskData>
-        where TTaskData : unmanaged, IKeyedData, ITaskData
+        where TTaskData : unmanaged, IEntityProxyData, ITaskData
         where TResultDestinationType : Enum
     {
         private readonly VirtualDataLookup m_ResultsData;
@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected VirtualData<TTaskResultData> CreateResultsData<TTaskResultData>(TResultDestinationType resultDestinationType)
-            where TTaskResultData : unmanaged, IKeyedData
+            where TTaskResultData : unmanaged, IEntityProxyData
         {
             VirtualData<TTaskResultData> virtualData = VirtualData<TTaskResultData>.CreateAsResultsDestination(resultDestinationType, TaskData);
             m_ResultsData.AddData(virtualData);

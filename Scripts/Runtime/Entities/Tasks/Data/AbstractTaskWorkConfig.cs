@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
             AddDataWrapper(wrapper);
@@ -78,7 +78,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected void InternalRequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             //There's no need to add a wrapper since we don't need to actually get the data, we're just getting the pointers for writing results
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected void InternalRequireDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
             AddDataWrapper(wrapper);
@@ -98,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TInstance> data, bool isAsync)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
             AddDataWrapper(wrapper);
@@ -108,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData, bool isAsync)
-            where TResult : unmanaged, IKeyedData
+            where TResult : unmanaged, IEntityProxyData
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
             AddDataWrapper(wrapper);

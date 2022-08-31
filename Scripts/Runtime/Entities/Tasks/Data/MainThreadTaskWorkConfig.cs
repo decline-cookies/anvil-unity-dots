@@ -49,14 +49,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
         public MainThreadTaskWorkConfig RequireDataForAdd<TInstance>(VirtualData<TInstance> data)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireDataForAdd(data, false);
             return this;
         }
 
         public MainThreadTaskWorkConfig RequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireResultsDestinationLookup(data, false);
             return this;
@@ -72,7 +72,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
         public MainThreadTaskWorkConfig RequireDataForIterate<TInstance>(VirtualData<TInstance> data)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireDataForIterate(data, false);
             return this;
@@ -87,7 +87,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
         public MainThreadTaskWorkConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TInstance> data)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireDataForUpdate(data, false);
             return this;
@@ -105,7 +105,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
         public MainThreadTaskWorkConfig RequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData)
-            where TResult : unmanaged, IKeyedData
+            where TResult : unmanaged, IEntityProxyData
         {
             InternalRequireDataAsResultsDestination(resultData, false);
             return this;

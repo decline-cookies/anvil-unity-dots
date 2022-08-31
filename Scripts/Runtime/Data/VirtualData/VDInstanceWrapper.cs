@@ -5,7 +5,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Data
 {
     internal readonly struct VDInstanceWrapper<T> : IEquatable<VDInstanceWrapper<T>>
-        where T : unmanaged, IKeyedData
+        where T : unmanaged, IEntityProxyData
     {
         public static bool operator==(VDInstanceWrapper<T> lhs, VDInstanceWrapper<T> rhs)
         {

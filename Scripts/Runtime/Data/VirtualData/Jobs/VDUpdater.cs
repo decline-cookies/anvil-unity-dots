@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Data
     //TODO: Docs
     [BurstCompatible]
     public struct VDUpdater<TInstance>
-        where TInstance : unmanaged, IKeyedData
+        where TInstance : unmanaged, IEntityProxyData
     {
         private const int UNSET_LANE_INDEX = -1;
 
@@ -34,8 +34,7 @@ namespace Anvil.Unity.DOTS.Data
             get;
             private set;
         }
-
-        //TODO: Do i need this?
+        
         public uint CurrentContext
         {
             get;

@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Data
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
     public class VirtualData<TInstance> : AbstractVirtualData
-        where TInstance : unmanaged, IKeyedData
+        where TInstance : unmanaged, IEntityProxyData
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)

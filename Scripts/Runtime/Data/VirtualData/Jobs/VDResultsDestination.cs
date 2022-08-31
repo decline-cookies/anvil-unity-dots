@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Data
     //TODO: DOCS
     [BurstCompatible]
     public readonly struct VDResultsDestination<TTaskResultData>
-        where TTaskResultData : unmanaged, IKeyedData
+        where TTaskResultData : unmanaged, IEntityProxyData
     {
         internal static unsafe VDResultsDestination<TTaskResultData> ReinterpretFromPointer(void* ptr)
         {

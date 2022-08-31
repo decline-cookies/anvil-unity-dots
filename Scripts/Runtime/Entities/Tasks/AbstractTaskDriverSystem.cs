@@ -9,7 +9,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     public abstract partial class AbstractTaskDriverSystem<TTaskData> : AbstractTaskDriverSystem
-        where TTaskData : unmanaged, IKeyedData, ITaskData
+        where TTaskData : unmanaged, IEntityProxyData, ITaskData
     {
         public new VirtualData<TTaskData> TaskData
         {
@@ -79,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: #39 - Some way to remove the update Job
 
         protected VirtualData<TInstance> CreateTaskData<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = VirtualData<TInstance>.Create();
             m_TaskDataLookup.AddData(virtualData);

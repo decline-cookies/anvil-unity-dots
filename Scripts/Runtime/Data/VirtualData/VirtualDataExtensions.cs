@@ -11,8 +11,8 @@ namespace Anvil.Unity.DOTS.Data
     {
         //TODO: DOCS
         public static void Resolve<TInstance, TResult, TEnum>(this TInstance instance, TEnum option, ref TResult result, ref VDUpdater<TInstance> updater)
-            where TInstance : unmanaged, IKeyedData, ITaskData
-            where TResult : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData, ITaskData
+            where TResult : unmanaged, IEntityProxyData
             where TEnum : Enum
         {
             VDResultsDestination<TResult> resultsDestination = instance.ResultsDestinationLookup.GetVDResultsDestination<TEnum, TResult>(option);
@@ -23,8 +23,8 @@ namespace Anvil.Unity.DOTS.Data
         
         //TODO: DOCS
         public static void Resolve<TInstance, TResult, TEnum>(this TInstance instance, TEnum option, TResult result, ref VDUpdater<TInstance> updater)
-            where TInstance : unmanaged, IKeyedData, ITaskData
-            where TResult : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData, ITaskData
+            where TResult : unmanaged, IEntityProxyData
             where TEnum : Enum
         {
             Resolve(instance, option, ref result, ref updater);
@@ -32,14 +32,14 @@ namespace Anvil.Unity.DOTS.Data
 
         //TODO: DOCS
         public static void Resolve<TInstance>(this TInstance instance, ref VDUpdater<TInstance> updater)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             updater.Resolve();
         }
         
         //TODO: DOCS
         public static void ContinueOn<TInstance>(this TInstance instance, ref VDUpdater<TInstance> updater)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             updater.Continue(ref instance);
         }

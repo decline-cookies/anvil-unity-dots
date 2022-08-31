@@ -3,7 +3,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Data
 {
     //TODO: Docs
-    public interface IKeyedData
+    public interface IEntityProxyData
     {
         /// <summary>
         /// The lookup key for this data

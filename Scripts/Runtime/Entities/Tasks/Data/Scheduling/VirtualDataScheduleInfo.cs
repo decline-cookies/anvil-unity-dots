@@ -4,7 +4,7 @@ using System;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class VirtualDataScheduleInfo<TInstance> : IScheduleInfo
-        where TInstance : unmanaged, IKeyedData
+        where TInstance : unmanaged, IEntityProxyData
     {
         public int BatchSize
         {

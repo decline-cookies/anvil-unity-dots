@@ -71,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private VirtualData<TInstance> GetVirtualData<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -91,7 +91,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDReader{TInstance}"/></returns>
         public VDReader<TInstance> GetVDReaderAsync<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
@@ -110,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDReader{TInstance}"/></returns>
         public VDReader<TInstance> GetVDReader<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
@@ -169,7 +169,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
         public virtual VDUpdater<TInstance> GetVDUpdaterAsync<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
@@ -188,7 +188,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
         public virtual VDUpdater<TInstance> GetVDUpdater<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
@@ -208,7 +208,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
         public virtual VDWriter<TInstance> GetVDWriterAsync<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
@@ -227,7 +227,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
         public virtual VDWriter<TInstance> GetVDWriter<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
@@ -241,7 +241,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public VDResultsDestinationLookup GetVDResultsDestinationLookup<TInstance>()
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
             

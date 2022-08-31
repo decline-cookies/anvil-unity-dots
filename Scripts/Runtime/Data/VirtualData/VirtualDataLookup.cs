@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The type of Key</typeparam>
         /// <typeparam name="TInstance">The type of Instance data</typeparam>
         public void AddData<TInstance>(VirtualData<TInstance> data)
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -56,7 +56,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <returns>The <see cref="VirtualData{TKey,TInstance}"/> instance</returns>
         public VirtualData<TInstance> GetData<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData
+            where TInstance : unmanaged, IEntityProxyData
         {
             Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
