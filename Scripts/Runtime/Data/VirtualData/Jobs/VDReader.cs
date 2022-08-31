@@ -12,11 +12,11 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TInstance">They type of data to read</typeparam>
     [BurstCompatible]
     public readonly struct VDReader<TInstance>
-        where TInstance : unmanaged
+        where TInstance : unmanaged, IKeyedData
     {
-        [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
+        [ReadOnly] private readonly NativeArray<VDInstanceWrapper<TInstance>> m_Iteration;
 
-        internal VDReader(NativeArray<TInstance> iteration)
+        internal VDReader(NativeArray<VDInstanceWrapper<TInstance>> iteration)
         {
             m_Iteration = iteration;
         }
@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="index">The index into the backing array</param>
         public TInstance this[int index]
         {
-            get => m_Iteration[index];
+            get => m_Iteration[index].Payload;
         }
     }
 }

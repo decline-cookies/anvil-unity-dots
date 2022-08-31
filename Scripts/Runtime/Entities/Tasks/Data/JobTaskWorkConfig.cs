@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
+        internal JobTaskWorkConfig(ScheduleJobDelegate scheduleJobDelegate, AbstractTaskDriverSystem abstractTaskDriverSystem, uint context) : base(abstractTaskDriverSystem, context)
         {
             m_ScheduleJobDelegate = scheduleJobDelegate;
         }
@@ -40,12 +40,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig ScheduleOn<TKey, TInstance>(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public JobTaskWorkConfig ScheduleOn<TInstance>(VirtualData<TInstance> data, BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IKeyedData
         {
             Debug_EnsureNoDuplicateScheduleInfo();
-            m_ScheduleInfo = new VirtualDataScheduleInfo<TKey, TInstance>(data, batchStrategy);
+            m_ScheduleInfo = new VirtualDataScheduleInfo<TInstance>(data, batchStrategy);
             return this;
         }
 
@@ -75,17 +74,15 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForAddAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public JobTaskWorkConfig RequireDataForAddAsync<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForAdd(data, true);
             return this;
         }
 
-        public JobTaskWorkConfig RequireResultsDestinationLookup<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public JobTaskWorkConfig RequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireResultsDestinationLookup(data, true);
             return this;
@@ -99,9 +96,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForIterateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public JobTaskWorkConfig RequireDataForIterateAsync<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForIterate(data, true);
             return this;
@@ -115,9 +111,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForUpdateAsync<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public JobTaskWorkConfig RequireDataForUpdateAsync<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForUpdate(data, true);
             return this;
@@ -134,9 +129,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
+        public JobTaskWorkConfig RequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData)
+            where TResult : unmanaged, IKeyedData
         {
             InternalRequireDataAsResultsDestination(resultData, true);
             return this;

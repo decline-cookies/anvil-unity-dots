@@ -11,15 +11,14 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     //TODO: DOCS
-    public abstract class AbstractTaskDriver<TTaskDriverSystem, TKey, TTaskData, TResultDestinationType> : AbstractTaskDriver
-        where TTaskDriverSystem : AbstractTaskDriverSystem<TKey, TTaskData>
-        where TKey : unmanaged, IEquatable<TKey>
-        where TTaskData : unmanaged, IKeyedData<TKey>, ITaskData
+    public abstract class AbstractTaskDriver<TTaskDriverSystem, TTaskData, TResultDestinationType> : AbstractTaskDriver
+        where TTaskDriverSystem : AbstractTaskDriverSystem<TTaskData>
+        where TTaskData : unmanaged, IKeyedData, ITaskData
         where TResultDestinationType : Enum
     {
         private readonly VirtualDataLookup m_ResultsData;
 
-        public VirtualData<TKey, TTaskData> TaskData
+        public VirtualData<TTaskData> TaskData
         {
             get => System.TaskData;
         }
@@ -43,10 +42,10 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        protected VirtualData<TKey, TTaskResultData> CreateResultsData<TTaskResultData>(TResultDestinationType resultDestinationType)
-            where TTaskResultData : unmanaged, IKeyedData<TKey>
+        protected VirtualData<TTaskResultData> CreateResultsData<TTaskResultData>(TResultDestinationType resultDestinationType)
+            where TTaskResultData : unmanaged, IKeyedData
         {
-            VirtualData<TKey, TTaskResultData> virtualData = VirtualData<TKey, TTaskResultData>.CreateAsResultsDestination(resultDestinationType, TaskData);
+            VirtualData<TTaskResultData> virtualData = VirtualData<TTaskResultData>.CreateAsResultsDestination(resultDestinationType, TaskData);
             m_ResultsData.AddData(virtualData);
 
             return virtualData;
@@ -69,6 +68,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly List<JobTaskWorkConfig> m_PopulateJobData;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+        private readonly uint m_Context;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
 
@@ -90,6 +90,10 @@ namespace Anvil.Unity.DOTS.Entities
         {
             World = world;
             System = system;
+            
+            //Generate a Unique ID for this TaskDriver relative to its System
+            m_Context = System.GetNextID();
+            
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             m_PopulateJobData = new List<JobTaskWorkConfig>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
@@ -121,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities
         public MainThreadTaskWorkConfig CreateMainThreadTaskWork()
         {
             Debug_EnsureNoMainThreadWorkCurrentlyActive();
-            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System);
+            m_ActiveMainThreadTaskWorkConfig = new MainThreadTaskWorkConfig(System, m_Context);
             return m_ActiveMainThreadTaskWorkConfig;
         }
         
@@ -148,7 +152,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         public JobTaskWorkConfig ConfigurePopulateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, m_Context);
             m_PopulateJobData.Add(config);
             return config;
         }
@@ -163,7 +167,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>An instance of <see cref="JobTaskWorkConfig"/> to chain on further customization.</returns>
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, System, m_Context);
             m_UpdateJobData.Add(config);
             return config;
         }

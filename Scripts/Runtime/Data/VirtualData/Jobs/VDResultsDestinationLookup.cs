@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         internal unsafe VDResultsDestination<TTaskResultData> GetVDResultsDestination<TTaskResultEnum, TTaskResultData>(TTaskResultEnum resultsDestinationType)
-            where TTaskResultData : unmanaged
+            where TTaskResultData : unmanaged, IKeyedData
             where TTaskResultEnum : Enum
         {
             //TODO: Throw error if lookup doesn't contain the key

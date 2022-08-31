@@ -1,3 +1,4 @@
+using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Collections;
@@ -5,28 +6,17 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    /// <summary>
-    /// Represents a read/write reference to <see cref="VirtualData{TKey,TInstance}"/>
-    /// for use in updating the data.
-    /// </summary>
-    /// <remarks>
-    /// Commonly used to iterate through all instances, perform some work and either
-    /// <see cref="Continue(TInstance)"/> if more work needs to be done next frame or
-    /// <see cref="Resolve"/> if the work is done.
-    /// </remarks>
-    /// <typeparam name="TKey">The type of key to use for lookup of the instance</typeparam>
-    /// <typeparam name="TInstance">The type of instance</typeparam>
+    //TODO: Docs
     [BurstCompatible]
-    public struct VDUpdater<TKey, TInstance>
-        where TKey : unmanaged, IEquatable<TKey>
-        where TInstance : unmanaged, IKeyedData<TKey>
+    public struct VDUpdater<TInstance>
+        where TInstance : unmanaged, IKeyedData
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_ContinueWriter;
-        [ReadOnly] private readonly NativeArray<TInstance> m_Iteration;
+        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
+        [ReadOnly] private readonly NativeArray<VDInstanceWrapper<TInstance>> m_Iteration;
 
-        private UnsafeTypedStream<TInstance>.LaneWriter m_ContinueLaneWriter;
+        private UnsafeTypedStream<VDInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private enum UpdaterState
@@ -45,8 +35,15 @@ namespace Anvil.Unity.DOTS.Data
             private set;
         }
 
-        internal VDUpdater(UnsafeTypedStream<TInstance>.Writer continueWriter,
-                           NativeArray<TInstance> iteration)
+        //TODO: Do i need this?
+        public uint CurrentContext
+        {
+            get;
+            private set;
+        }
+
+        internal VDUpdater(UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer continueWriter,
+                           NativeArray<VDInstanceWrapper<TInstance>> iteration)
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
@@ -57,6 +54,8 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_State = UpdaterState.Uninitialized;
 #endif
+
+            CurrentContext = IDProvider.UNSET_ID;
         }
 
         /// <summary>
@@ -105,8 +104,9 @@ namespace Anvil.Unity.DOTS.Data
 
                 m_State = UpdaterState.Modifying;
 #endif
-
-                return m_Iteration[index];
+                VDInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
+                CurrentContext = instanceWrapper.ID.Context;
+                return instanceWrapper.Payload;
             }
         }
 
@@ -131,12 +131,14 @@ namespace Anvil.Unity.DOTS.Data
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(VDUpdater<TKey, TInstance>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(VDUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
             m_State = UpdaterState.Ready;
 #endif
-            m_ContinueLaneWriter.Write(ref instance);
+            m_ContinueLaneWriter.Write(new VDInstanceWrapper<TInstance>(instance.Entity,
+                                                                        CurrentContext,
+                                                                        ref instance));
         }
 
         internal void Resolve()
@@ -150,7 +152,7 @@ namespace Anvil.Unity.DOTS.Data
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(VDUpdater<TKey, TInstance>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(VDUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);

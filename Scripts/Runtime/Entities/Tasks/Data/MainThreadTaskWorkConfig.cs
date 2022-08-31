@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public class MainThreadTaskWorkConfig : AbstractTaskWorkConfig
     {
-        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem) : base(abstractTaskDriverSystem)
+        internal MainThreadTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, uint context) : base(abstractTaskDriverSystem, context)
         {
         }
 
@@ -48,17 +48,15 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public MainThreadTaskWorkConfig RequireDataForAdd<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForAdd(data, false);
             return this;
         }
 
-        public MainThreadTaskWorkConfig RequireResultsDestinationLookup<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public MainThreadTaskWorkConfig RequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireResultsDestinationLookup(data, false);
             return this;
@@ -73,9 +71,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public MainThreadTaskWorkConfig RequireDataForIterate<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForIterate(data, false);
             return this;
@@ -89,9 +86,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public MainThreadTaskWorkConfig RequireDataForUpdate<TKey, TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IKeyedData
         {
             InternalRequireDataForUpdate(data, false);
             return this;
@@ -108,9 +104,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="MainThreadTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public MainThreadTaskWorkConfig RequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
+        public MainThreadTaskWorkConfig RequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData)
+            where TResult : unmanaged, IKeyedData
         {
             InternalRequireDataAsResultsDestination(resultData, false);
             return this;

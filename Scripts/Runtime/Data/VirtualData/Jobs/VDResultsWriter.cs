@@ -9,14 +9,16 @@ namespace Anvil.Unity.DOTS.Data
     /// </summary>
     /// <typeparam name="TResult">The type of result to write</typeparam>
     [BurstCompatible]
-    public readonly struct VDResultsWriter<TResult>
-        where TResult : unmanaged
+    internal readonly struct VDResultsWriter<TResult>
+        where TResult : unmanaged, IKeyedData
     {
-        [ReadOnly] private readonly UnsafeTypedStream<TResult>.Writer m_ResultWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TResult>>.Writer m_ResultWriter;
+        [ReadOnly] private readonly uint m_Context;
 
-        internal VDResultsWriter(UnsafeTypedStream<TResult>.Writer resultWriter)
+        internal VDResultsWriter(UnsafeTypedStream<VDInstanceWrapper<TResult>>.Writer resultWriter, uint context)
         {
             m_ResultWriter = resultWriter;
+            m_Context = context;
         }
 
         /// <summary>
@@ -28,11 +30,14 @@ namespace Anvil.Unity.DOTS.Data
         {
             Add(ref result, laneIndex);
         }
-        
+
         /// <inheritdoc cref="Add(TResult,int)"/>
         public void Add(ref TResult result, int laneIndex)
         {
-            m_ResultWriter.AsLaneWriter(laneIndex).Write(ref result);
+            m_ResultWriter.AsLaneWriter(laneIndex)
+                          .Write(new VDInstanceWrapper<TResult>(result.Entity,
+                                                                m_Context,
+                                                                ref result));
         }
     }
 }

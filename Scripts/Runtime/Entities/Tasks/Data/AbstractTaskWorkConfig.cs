@@ -45,10 +45,10 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem)
+        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, uint context)
         {
             DataWrappers = new List<AbstractVDWrapper>();
-            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem);
+            TaskWorkData = new TaskWorkData(abstractTaskDriverSystem, context);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_ConfigState = ConfigState.Configuring;
@@ -67,9 +67,8 @@ namespace Anvil.Unity.DOTS.Entities
             DataWrappers.Add(dataWrapper);
         }
 
-        protected void InternalRequireDataForAdd<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
             AddDataWrapper(wrapper);
@@ -78,9 +77,8 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireResultsDestinationLookup<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             //There's no need to add a wrapper since we don't need to actually get the data, we're just getting the pointers for writing results
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -89,9 +87,8 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireDataForIterate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
             AddDataWrapper(wrapper);
@@ -100,9 +97,8 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireDataForUpdate<TKey, TInstance>(VirtualData<TKey, TInstance> data, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+            where TInstance : unmanaged, IKeyedData
         {
             VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
             AddDataWrapper(wrapper);
@@ -111,9 +107,8 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireDataAsResultsDestination<TKey, TResult>(VirtualData<TKey, TResult> resultData, bool isAsync)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TResult : unmanaged, IKeyedData<TKey>
+        protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData, bool isAsync)
+            where TResult : unmanaged, IKeyedData
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);
             AddDataWrapper(wrapper);
