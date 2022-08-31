@@ -16,24 +16,17 @@ namespace Anvil.Unity.DOTS.Data
     {
         internal static readonly BulkScheduleDelegate<AbstractVirtualData> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractVirtualData>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
         
+        
+        private readonly byte m_ResultDestinationType;
         private AbstractVirtualData m_Source;
 
         internal AccessController AccessController { get; }
         internal Type Type { get; }
-
-        private byte ResultDestinationType
-        {
-            get;
-        }
-        
-        protected Dictionary<byte, AbstractVirtualData> ResultDestinations
-        {
-            get;
-        }
+        protected Dictionary<byte, AbstractVirtualData> ResultDestinations { get; }
 
         protected AbstractVirtualData(byte resultDestinationType)
         {
-            ResultDestinationType = resultDestinationType;
+            m_ResultDestinationType = resultDestinationType;
             ResultDestinations = new Dictionary<byte, AbstractVirtualData>();
             AccessController = new AccessController();
             Type = GetType();
@@ -57,6 +50,7 @@ namespace Anvil.Unity.DOTS.Data
 
         internal void AddResultDestination(byte resultDestinationType, AbstractVirtualData resultData)
         {
+            //TODO: Throw error if m_ResultsDestinationLookup is created since it will not get updated
             ResultDestinations.Add(resultDestinationType, resultData);
         }
 
@@ -72,7 +66,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private void RemoveFromSource()
         {
-            m_Source?.RemoveResultDestination(ResultDestinationType);
+            m_Source?.RemoveResultDestination(m_ResultDestinationType);
         }
 
         //*************************************************************************************************************
@@ -88,7 +82,8 @@ namespace Anvil.Unity.DOTS.Data
             {
                 return exclusiveWrite;
             }
-
+            
+            //TODO: We don't need to get ALL the result channels, just the ones we might write to during the update phase.
             //Get write access to all possible channels that we can write a result to.
             //+1 to include the exclusive write
             NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(len + 1, Allocator.Temp);

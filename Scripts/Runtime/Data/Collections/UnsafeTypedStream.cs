@@ -426,8 +426,9 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompatible]
         public readonly struct Writer
         {
-            internal static Writer CreateFromPointer(void* ptr)
+            internal static Writer ReinterpretFromPointer(void* ptr)
             {
+                //TODO: Throw error if null pointer
                 Writer writer = new Writer(ptr);
                 return writer;
             }
@@ -457,10 +458,11 @@ namespace Anvil.Unity.DOTS.Data
 
             private Writer(void* bufferInfoPtr)
             {
+                //TODO: Throw error if null pointer
                 m_BufferInfo = (BufferInfo*)bufferInfoPtr;
             }
 
-            internal void* GetPointer()
+            internal void* GetBufferPointer()
             {
                 return m_BufferInfo;
             }

@@ -106,7 +106,7 @@ namespace Anvil.Unity.DOTS.Data
 
         internal override unsafe void* GetWriterPointer()
         {
-            return m_Pending.AsWriter().GetPointer();
+            return m_Pending.AsWriter().GetBufferPointer();
         }
 
         //*************************************************************************************************************

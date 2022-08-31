@@ -5,6 +5,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    //TODO: DOCS
     [BurstCompatible]
     public struct VDResultsDestinationLookup : IDisposable
     {
@@ -14,6 +15,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             get => m_Lookup.IsCreated;
         }
+        
         internal unsafe VDResultsDestinationLookup(Dictionary<byte, AbstractVirtualData> destinations)
         {
             m_Lookup = new UnsafeParallelHashMap<byte, long>(destinations.Count, Allocator.Persistent);
@@ -34,14 +36,14 @@ namespace Anvil.Unity.DOTS.Data
             m_Lookup.Dispose();
         }
 
-        internal unsafe VDResultsDestination<TTaskResultData> GetVDResultsDestination<TTaskResultEnum, TTaskResultData>(TTaskResultEnum option)
+        internal unsafe VDResultsDestination<TTaskResultData> GetVDResultsDestination<TTaskResultEnum, TTaskResultData>(TTaskResultEnum resultsDestinationType)
             where TTaskResultData : unmanaged
             where TTaskResultEnum : Enum
         {
-            //TODO: Check if option is included
-            long address = m_Lookup[(byte)(object)option];
+            //TODO: Throw error if lookup doesn't contain the key
+            long address = m_Lookup[(byte)(object)resultsDestinationType];
             void* ptr = (void*)address;
-            VDResultsDestination<TTaskResultData> resultsDestination = VDResultsDestination<TTaskResultData>.CreateFromPointer(ptr);
+            VDResultsDestination<TTaskResultData> resultsDestination = VDResultsDestination<TTaskResultData>.ReinterpretFromPointer(ptr);
             return resultsDestination;
         }
     }

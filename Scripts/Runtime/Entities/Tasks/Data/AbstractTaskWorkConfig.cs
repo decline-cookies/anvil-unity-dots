@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             //There's no need to add a wrapper since we don't need to actually get the data, we're just getting the pointers for writing results
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            //TODO: Fix this
+            //TODO: Someway to notify that we want to use the pointers without type conflicts
             // Debug_NotifyWorkDataOfUsage(wrapper.Type, isAsync ? DataUsage.ResultsDestinationLookupAsync : DataUsage.ResultsDestinationLookup);
 #endif
         }

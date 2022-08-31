@@ -59,7 +59,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            //TODO: FIX
             JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this);
             m_UpdateJobData.Add(config);
             return config;
