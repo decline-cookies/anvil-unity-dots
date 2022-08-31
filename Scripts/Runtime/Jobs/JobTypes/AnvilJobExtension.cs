@@ -1,11 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
-using UnityEngine.Scripting;
 
 namespace Anvil.Unity.DOTS.Jobs
 {
@@ -18,10 +16,11 @@ namespace Anvil.Unity.DOTS.Jobs
                                                       JobHandle dependsOn = default)
             where TJob : struct, IAnvilJob
         {
-            IntPtr reflectionData = WrapperJobProducer<TJob>.GetReflectionData();
+            IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
+            CheckReflectionDataCorrect(reflectionData);
+            
             WrapperJobStruct<TJob> wrapperData = new WrapperJobStruct<TJob>(ref jobData);
-
-
+            
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
                                                                                                          dependsOn,
@@ -34,18 +33,7 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // STATIC HELPERS
         //*************************************************************************************************************
-
-        /// <summary>
-        /// This method is only to be called by automatically generated setup code.
-        /// Called by Unity automatically
-        /// </summary>
-        /// <typeparam name="TJob"></typeparam>
-        public static void EarlyJobInit<TJob>()
-            where TJob : struct, IAnvilJob
-        {
-            WrapperJobProducer<TJob>.Initialize();
-        }
-
+        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void CheckReflectionDataCorrect(IntPtr reflectionData)
         {
@@ -77,27 +65,13 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // PRODUCER
         //*************************************************************************************************************
-        
-        internal struct WrapperJobProducer<TJob>
+
+        private struct WrapperJobProducer<TJob>
             where TJob : struct, IAnvilJob
         {
-            // ReSharper disable once StaticMemberInGenericType
-            private static readonly SharedStatic<IntPtr> JOB_REFLECTION_DATA = SharedStatic<IntPtr>.GetOrCreate<WrapperJobStruct<TJob>>();
-
-            internal static IntPtr GetReflectionData()
-            {
-                IntPtr reflectionData = JOB_REFLECTION_DATA.Data;
-                CheckReflectionDataCorrect(reflectionData);
-                return reflectionData;
-            }
-
-            [Preserve]
-            internal static void Initialize()
-            {
-                JOB_REFLECTION_DATA.Data = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob>),
-                                                                               typeof(TJob),
-                                                                               (ExecuteJobFunction)Execute);
-            }
+            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob>),
+                                                                                                    typeof(TJob),
+                                                                                                    (ExecuteJobFunction)Execute);
 
             private delegate void ExecuteJobFunction(ref WrapperJobStruct<TJob> jobData,
                                                      IntPtr additionalPtr,
