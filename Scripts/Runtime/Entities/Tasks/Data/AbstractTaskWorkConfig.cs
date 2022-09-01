@@ -14,6 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal enum DataUsage
         {
+            //TODO: Add comments for what these usages mean
             AddAsync,
             Add,
             IterateAsync,
@@ -77,6 +78,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
+        //TODO: This might be able to be a DEBUG_ function. https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960872902
         protected void InternalRequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data, bool isAsync)
             where TInstance : unmanaged, IEntityProxyData
         {

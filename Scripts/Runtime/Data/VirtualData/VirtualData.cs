@@ -61,7 +61,8 @@ namespace Anvil.Unity.DOTS.Data
         internal static VirtualData<TInstance> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractVirtualData source)
             where TResultDestinationType : Enum
         {
-            byte value = (byte)(object)resultDestinationType;
+            //TODO: Add an assert that this is valid - https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960848904
+            byte value = UnsafeUtility.As<TResultDestinationType, byte>(ref resultDestinationType);
             VirtualData<TInstance> resultDestinationData = new VirtualData<TInstance>(value);
             
             resultDestinationData.SetSource(source);

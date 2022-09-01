@@ -23,9 +23,17 @@ namespace Anvil.Unity.DOTS.Data
         internal AccessController AccessController { get; }
         internal Type Type { get; }
         protected Dictionary<byte, AbstractVirtualData> ResultDestinations { get; }
-
+        
+        //TODO: Rename to something better. VirtualData is ambiguous between one instance of data or the collection. This is more of a stream. Think on it.
+        //TODO: Split VirtualData into two pieces of functionality.
+        //TODO: 1. Data collection independent of the TaskDrivers all about Wide/Narrow and load balancing. 
+        //TODO: 2. A mechanism to handle the branching from Data to a Result type
+        //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
         protected AbstractVirtualData(byte resultDestinationType)
         {
+            //TODO: Could split the data into definitions via Attributes or some other mechanism to set up the relationships. Then a "baking" into the actual structures. 
+            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960764532
+            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960737069
             m_ResultDestinationType = resultDestinationType;
             ResultDestinations = new Dictionary<byte, AbstractVirtualData>();
             AccessController = new AccessController();
@@ -107,7 +115,8 @@ namespace Anvil.Unity.DOTS.Data
             {
                 return;
             }
-
+            
+            //TODO: Probably better to have as a separate list - https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960794780
             //Release all the possible channels we could have written a result to.
             foreach (AbstractVirtualData destinationData in ResultDestinations.Values)
             {

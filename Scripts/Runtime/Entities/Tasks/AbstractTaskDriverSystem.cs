@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractTaskDriverSystem()
         {
+            //TODO: This isn't right, we should pass the TaskData down through the constructor param. Needs a refactor. https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960860046
             base.TaskData = CreateTaskData<TTaskData>();
         }
     }
@@ -82,6 +83,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IEntityProxyData
         {
             VirtualData<TInstance> virtualData = VirtualData<TInstance>.Create();
+            //TODO: Move this up to the generic version. Makes more sense. https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960863873
             m_TaskDataLookup.AddData(virtualData);
             return virtualData;
         }
