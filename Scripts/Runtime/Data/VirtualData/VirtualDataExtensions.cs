@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Data
         public static void Resolve<TInstance, TResult, TEnum>(this TInstance instance, TEnum option, ref TResult result, ref VDUpdater<TInstance> updater)
             where TInstance : unmanaged, IEntityProxyData, ITaskData
             where TResult : unmanaged, IEntityProxyData
-            where TEnum : Enum
+            where TEnum : unmanaged, Enum
         {
             VDResultsDestination<TResult> resultsDestination = instance.ResultsDestinationLookup.GetVDResultsDestination<TEnum, TResult>(option);
             VDResultsWriter<TResult> resultsWriter = resultsDestination.AsResultsWriter(updater.CurrentContext);
@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Data
         public static void Resolve<TInstance, TResult, TEnum>(this TInstance instance, TEnum option, TResult result, ref VDUpdater<TInstance> updater)
             where TInstance : unmanaged, IEntityProxyData, ITaskData
             where TResult : unmanaged, IEntityProxyData
-            where TEnum : Enum
+            where TEnum : unmanaged, Enum
         {
             Resolve(instance, option, ref result, ref updater);
         }
