@@ -9,44 +9,30 @@ namespace Anvil.Unity.DOTS.Data
     /// </summary>
     public static class VirtualDataExtensions
     {
-        /// <summary>
-        /// Writes result data to the <see cref="VDResultsDestination{TResult}"/> on a
-        /// <see cref="IVirtualDataInstance{TResult}"/>
-        /// </summary>
-        /// <param name="instance">The instance to correspond the result to</param>
-        /// <param name="result">The result data to write</param>
-        /// <param name="updater">The <see cref="VDUpdater{TKey,TInstance}"/> the instance was from.</param>
-        /// <typeparam name="TKey">The type of key for the instance.</typeparam>
-        /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
-        /// <typeparam name="TResult">The type of the result struct</typeparam>
-        public static void Resolve<TKey, TInstance, TResult>(this TInstance instance, ref TResult result, ref VDUpdater<TKey, TInstance> updater)
+        //TODO: DOCS
+        public static void Resolve<TKey, TInstance, TResult, TEnum>(this TInstance instance, TEnum option, ref TResult result, ref VDUpdater<TKey, TInstance> updater)
             where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>, IVirtualDataInstance<TResult>
+            where TInstance : unmanaged, IKeyedData<TKey>, ITaskData
             where TResult : unmanaged
+            where TEnum : Enum
         {
-            VDResultsWriter<TResult> resultsWriter = instance.ResultsDestination.AsResultsWriter();
+            VDResultsDestination<TResult> resultsDestination = instance.ResultsDestinationLookup.GetVDResultsDestination<TEnum, TResult>(option);
+            VDResultsWriter<TResult> resultsWriter = resultsDestination.AsResultsWriter();
             resultsWriter.Add(ref result, updater.LaneIndex);
             updater.Resolve();
         }
         
-        /// <inheritdoc cref="Resolve{TKey,TInstance,TResult}"/>
-        public static void Resolve<TKey, TInstance, TResult>(this TInstance instance, TResult result, ref VDUpdater<TKey, TInstance> updater)
+        //TODO: DOCS
+        public static void Resolve<TKey, TInstance, TResult, TEnum>(this TInstance instance, TEnum option, TResult result, ref VDUpdater<TKey, TInstance> updater)
             where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>, IVirtualDataInstance<TResult>
+            where TInstance : unmanaged, IKeyedData<TKey>, ITaskData
             where TResult : unmanaged
+            where TEnum : Enum
         {
-            Resolve(instance, ref result, ref updater);
+            Resolve(instance, option, ref result, ref updater);
         }
 
-        /// <summary>
-        /// Consistency helper function to correspond to <see cref="Resolve{TKey,TInstance,TResult}(TInstance,ref TResult,ref Anvil.Unity.DOTS.Data.VDUpdater{TKey,TInstance})"/>
-        /// when there is no result to write.
-        /// Allows for the code to look the same in the jobs and checks safeties when ENABLE_UNITY_COLLECTIONS_CHECKS is enabled.
-        /// </summary>
-        /// <param name="instance">The instance to operate on</param>
-        /// <param name="updater">The <see cref="VDUpdater{TKey,TInstance}"/> the instance was from.</param>
-        /// <typeparam name="TKey">The type of key for the instance.</typeparam>
-        /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
+        //TODO: DOCS
         public static void Resolve<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
@@ -54,14 +40,7 @@ namespace Anvil.Unity.DOTS.Data
             updater.Resolve();
         }
         
-        /// <summary>
-        /// Companion to <see cref="Resolve{TKey,TInstance,TResult}(TInstance,ref TResult,ref Anvil.Unity.DOTS.Data.VDUpdater{TKey,TInstance})"/>
-        /// where the instance is not ready to write it's result and should be updated again the next frame.
-        /// </summary>
-        /// <param name="instance">The instance to update again next frame</param>
-        /// <param name="updater">The <see cref="VDUpdater{TKey,TInstance}"/> the instance was from.</param>
-        /// <typeparam name="TKey">The type of key for the instance.</typeparam>
-        /// <typeparam name="TInstance">The type of the instance struct.</typeparam>
+        //TODO: DOCS
         public static void ContinueOn<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>

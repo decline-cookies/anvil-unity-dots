@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
     /// Represents a write only reference to <see cref="VirtualData{TKey,TInstance}"/>
-    /// <seealso cref="IVirtualDataInstance{TResult}"/>
+    /// <seealso cref="ITaskData{TEnum}"/>
     /// <seealso cref="VDResultsDestination{TResult}"/>
     /// </summary>
     /// <typeparam name="TResult">The type of result to write</typeparam>

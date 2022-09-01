@@ -13,13 +13,12 @@ namespace Anvil.Unity.DOTS.Entities
 
         public Type Type
         {
-            get;
+            get => Data.Type;
         }
 
         protected AbstractVDWrapper(AbstractVirtualData data)
         {
             Data = data;
-            Type = data.GetType();
         }
 
         public abstract JobHandle AcquireAsync();

@@ -7,24 +7,47 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    public abstract partial class AbstractTaskDriverSystem<TKey, TTaskData> : AbstractTaskDriverSystem
+        where TKey : unmanaged, IEquatable<TKey>
+        where TTaskData : unmanaged, IKeyedData<TKey>, ITaskData
+    {
+        public new VirtualData<TKey, TTaskData> TaskData
+        {
+            get => base.TaskData as VirtualData<TKey, TTaskData>;
+        }
+
+        protected AbstractTaskDriverSystem()
+        {
+            base.TaskData = CreateTaskData<TKey, TTaskData>();
+        }
+    }
+    
     /// <summary>
     /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
     /// </summary>
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly VirtualDataLookup m_InstanceDataLookup;
+        //TODO: Do we need to have it be a lookup or will we only ever have one?
+        private readonly VirtualDataLookup m_TaskDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
+        
+        public AbstractVirtualData TaskData
+        {
+            get;
+            protected set;
+        }
+        
         protected AbstractTaskDriverSystem()
         {
-            m_InstanceDataLookup = new VirtualDataLookup();
+            m_TaskDataLookup = new VirtualDataLookup();
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
         }
         
         protected override void OnDestroy()
         {
-            m_InstanceDataLookup.Dispose();
+            m_TaskDataLookup.Dispose();
             
             m_UpdateJobData.Clear();
             
@@ -43,20 +66,13 @@ namespace Anvil.Unity.DOTS.Entities
         
         //TODO: #39 - Some way to remove the update Job
 
-        protected VirtualData<TKey, TInstance> CreateData<TKey, TInstance>(params AbstractVirtualData[] sources)
+        protected VirtualData<TKey, TInstance> CreateTaskData<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
             where TInstance : unmanaged, IKeyedData<TKey>
         {
-            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create(sources);
-            m_InstanceDataLookup.AddData(virtualData);
+            VirtualData<TKey, TInstance> virtualData = VirtualData<TKey, TInstance>.Create();
+            m_TaskDataLookup.AddData(virtualData);
             return virtualData;
-        }
-
-        protected VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
-        {
-            return m_InstanceDataLookup.GetData<TKey, TInstance>();
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -76,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
             
             //Consolidate our instance data to operate on it
-            dependsOn = m_InstanceDataLookup.ConsolidateForFrame(dependsOn);
+            dependsOn = m_TaskDataLookup.ConsolidateForFrame(dependsOn);
             
             //TODO: #38 - Allow for cancels to occur
             

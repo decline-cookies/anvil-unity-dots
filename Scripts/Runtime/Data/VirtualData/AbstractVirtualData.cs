@@ -15,62 +15,58 @@ namespace Anvil.Unity.DOTS.Data
     public abstract class AbstractVirtualData : AbstractAnvilBase
     {
         internal static readonly BulkScheduleDelegate<AbstractVirtualData> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractVirtualData>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private readonly List<AbstractVirtualData> m_Sources;
-        private readonly List<AbstractVirtualData> m_ResultDestinations;
+        
+        
+        private readonly byte m_ResultDestinationType;
+        private AbstractVirtualData m_Source;
 
         internal AccessController AccessController { get; }
         internal Type Type { get; }
+        protected Dictionary<byte, AbstractVirtualData> ResultDestinations { get; }
 
-        protected AbstractVirtualData()
+        protected AbstractVirtualData(byte resultDestinationType)
         {
-            m_Sources = new List<AbstractVirtualData>();
-            m_ResultDestinations = new List<AbstractVirtualData>();
+            m_ResultDestinationType = resultDestinationType;
+            ResultDestinations = new Dictionary<byte, AbstractVirtualData>();
             AccessController = new AccessController();
             Type = GetType();
         }
 
         protected override void DisposeSelf()
         {
-            RemoveFromSources();
-            m_ResultDestinations.Clear();
-            m_Sources.Clear();
+            RemoveFromSource();
+            ResultDestinations.Clear();
 
             AccessController.Dispose();
 
             base.DisposeSelf();
         }
         
+        internal abstract unsafe void* GetWriterPointer();
+        
         //*************************************************************************************************************
         // RELATIONSHIPS
         //*************************************************************************************************************
 
-        internal void AddResultDestination(AbstractVirtualData resultData)
+        internal void AddResultDestination(byte resultDestinationType, AbstractVirtualData resultData)
         {
-            m_ResultDestinations.Add(resultData);
+            //TODO: Throw error if m_ResultsDestinationLookup is created since it will not get updated
+            ResultDestinations.Add(resultDestinationType, resultData);
         }
 
-        private void RemoveResultDestination(AbstractVirtualData resultData)
+        private void RemoveResultDestination(byte resultDestinationType)
         {
-            m_ResultDestinations.Remove(resultData);
+            ResultDestinations.Remove(resultDestinationType);
         }
 
-        internal void AddSource(AbstractVirtualData sourceData)
+        internal void SetSource(AbstractVirtualData sourceData)
         {
-            m_Sources.Add(sourceData);
+            m_Source = sourceData;
         }
 
-        private void RemoveSource(AbstractVirtualData sourceData)
+        private void RemoveFromSource()
         {
-            m_Sources.Remove(sourceData);
-        }
-
-        private void RemoveFromSources()
-        {
-            foreach (AbstractVirtualData sourceData in m_Sources)
-            {
-                sourceData.RemoveResultDestination(this);
-            }
+            m_Source?.RemoveResultDestination(m_ResultDestinationType);
         }
 
         //*************************************************************************************************************
@@ -80,20 +76,22 @@ namespace Anvil.Unity.DOTS.Data
         {
             JobHandle exclusiveWrite = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
 
-            int len = m_ResultDestinations.Count;
+            int len = ResultDestinations.Count;
 
             if (len == 0)
             {
                 return exclusiveWrite;
             }
-
+            
+            //TODO: We don't need to get ALL the result channels, just the ones we might write to during the update phase.
             //Get write access to all possible channels that we can write a result to.
             //+1 to include the exclusive write
             NativeArray<JobHandle> allDependencies = new NativeArray<JobHandle>(len + 1, Allocator.Temp);
-            for (int i = 0; i < len; ++i)
+            int index = 0;
+            foreach (AbstractVirtualData destinationData in ResultDestinations.Values)
             {
-                AbstractVirtualData destinationData = m_ResultDestinations[i];
-                allDependencies[i] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
+                allDependencies[index] = destinationData.AccessController.AcquireAsync(AccessType.SharedWrite);
+                index++;
             }
 
             allDependencies[len] = exclusiveWrite;
@@ -105,13 +103,13 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.ReleaseAsync(releaseAccessDependency);
 
-            if (m_ResultDestinations.Count == 0)
+            if (ResultDestinations.Count == 0)
             {
                 return;
             }
 
             //Release all the possible channels we could have written a result to.
-            foreach (AbstractVirtualData destinationData in m_ResultDestinations)
+            foreach (AbstractVirtualData destinationData in ResultDestinations.Values)
             {
                 destinationData.AccessController.ReleaseAsync(releaseAccessDependency);
             }
@@ -121,7 +119,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Acquire(AccessType.ExclusiveWrite);
 
-            foreach (AbstractVirtualData destinationData in m_ResultDestinations)
+            foreach (AbstractVirtualData destinationData in ResultDestinations.Values)
             {
                 destinationData.AccessController.Acquire(AccessType.SharedWrite);
             }
@@ -131,7 +129,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             AccessController.Release();
 
-            foreach (AbstractVirtualData destinationData in m_ResultDestinations)
+            foreach (AbstractVirtualData destinationData in ResultDestinations.Values)
             {
                 destinationData.AccessController.Release();
             }

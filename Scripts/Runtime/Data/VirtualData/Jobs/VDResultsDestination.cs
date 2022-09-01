@@ -2,29 +2,28 @@ using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    /// <summary>
-    /// Represents a reference to <see cref="VirtualData{TKey,TInstance}"/> where results
-    /// will be written to at a later time.
-    /// No reading or writing can happen until that later time when the proper access will have
-    /// been resolved.
-    /// Use with <see cref="IVirtualDataInstance{TResult}"/>
-    /// </summary>
-    /// <typeparam name="TResult">The type of result that can be written</typeparam>
+    //TODO: DOCS
     [BurstCompatible]
-    public readonly struct VDResultsDestination<TResult>
-        where TResult : unmanaged
+    public readonly struct VDResultsDestination<TTaskResultData>
+        where TTaskResultData : unmanaged
     {
-        [ReadOnly] private readonly UnsafeTypedStream<TResult>.Writer m_ResultWriter;
+        internal static unsafe VDResultsDestination<TTaskResultData> ReinterpretFromPointer(void* ptr)
+        {
+            UnsafeTypedStream<TTaskResultData>.Writer resultWriter = UnsafeTypedStream<TTaskResultData>.Writer.ReinterpretFromPointer(ptr);
+            return new VDResultsDestination<TTaskResultData>(resultWriter);
+        }
 
-        internal VDResultsDestination(UnsafeTypedStream<TResult>.Writer resultWriter)
+        [ReadOnly] private readonly UnsafeTypedStream<TTaskResultData>.Writer m_ResultWriter;
+
+        internal VDResultsDestination(UnsafeTypedStream<TTaskResultData>.Writer resultWriter)
         {
             m_ResultWriter = resultWriter;
         }
-        
+
         //Called internally when we're sure we have access to actually write
-        internal VDResultsWriter<TResult> AsResultsWriter()
+        internal VDResultsWriter<TTaskResultData> AsResultsWriter()
         {
-            return new VDResultsWriter<TResult>(m_ResultWriter);
+            return new VDResultsWriter<TTaskResultData>(m_ResultWriter);
         }
     }
 }
