@@ -83,8 +83,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private VirtualData(byte resultDestinationType) : base(resultDestinationType)
         {
-            m_Pending = new UnsafeTypedStream<VDInstanceWrapper<TInstance>>(Allocator.Persistent,
-                                                                          Allocator.TempJob);
+            m_Pending = new UnsafeTypedStream<VDInstanceWrapper<TInstance>>(Allocator.Persistent);
             m_IterationTarget = new DeferredNativeArray<VDInstanceWrapper<TInstance>>(Allocator.Persistent,
                                                                                     Allocator.TempJob);
 
