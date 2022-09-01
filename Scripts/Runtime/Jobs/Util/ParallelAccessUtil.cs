@@ -46,7 +46,9 @@ namespace Anvil.Unity.DOTS.Jobs
         private static void Init()
         {
             JOB_WORKER_MAXIMUM_COUNT.Data = JobsUtility.JobWorkerMaximumCount;
-            CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 1;
+            //Why plus 2? Because sometimes Unity will put your jobs on the main thread and also an additional 
+            //profiler thread outside the job worker threads.
+            CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 2;
 
             Debug.Assert(JOB_WORKER_MAXIMUM_COUNT.Data > 0);
         }
@@ -95,10 +97,10 @@ namespace Anvil.Unity.DOTS.Jobs
         /// Our goal is to have a tightly packed collection so in the example of an 8 core machine with
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> equal to 15, we would have the following mapping.
         ///
-        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, X
-        /// index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15
+        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, X, X2
+        /// index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15, 16
         ///
-        /// We have a tightly packed collection with index 0 through 15 for a total of 16 buckets.
+        /// We have a tightly packed collection with index 0 through 16 for a total of 17 buckets. (15 job workers, one main, one profiler)
         /// Thread indexes map directly without having to remember the special rules.
         /// </remarks>
         /// <param name="nativeThreadIndex">
