@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal abstract class AbstractVDWrapper
     {
-        public AbstractVirtualData Data
+        public AbstractProxyDataStream Data
         {
             get;
         }
@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
             get => Data.Type;
         }
 
-        protected AbstractVDWrapper(AbstractVirtualData data)
+        protected AbstractVDWrapper(AbstractProxyDataStream data)
         {
             Data = data;
         }

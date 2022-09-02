@@ -3,7 +3,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// Represents a write only reference to <see cref="VirtualData{TKey,TInstance}"/>
+    /// Represents a write only reference to <see cref="ProxyDataStream{TInstance}"/>
     /// <seealso cref="ITaskData{TEnum}"/>
     /// <seealso cref="VDResultsDestination{TResult}"/>
     /// </summary>
@@ -12,17 +12,17 @@ namespace Anvil.Unity.DOTS.Data
     internal readonly struct VDResultsWriter<TResult>
         where TResult : unmanaged, IEntityProxyData
     {
-        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TResult>>.Writer m_ResultWriter;
-        [ReadOnly] private readonly uint m_Context;
+        [ReadOnly] private readonly UnsafeTypedStream<PDWrapper<TResult>>.Writer m_ResultWriter;
+        [ReadOnly] private readonly byte m_Context;
 
-        internal VDResultsWriter(UnsafeTypedStream<VDInstanceWrapper<TResult>>.Writer resultWriter, uint context)
+        internal VDResultsWriter(UnsafeTypedStream<PDWrapper<TResult>>.Writer resultWriter, byte context)
         {
             m_ResultWriter = resultWriter;
             m_Context = context;
         }
 
         /// <summary>
-        /// Adds a new result to the <see cref="VirtualData{TKey,TInstance}"/> of results.
+        /// Adds a new result to the <see cref="ProxyDataStream{TInstance}"/> of results.
         /// </summary>
         /// <param name="result">The result to write</param>
         /// <param name="laneIndex">The lane index to write to.</param>
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Data
         public void Add(ref TResult result, int laneIndex)
         {
             m_ResultWriter.AsLaneWriter(laneIndex)
-                          .Write(new VDInstanceWrapper<TResult>(result.Entity,
+                          .Write(new PDWrapper<TResult>(result.Entity,
                                                                 m_Context,
                                                                 ref result));
         }

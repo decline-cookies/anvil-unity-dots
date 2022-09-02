@@ -4,35 +4,35 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    internal readonly struct VDContextID : IEquatable<VDContextID>
+    internal readonly struct PDID : IEquatable<PDID>
     {
-        public static bool operator==(VDContextID lhs, VDContextID rhs)
+        public static bool operator==(PDID lhs, PDID rhs)
         {
             return lhs.Entity == rhs.Entity && lhs.Context == rhs.Context;
         }
 
-        public static bool operator!=(VDContextID lhs, VDContextID rhs)
+        public static bool operator!=(PDID lhs, PDID rhs)
         {
             return !(lhs == rhs);
         }
         
         public readonly Entity Entity;
-        public readonly uint Context;
+        public readonly byte Context;
         
-        internal VDContextID(Entity entity, uint context)
+        internal PDID(Entity entity, byte context)
         {
             Entity = entity;
             Context = context;
         }
         
-        public bool Equals(VDContextID other)
+        public bool Equals(PDID other)
         {
-            return Entity == other.Entity && Context == other.Context;
+            return this == other;
         }
 
         public override bool Equals(object compare)
         {
-            return compare is VDContextID id && Equals(id);
+            return compare is PDID id && Equals(id);
         }
 
         public override int GetHashCode()
@@ -44,8 +44,9 @@ namespace Anvil.Unity.DOTS.Data
             // - The .NET Foundation licenses this file to you under the MIT license.
             // - See the LICENSE file in the project root for more information.
             //Unfortunately we can't use directly because it has a static Random class it creates which doesn't jive with Burst
-            uint rol5 = (Context << 5) | (Context >> 27);
-            return ((int)rol5 + (int)Context) ^ Entity.Index;
+            uint uintContext = Context;
+            uint rol5 = (uintContext << 5) | (uintContext >> 27);
+            return ((int)rol5 + Context) ^ Entity.Index;
         }
 
         public override string ToString()

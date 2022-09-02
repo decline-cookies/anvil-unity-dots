@@ -3,7 +3,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// Represents a read only reference to <see cref="VirtualData{TKey,TInstance}"/>
+    /// Represents a read only reference to <see cref="ProxyDataStream{TInstance}"/>
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <remarks>
@@ -11,12 +11,12 @@ namespace Anvil.Unity.DOTS.Data
     /// </remarks>
     /// <typeparam name="TInstance">They type of data to read</typeparam>
     [BurstCompatible]
-    public readonly struct VDReader<TInstance>
+    public readonly struct PDSReader<TInstance>
         where TInstance : unmanaged, IEntityProxyData
     {
-        [ReadOnly] private readonly NativeArray<VDInstanceWrapper<TInstance>> m_Iteration;
+        [ReadOnly] private readonly NativeArray<PDWrapper<TInstance>> m_Iteration;
 
-        internal VDReader(NativeArray<VDInstanceWrapper<TInstance>> iteration)
+        internal PDSReader(NativeArray<PDWrapper<TInstance>> iteration)
         {
             m_Iteration = iteration;
         }

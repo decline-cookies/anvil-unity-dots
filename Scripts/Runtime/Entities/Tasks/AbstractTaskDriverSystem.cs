@@ -11,9 +11,9 @@ namespace Anvil.Unity.DOTS.Entities
     public abstract partial class AbstractTaskDriverSystem<TTaskData> : AbstractTaskDriverSystem
         where TTaskData : unmanaged, IEntityProxyData, ITaskData
     {
-        public new VirtualData<TTaskData> TaskData
+        public new ProxyDataStream<TTaskData> TaskData
         {
-            get => base.TaskData as VirtualData<TTaskData>;
+            get => base.TaskData as ProxyDataStream<TTaskData>;
         }
 
         protected AbstractTaskDriverSystem()
@@ -28,16 +28,15 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
-        private const uint SYSTEM_LEVEL_CONTEXT = 1;
-        
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         //TODO: Do we need to have it be a lookup or will we only ever have one?
         private readonly VirtualDataLookup m_TaskDataLookup;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
 
-        private readonly IDProvider m_TaskDriverIDProvider;
+        private readonly ByteIDProvider m_TaskDriverIDProvider;
+        private readonly byte m_SystemLevelContext;
         
-        public AbstractVirtualData TaskData
+        public AbstractProxyDataStream TaskData
         {
             get;
             protected set;
@@ -48,9 +47,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDataLookup = new VirtualDataLookup();
             m_TaskDrivers = new List<AbstractTaskDriver>();
             m_UpdateJobData = new List<JobTaskWorkConfig>();
-            m_TaskDriverIDProvider = new IDProvider();
-            //Reserves the first ID of 1 for System Level -> See SYSTEM_LEVEL_CONTEXT
-            m_TaskDriverIDProvider.GetNextID();
+            
+            m_TaskDriverIDProvider = new ByteIDProvider();
+            m_SystemLevelContext = m_TaskDriverIDProvider.GetNextID();
         }
         
         protected override void OnDestroy()
@@ -65,24 +64,24 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        internal uint GetNextID()
+        internal byte GetNextID()
         {
             return m_TaskDriverIDProvider.GetNextID();
         }
 
         protected JobTaskWorkConfig ConfigureUpdateJob(JobTaskWorkConfig.ScheduleJobDelegate scheduleJobDelegate)
         {
-            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, SYSTEM_LEVEL_CONTEXT);
+            JobTaskWorkConfig config = new JobTaskWorkConfig(scheduleJobDelegate, this, m_SystemLevelContext);
             m_UpdateJobData.Add(config);
             return config;
         }
         
         //TODO: #39 - Some way to remove the update Job
 
-        protected VirtualData<TInstance> CreateTaskData<TInstance>()
+        protected ProxyDataStream<TInstance> CreateTaskData<TInstance>()
             where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TInstance> virtualData = VirtualData<TInstance>.Create();
+            ProxyDataStream<TInstance> virtualData = ProxyDataStream<TInstance>.Create();
             //TODO: Move this up to the generic version. Makes more sense. https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960863873
             m_TaskDataLookup.AddData(virtualData);
             return virtualData;

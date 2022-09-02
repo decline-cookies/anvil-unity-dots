@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public int Length
         {
-            get => throw new NotSupportedException($"This scheduling info is based on {nameof(VirtualData<TInstance>)} which uses {nameof(DeferredNativeArray<TInstance>)}. The {nameof(Length)} is not known at schedule time as it will be filled in by a later job.");
+            get => throw new NotSupportedException($"This scheduling info is based on {nameof(ProxyDataStream<TInstance>)} which uses {nameof(DeferredNativeArray<TInstance>)}. The {nameof(Length)} is not known at schedule time as it will be filled in by a later job.");
         }
 
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo
@@ -21,12 +21,12 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public VirtualDataScheduleInfo(VirtualData<TInstance> data, BatchStrategy batchStrategy)
+        public VirtualDataScheduleInfo(ProxyDataStream<TInstance> data, BatchStrategy batchStrategy)
         {
             DeferredNativeArrayScheduleInfo = data.ScheduleInfo;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? VirtualData<TInstance>.MAX_ELEMENTS_PER_CHUNK
+                ? ProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK
                 : 1;
         }
     }

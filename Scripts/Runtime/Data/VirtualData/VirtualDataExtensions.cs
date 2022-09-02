@@ -3,8 +3,8 @@ using System;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// Helper methods when working with <see cref="VirtualData{TKey,TInstance}"/>
-    /// These make it more clear what is happening when operating on <see cref="VirtualData{TKey,TInstance}"/> instances
+    /// Helper methods when working with <see cref="ProxyDataStream{TInstance}"/>
+    /// These make it more clear what is happening when operating on <see cref="ProxyDataStream{TInstance}"/> instances
     /// in a job.
     /// </summary>
     public static class VirtualDataExtensions

@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, uint context)
+        protected AbstractTaskWorkConfig(AbstractTaskDriverSystem abstractTaskDriverSystem, byte context)
         {
             DataWrappers = new List<AbstractVDWrapper>();
             TaskWorkData = new TaskWorkData(abstractTaskDriverSystem, context);
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities
             DataWrappers.Add(dataWrapper);
         }
 
-        protected void InternalRequireDataForAdd<TInstance>(VirtualData<TInstance> data, bool isAsync)
+        protected void InternalRequireDataForAdd<TInstance>(ProxyDataStream<TInstance> data, bool isAsync)
             where TInstance : unmanaged, IEntityProxyData
         {
             VDWrapperForAdd wrapper = new VDWrapperForAdd(data);
@@ -79,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //TODO: This might be able to be a DEBUG_ function. https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960872902
-        protected void InternalRequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data, bool isAsync)
+        protected void InternalRequireResultsDestinationLookup<TInstance>(ProxyDataStream<TInstance> data, bool isAsync)
             where TInstance : unmanaged, IEntityProxyData
         {
             //There's no need to add a wrapper since we don't need to actually get the data, we're just getting the pointers for writing results
@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireDataForIterate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+        protected void InternalRequireDataForIterate<TInstance>(ProxyDataStream<TInstance> data, bool isAsync)
             where TInstance : unmanaged, IEntityProxyData
         {
             VDWrapperForIterate wrapper = new VDWrapperForIterate(data);
@@ -99,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireDataForUpdate<TInstance>(VirtualData<TInstance> data, bool isAsync)
+        protected void InternalRequireDataForUpdate<TInstance>(ProxyDataStream<TInstance> data, bool isAsync)
             where TInstance : unmanaged, IEntityProxyData
         {
             VDWrapperForUpdate wrapper = new VDWrapperForUpdate(data);
@@ -109,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
         }
 
-        protected void InternalRequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData, bool isAsync)
+        protected void InternalRequireDataAsResultsDestination<TResult>(ProxyDataStream<TResult> resultData, bool isAsync)
             where TResult : unmanaged, IEntityProxyData
         {
             VDWrapperAsResultsDestination wrapper = new VDWrapperAsResultsDestination(resultData);

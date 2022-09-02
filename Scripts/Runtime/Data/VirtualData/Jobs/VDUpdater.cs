@@ -13,10 +13,10 @@ namespace Anvil.Unity.DOTS.Data
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
-        [ReadOnly] private readonly NativeArray<VDInstanceWrapper<TInstance>> m_Iteration;
+        [ReadOnly] private readonly UnsafeTypedStream<PDWrapper<TInstance>>.Writer m_ContinueWriter;
+        [ReadOnly] private readonly NativeArray<PDWrapper<TInstance>> m_Iteration;
 
-        private UnsafeTypedStream<VDInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
+        private UnsafeTypedStream<PDWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private enum UpdaterState
@@ -35,14 +35,14 @@ namespace Anvil.Unity.DOTS.Data
             private set;
         }
         
-        public uint CurrentContext
+        public byte CurrentContext
         {
             get;
             private set;
         }
 
-        internal VDUpdater(UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer continueWriter,
-                           NativeArray<VDInstanceWrapper<TInstance>> iteration)
+        internal VDUpdater(UnsafeTypedStream<PDWrapper<TInstance>>.Writer continueWriter,
+                           NativeArray<PDWrapper<TInstance>> iteration)
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
@@ -54,7 +54,8 @@ namespace Anvil.Unity.DOTS.Data
             m_State = UpdaterState.Uninitialized;
 #endif
 
-            CurrentContext = IDProvider.UNSET_ID;
+            //TODO: This is odd to have this here. https://github.com/decline-cookies/anvil-unity-dots/pull/54#discussion_r961026947
+            CurrentContext = ByteIDProvider.UNSET_ID;
         }
 
         /// <summary>
@@ -103,7 +104,7 @@ namespace Anvil.Unity.DOTS.Data
 
                 m_State = UpdaterState.Modifying;
 #endif
-                VDInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
+                PDWrapper<TInstance> instanceWrapper = m_Iteration[index];
                 CurrentContext = instanceWrapper.ID.Context;
                 return instanceWrapper.Payload;
             }
@@ -135,7 +136,7 @@ namespace Anvil.Unity.DOTS.Data
 
             m_State = UpdaterState.Ready;
 #endif
-            m_ContinueLaneWriter.Write(new VDInstanceWrapper<TInstance>(instance.Entity,
+            m_ContinueLaneWriter.Write(new PDWrapper<TInstance>(instance.Entity,
                                                                         CurrentContext,
                                                                         ref instance));
         }

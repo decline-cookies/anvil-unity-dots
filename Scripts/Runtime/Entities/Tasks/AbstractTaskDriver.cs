@@ -17,8 +17,49 @@ namespace Anvil.Unity.DOTS.Entities
         where TResultDestinationType : Enum
     {
         private readonly VirtualDataLookup m_ResultsData;
+        
+        // - MOVED FROM OLD VIRTUAL DATA
+        // private readonly byte m_ResultDestinationType;
+        // private AbstractProxyDataStream m_Source;
+        // protected Dictionary<byte, AbstractProxyDataStream> ResultDestinations { get; }
+        // private const byte UNSET_RESULT_DESTINATION_TYPE = byte.MaxValue;
+        // private VDResultsDestinationLookup m_ResultsDestinationLookup;
+        // internal static ProxyDataStream<TData> Create()
+        // {
+        //     ProxyDataStream<TData> virtualData = new ProxyDataStream<TData>(UNSET_RESULT_DESTINATION_TYPE);
+        //     return virtualData;
+        // }
+        //
+        // internal static ProxyDataStream<TData> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractProxyDataStream source)
+        //     where TResultDestinationType : Enum
+        // {
+        //     //TODO: Add an assert that this is valid - https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960848904
+        //     byte value = UnsafeUtility.As<TResultDestinationType, byte>(ref resultDestinationType);
+        //     ProxyDataStream<TData> resultDestinationData = new ProxyDataStream<TData>(value);
+        //     
+        //     resultDestinationData.SetSource(source);
+        //     source.AddResultDestination(value, resultDestinationData);
+        //     
+        //     return resultDestinationData;
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
 
-        public VirtualData<TTaskData> TaskData
+        // [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        // private void Debug_EnsureContextIsSet(byte context)
+        // {
+        //     //TODO: Deal with actually handling this
+        //     if (context == IDProvider.UNSET_ID)
+        //     {
+        //         throw new InvalidOperationException($"Context for {typeof(TData)} is not set!");
+        //     }
+        // }
+        //
+        // }
+        //
+
+        public ProxyDataStream<TTaskData> TaskData
         {
             get => System.TaskData;
         }
@@ -42,10 +83,10 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        protected VirtualData<TTaskResultData> CreateResultsData<TTaskResultData>(TResultDestinationType resultDestinationType)
+        protected ProxyDataStream<TTaskResultData> CreateResultsData<TTaskResultData>(TResultDestinationType resultDestinationType)
             where TTaskResultData : unmanaged, IEntityProxyData
         {
-            VirtualData<TTaskResultData> virtualData = VirtualData<TTaskResultData>.CreateAsResultsDestination(resultDestinationType, TaskData);
+            ProxyDataStream<TTaskResultData> virtualData = ProxyDataStream<TTaskResultData>.CreateAsResultsDestination(resultDestinationType, TaskData);
             m_ResultsData.AddData(virtualData);
 
             return virtualData;
@@ -68,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly List<JobTaskWorkConfig> m_PopulateJobData;
         private readonly List<JobTaskWorkConfig> m_UpdateJobData;
-        private readonly uint m_Context;
+        private readonly byte m_Context;
 
         private MainThreadTaskWorkConfig m_ActiveMainThreadTaskWorkConfig;
 

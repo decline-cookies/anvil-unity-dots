@@ -9,19 +9,19 @@ namespace Anvil.Unity.DOTS.Data
     {
         internal static unsafe VDResultsDestination<TTaskResultData> ReinterpretFromPointer(void* ptr)
         {
-            UnsafeTypedStream<VDInstanceWrapper<TTaskResultData>>.Writer resultWriter = UnsafeTypedStream<VDInstanceWrapper<TTaskResultData>>.Writer.ReinterpretFromPointer(ptr);
+            UnsafeTypedStream<PDWrapper<TTaskResultData>>.Writer resultWriter = UnsafeTypedStream<PDWrapper<TTaskResultData>>.Writer.ReinterpretFromPointer(ptr);
             return new VDResultsDestination<TTaskResultData>(resultWriter);
         }
 
-        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TTaskResultData>>.Writer m_ResultWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<PDWrapper<TTaskResultData>>.Writer m_ResultWriter;
 
-        internal VDResultsDestination(UnsafeTypedStream<VDInstanceWrapper<TTaskResultData>>.Writer resultWriter)
+        internal VDResultsDestination(UnsafeTypedStream<PDWrapper<TTaskResultData>>.Writer resultWriter)
         {
             m_ResultWriter = resultWriter;
         }
 
         //Called internally when we're sure we have access to actually write
-        internal VDResultsWriter<TTaskResultData> AsResultsWriter(uint context)
+        internal VDResultsWriter<TTaskResultData> AsResultsWriter(byte context)
         {
             return new VDResultsWriter<TTaskResultData>(m_ResultWriter, context);
         }

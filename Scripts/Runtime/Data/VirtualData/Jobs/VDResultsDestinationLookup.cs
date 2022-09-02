@@ -16,10 +16,10 @@ namespace Anvil.Unity.DOTS.Data
             get => m_Lookup.IsCreated;
         }
         
-        internal unsafe VDResultsDestinationLookup(Dictionary<byte, AbstractVirtualData> destinations)
+        internal unsafe VDResultsDestinationLookup(Dictionary<byte, AbstractProxyDataStream> destinations)
         {
             m_Lookup = new UnsafeParallelHashMap<byte, long>(destinations.Count, Allocator.Persistent);
-            foreach (KeyValuePair<byte, AbstractVirtualData> entry in destinations)
+            foreach (KeyValuePair<byte, AbstractProxyDataStream> entry in destinations)
             {
                 void* ptr = entry.Value.GetWriterPointer();
                 long address = (long)ptr;

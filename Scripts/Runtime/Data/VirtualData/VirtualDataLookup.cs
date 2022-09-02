@@ -1,85 +1,85 @@
-using Anvil.CSharp.Core;
-using Anvil.Unity.DOTS.Jobs;
-using System;
-using System.Collections.Generic;
-using Unity.Jobs;
-
-namespace Anvil.Unity.DOTS.Data
-{
-    /// <summary>
-    /// A lookup collection of <see cref="VirtualData{TKey,TInstance}"/> by <see cref="Type"/>
-    /// </summary>
-    internal class VirtualDataLookup : AbstractAnvilBase
-    {
-        private readonly Dictionary<Type, AbstractVirtualData> m_DataLookup;
-
-        public VirtualDataLookup()
-        {
-            m_DataLookup = new Dictionary<Type, AbstractVirtualData>();
-        }
-
-        protected override void DisposeSelf()
-        {
-            foreach (AbstractVirtualData data in m_DataLookup.Values)
-            {
-                data.Dispose();
-            }
-            m_DataLookup.Clear();
-
-            base.DisposeSelf();
-        }
-        
-        /// <summary>
-        /// Adds <see cref="VirtualData{TKey,TInstance}"/> to the lookup
-        /// </summary>
-        /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> to add</param>
-        /// <typeparam name="TKey">The type of Key</typeparam>
-        /// <typeparam name="TInstance">The type of Instance data</typeparam>
-        public void AddData<TInstance>(VirtualData<TInstance> data)
-            where TInstance : unmanaged, IEntityProxyData
-        {
-            Type type = typeof(VirtualData<TInstance>);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_DataLookup.ContainsKey(type))
-            {
-                throw new InvalidOperationException($"VirtualData of type {type} has already been added!");
-            }
-#endif
-            m_DataLookup.Add(type, data);
-        }
-        
-        /// <summary>
-        /// Returns <see cref="VirtualData{TKey,TInstance}"/> from the lookup
-        /// </summary>
-        /// <typeparam name="TKey">The type of Key</typeparam>
-        /// <typeparam name="TInstance">The type of Instance data</typeparam>
-        /// <returns>The <see cref="VirtualData{TKey,TInstance}"/> instance</returns>
-        public VirtualData<TInstance> GetData<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IEntityProxyData
-        {
-            Type type = typeof(VirtualData<TInstance>);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (!m_DataLookup.ContainsKey(type))
-            {
-                throw new InvalidOperationException($"VirtualData of type {type} has not been added! Please ensure {nameof(AddData)} has been called.");
-            }
-#endif
-            
-            return (VirtualData<TInstance>)m_DataLookup[type];
-        }
-        
-        /// <summary>
-        /// Consolidates all <see cref="VirtualData{TKey,TInstance}"/> in the lookup in parallel.
-        /// </summary>
-        /// <param name="dependsOn">The <see cref="JobHandle"/> consolidation work depends on.</param>
-        /// <returns>
-        /// A <see cref="JobHandle"/> that represents when all <see cref="VirtualData{TKey,TInstance}"/>
-        /// consolidation is complete.
-        /// </returns>
-        public JobHandle ConsolidateForFrame(JobHandle dependsOn)
-        {
-            return m_DataLookup.Values.BulkScheduleParallel(dependsOn, AbstractVirtualData.CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE);
-        }
-    }
-}
+// using Anvil.CSharp.Core;
+// using Anvil.Unity.DOTS.Jobs;
+// using System;
+// using System.Collections.Generic;
+// using Unity.Jobs;
+//
+// namespace Anvil.Unity.DOTS.Data
+// {
+//     /// <summary>
+//     /// A lookup collection of <see cref="ProxyDataStream{TInstance}"/> by <see cref="Type"/>
+//     /// </summary>
+//     internal class VirtualDataLookup : AbstractAnvilBase
+//     {
+//         private readonly Dictionary<Type, AbstractProxyDataStream> m_DataLookup;
+//
+//         public VirtualDataLookup()
+//         {
+//             m_DataLookup = new Dictionary<Type, AbstractProxyDataStream>();
+//         }
+//
+//         protected override void DisposeSelf()
+//         {
+//             foreach (AbstractProxyDataStream data in m_DataLookup.Values)
+//             {
+//                 data.Dispose();
+//             }
+//             m_DataLookup.Clear();
+//
+//             base.DisposeSelf();
+//         }
+//         
+//         /// <summary>
+//         /// Adds <see cref="ProxyDataStream{TInstance}"/> to the lookup
+//         /// </summary>
+//         /// <param name="data">The <see cref="ProxyDataStream{TInstance}"/> to add</param>
+//         /// <typeparam name="TKey">The type of Key</typeparam>
+//         /// <typeparam name="TInstance">The type of Instance data</typeparam>
+//         public void AddData<TInstance>(ProxyDataStream<TInstance> data)
+//             where TInstance : unmanaged, IEntityProxyData
+//         {
+//             Type type = typeof(ProxyDataStream<TInstance>);
+// #if ENABLE_UNITY_COLLECTIONS_CHECKS
+//             if (m_DataLookup.ContainsKey(type))
+//             {
+//                 throw new InvalidOperationException($"VirtualData of type {type} has already been added!");
+//             }
+// #endif
+//             m_DataLookup.Add(type, data);
+//         }
+//         
+//         /// <summary>
+//         /// Returns <see cref="ProxyDataStream{TInstance}"/> from the lookup
+//         /// </summary>
+//         /// <typeparam name="TKey">The type of Key</typeparam>
+//         /// <typeparam name="TInstance">The type of Instance data</typeparam>
+//         /// <returns>The <see cref="ProxyDataStream{TInstance}"/> instance</returns>
+//         public ProxyDataStream<TInstance> GetData<TKey, TInstance>()
+//             where TKey : unmanaged, IEquatable<TKey>
+//             where TInstance : unmanaged, IEntityProxyData
+//         {
+//             Type type = typeof(ProxyDataStream<TInstance>);
+// #if ENABLE_UNITY_COLLECTIONS_CHECKS
+//             if (!m_DataLookup.ContainsKey(type))
+//             {
+//                 throw new InvalidOperationException($"VirtualData of type {type} has not been added! Please ensure {nameof(AddData)} has been called.");
+//             }
+// #endif
+//             
+//             return (ProxyDataStream<TInstance>)m_DataLookup[type];
+//         }
+//         
+//         /// <summary>
+//         /// Consolidates all <see cref="ProxyDataStream{TInstance}"/> in the lookup in parallel.
+//         /// </summary>
+//         /// <param name="dependsOn">The <see cref="JobHandle"/> consolidation work depends on.</param>
+//         /// <returns>
+//         /// A <see cref="JobHandle"/> that represents when all <see cref="ProxyDataStream{TInstance}"/>
+//         /// consolidation is complete.
+//         /// </returns>
+//         public JobHandle ConsolidateForFrame(JobHandle dependsOn)
+//         {
+//             return m_DataLookup.Values.BulkScheduleParallel(dependsOn, AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE);
+//         }
+//     }
+// }

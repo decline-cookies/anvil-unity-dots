@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class VDWrapperForUpdate : AbstractVDWrapper
     {
-        public VDWrapperForUpdate(AbstractVirtualData data) : base(data)
+        public VDWrapperForUpdate(AbstractProxyDataStream data) : base(data)
         {
         }
         public override JobHandle AcquireAsync()

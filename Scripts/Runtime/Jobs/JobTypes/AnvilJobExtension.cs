@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Jobs
             where TJob : struct, IAnvilJob
         {
             IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
-            CheckReflectionDataCorrect(reflectionData);
+            ValidateReflectionData(reflectionData);
             
             WrapperJobStruct<TJob> wrapperData = new WrapperJobStruct<TJob>(ref jobData);
             
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckReflectionDataCorrect(IntPtr reflectionData)
+        private static void ValidateReflectionData(IntPtr reflectionData)
         {
             if (reflectionData == IntPtr.Zero)
             {

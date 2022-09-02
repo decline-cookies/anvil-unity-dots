@@ -38,70 +38,36 @@ namespace Anvil.Unity.DOTS.Data
     /// The type of key to use to lookup data. Usually <see cref="Entity"/> if this is being used as an
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
-    /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class VirtualData<TInstance> : AbstractVirtualData
-        where TInstance : unmanaged, IEntityProxyData
+    /// <typeparam name="TData">The type of data to store</typeparam>
+    public class ProxyDataStream<TData> : AbstractProxyDataStream
+        where TData : unmanaged, IEntityProxyData
     {
         /// <summary>
-        /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
+        /// The number of elements of <typeparamref name="TData"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
         /// </summary>
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<VDInstanceWrapper<TInstance>>();
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<PDWrapper<TData>>();
 
-        private const byte UNSET_RESULT_DESTINATION_TYPE = byte.MaxValue;
-
-        private VDResultsDestinationLookup m_ResultsDestinationLookup;
-
-        internal static VirtualData<TInstance> Create()
-        {
-            VirtualData<TInstance> virtualData = new VirtualData<TInstance>(UNSET_RESULT_DESTINATION_TYPE);
-            return virtualData;
-        }
-
-        internal static VirtualData<TInstance> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractVirtualData source)
-            where TResultDestinationType : Enum
-        {
-            //TODO: Add an assert that this is valid - https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960848904
-            byte value = UnsafeUtility.As<TResultDestinationType, byte>(ref resultDestinationType);
-            VirtualData<TInstance> resultDestinationData = new VirtualData<TInstance>(value);
-            
-            resultDestinationData.SetSource(source);
-            source.AddResultDestination(value, resultDestinationData);
-            
-            return resultDestinationData;
-        }
-
-        private UnsafeTypedStream<VDInstanceWrapper<TInstance>> m_Pending;
-        private DeferredNativeArray<VDInstanceWrapper<TInstance>> m_IterationTarget;
-        private UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>> m_Lookup;
-
+        private UnsafeTypedStream<PDWrapper<TData>> m_Pending;
+        private DeferredNativeArray<PDWrapper<TData>> m_IterationTarget;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
         }
 
-
-        private VirtualData(byte resultDestinationType) : base(resultDestinationType)
+        public ProxyDataStream() : base()
         {
-            m_Pending = new UnsafeTypedStream<VDInstanceWrapper<TInstance>>(Allocator.Persistent);
-            m_IterationTarget = new DeferredNativeArray<VDInstanceWrapper<TInstance>>(Allocator.Persistent,
-                                                                                    Allocator.TempJob);
-
-            m_Lookup = new UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Pending = new UnsafeTypedStream<PDWrapper<TData>>(Allocator.Persistent);
+            m_IterationTarget = new DeferredNativeArray<PDWrapper<TData>>(Allocator.Persistent,
+                                                                                 Allocator.TempJob);
         }
 
         protected override void DisposeSelf()
         {
-            if (m_ResultsDestinationLookup.IsCreated)
-            {
-                m_ResultsDestinationLookup.Dispose();
-            }
-            
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
             m_IterationTarget.Dispose();
-            m_Lookup.Dispose();
 
             base.DisposeSelf();
         }
@@ -122,27 +88,26 @@ namespace Anvil.Unity.DOTS.Data
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal VDReader<TInstance> CreateVDReader()
+        internal PDSReader<TData> CreatePDSReader()
         {
-            return new VDReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
+            return new PDSReader<TData>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal VDResultsDestination<TInstance> CreateVDResultsDestination()
+        internal VDResultsDestination<TData> CreateVDResultsDestination()
         {
-            return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
+            return new VDResultsDestination<TData>(m_Pending.AsWriter());
         }
 
-        internal VDUpdater<TInstance> CreateVDUpdater(uint context)
+        internal VDUpdater<TData> CreateVDUpdater(byte context)
+        {
+            return new VDUpdater<TData>(m_Pending.AsWriter(),
+                                        m_IterationTarget.AsDeferredJobArray());
+        }
+
+        internal PDSWriter<TData> CreateVDWriter(byte context)
         {
             Debug_EnsureContextIsSet(context);
-            return new VDUpdater<TInstance>(m_Pending.AsWriter(),
-                                                  m_IterationTarget.AsDeferredJobArray());
-        }
-
-        internal VDWriter<TInstance> CreateVDWriter(uint context)
-        {
-            Debug_EnsureContextIsSet(context);
-            return new VDWriter<TInstance>(m_Pending.AsWriter(), context);
+            return new PDSWriter<TData>(m_Pending.AsWriter(), context);
         }
 
         internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
@@ -162,8 +127,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
-                                                                                 m_IterationTarget,
-                                                                                 m_Lookup);
+                                                                                 m_IterationTarget);
             JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
             AccessController.ReleaseAsync(consolidateHandle);
@@ -178,47 +142,23 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct ConsolidateLookupJob : IJob
         {
-            private UnsafeTypedStream<VDInstanceWrapper<TInstance>> m_Pending;
-            private DeferredNativeArray<VDInstanceWrapper<TInstance>> m_Iteration;
-            private UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>> m_Lookup;
+            private UnsafeTypedStream<PDWrapper<TData>> m_Pending;
+            private DeferredNativeArray<PDWrapper<TData>> m_Iteration;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<VDInstanceWrapper<TInstance>> pending,
-                                        DeferredNativeArray<VDInstanceWrapper<TInstance>> iteration,
-                                        UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>> lookup)
+            public ConsolidateLookupJob(UnsafeTypedStream<PDWrapper<TData>> pending,
+                                        DeferredNativeArray<PDWrapper<TData>> iteration)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
-                m_Lookup = lookup;
             }
 
             public void Execute()
             {
-                m_Lookup.Clear();
                 m_Iteration.Clear();
 
-                NativeArray<VDInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                NativeArray<PDWrapper<TData>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
-
-                for (int i = 0; i < iterationArray.Length; ++i)
-                {
-                    VDInstanceWrapper<TInstance> value = iterationArray[i];
-                    m_Lookup.TryAdd(value.ID, value);
-                }
-            }
-        }
-        
-        //*************************************************************************************************************
-        // SAFETY
-        //*************************************************************************************************************
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureContextIsSet(uint context)
-        {
-            //TODO: Deal with actually handling this
-            if (context == IDProvider.UNSET_ID)
-            {
-                throw new InvalidOperationException($"Context for {typeof(TInstance)} is not set!");
             }
         }
     }

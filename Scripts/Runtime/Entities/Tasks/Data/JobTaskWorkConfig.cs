@@ -29,18 +29,18 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> to use for scheduling.
+        /// Specifies an instance of <see cref="ProxyDataStream{TInstance}"/> to use for scheduling.
         /// This will calculate the batch size based on the <see cref="BatchStrategy"/> and size of
         /// the <typeparamref name="TInstance"/> data.
-        /// NOTE: This does not ensure any access on the <see cref="VirtualData{TKey,TInstance}"/> at the time the job
+        /// NOTE: This does not ensure any access on the <see cref="ProxyDataStream{TInstance}"/> at the time the job
         /// is actually scheduled. Please ensure that a Require function is also called for the access needed.
         /// </summary>
-        /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> to schedule on.</param>
+        /// <param name="data">The <see cref="ProxyDataStream{TInstance}"/> to schedule on.</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to calculate scheduling with.</param>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig ScheduleOn<TInstance>(VirtualData<TInstance> data, BatchStrategy batchStrategy)
+        public JobTaskWorkConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> data, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyData
         {
             Debug_EnsureNoDuplicateScheduleInfo();
@@ -67,21 +67,21 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Specifies an instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
+        /// Specifies an instance of <see cref="ProxyDataStream{TInstance}"/> that will be used in the job in an
         /// Add context. 
         /// </summary>
-        /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> that requires access.</param>
+        /// <param name="data">The <see cref="ProxyDataStream{TInstance}"/> that requires access.</param>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForAddAsync<TInstance>(VirtualData<TInstance> data)
+        public JobTaskWorkConfig RequireDataForAddAsync<TInstance>(ProxyDataStream<TInstance> data)
             where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireDataForAdd(data, true);
             return this;
         }
 
-        public JobTaskWorkConfig RequireResultsDestinationLookup<TInstance>(VirtualData<TInstance> data)
+        public JobTaskWorkConfig RequireResultsDestinationLookup<TInstance>(ProxyDataStream<TInstance> data)
             where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireResultsDestinationLookup(data, true);
@@ -89,14 +89,14 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
+        /// Specifies and instance of <see cref="ProxyDataStream{TInstance}"/> that will be used in the job in an
         /// Iterate context. 
         /// </summary>
-        /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> that requires access.</param>
+        /// <param name="data">The <see cref="ProxyDataStream{TInstance}"/> that requires access.</param>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForIterateAsync<TInstance>(VirtualData<TInstance> data)
+        public JobTaskWorkConfig RequireDataForIterateAsync<TInstance>(ProxyDataStream<TInstance> data)
             where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireDataForIterate(data, true);
@@ -104,14 +104,14 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
+        /// Specifies and instance of <see cref="ProxyDataStream{TInstance}"/> that will be used in the job in an
         /// Update context. 
         /// </summary>
-        /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> that requires access.</param>
+        /// <param name="data">The <see cref="ProxyDataStream{TInstance}"/> that requires access.</param>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataForUpdateAsync<TInstance>(VirtualData<TInstance> data)
+        public JobTaskWorkConfig RequireDataForUpdateAsync<TInstance>(ProxyDataStream<TInstance> data)
             where TInstance : unmanaged, IEntityProxyData
         {
             InternalRequireDataForUpdate(data, true);
@@ -119,17 +119,17 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Specifies and instance of <see cref="VirtualData{TKey,TInstance}"/> that will be used in the job in an
+        /// Specifies and instance of <see cref="ProxyDataStream{TInstance}"/> that will be used in the job in an
         /// Results Destination context. 
         /// </summary>
         /// <param name="resultData">
-        /// The <see cref="VirtualData{TKey,TInstance}"/> to use as a results destination.
+        /// The <see cref="ProxyDataStream{TInstance}"/> to use as a results destination.
         /// NOTE: No access is necessary for this as it is just being used to point to where to write later on.
         /// </param>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TResult">The type of the result data</typeparam>
         /// <returns>This <see cref="JobTaskWorkConfig"/> for chaining additional configuration.</returns>
-        public JobTaskWorkConfig RequireDataAsResultsDestination<TResult>(VirtualData<TResult> resultData)
+        public JobTaskWorkConfig RequireDataAsResultsDestination<TResult>(ProxyDataStream<TResult> resultData)
             where TResult : unmanaged, IEntityProxyData
         {
             InternalRequireDataAsResultsDestination(resultData, true);

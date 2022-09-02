@@ -5,7 +5,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Data
 {
     /// <summary>
-    /// Represents a write only reference to <see cref="VirtualData{TKey,TInstance}"/>
+    /// Represents a write only reference to <see cref="ProxyDataStream{TInstance}"/>
     /// for writing new <typeparamref name="TInstance"/> to.
     /// </summary>
     /// <remarks>
@@ -13,15 +13,15 @@ namespace Anvil.Unity.DOTS.Data
     /// </remarks>
     /// <typeparam name="TInstance">The type of instance to add</typeparam>
     [BurstCompatible]
-    public struct VDWriter<TInstance>
+    public struct PDSWriter<TInstance>
         where TInstance : unmanaged, IEntityProxyData
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer m_InstanceWriter;
-        [ReadOnly] private readonly uint m_Context;
+        [ReadOnly] private readonly UnsafeTypedStream<PDWrapper<TInstance>>.Writer m_InstanceWriter;
+        [ReadOnly] private readonly byte m_Context;
 
-        private UnsafeTypedStream<VDInstanceWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
+        private UnsafeTypedStream<PDWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
         private int m_LaneIndex;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
 
-        internal VDWriter(UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer instanceWriter, uint context) : this()
+        internal PDSWriter(UnsafeTypedStream<PDWrapper<TInstance>>.Writer instanceWriter, byte context) : this()
         {
             m_InstanceWriter = instanceWriter;
             m_Context = context;
@@ -69,7 +69,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         /// <summary>
-        /// Adds the instance to the <see cref="VirtualData{TKey,TInstance}"/>'s
+        /// Adds the instance to the <see cref="ProxyDataStream{TInstance}"/>'s
         /// underlying pending collection to be added the next time the virtual data is
         /// consolidated.
         /// </summary>
@@ -89,9 +89,9 @@ namespace Anvil.Unity.DOTS.Data
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
             }
 #endif
-            m_InstanceLaneWriter.Write(new VDInstanceWrapper<TInstance>(instance.Entity,
-                                                                        m_Context,
-                                                                        ref instance));
+            m_InstanceLaneWriter.Write(new PDWrapper<TInstance>(instance.Entity,
+                                                                m_Context,
+                                                                ref instance));
         }
     }
 }
