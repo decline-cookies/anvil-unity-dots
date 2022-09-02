@@ -17,6 +17,7 @@ namespace Anvil.Unity.DOTS.Entities
         private static readonly int SYNCHRONOUS_THREAD_INDEX = ParallelAccessUtil.CollectionIndexForMainThread();
 
         private readonly Dictionary<Type, AbstractVDWrapper> m_WrappedDataLookup;
+        private readonly uint m_Context;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private readonly Dictionary<Type, AbstractTaskWorkConfig.DataUsage> m_DataUsageByType;
 #endif
@@ -47,9 +48,10 @@ namespace Anvil.Unity.DOTS.Entities
             get => ref World.Time;
         }
 
-        internal TaskWorkData(AbstractTaskDriverSystem system)
+        internal TaskWorkData(AbstractTaskDriverSystem system, uint context)
         {
             System = system;
+            m_Context = context;
             World = System.World;
             m_WrappedDataLookup = new Dictionary<Type, AbstractVDWrapper>();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -68,19 +70,18 @@ namespace Anvil.Unity.DOTS.Entities
             m_WrappedDataLookup.Add(dataWrapper.Type, dataWrapper);
         }
 
-        private VirtualData<TKey, TInstance> GetVirtualData<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        private VirtualData<TInstance> GetVirtualData<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            Type type = typeof(VirtualData<TKey, TInstance>);
+            Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (!m_WrappedDataLookup.ContainsKey(type))
             {
-                throw new InvalidOperationException($"Tried to get {nameof(VirtualData<TKey, TInstance>)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
+                throw new InvalidOperationException($"Tried to get {nameof(VirtualData<TInstance>)} but it doesn't exist on {this}. Please ensure a \"RequireData\" function was called on the corresponding config.");
             }
 #endif
             AbstractVDWrapper wrapper = m_WrappedDataLookup[type];
-            return (VirtualData<TKey, TInstance>)wrapper.Data;
+            return (VirtualData<TInstance>)wrapper.Data;
         }
 
         /// <summary>
@@ -89,11 +90,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDReader{TInstance}"/></returns>
-        public VDReader<TInstance> GetVDReaderAsync<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDReader<TInstance> GetVDReaderAsync<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.IterateAsync);
@@ -109,11 +109,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDReader{TInstance}"/></returns>
-        public VDReader<TInstance> GetVDReader<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDReader<TInstance> GetVDReader<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Iterate);
@@ -169,17 +168,16 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
-        public virtual VDUpdater<TKey, TInstance> GetVDUpdaterAsync<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public virtual VDUpdater<TInstance> GetVDUpdaterAsync<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.UpdateAsync);
 #endif
 
-            VDUpdater<TKey, TInstance> updater = virtualData.CreateVDUpdater();
+            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater(m_Context);
             return updater;
         }
 
@@ -189,17 +187,16 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDUpdater{TKey, TInstance}"/></returns>
-        public virtual VDUpdater<TKey, TInstance> GetVDUpdater<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public virtual VDUpdater<TInstance> GetVDUpdater<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Update);
 #endif
 
-            VDUpdater<TKey, TInstance> updater = virtualData.CreateVDUpdater();
+            VDUpdater<TInstance> updater = virtualData.CreateVDUpdater(m_Context);
             updater.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return updater;
         }
@@ -210,17 +207,16 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
-        public virtual VDWriter<TInstance> GetVDWriterAsync<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public virtual VDWriter<TInstance> GetVDWriterAsync<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.AddAsync);
 #endif
 
-            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             return writer;
         }
 
@@ -230,26 +226,24 @@ namespace Anvil.Unity.DOTS.Entities
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <typeparam name="TInstance">The type of the data</typeparam>
         /// <returns>The <see cref="VDWriter{TInstance}"/></returns>
-        public virtual VDWriter<TInstance> GetVDWriter<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public virtual VDWriter<TInstance> GetVDWriter<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckUsage(virtualData.Type, AbstractTaskWorkConfig.DataUsage.Add);
 #endif
 
-            VDWriter<TInstance> writer = virtualData.CreateVDWriter();
+            VDWriter<TInstance> writer = virtualData.CreateVDWriter(m_Context);
             writer.InitForThread(SYNCHRONOUS_THREAD_INDEX);
             return writer;
         }
 
-        public VDResultsDestinationLookup GetVDResultsDestinationLookup<TKey, TInstance>()
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public VDResultsDestinationLookup GetVDResultsDestinationLookup<TInstance>()
+            where TInstance : unmanaged, IEntityProxyData
         {
-            VirtualData<TKey, TInstance> virtualData = GetVirtualData<TKey, TInstance>();
+            VirtualData<TInstance> virtualData = GetVirtualData<TInstance>();
             
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             //TODO: Fix this, we want to make sure we're added for this usage but type conflict

@@ -10,40 +10,36 @@ namespace Anvil.Unity.DOTS.Data
     public static class VirtualDataExtensions
     {
         //TODO: DOCS
-        public static void Resolve<TKey, TInstance, TResult, TEnum>(this TInstance instance, TEnum option, ref TResult result, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>, ITaskData
-            where TResult : unmanaged
+        public static void Resolve<TInstance, TResult, TEnum>(this TInstance instance, TEnum option, ref TResult result, ref VDUpdater<TInstance> updater)
+            where TInstance : unmanaged, IEntityProxyData, ITaskData
+            where TResult : unmanaged, IEntityProxyData
             where TEnum : Enum
         {
             VDResultsDestination<TResult> resultsDestination = instance.ResultsDestinationLookup.GetVDResultsDestination<TEnum, TResult>(option);
-            VDResultsWriter<TResult> resultsWriter = resultsDestination.AsResultsWriter();
+            VDResultsWriter<TResult> resultsWriter = resultsDestination.AsResultsWriter(updater.CurrentContext);
             resultsWriter.Add(ref result, updater.LaneIndex);
             updater.Resolve();
         }
         
         //TODO: DOCS
-        public static void Resolve<TKey, TInstance, TResult, TEnum>(this TInstance instance, TEnum option, TResult result, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>, ITaskData
-            where TResult : unmanaged
+        public static void Resolve<TInstance, TResult, TEnum>(this TInstance instance, TEnum option, TResult result, ref VDUpdater<TInstance> updater)
+            where TInstance : unmanaged, IEntityProxyData, ITaskData
+            where TResult : unmanaged, IEntityProxyData
             where TEnum : Enum
         {
             Resolve(instance, option, ref result, ref updater);
         }
 
         //TODO: DOCS
-        public static void Resolve<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public static void Resolve<TInstance>(this TInstance instance, ref VDUpdater<TInstance> updater)
+            where TInstance : unmanaged, IEntityProxyData
         {
             updater.Resolve();
         }
         
         //TODO: DOCS
-        public static void ContinueOn<TKey, TInstance>(this TInstance instance, ref VDUpdater<TKey, TInstance> updater)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public static void ContinueOn<TInstance>(this TInstance instance, ref VDUpdater<TInstance> updater)
+            where TInstance : unmanaged, IEntityProxyData
         {
             updater.Continue(ref instance);
         }

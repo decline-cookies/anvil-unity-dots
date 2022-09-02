@@ -1,9 +1,12 @@
+using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Entities;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Diagnostics;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Data
@@ -36,31 +39,30 @@ namespace Anvil.Unity.DOTS.Data
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class VirtualData<TKey, TInstance> : AbstractVirtualData
-        where TKey : unmanaged, IEquatable<TKey>
-        where TInstance : unmanaged, IKeyedData<TKey>
+    public class VirtualData<TInstance> : AbstractVirtualData
+        where TInstance : unmanaged, IEntityProxyData
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
         /// </summary>
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<TInstance>();
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<VDInstanceWrapper<TInstance>>();
 
         private const byte UNSET_RESULT_DESTINATION_TYPE = byte.MaxValue;
 
         private VDResultsDestinationLookup m_ResultsDestinationLookup;
 
-        internal static VirtualData<TKey, TInstance> Create()
+        internal static VirtualData<TInstance> Create()
         {
-            VirtualData<TKey, TInstance> virtualData = new VirtualData<TKey, TInstance>(UNSET_RESULT_DESTINATION_TYPE);
+            VirtualData<TInstance> virtualData = new VirtualData<TInstance>(UNSET_RESULT_DESTINATION_TYPE);
             return virtualData;
         }
 
-        internal static VirtualData<TKey, TInstance> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractVirtualData source)
+        internal static VirtualData<TInstance> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractVirtualData source)
             where TResultDestinationType : Enum
         {
             byte value = (byte)(object)resultDestinationType;
-            VirtualData<TKey, TInstance> resultDestinationData = new VirtualData<TKey, TInstance>(value);
+            VirtualData<TInstance> resultDestinationData = new VirtualData<TInstance>(value);
             
             resultDestinationData.SetSource(source);
             source.AddResultDestination(value, resultDestinationData);
@@ -68,9 +70,9 @@ namespace Anvil.Unity.DOTS.Data
             return resultDestinationData;
         }
 
-        private UnsafeTypedStream<TInstance> m_Pending;
-        private DeferredNativeArray<TInstance> m_IterationTarget;
-        private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
+        private UnsafeTypedStream<VDInstanceWrapper<TInstance>> m_Pending;
+        private DeferredNativeArray<VDInstanceWrapper<TInstance>> m_IterationTarget;
+        private UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>> m_Lookup;
 
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo
@@ -81,12 +83,12 @@ namespace Anvil.Unity.DOTS.Data
 
         private VirtualData(byte resultDestinationType) : base(resultDestinationType)
         {
-            m_Pending = new UnsafeTypedStream<TInstance>(Allocator.Persistent,
-                                                         Allocator.TempJob);
-            m_IterationTarget = new DeferredNativeArray<TInstance>(Allocator.Persistent,
-                                                                   Allocator.TempJob);
+            m_Pending = new UnsafeTypedStream<VDInstanceWrapper<TInstance>>(Allocator.Persistent,
+                                                                          Allocator.TempJob);
+            m_IterationTarget = new DeferredNativeArray<VDInstanceWrapper<TInstance>>(Allocator.Persistent,
+                                                                                    Allocator.TempJob);
 
-            m_Lookup = new UnsafeParallelHashMap<TKey, TInstance>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Lookup = new UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -130,15 +132,17 @@ namespace Anvil.Unity.DOTS.Data
             return new VDResultsDestination<TInstance>(m_Pending.AsWriter());
         }
 
-        internal VDUpdater<TKey, TInstance> CreateVDUpdater()
+        internal VDUpdater<TInstance> CreateVDUpdater(uint context)
         {
-            return new VDUpdater<TKey, TInstance>(m_Pending.AsWriter(),
+            Debug_EnsureContextIsSet(context);
+            return new VDUpdater<TInstance>(m_Pending.AsWriter(),
                                                   m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal VDWriter<TInstance> CreateVDWriter()
+        internal VDWriter<TInstance> CreateVDWriter(uint context)
         {
-            return new VDWriter<TInstance>(m_Pending.AsWriter());
+            Debug_EnsureContextIsSet(context);
+            return new VDWriter<TInstance>(m_Pending.AsWriter(), context);
         }
 
         internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
@@ -174,13 +178,13 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct ConsolidateLookupJob : IJob
         {
-            private UnsafeTypedStream<TInstance> m_Pending;
-            private DeferredNativeArray<TInstance> m_Iteration;
-            private UnsafeParallelHashMap<TKey, TInstance> m_Lookup;
+            private UnsafeTypedStream<VDInstanceWrapper<TInstance>> m_Pending;
+            private DeferredNativeArray<VDInstanceWrapper<TInstance>> m_Iteration;
+            private UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>> m_Lookup;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<TInstance> pending,
-                                        DeferredNativeArray<TInstance> iteration,
-                                        UnsafeParallelHashMap<TKey, TInstance> lookup)
+            public ConsolidateLookupJob(UnsafeTypedStream<VDInstanceWrapper<TInstance>> pending,
+                                        DeferredNativeArray<VDInstanceWrapper<TInstance>> iteration,
+                                        UnsafeParallelHashMap<VDContextID, VDInstanceWrapper<TInstance>> lookup)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
@@ -192,15 +196,29 @@ namespace Anvil.Unity.DOTS.Data
                 m_Lookup.Clear();
                 m_Iteration.Clear();
 
-                NativeArray<TInstance> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                NativeArray<VDInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
 
                 for (int i = 0; i < iterationArray.Length; ++i)
                 {
-                    TInstance value = iterationArray[i];
-                    m_Lookup.TryAdd(value.Key, value);
+                    VDInstanceWrapper<TInstance> value = iterationArray[i];
+                    m_Lookup.TryAdd(value.ID, value);
                 }
+            }
+        }
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureContextIsSet(uint context)
+        {
+            //TODO: Deal with actually handling this
+            if (context == IDProvider.UNSET_ID)
+            {
+                throw new InvalidOperationException($"Context for {typeof(TInstance)} is not set!");
             }
         }
     }

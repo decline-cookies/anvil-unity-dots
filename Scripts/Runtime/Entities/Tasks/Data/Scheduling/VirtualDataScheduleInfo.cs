@@ -3,9 +3,8 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class VirtualDataScheduleInfo<TKey, TInstance> : IScheduleInfo
-        where TKey : unmanaged, IEquatable<TKey>
-        where TInstance : unmanaged, IKeyedData<TKey>
+    internal class VirtualDataScheduleInfo<TInstance> : IScheduleInfo
+        where TInstance : unmanaged, IEntityProxyData
     {
         public int BatchSize
         {
@@ -14,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public int Length
         {
-            get => throw new NotSupportedException($"This scheduling info is based on {nameof(VirtualData<TKey, TInstance>)} which uses {nameof(DeferredNativeArray<TInstance>)}. The {nameof(Length)} is not known at schedule time as it will be filled in by a later job.");
+            get => throw new NotSupportedException($"This scheduling info is based on {nameof(VirtualData<TInstance>)} which uses {nameof(DeferredNativeArray<TInstance>)}. The {nameof(Length)} is not known at schedule time as it will be filled in by a later job.");
         }
 
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo
@@ -22,12 +21,12 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public VirtualDataScheduleInfo(VirtualData<TKey, TInstance> data, BatchStrategy batchStrategy)
+        public VirtualDataScheduleInfo(VirtualData<TInstance> data, BatchStrategy batchStrategy)
         {
             DeferredNativeArrayScheduleInfo = data.ScheduleInfo;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? VirtualData<TKey, TInstance>.MAX_ELEMENTS_PER_CHUNK
+                ? VirtualData<TInstance>.MAX_ELEMENTS_PER_CHUNK
                 : 1;
         }
     }

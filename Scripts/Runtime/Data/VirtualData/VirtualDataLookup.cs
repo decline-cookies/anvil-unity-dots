@@ -35,11 +35,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="data">The <see cref="VirtualData{TKey,TInstance}"/> to add</param>
         /// <typeparam name="TKey">The type of Key</typeparam>
         /// <typeparam name="TInstance">The type of Instance data</typeparam>
-        public void AddData<TKey, TInstance>(VirtualData<TKey, TInstance> data)
-            where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+        public void AddData<TInstance>(VirtualData<TInstance> data)
+            where TInstance : unmanaged, IEntityProxyData
         {
-            Type type = typeof(VirtualData<TKey, TInstance>);
+            Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_DataLookup.ContainsKey(type))
             {
@@ -55,11 +54,11 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The type of Key</typeparam>
         /// <typeparam name="TInstance">The type of Instance data</typeparam>
         /// <returns>The <see cref="VirtualData{TKey,TInstance}"/> instance</returns>
-        public VirtualData<TKey, TInstance> GetData<TKey, TInstance>()
+        public VirtualData<TInstance> GetData<TKey, TInstance>()
             where TKey : unmanaged, IEquatable<TKey>
-            where TInstance : unmanaged, IKeyedData<TKey>
+            where TInstance : unmanaged, IEntityProxyData
         {
-            Type type = typeof(VirtualData<TKey, TInstance>);
+            Type type = typeof(VirtualData<TInstance>);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (!m_DataLookup.ContainsKey(type))
             {
@@ -67,7 +66,7 @@ namespace Anvil.Unity.DOTS.Data
             }
 #endif
             
-            return (VirtualData<TKey, TInstance>)m_DataLookup[type];
+            return (VirtualData<TInstance>)m_DataLookup[type];
         }
         
         /// <summary>

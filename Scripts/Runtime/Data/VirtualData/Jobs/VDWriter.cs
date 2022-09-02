@@ -14,13 +14,14 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="TInstance">The type of instance to add</typeparam>
     [BurstCompatible]
     public struct VDWriter<TInstance>
-        where TInstance : unmanaged
+        where TInstance : unmanaged, IEntityProxyData
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TInstance>.Writer m_InstanceWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer m_InstanceWriter;
+        [ReadOnly] private readonly uint m_Context;
 
-        private UnsafeTypedStream<TInstance>.LaneWriter m_InstanceLaneWriter;
+        private UnsafeTypedStream<VDInstanceWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
         private int m_LaneIndex;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -34,9 +35,10 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
 
-        internal VDWriter(UnsafeTypedStream<TInstance>.Writer instanceWriter) : this()
+        internal VDWriter(UnsafeTypedStream<VDInstanceWrapper<TInstance>>.Writer instanceWriter, uint context) : this()
         {
             m_InstanceWriter = instanceWriter;
+            m_Context = context;
 
             m_InstanceLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -87,7 +89,9 @@ namespace Anvil.Unity.DOTS.Data
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
             }
 #endif
-            m_InstanceLaneWriter.Write(ref instance);
+            m_InstanceLaneWriter.Write(new VDInstanceWrapper<TInstance>(instance.Entity,
+                                                                        m_Context,
+                                                                        ref instance));
         }
     }
 }
