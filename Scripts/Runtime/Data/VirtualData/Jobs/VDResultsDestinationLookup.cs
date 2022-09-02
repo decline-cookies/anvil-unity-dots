@@ -38,10 +38,11 @@ namespace Anvil.Unity.DOTS.Data
 
         internal unsafe VDResultsDestination<TTaskResultData> GetVDResultsDestination<TTaskResultEnum, TTaskResultData>(TTaskResultEnum resultsDestinationType)
             where TTaskResultData : unmanaged, IEntityProxyData
-            where TTaskResultEnum : Enum
+            where TTaskResultEnum : unmanaged, Enum
         {
-            //TODO: Throw error if lookup doesn't contain the key
-            long address = m_Lookup[(byte)(object)resultsDestinationType];
+            //TODO: Throw error if lookup doesn't contain the key or it's bigger than a byte via UnsafeUtility.SizeOf
+            byte key = UnsafeUtility.As<TTaskResultEnum, byte>(ref resultsDestinationType);
+            long address = m_Lookup[key];
             void* ptr = (void*)address;
             VDResultsDestination<TTaskResultData> resultsDestination = VDResultsDestination<TTaskResultData>.ReinterpretFromPointer(ptr);
             return resultsDestination;
