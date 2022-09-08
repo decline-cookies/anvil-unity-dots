@@ -4,39 +4,40 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal readonly struct ProxyDataWrapper<T> : IEquatable<ProxyDataWrapper<T>>
-        where T : unmanaged, IProxyData
+    internal readonly struct ProxyDataWrapper<TData> : IEquatable<ProxyDataWrapper<TData>>
+        where TData : unmanaged, IProxyData
     {
-        public static bool operator==(ProxyDataWrapper<T> lhs, ProxyDataWrapper<T> rhs)
+        public static bool operator ==(ProxyDataWrapper<TData> lhs, ProxyDataWrapper<TData> rhs)
         {
             //Note that we are not checking if the Payload is equal because the wrapper is only for origin and lookup
             //checks. 
             return lhs.ID == rhs.ID;
         }
 
-        public static bool operator!=(ProxyDataWrapper<T> lhs, ProxyDataWrapper<T> rhs)
+        public static bool operator !=(ProxyDataWrapper<TData> lhs, ProxyDataWrapper<TData> rhs)
         {
             return !(lhs == rhs);
         }
 
         public readonly ProxyDataID ID;
-        public readonly T Payload;
+        public readonly TData Payload;
 
-        public ProxyDataWrapper(Entity entity, byte context, ref T payload)
+        public ProxyDataWrapper(Entity entity, byte context, ref TData payload)
         {
             ID = new ProxyDataID(entity, context);
             Payload = payload;
         }
 
-        public bool Equals(ProxyDataWrapper<T> other)
+        public bool Equals(ProxyDataWrapper<TData> other)
         {
             return this == other;
         }
 
         public override bool Equals(object compare)
         {
-            return compare is ProxyDataWrapper<T> id && Equals(id);
+            return compare is ProxyDataWrapper<TData> id && Equals(id);
         }
+
         public override int GetHashCode()
         {
             //We ignore the Payload because the wrapper is only for origin and lookup checks.

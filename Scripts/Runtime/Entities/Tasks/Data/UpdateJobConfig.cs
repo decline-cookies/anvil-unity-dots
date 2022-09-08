@@ -1,4 +1,3 @@
-using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Entities;
 using Unity.Jobs;

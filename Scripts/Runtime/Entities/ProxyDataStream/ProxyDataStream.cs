@@ -1,3 +1,4 @@
+using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
@@ -36,9 +37,13 @@ namespace Anvil.Unity.DOTS.Entities
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TData">The type of data to store</typeparam>
-    public class ProxyDataStream<TData> : AbstractProxyDataStream
+    public class ProxyDataStream<TData> : AbstractAnvilBase
         where TData : unmanaged, IProxyData
     {
+        //TODO: RE-ENABLE IF NEEDED
+        // internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
+
+
         /// <summary>
         /// The number of elements of <typeparamref name="TData"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
@@ -48,13 +53,26 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<ProxyDataWrapper<TData>> m_Pending;
         private DeferredNativeArray<ProxyDataWrapper<TData>> m_IterationTarget;
 
+        //TODO: Lock down to internal again
+        public AccessController AccessController { get; }
+
         public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
         }
 
+        //TODO: Rename to something better. VirtualData is ambiguous between one instance of data or the collection. This is more of a stream. Think on it.
+        //TODO: Split VirtualData into two pieces of functionality.
+        //TODO: 1. Data collection independent of the TaskDrivers all about Wide/Narrow and load balancing. 
+        //TODO: 2. A mechanism to handle the branching from Data to a Result type
+        //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
         public ProxyDataStream() : base()
         {
+            //TODO: Could split the data into definitions via Attributes or some other mechanism to set up the relationships. Then a "baking" into the actual structures. 
+            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960764532
+            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960737069
+            AccessController = new AccessController();
+
             m_Pending = new UnsafeTypedStream<ProxyDataWrapper<TData>>(Allocator.Persistent);
             m_IterationTarget = new DeferredNativeArray<ProxyDataWrapper<TData>>(Allocator.Persistent,
                                                                                  Allocator.TempJob);
@@ -66,10 +84,11 @@ namespace Anvil.Unity.DOTS.Entities
             m_Pending.Dispose();
             m_IterationTarget.Dispose();
 
+            AccessController.Dispose();
             base.DisposeSelf();
         }
 
-        internal override unsafe void* GetWriterPointer()
+        internal unsafe void* GetWriterPointer()
         {
             return m_Pending.AsWriter().GetBufferPointer();
         }
@@ -95,7 +114,7 @@ namespace Anvil.Unity.DOTS.Entities
             return new PDSUpdater<TData>(m_Pending.AsWriter(),
                                          m_IterationTarget.AsDeferredJobArray());
         }
-        
+
         //TODO: Lock down to internal again
         public PDSWriter<TData> CreatePDSWriter(byte context)
         {
@@ -118,7 +137,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        internal JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
