@@ -27,8 +27,12 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             SystemLevelContext = m_TaskDriverIDProvider.GetNextID();
 
-            //TODO: Parse attributes to make the proper data
-            //TODO: Data needs to be created in the constructor so that it's available
+            //TODO: 1. Parse attributes to make the proper data
+            //TODO: This class can handle building the proper SystemTask data based on the attributes.
+            //TODO: 2. Enable TaskDrivers
+            //TODO: Task Drivers will hook into the Systems and run their own Tasks to populate.
+            //TODO: 3. Custom Update Job Types
+            //TODO: Create the custom Update Job so we can parse to the different result channels.
         }
 
         protected override void OnDestroy()

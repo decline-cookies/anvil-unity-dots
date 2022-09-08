@@ -60,10 +60,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => m_IterationTarget.ScheduleInfo;
         }
-
-        //TODO: Rename to something better. VirtualData is ambiguous between one instance of data or the collection. This is more of a stream. Think on it.
-        //TODO: Split VirtualData into two pieces of functionality.
-        //TODO: 1. Data collection independent of the TaskDrivers all about Wide/Narrow and load balancing. 
+        
         //TODO: 2. A mechanism to handle the branching from Data to a Result type
         //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
         public ProxyDataStream() : base()
