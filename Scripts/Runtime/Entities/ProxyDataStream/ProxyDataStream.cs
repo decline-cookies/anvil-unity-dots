@@ -1,16 +1,13 @@
-using Anvil.CSharp.Data;
-using Anvil.Unity.DOTS.Entities;
+using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System;
-using System.Diagnostics;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
+    //TODO: Revisit Docs
     /// <summary>
     /// Represents wrapped collections of data and manages them for use in Jobs.
     /// </summary>
@@ -40,16 +37,16 @@ namespace Anvil.Unity.DOTS.Data
     /// </typeparam>
     /// <typeparam name="TData">The type of data to store</typeparam>
     public class ProxyDataStream<TData> : AbstractProxyDataStream
-        where TData : unmanaged, IEntityProxyData
+        where TData : unmanaged, IProxyData
     {
         /// <summary>
         /// The number of elements of <typeparamref name="TData"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
         /// </summary>
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<PDWrapper<TData>>();
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<ProxyDataWrapper<TData>>();
 
-        private UnsafeTypedStream<PDWrapper<TData>> m_Pending;
-        private DeferredNativeArray<PDWrapper<TData>> m_IterationTarget;
+        private UnsafeTypedStream<ProxyDataWrapper<TData>> m_Pending;
+        private DeferredNativeArray<ProxyDataWrapper<TData>> m_IterationTarget;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
@@ -58,8 +55,8 @@ namespace Anvil.Unity.DOTS.Data
 
         public ProxyDataStream() : base()
         {
-            m_Pending = new UnsafeTypedStream<PDWrapper<TData>>(Allocator.Persistent);
-            m_IterationTarget = new DeferredNativeArray<PDWrapper<TData>>(Allocator.Persistent,
+            m_Pending = new UnsafeTypedStream<ProxyDataWrapper<TData>>(Allocator.Persistent);
+            m_IterationTarget = new DeferredNativeArray<ProxyDataWrapper<TData>>(Allocator.Persistent,
                                                                                  Allocator.TempJob);
         }
 
@@ -93,32 +90,30 @@ namespace Anvil.Unity.DOTS.Data
             return new PDSReader<TData>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal VDResultsDestination<TData> CreateVDResultsDestination()
+        internal PDSUpdater<TData> CreateVDUpdater(byte context)
         {
-            return new VDResultsDestination<TData>(m_Pending.AsWriter());
+            return new PDSUpdater<TData>(m_Pending.AsWriter(),
+                                         m_IterationTarget.AsDeferredJobArray());
         }
-
-        internal VDUpdater<TData> CreateVDUpdater(byte context)
+        
+        //TODO: Lock down to internal again
+        public PDSWriter<TData> CreatePDSWriter(byte context)
         {
-            return new VDUpdater<TData>(m_Pending.AsWriter(),
-                                        m_IterationTarget.AsDeferredJobArray());
-        }
-
-        internal PDSWriter<TData> CreateVDWriter(byte context)
-        {
-            Debug_EnsureContextIsSet(context);
+            //TODO: RE-ENABLE IF NEEDED
+            // Debug_EnsureContextIsSet(context);
             return new PDSWriter<TData>(m_Pending.AsWriter(), context);
         }
 
-        internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
-        {
-            if (!m_ResultsDestinationLookup.IsCreated)
-            {
-                m_ResultsDestinationLookup = new VDResultsDestinationLookup(ResultDestinations);
-            }
-
-            return m_ResultsDestinationLookup;
-        }
+        //TODO: RE-ENABLE IF NEEDED
+        // internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
+        // {
+        //     if (!m_ResultsDestinationLookup.IsCreated)
+        //     {
+        //         m_ResultsDestinationLookup = new VDResultsDestinationLookup(ResultDestinations);
+        //     }
+        //
+        //     return m_ResultsDestinationLookup;
+        // }
 
         //*************************************************************************************************************
         // CONSOLIDATION
@@ -142,11 +137,11 @@ namespace Anvil.Unity.DOTS.Data
         [BurstCompile]
         private struct ConsolidateLookupJob : IJob
         {
-            private UnsafeTypedStream<PDWrapper<TData>> m_Pending;
-            private DeferredNativeArray<PDWrapper<TData>> m_Iteration;
+            private UnsafeTypedStream<ProxyDataWrapper<TData>> m_Pending;
+            private DeferredNativeArray<ProxyDataWrapper<TData>> m_Iteration;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<PDWrapper<TData>> pending,
-                                        DeferredNativeArray<PDWrapper<TData>> iteration)
+            public ConsolidateLookupJob(UnsafeTypedStream<ProxyDataWrapper<TData>> pending,
+                                        DeferredNativeArray<ProxyDataWrapper<TData>> iteration)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
@@ -156,7 +151,7 @@ namespace Anvil.Unity.DOTS.Data
             {
                 m_Iteration.Clear();
 
-                NativeArray<PDWrapper<TData>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                NativeArray<ProxyDataWrapper<TData>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
             }

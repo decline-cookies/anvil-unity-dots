@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities
         private static readonly Logger s_Logger;
         private static readonly Dictionary<uint, IComponentReferencable> s_IDToInstance;
         private static readonly Dictionary<IComponentReferencable, uint> s_InstanceToID;
-        private static UintIDProvider s_IDProvider;
+        private static IDProvider s_IDProvider;
 
         static ManagedReferenceStore()
         {
@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         private static void Init()
         {
-            s_IDProvider = new UintIDProvider(uint.MaxValue - 1_000_000);
+            s_IDProvider = new IDProvider();
             s_IDToInstance.Clear();
             s_InstanceToID.Clear();
         }

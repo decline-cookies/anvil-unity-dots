@@ -1,27 +1,28 @@
+using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// Represents a write only reference to <see cref="ProxyDataStream{TInstance}"/>
-    /// for writing new <typeparamref name="TInstance"/> to.
+    /// Represents a write only reference to <see cref="ProxyDataStream{TData}"/>
+    /// for writing new <typeparamref name="TData"/> to.
     /// </summary>
     /// <remarks>
     /// Commonly used to add new instances.
     /// </remarks>
-    /// <typeparam name="TInstance">The type of instance to add</typeparam>
+    /// <typeparam name="TData">The type of instance to add</typeparam>
     [BurstCompatible]
-    public struct PDSWriter<TInstance>
-        where TInstance : unmanaged, IEntityProxyData
+    public struct PDSWriter<TData>
+        where TData : unmanaged, IProxyData
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<PDWrapper<TInstance>>.Writer m_InstanceWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer m_InstanceWriter;
         [ReadOnly] private readonly byte m_Context;
 
-        private UnsafeTypedStream<PDWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
+        private UnsafeTypedStream<ProxyDataWrapper<TData>>.LaneWriter m_InstanceLaneWriter;
         private int m_LaneIndex;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -35,7 +36,7 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
 
-        internal PDSWriter(UnsafeTypedStream<PDWrapper<TInstance>>.Writer instanceWriter, byte context) : this()
+        internal PDSWriter(UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer instanceWriter, byte context) : this()
         {
             m_InstanceWriter = instanceWriter;
             m_Context = context;
@@ -69,18 +70,18 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         /// <summary>
-        /// Adds the instance to the <see cref="ProxyDataStream{TInstance}"/>'s
+        /// Adds the instance to the <see cref="ProxyDataStream{TData}"/>'s
         /// underlying pending collection to be added the next time the virtual data is
         /// consolidated.
         /// </summary>
         /// <param name="instance">The instance to add</param>
-        public void Add(TInstance instance)
+        public void Add(TData instance)
         {
             Add(ref instance);
         }
 
-        /// <inheritdoc cref="Add(TInstance)"/>
-        public void Add(ref TInstance instance)
+        /// <inheritdoc cref="Add(TData)"/>
+        public void Add(ref TData instance)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -89,9 +90,9 @@ namespace Anvil.Unity.DOTS.Data
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
             }
 #endif
-            m_InstanceLaneWriter.Write(new PDWrapper<TInstance>(instance.Entity,
-                                                                m_Context,
-                                                                ref instance));
+            m_InstanceLaneWriter.Write(new ProxyDataWrapper<TData>(instance.Entity,
+                                                                   m_Context,
+                                                                   ref instance));
         }
     }
 }

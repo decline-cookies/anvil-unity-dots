@@ -1,12 +1,12 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
     //TODO: Docs
-    public interface IEntityProxyData
+    public interface IProxyData
     {
         /// <summary>
-        /// The lookup key for this data
+        /// The Entity this data belongs to
         /// </summary>
         public Entity Entity
         {

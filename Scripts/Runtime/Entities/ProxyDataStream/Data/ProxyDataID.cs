@@ -2,37 +2,37 @@ using System;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Data
+namespace Anvil.Unity.DOTS.Entities
 {
-    internal readonly struct PDID : IEquatable<PDID>
+    internal readonly struct ProxyDataID : IEquatable<ProxyDataID>
     {
-        public static bool operator==(PDID lhs, PDID rhs)
+        public static bool operator ==(ProxyDataID lhs, ProxyDataID rhs)
         {
             return lhs.Entity == rhs.Entity && lhs.Context == rhs.Context;
         }
 
-        public static bool operator!=(PDID lhs, PDID rhs)
+        public static bool operator !=(ProxyDataID lhs, ProxyDataID rhs)
         {
             return !(lhs == rhs);
         }
-        
+
         public readonly Entity Entity;
         public readonly byte Context;
-        
-        internal PDID(Entity entity, byte context)
+
+        internal ProxyDataID(Entity entity, byte context)
         {
             Entity = entity;
             Context = context;
         }
-        
-        public bool Equals(PDID other)
+
+        public bool Equals(ProxyDataID other)
         {
             return this == other;
         }
 
         public override bool Equals(object compare)
         {
-            return compare is PDID id && Equals(id);
+            return compare is ProxyDataID id && Equals(id);
         }
 
         public override int GetHashCode()
