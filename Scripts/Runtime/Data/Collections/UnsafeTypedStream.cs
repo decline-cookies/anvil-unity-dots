@@ -222,7 +222,8 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
-            ClearAndReduceCapacity();
+            Clear();
+            TrimExcess();
 
             Allocator allocator = m_BufferInfo->Allocator;
             UnsafeUtility.Free(m_BufferInfo->LaneInfos, allocator);
@@ -231,12 +232,21 @@ namespace Anvil.Unity.DOTS.Data
             m_BufferInfo->LaneInfos = null;
             m_BufferInfo = null;
         }
-
+       
         /// <summary>
-        /// Clears all data in the collection
+        /// Frees memory for blocks of elements that are not being used.
         /// </summary>
+        /// <remarks>
+        /// Because this is a block based collection, trimming will not be a tight fit.
+        /// Ex. 10 blocks allocated, 4 elements per block, 40 elements capacity total.
+        /// A <see cref="Clear()"/> is called and then 5 elements are written and then <see cref="TrimExcess"/> is
+        /// called.
+        /// The first block of 4 elements will stay. The 5th element will keep the second block around. The remaining
+        /// 8 blocks will be freed.
+        /// In the end, 2 blocks will remain, 5 elements in the collection, 8 elements capacity.
+        /// </remarks>
         [WriteAccessRequired]
-        public void ClearAndReduceCapacity()
+        public void TrimExcess()
         {
             if (!IsCreated)
             {
@@ -248,8 +258,17 @@ namespace Anvil.Unity.DOTS.Data
             for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
             {
                 LaneInfo* lane = m_BufferInfo->LaneInfos + i;
-
-                BlockInfo* block = lane->FirstBlock;
+                
+                //If our current writing block is null, we can just skip, there's nothing to free
+                if (lane->CurrentWriterBlock == null)
+                {
+                    continue;
+                }
+                
+                //If we have no elements at all in the lane (Clear was called), then we want to start with clearing
+                //the current writer block. If there is anything written, (We're calling this to free up excess memory),
+                //then the current writer block is still valid and we only want to free blocks after.
+                BlockInfo* block = (lane->Count == 0) ? lane->CurrentWriterBlock : lane->CurrentWriterBlock->Next;
                 while (block != null)
                 {
                     BlockInfo* currentBlock = block;
@@ -258,15 +277,14 @@ namespace Anvil.Unity.DOTS.Data
                     UnsafeUtility.Free(currentBlock->Data, blockAllocator);
                     UnsafeUtility.Free(currentBlock, blockAllocator);
                 }
-
-                lane->FirstBlock = null;
-                lane->CurrentWriterBlock = null;
-                lane->WriterHead = null;
-                lane->WriterEndOfBlock = null;
-                lane->Count = 0;
             }
         }
-        
+
+        /// <summary>
+        /// Clears the collection so that it has 0 elements in it across any of the lanes.
+        /// Note: The memory is NOT freed and will be reused as elements are written.
+        /// See <see cref="TrimExcess"/> to free memory afterwards if desired.
+        /// </summary>
         [WriteAccessRequired]
         public void Clear()
         {
@@ -322,11 +340,11 @@ namespace Anvil.Unity.DOTS.Data
         /// Schedules the clearing of the collection.
         /// </summary>
         /// <param name="inputDeps">The <see cref="JobHandle"/> to wait on before clearing.</param>
+        /// <param name="shouldTrimExcess">Whether the collection should trim excess memory or not after clearing. <see cref="TrimExcess"/></param>
         /// <returns>A <see cref="JobHandle"/> for when clearing is complete</returns>
-        public JobHandle Clear(JobHandle inputDeps)
+        public JobHandle Clear(JobHandle inputDeps, bool shouldTrimExcess)
         {
-            //TODO: Handle the clear capacity variant
-            ClearJob clearJob = new ClearJob(this);
+            ClearJob clearJob = new ClearJob(this, shouldTrimExcess);
             return clearJob.Schedule(inputDeps);
         }
 
@@ -837,10 +855,11 @@ namespace Anvil.Unity.DOTS.Data
             private int m_LaneIndex;
             private LaneReader m_LaneReader;
             private int m_ArrayIndex;
+            private T m_Current;
             
             public T Current
             {
-                get => m_LaneReader.Read();
+                get => m_Current;
             }
             
             internal Enumerator(BufferInfo* bufferInfo)
@@ -849,6 +868,7 @@ namespace Anvil.Unity.DOTS.Data
                 m_LaneIndex = 0;
                 m_ArrayIndex = -1;
                 m_LaneReader = new LaneReader(m_BufferInfo, m_LaneIndex);
+                m_Current = default;
             }
 
             public bool MoveNext()
@@ -858,6 +878,7 @@ namespace Anvil.Unity.DOTS.Data
                 //So long as our lane reader has an entry we're good
                 if (m_ArrayIndex < m_LaneReader.Count)
                 {
+                    m_Current = m_LaneReader.Read();
                     return true;
                 }
                 
@@ -868,14 +889,18 @@ namespace Anvil.Unity.DOTS.Data
                     //Update lane reader and array index
                     m_LaneReader = new LaneReader(m_BufferInfo, m_LaneIndex);
                     m_ArrayIndex = 0;
-                    //If we find a lane that has something we're good
-                    if (m_ArrayIndex < m_LaneReader.Count)
+                    //If the lane doesn't have anything in it, skip
+                    if (m_ArrayIndex >= m_LaneReader.Count)
                     {
-                        return true;
+                        continue;
                     }
+
+                    m_Current = m_LaneReader.Read();
+                    return true;
                 }
                 
                 //We've gone through all lanes and nothing is left, we're done
+                m_Current = default;
                 return false;
             }
 
@@ -884,11 +909,15 @@ namespace Anvil.Unity.DOTS.Data
                 m_LaneIndex = 0;
                 m_ArrayIndex = -1;
                 m_LaneReader = new LaneReader(m_BufferInfo, m_LaneIndex);
+                m_Current = default;
             }
-
+            
+            //We don't want anyone calling this in Burst since it will box the current value.
+            //But maybe it's useful for debugging purposes.
+            [BurstDiscard]
             object IEnumerator.Current
             {
-                get => throw new NotSupportedException($"Calling generic accessor which will box!");
+                get => m_Current;
             }
 
             public void Dispose()
@@ -921,15 +950,21 @@ namespace Anvil.Unity.DOTS.Data
         private struct ClearJob : IJob
         {
             [WriteOnly] private UnsafeTypedStream<T> m_UnsafeTypedStream;
+            [ReadOnly] private readonly bool m_ShouldTrimExcess;
 
-            public ClearJob(UnsafeTypedStream<T> unsafeTypedStream)
+            public ClearJob(UnsafeTypedStream<T> unsafeTypedStream, bool shouldTrimExcess)
             {
                 m_UnsafeTypedStream = unsafeTypedStream;
+                m_ShouldTrimExcess = shouldTrimExcess;
             }
 
             public void Execute()
             {
                 m_UnsafeTypedStream.Clear();
+                if (m_ShouldTrimExcess)
+                {
+                    m_UnsafeTypedStream.TrimExcess();
+                }
             }
         }
     }
