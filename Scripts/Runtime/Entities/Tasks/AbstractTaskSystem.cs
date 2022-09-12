@@ -1,4 +1,7 @@
 using Anvil.CSharp.Data;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -12,8 +15,8 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: Enable TaskDrivers again, a Task System can only have one type of TaskDriver since it governs them
         // private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
+        private readonly Dictionary<IProxyDataStream, ISystemTask> m_SystemTasks;
 
-        private ISystemTask m_SystemTask;
 
         protected byte SystemLevelContext
         {
@@ -27,8 +30,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             SystemLevelContext = m_TaskDriverIDProvider.GetNextID();
 
-            //TODO: 1. Parse attributes to make the proper data
-            //TODO: This class can handle building the proper SystemTask data based on the attributes.
+            m_SystemTasks = new Dictionary<IProxyDataStream, ISystemTask>();
+            
+            BuildSystemTasks();
+            
             //TODO: 2. Enable TaskDrivers
             //TODO: Task Drivers will hook into the Systems and run their own Tasks to populate.
             //TODO: 3. Custom Update Job Types
@@ -37,7 +42,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnDestroy()
         {
-            m_SystemTask?.Dispose();
+            foreach (ISystemTask systemTask in m_SystemTasks.Values)
+            {
+                systemTask.Dispose();
+            }
+            m_SystemTasks.Clear();
 
             m_TaskDriverIDProvider.Dispose();
 
@@ -47,17 +56,38 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
+        private void BuildSystemTasks()
+        {
+            Type systemType = GetType();
+            //Get all the fields
+            FieldInfo[] systemFields = systemType.GetFields(BindingFlags.Instance | BindingFlags.Public);
+            foreach (FieldInfo systemField in systemFields)
+            {
+                //Figure out if they have been attributed with the SystemTaskAttribute
+                SystemTaskAttribute systemTaskAttribute = systemField.GetCustomAttribute<SystemTaskAttribute>();
+                if (systemTaskAttribute == null)
+                {
+                    continue;
+                }
+                //TODO: Ensure FieldType is ProxyDataStream
+                
+                //Get the data type 
+                Type proxyDataType = systemField.FieldType.GenericTypeArguments[0];
+                //Create the stream
+                IProxyDataStream proxyDataStream = ProxyDataStreamFactory.Create(proxyDataType);
+                //Create the task
+                ISystemTask systemTask = SystemTaskFactory.Create(proxyDataType, proxyDataStream);
+                
+                //Ensure the System's field is set to the data stream
+                systemField.SetValue(this, proxyDataStream);
+                
+                //Register the task
+                m_SystemTasks.Add(proxyDataStream, systemTask);
+            }
+        }
+
         //TODO: #39 - Some way to remove the update Job
 
-        protected SystemTask<TData> CreateSystemTask<TData>()
-            where TData : unmanaged, IProxyData
-        {
-            SystemTask<TData> systemTask = new SystemTask<TData>();
-            //TODO: Expand this to support "many" with attributes, for now, just assuming one is fine
-            m_SystemTask = systemTask;
-            return systemTask;
-        }
-        
         //TODO: RE-ENABLE IF NEEDED
         // internal byte RegisterTaskDriver(TTaskDriver taskDriver)
         // {
@@ -80,12 +110,12 @@ namespace Anvil.Unity.DOTS.Entities
             // dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
 
             //Consolidate our instance data to operate on it
-            dependsOn = m_SystemTask.ConsolidateForFrame(dependsOn);
+            // dependsOn = m_SystemTask.ConsolidateForFrame(dependsOn);
 
             //TODO: #38 - Allow for cancels to occur
 
             //Allow the generic work to happen in the derived class
-            dependsOn = m_SystemTask.PrepareAndSchedule(dependsOn);
+            // dependsOn = m_SystemTask.PrepareAndSchedule(dependsOn);
             //TODO: Renable once we support "many" job configs
             // dependsOn = m_UpdateJobData.BulkScheduleParallel(dependsOn, JobTaskWorkConfig.PREPARE_AND_SCHEDULE_SCHEDULE_DELEGATE);
 

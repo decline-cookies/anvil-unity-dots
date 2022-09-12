@@ -37,7 +37,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TData">The type of data to store</typeparam>
-    public class ProxyDataStream<TData> : AbstractAnvilBase
+    public class ProxyDataStream<TData> : AbstractAnvilBase,
+                                          IProxyDataStream
         where TData : unmanaged, IProxyData
     {
         //TODO: RE-ENABLE IF NEEDED
@@ -63,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         //TODO: 2. A mechanism to handle the branching from Data to a Result type
         //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
-        public ProxyDataStream() : base()
+        internal ProxyDataStream() : base()
         {
             //TODO: Could split the data into definitions via Attributes or some other mechanism to set up the relationships. Then a "baking" into the actual structures. 
             //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960764532

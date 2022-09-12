@@ -19,9 +19,9 @@ namespace Anvil.Unity.DOTS.Entities
             private set;
         }
 
-        public SystemTask()
+        public SystemTask(ProxyDataStream<TData> proxyDataStream)
         {
-            DataStream = new ProxyDataStream<TData>();
+            DataStream = proxyDataStream;
         }
         
         protected override void DisposeSelf()
