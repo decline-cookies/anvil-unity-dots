@@ -14,8 +14,8 @@ namespace Anvil.Unity.DOTS.Entities
     {
         public delegate JobHandle ScheduleJobDelegate(JobHandle jobHandle, UpdateJobData<TData> jobData, IScheduleInfo scheduleInfo);
         
-        private readonly IScheduleInfo m_ScheduleInfo;
-        private readonly ScheduleJobDelegate m_ScheduleJobDelegate;
+        private readonly ProxyDataStreamScheduleInfo<TData> m_ScheduleInfo;
+        private readonly ScheduleJobDelegate m_ScheduleJobFunction;
         private readonly UpdateJobData<TData> m_UpdateJobData;
         
         //TODO: Remove once wrapped
@@ -23,11 +23,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         public UpdateJobConfig(World world,
                                byte context,
-                               ScheduleJobDelegate scheduleJobDelegate, 
+                               ScheduleJobDelegate scheduleJobFunction, 
                                ProxyDataStream<TData> dataStream, 
                                BatchStrategy batchStrategy)
         {
-            m_ScheduleJobDelegate = scheduleJobDelegate;
+            m_ScheduleJobFunction = scheduleJobFunction;
 
             m_UpdateProxyDataStream = dataStream;
             
@@ -45,7 +45,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle exclusiveWrite = m_UpdateProxyDataStream.AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             dependsOn = JobHandle.CombineDependencies(exclusiveWrite, dependsOn);
 
-            dependsOn = m_ScheduleJobDelegate(dependsOn, m_UpdateJobData, m_ScheduleInfo);
+            dependsOn = m_ScheduleJobFunction(dependsOn, m_UpdateJobData, m_ScheduleInfo);
             
             m_UpdateProxyDataStream.AccessController.ReleaseAsync(dependsOn);
 

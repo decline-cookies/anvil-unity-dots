@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -11,6 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             //Note that we are not checking if the Payload is equal because the wrapper is only for origin and lookup
             //checks. 
+            Debug_EnsurePayloadsAreTheSame(lhs, rhs);
             return lhs.ID == rhs.ID;
         }
 
@@ -52,7 +54,21 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompatible]
         public FixedString64Bytes ToFixedString()
         {
+            
             return ID.ToFixedString();
+        }
+
+
+        [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
+        private static void Debug_EnsurePayloadsAreTheSame(ProxyDataWrapper<TData> lhs, ProxyDataWrapper<TData> rhs)
+        {
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+            if (lhs.ID == rhs.ID
+             && !lhs.Payload.Equals(rhs.Payload))
+            {
+                throw new InvalidOperationException($"Equality check for {typeof(ProxyDataWrapper<TData>)} where the ID's are the same but the Payloads are different. This should never happen!");
+            }
+#endif
         }
     }
 }

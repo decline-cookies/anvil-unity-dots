@@ -11,12 +11,12 @@ namespace Anvil.Unity.DOTS.Entities
     /// </remarks>
     /// <typeparam name="TData">They type of data to read</typeparam>
     [BurstCompatible]
-    public readonly struct PDSReader<TData>
+    public readonly struct DataStreamReader<TData>
         where TData : unmanaged, IProxyData
     {
         [ReadOnly] private readonly NativeArray<ProxyDataWrapper<TData>> m_Iteration;
 
-        internal PDSReader(NativeArray<ProxyDataWrapper<TData>> iteration)
+        internal DataStreamReader(NativeArray<ProxyDataWrapper<TData>> iteration)
         {
             m_Iteration = iteration;
         }

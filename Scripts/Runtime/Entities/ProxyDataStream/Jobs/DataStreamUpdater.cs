@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     //TODO: Docs
     [BurstCompatible]
-    public struct PDSUpdater<TData>
+    public struct DataStreamUpdater<TData>
         where TData : unmanaged, IProxyData
     {
         private const int UNSET_LANE_INDEX = -1;
@@ -42,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities
             private set;
         }
 
-        internal PDSUpdater(UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer continueWriter,
+        internal DataStreamUpdater(UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer continueWriter,
                             NativeArray<ProxyDataWrapper<TData>> iteration)
         {
             m_ContinueWriter = continueWriter;
@@ -132,7 +132,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(PDSUpdater<TData>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(DataStreamUpdater<TData>)}. Please ensure that the indexer was called first.");
             }
 
             m_State = UpdaterState.Ready;
@@ -153,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(PDSUpdater<TData>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TData>)}. Please ensure that the indexer was called first.");
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);
