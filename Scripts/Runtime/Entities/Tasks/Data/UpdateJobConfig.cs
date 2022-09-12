@@ -23,18 +23,18 @@ namespace Anvil.Unity.DOTS.Entities
 
         public UpdateJobConfig(World world,
                                byte context,
-                               ScheduleJobDelegate scheduleJobFunction, 
-                               ProxyDataStream<TData> dataStream, 
-                               BatchStrategy batchStrategy)
+                               ScheduleJobDelegate scheduleJobFunction,
+                               BatchStrategy batchStrategy,
+                               ProxyDataStream<TData> updateProxyDataStream)
         {
             m_ScheduleJobFunction = scheduleJobFunction;
 
-            m_UpdateProxyDataStream = dataStream;
+            m_UpdateProxyDataStream = updateProxyDataStream;
             
-            m_ScheduleInfo = new ProxyDataStreamScheduleInfo<TData>(dataStream, batchStrategy);
+            m_ScheduleInfo = new ProxyDataStreamScheduleInfo<TData>(updateProxyDataStream, batchStrategy);
             m_UpdateJobData = new UpdateJobData<TData>(world,
                                                        context,
-                                                       dataStream);
+                                                       updateProxyDataStream);
         }
         
         //TODO: Cross reference with JobTaskWorkConfig to include safety checks and other data

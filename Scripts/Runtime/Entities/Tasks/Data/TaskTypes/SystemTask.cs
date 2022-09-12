@@ -1,5 +1,4 @@
 using Anvil.CSharp.Core;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -16,31 +15,18 @@ namespace Anvil.Unity.DOTS.Entities
         public UpdateJobConfig<TData> UpdateJobConfig
         {
             get;
-            private set;
         }
 
-        public SystemTask(ProxyDataStream<TData> proxyDataStream)
+        public SystemTask(ProxyDataStream<TData> proxyDataStream, UpdateJobConfig<TData> updateJobConfig)
         {
             DataStream = proxyDataStream;
+            UpdateJobConfig = updateJobConfig;
         }
         
         protected override void DisposeSelf()
         {
             DataStream.Dispose();
             base.DisposeSelf();
-        }
-        
-        public UpdateJobConfig<TData> ConfigureUpdateJob(World world,
-                                                         byte context,
-                                                         UpdateJobConfig<TData>.ScheduleJobDelegate scheduleJobDelegate, 
-                                                         BatchStrategy batchStrategy)
-        {
-            UpdateJobConfig = new UpdateJobConfig<TData>(world,
-                                                         context,
-                                                         scheduleJobDelegate, 
-                                                         DataStream, 
-                                                         batchStrategy);
-            return UpdateJobConfig;
         }
 
         public JobHandle ConsolidateForFrame(JobHandle dependsOn)
