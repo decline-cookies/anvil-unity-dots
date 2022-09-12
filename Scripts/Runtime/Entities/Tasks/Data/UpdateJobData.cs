@@ -32,9 +32,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_UpdateProxyDataStream = updateProxyDataStream;
         }
 
-        public PDSUpdater<TData> GetPSDUpdater()
+        public DataStreamUpdater<TData> GetDataStreamUpdater()
         {
-            PDSUpdater<TData> updater = m_UpdateProxyDataStream.CreateVDUpdater(Context);
+            DataStreamUpdater<TData> updater = m_UpdateProxyDataStream.CreateDataStreamUpdater(Context);
             return updater;
         }
     }

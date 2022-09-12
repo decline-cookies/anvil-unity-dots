@@ -29,15 +29,16 @@ namespace Anvil.Unity.DOTS.Entities
         //     Resolve(data, option, ref result, ref updater);
         // }
 
+        //TODO: Code-stink with extension method that doesn't actually use the data - https://github.com/decline-cookies/anvil-unity-dots/pull/57#discussion_r967355560
         //TODO: DOCS
-        public static void Resolve<TData>(this TData data, ref PDSUpdater<TData> updater)
+        public static void Resolve<TData>(this TData data, ref DataStreamUpdater<TData> updater)
             where TData : unmanaged, IProxyData
         {
             updater.Resolve();
         }
         
         //TODO: DOCS
-        public static void ContinueOn<TData>(this TData data, ref PDSUpdater<TData> updater)
+        public static void ContinueOn<TData>(this TData data, ref DataStreamUpdater<TData> updater)
             where TData : unmanaged, IProxyData
         {
             updater.Continue(ref data);

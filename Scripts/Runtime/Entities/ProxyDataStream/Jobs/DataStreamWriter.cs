@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </remarks>
     /// <typeparam name="TData">The type of instance to add</typeparam>
     [BurstCompatible]
-    public struct PDSWriter<TData>
+    public struct DataStreamWriter<TData>
         where TData : unmanaged, IProxyData
     {
         private const int UNSET_LANE_INDEX = -1;
@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
 
 
-        internal PDSWriter(UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer instanceWriter, byte context) : this()
+        internal DataStreamWriter(UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer instanceWriter, byte context) : this()
         {
             m_InstanceWriter = instanceWriter;
             m_Context = context;

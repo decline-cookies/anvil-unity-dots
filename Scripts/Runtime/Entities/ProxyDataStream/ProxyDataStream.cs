@@ -101,23 +101,23 @@ namespace Anvil.Unity.DOTS.Entities
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal PDSReader<TData> CreatePDSReader()
+        internal DataStreamReader<TData> CreatePDSReader()
         {
-            return new PDSReader<TData>(m_IterationTarget.AsDeferredJobArray());
+            return new DataStreamReader<TData>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal PDSUpdater<TData> CreateVDUpdater(byte context)
+        internal DataStreamUpdater<TData> CreateDataStreamUpdater(byte context)
         {
-            return new PDSUpdater<TData>(m_Pending.AsWriter(),
+            return new DataStreamUpdater<TData>(m_Pending.AsWriter(),
                                          m_IterationTarget.AsDeferredJobArray());
         }
 
         //TODO: Lock down to internal again
-        public PDSWriter<TData> CreatePDSWriter(byte context)
+        public DataStreamWriter<TData> CreateDataStreamWriter(byte context)
         {
             //TODO: RE-ENABLE IF NEEDED
             // Debug_EnsureContextIsSet(context);
-            return new PDSWriter<TData>(m_Pending.AsWriter(), context);
+            return new DataStreamWriter<TData>(m_Pending.AsWriter(), context);
         }
 
         //TODO: RE-ENABLE IF NEEDED
