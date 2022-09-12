@@ -57,6 +57,10 @@ namespace Anvil.Unity.DOTS.Entities
             return InstanceID.ToFixedString();
         }
 
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
 
         [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
         private static void Debug_EnsurePayloadsAreTheSame(ProxyInstanceWrapper<TInstance> lhs, ProxyInstanceWrapper<TInstance> rhs)

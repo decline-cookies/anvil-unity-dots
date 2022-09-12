@@ -3,8 +3,8 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class SystemTaskProcessor<TInstance> : AbstractAnvilBase,
-                                                  ISystemTaskProcessor
+    internal class SystemTaskProcessor<TInstance> : AbstractAnvilBase,
+                                                    ISystemTaskProcessor
         where TInstance : unmanaged, IProxyInstance
     {
         public ProxyDataStream<TInstance> DataStream
@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public SystemTaskProcessor(ProxyDataStream<TInstance> proxyDataStream, UpdateJobConfig<TInstance> updateJobConfig)
+        internal SystemTaskProcessor(ProxyDataStream<TInstance> proxyDataStream, UpdateJobConfig<TInstance> updateJobConfig)
         {
             DataStream = proxyDataStream;
             UpdateJobConfig = updateJobConfig;
