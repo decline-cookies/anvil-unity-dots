@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: Enable TaskDrivers again, a Task System can only have one type of TaskDriver since it governs them
         // private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
-        private readonly Dictionary<IProxyDataStream, ISystemTaskStream> m_SystemTaskStreams;
+        private readonly Dictionary<IProxyDataStream, ISystemTaskProcessor> m_SystemTaskStreams;
         private readonly byte m_SystemLevelContext;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             m_SystemLevelContext = m_TaskDriverIDProvider.GetNextID();
 
-            m_SystemTaskStreams = new Dictionary<IProxyDataStream, ISystemTaskStream>();
+            m_SystemTaskStreams = new Dictionary<IProxyDataStream, ISystemTaskProcessor>();
 
             CreateProxyDataStreams();
 
@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnDestroy()
         {
-            foreach (ISystemTaskStream systemTask in m_SystemTaskStreams.Values)
+            foreach (ISystemTaskProcessor systemTask in m_SystemTaskStreams.Values)
             {
                 systemTask.Dispose();
             }
@@ -129,8 +129,8 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureNoUpdateJobExists(dataStream);
 
             UpdateJobConfig<TInstance> updateJobConfig = new UpdateJobConfig<TInstance>(World, m_SystemLevelContext, scheduleJobFunction, batchStrategy, dataStream);
-            SystemTaskStream<TInstance> systemTaskStream = new SystemTaskStream<TInstance>(dataStream, updateJobConfig);
-            m_SystemTaskStreams[dataStream] = systemTaskStream;
+            SystemTaskProcessor<TInstance> systemTaskProcessor = new SystemTaskProcessor<TInstance>(dataStream, updateJobConfig);
+            m_SystemTaskStreams[dataStream] = systemTaskProcessor;
             return updateJobConfig;
         }
 
@@ -212,7 +212,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_HasCheckedDataStreamUpdateJobsIntegrity = true;
 
-            foreach (KeyValuePair<IProxyDataStream, ISystemTaskStream> entry in m_SystemTaskStreams)
+            foreach (KeyValuePair<IProxyDataStream, ISystemTaskProcessor> entry in m_SystemTaskStreams)
             {
                 if (entry.Value == null)
                 {
@@ -240,8 +240,8 @@ namespace Anvil.Unity.DOTS.Entities
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoUpdateJobExists(IProxyDataStream dataStream)
         {
-            ISystemTaskStream systemTaskStream = m_SystemTaskStreams[dataStream];
-            if (systemTaskStream != null)
+            ISystemTaskProcessor systemTaskProcessor = m_SystemTaskStreams[dataStream];
+            if (systemTaskProcessor != null)
             {
                 throw new InvalidOperationException($"DataStream of {dataStream.GetType()} already has an Update Job configured!");
             }
