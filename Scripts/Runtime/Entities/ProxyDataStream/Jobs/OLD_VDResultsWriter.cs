@@ -4,7 +4,7 @@
 // namespace Anvil.Unity.DOTS.Data
 // {
 //     /// <summary>
-//     /// Represents a write only reference to <see cref="ProxyDataStream{TData}"/>
+//     /// Represents a write only reference to <see cref="ProxyDataStream{TInstance}"/>
 //     /// <seealso cref="ITaskData{TEnum}"/>
 //     /// <seealso cref="VDResultsDestination{TResult}"/>
 //     /// </summary>
@@ -23,7 +23,7 @@
 //         }
 //
 //         /// <summary>
-//         /// Adds a new result to the <see cref="ProxyDataStream{TData}"/> of results.
+//         /// Adds a new result to the <see cref="ProxyDataStream{TInstance}"/> of results.
 //         /// </summary>
 //         /// <param name="result">The result to write</param>
 //         /// <param name="laneIndex">The lane index to write to.</param>

@@ -4,14 +4,14 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal readonly struct ProxyDataID : IEquatable<ProxyDataID>
+    internal readonly struct ProxyInstanceID : IEquatable<ProxyInstanceID>
     {
-        public static bool operator ==(ProxyDataID lhs, ProxyDataID rhs)
+        public static bool operator ==(ProxyInstanceID lhs, ProxyInstanceID rhs)
         {
             return lhs.Entity == rhs.Entity && lhs.Context == rhs.Context;
         }
 
-        public static bool operator !=(ProxyDataID lhs, ProxyDataID rhs)
+        public static bool operator !=(ProxyInstanceID lhs, ProxyInstanceID rhs)
         {
             return !(lhs == rhs);
         }
@@ -19,20 +19,20 @@ namespace Anvil.Unity.DOTS.Entities
         public readonly Entity Entity;
         public readonly byte Context;
 
-        internal ProxyDataID(Entity entity, byte context)
+        internal ProxyInstanceID(Entity entity, byte context)
         {
             Entity = entity;
             Context = context;
         }
 
-        public bool Equals(ProxyDataID other)
+        public bool Equals(ProxyInstanceID other)
         {
             return this == other;
         }
 
         public override bool Equals(object compare)
         {
-            return compare is ProxyDataID id && Equals(id);
+            return compare is ProxyInstanceID id && Equals(id);
         }
 
         public override int GetHashCode()

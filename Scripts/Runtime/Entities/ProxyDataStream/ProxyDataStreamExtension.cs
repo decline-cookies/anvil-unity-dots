@@ -1,16 +1,16 @@
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// Helper methods when working with <see cref="ProxyDataStream{TData}"/>
-    /// These make it more clear what is happening when operating on <see cref="ProxyDataStream{TData}"/> instances
+    /// Helper methods when working with <see cref="ProxyDataStream{TInstance}"/>
+    /// These make it more clear what is happening when operating on <see cref="ProxyDataStream{TInstance}"/> instances
     /// in a job.
     /// </summary>
     public static class ProxyDataStreamExtension
     {
         //TODO: RE-ENABLE IF NEEDED
         //TODO: DOCS
-        // public static void Resolve<TData, TResult, TEnum>(this TData data, TEnum option, ref TResult result, ref PDSUpdater<TData> updater)
-        //     where TData : unmanaged, IProxyData
+        // public static void Resolve<TInstance, TResult, TEnum>(this TInstance data, TEnum option, ref TResult result, ref PDSUpdater<TInstance> updater)
+        //     where TInstance : unmanaged, IProxyData
         //     where TResult : unmanaged, IProxyData
         //     where TEnum : unmanaged, Enum
         // {
@@ -21,8 +21,8 @@ namespace Anvil.Unity.DOTS.Entities
         // }
         //
         // //TODO: DOCS
-        // public static void Resolve<TData, TResult, TEnum>(this TData data, TEnum option, TResult result, ref PDSUpdater<TData> updater)
-        //     where TData : unmanaged, IProxyData
+        // public static void Resolve<TInstance, TResult, TEnum>(this TInstance data, TEnum option, TResult result, ref PDSUpdater<TInstance> updater)
+        //     where TInstance : unmanaged, IProxyData
         //     where TResult : unmanaged, IProxyData
         //     where TEnum : unmanaged, Enum
         // {
@@ -31,17 +31,17 @@ namespace Anvil.Unity.DOTS.Entities
 
         //TODO: Code-stink with extension method that doesn't actually use the data - https://github.com/decline-cookies/anvil-unity-dots/pull/57#discussion_r967355560
         //TODO: DOCS
-        public static void Resolve<TData>(this TData data, ref DataStreamUpdater<TData> updater)
-            where TData : unmanaged, IProxyData
+        public static void Resolve<TInstance>(this TInstance instance, ref DataStreamUpdater<TInstance> updater)
+            where TInstance : unmanaged, IProxyInstance
         {
             updater.Resolve();
         }
-        
+
         //TODO: DOCS
-        public static void ContinueOn<TData>(this TData data, ref DataStreamUpdater<TData> updater)
-            where TData : unmanaged, IProxyData
+        public static void ContinueOn<TInstance>(this TInstance instance, ref DataStreamUpdater<TInstance> updater)
+            where TInstance : unmanaged, IProxyInstance
         {
-            updater.Continue(ref data);
+            updater.Continue(ref instance);
         }
     }
 }

@@ -9,15 +9,15 @@ namespace Anvil.Unity.DOTS.Entities
 {
     //TODO: Docs
     [BurstCompatible]
-    public struct DataStreamUpdater<TData>
-        where TData : unmanaged, IProxyData
+    public struct DataStreamUpdater<TInstance>
+        where TInstance : unmanaged, IProxyInstance
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer m_ContinueWriter;
-        [ReadOnly] private readonly NativeArray<ProxyDataWrapper<TData>> m_Iteration;
+        [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
+        [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
 
-        private UnsafeTypedStream<ProxyDataWrapper<TData>>.LaneWriter m_ContinueLaneWriter;
+        private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         private enum UpdaterState
@@ -42,8 +42,8 @@ namespace Anvil.Unity.DOTS.Entities
             private set;
         }
 
-        internal DataStreamUpdater(UnsafeTypedStream<ProxyDataWrapper<TData>>.Writer continueWriter,
-                            NativeArray<ProxyDataWrapper<TData>> iteration)
+        internal DataStreamUpdater(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer continueWriter,
+                                   NativeArray<ProxyInstanceWrapper<TInstance>> iteration)
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
@@ -84,10 +84,10 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Gets a <typeparamref name="TData"/> at the specified index.
+        /// Gets a <typeparamref name="TInstance"/> at the specified index.
         /// </summary>
         /// <param name="index">The index to the backing array</param>
-        public TData this[int index]
+        public TInstance this[int index]
         {
             get
             {
@@ -105,8 +105,8 @@ namespace Anvil.Unity.DOTS.Entities
 
                 m_State = UpdaterState.Modifying;
 #endif
-                ProxyDataWrapper<TData> instanceWrapper = m_Iteration[index];
-                CurrentContext = instanceWrapper.ID.Context;
+                ProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
+                CurrentContext = instanceWrapper.InstanceID.Context;
                 return instanceWrapper.Payload;
             }
         }
@@ -115,13 +115,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// Signals that this instance should be updated again next frame.
         /// </summary>
         /// <param name="instance">The instance to continue</param>
-        public void Continue(TData instance)
+        public void Continue(TInstance instance)
         {
             Continue(ref instance);
         }
 
-        /// <inheritdoc cref="Continue(TData)"/>
-        public void Continue(ref TData instance)
+        /// <inheritdoc cref="Continue(TInstance)"/>
+        public void Continue(ref TInstance instance)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -132,14 +132,14 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(DataStreamUpdater<TData>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
             m_State = UpdaterState.Ready;
 #endif
-            m_ContinueLaneWriter.Write(new ProxyDataWrapper<TData>(instance.Entity,
-                                                                   CurrentContext,
-                                                                   ref instance));
+            m_ContinueLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
+                                                                           CurrentContext,
+                                                                           ref instance));
         }
 
         internal void Resolve()
@@ -153,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TData>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);

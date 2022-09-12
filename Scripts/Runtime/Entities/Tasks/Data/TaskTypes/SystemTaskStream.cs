@@ -3,26 +3,26 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class SystemTask<TData> : AbstractAnvilBase,
-                                     ISystemTask
-        where TData : unmanaged, IProxyData
+    public class SystemTaskStream<TInstance> : AbstractAnvilBase,
+                                               ISystemTaskStream
+        where TInstance : unmanaged, IProxyInstance
     {
-        public ProxyDataStream<TData> DataStream
+        public ProxyDataStream<TInstance> DataStream
         {
             get;
         }
 
-        public UpdateJobConfig<TData> UpdateJobConfig
+        public UpdateJobConfig<TInstance> UpdateJobConfig
         {
             get;
         }
 
-        public SystemTask(ProxyDataStream<TData> proxyDataStream, UpdateJobConfig<TData> updateJobConfig)
+        public SystemTaskStream(ProxyDataStream<TInstance> proxyDataStream, UpdateJobConfig<TInstance> updateJobConfig)
         {
             DataStream = proxyDataStream;
             UpdateJobConfig = updateJobConfig;
         }
-        
+
         protected override void DisposeSelf()
         {
             DataStream.Dispose();
