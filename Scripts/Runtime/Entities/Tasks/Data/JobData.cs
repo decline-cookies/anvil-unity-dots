@@ -3,7 +3,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class UpdateJobData<TInstance>
+    public class JobData<TInstance>
         where TInstance : unmanaged, IProxyInstance
     {
         private readonly ProxyDataStream<TInstance> m_UpdateProxyDataStream;
@@ -23,9 +23,9 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public UpdateJobData(World world,
-                             byte context,
-                             ProxyDataStream<TInstance> updateProxyDataStream)
+        public JobData(World world,
+                       byte context,
+                       ProxyDataStream<TInstance> updateProxyDataStream)
         {
             World = world;
             Context = context;

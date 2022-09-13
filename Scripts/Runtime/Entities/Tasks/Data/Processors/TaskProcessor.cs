@@ -3,24 +3,25 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class SystemTaskProcessor<TInstance> : AbstractAnvilBase,
-                                                    ISystemTaskProcessor
+    internal class TaskProcessor<TInstance, TJobConfig> : AbstractAnvilBase,
+                                                          ITaskProcessor
         where TInstance : unmanaged, IProxyInstance
+        where TJobConfig : AbstractJobConfig<TInstance>
     {
         public ProxyDataStream<TInstance> DataStream
         {
             get;
         }
 
-        public UpdateJobConfig<TInstance> UpdateJobConfig
+        public TJobConfig JobConfig
         {
             get;
         }
 
-        internal SystemTaskProcessor(ProxyDataStream<TInstance> proxyDataStream, UpdateJobConfig<TInstance> updateJobConfig)
+        internal TaskProcessor(ProxyDataStream<TInstance> proxyDataStream, TJobConfig jobConfig)
         {
             DataStream = proxyDataStream;
-            UpdateJobConfig = updateJobConfig;
+            JobConfig = jobConfig;
         }
 
         protected override void DisposeSelf()
@@ -36,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
-            return UpdateJobConfig.PrepareAndSchedule(dependsOn);
+            return JobConfig.PrepareAndSchedule(dependsOn);
         }
     }
 }
