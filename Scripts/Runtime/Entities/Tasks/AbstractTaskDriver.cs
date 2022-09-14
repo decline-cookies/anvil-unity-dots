@@ -1,4 +1,5 @@
 using Anvil.CSharp.Core;
+using System.Collections.Generic;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -26,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
             Context = TaskSystem.RegisterTaskDriver(m_TypedThis);
 
-            //TODO: Need to autogenerate the proxydatastreams and build up processors
+            CreateProxyDataStreams();
         }
 
         protected override void DisposeSelf()
@@ -34,12 +35,20 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
+        private void CreateProxyDataStreams()
+        {
+            List<IProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
+            foreach (IProxyDataStream dataStream in dataStreams)
+            {
+                TaskSystem.RegisterTaskDriverDataStream(dataStream, this);
+            }
+        }
+
         public IJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
                                                              JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
                                                              BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
-            //TODO: Ensure this datastream is owned by the TaskDriver or the System
             return TaskSystem.ConfigurePopulateJobFor(dataStream,
                                                       scheduleJobFunction,
                                                       batchStrategy,

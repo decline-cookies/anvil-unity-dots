@@ -112,9 +112,7 @@ namespace Anvil.Unity.DOTS.Entities
             List<IProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
             foreach (IProxyDataStream dataStream in dataStreams)
             {
-                DataFlowNode node = new DataFlowNode(dataStream, this, null);
-                m_DataFlowNodes.Add(dataStream, node);
-                m_AllDataStreams.Add(dataStream);
+                CreateDataFlowNode(dataStream, null);
             }
         }
 
@@ -126,6 +124,19 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDrivers.Add(taskDriver);
 
             return m_TaskDriverIDProvider.GetNextID();
+        }
+
+        internal void RegisterTaskDriverDataStream(IProxyDataStream dataStream, ITaskDriver taskDriver)
+        {
+            CreateDataFlowNode(dataStream, taskDriver);
+        }
+
+        private void CreateDataFlowNode(IProxyDataStream dataStream, ITaskDriver taskDriver)
+        {
+            Debug_EnsureNoDuplicateDataFlowNodes(dataStream);
+            DataFlowNode node = new DataFlowNode(dataStream, this, taskDriver);
+            m_DataFlowNodes.Add(dataStream, node);
+            m_AllDataStreams.Add(dataStream);
         }
 
         protected override void OnUpdate()
@@ -298,7 +309,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (!m_DataFlowNodes.ContainsKey(dataStream))
             {
-                throw new InvalidOperationException($"DataStream of {dataStream.GetType().Name} was not registered to this class. Was it defined as a part of this class?");
+                throw new InvalidOperationException($"DataStream of {dataStream.GetType().Name} was not registered to this class. Was it defined as a part of this class or TaskDrivers associated with this class?");
             }
         }
 
@@ -308,6 +319,15 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_IsCreatePhaseComplete)
             {
                 throw new InvalidOperationException($"Trying to create a {path} job on {node.ToLocationString()} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateDataFlowNodes(IProxyDataStream dataStream)
+        {
+            if (m_DataFlowNodes.ContainsKey(dataStream))
+            {
+                throw new InvalidOperationException($"Trying to register the same instance of {dataStream.GetType()} on {GetType()} but one already exists!");
             }
         }
     }
