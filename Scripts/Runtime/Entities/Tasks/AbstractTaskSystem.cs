@@ -1,10 +1,8 @@
-using Anvil.CSharp.Core;
 using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -13,27 +11,23 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
     /// </summary>
-    public abstract partial class AbstractTaskSystem<TTaskDriver, TTaskSystem> : AbstractTaskSystem
+    public abstract partial class AbstractTaskSystem<TTaskDriver, TTaskSystem> : AbstractTaskSystem,
+                                                                                 ITaskSystem
         where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
     {
-        private static readonly Type I_PROXY_DATA_STREAM_TYPE = typeof(IProxyDataStream);
-
         private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
 
-        private readonly Dictionary<IProxyDataStream, ITaskProcessor> m_UpdateTaskProcessorMapping;
-        private readonly Dictionary<IProxyDataStream, ITaskProcessor> m_PopulateTaskProcessorMapping;
-        private readonly List<ITaskProcessor> m_UpdateTaskProcessors;
-        private readonly List<ITaskProcessor> m_PopulateTaskProcessors;
-        private readonly List<ITaskProcessor> m_AllTaskProcessors;
+        private readonly Dictionary<IProxyDataStream, DataFlowNode> m_DataFlowNodes;
+        private readonly Dictionary<DataFlowNode.DataFlowPath, List<IJobConfig>> m_JobConfigsLookup;
+        private readonly Dictionary<DataFlowNode.DataFlowPath, NativeArray<JobHandle>> m_JobDependenciesLookup;
+
+        private readonly List<IProxyDataStream> m_AllDataStreams;
+        private NativeArray<JobHandle> m_AllDataStreamsDependencies;
+
         private readonly byte m_SystemLevelContext;
-
-        private NativeArray<JobHandle> m_ProcessorDependenciesScratchPad;
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        private bool m_HasCheckedDataStreamJobIntegrity;
-#endif
+        private bool m_IsCreatePhaseComplete;
 
         protected AbstractTaskSystem()
         {
@@ -42,14 +36,17 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             m_SystemLevelContext = m_TaskDriverIDProvider.GetNextID();
 
+            m_DataFlowNodes = new Dictionary<IProxyDataStream, DataFlowNode>();
 
-            m_UpdateTaskProcessorMapping = new Dictionary<IProxyDataStream, ITaskProcessor>();
-            m_PopulateTaskProcessorMapping = new Dictionary<IProxyDataStream, ITaskProcessor>();
+            m_JobConfigsLookup = new Dictionary<DataFlowNode.DataFlowPath, List<IJobConfig>>();
+            foreach (DataFlowNode.DataFlowPath path in DataFlowNode.FlowPathValues)
+            {
+                m_JobConfigsLookup.Add(path, new List<IJobConfig>());
+            }
 
-            m_UpdateTaskProcessors = new List<ITaskProcessor>();
-            m_PopulateTaskProcessors = new List<ITaskProcessor>();
+            m_JobDependenciesLookup = new Dictionary<DataFlowNode.DataFlowPath, NativeArray<JobHandle>>();
 
-            m_AllTaskProcessors = new List<ITaskProcessor>();
+            m_AllDataStreams = new List<IProxyDataStream>();
 
             CreateProxyDataStreams();
 
@@ -59,22 +56,36 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnDestroy()
         {
-            foreach (ITaskProcessor taskProcessor in m_AllTaskProcessors)
+            //Dispose any data that we own
+            foreach (DataFlowNode node in m_DataFlowNodes.Values)
             {
-                taskProcessor.Dispose();
+                if (node.DataOwner == DataFlowNode.Owner.Driver)
+                {
+                    continue;
+                }
+
+                node.Dispose();
             }
 
-            m_UpdateTaskProcessorMapping.Clear();
-            m_PopulateTaskProcessorMapping.Clear();
-            m_UpdateTaskProcessors.Clear();
-            m_PopulateTaskProcessors.Clear();
+            m_DataFlowNodes.Clear();
+            m_JobConfigsLookup.Clear();
+
 
             m_TaskDriverIDProvider.Dispose();
 
-
-            if (m_ProcessorDependenciesScratchPad.IsCreated)
+            foreach (NativeArray<JobHandle> processorDependencies in m_JobDependenciesLookup.Values)
             {
-                m_ProcessorDependenciesScratchPad.Dispose();
+                if (processorDependencies.IsCreated)
+                {
+                    processorDependencies.Dispose();
+                }
+            }
+
+            m_JobDependenciesLookup.Clear();
+
+            if (m_AllDataStreamsDependencies.IsCreated)
+            {
+                m_AllDataStreamsDependencies.Dispose();
             }
 
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
@@ -86,47 +97,25 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnStartRunning()
         {
             base.OnStartRunning();
+            if (m_IsCreatePhaseComplete)
+            {
+                return;
+            }
+            m_IsCreatePhaseComplete = true;
+            
             Debug_CheckDataStreamJobsExist();
             BuildOptimizedCollections();
         }
 
         private void CreateProxyDataStreams()
         {
-            Type systemType = GetType();
-            //Get all the fields
-            FieldInfo[] systemFields = systemType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (FieldInfo systemField in systemFields)
+            List<IProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
+            foreach (IProxyDataStream dataStream in dataStreams)
             {
-                if (!I_PROXY_DATA_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
-                {
-                    continue;
-                }
-
-                IgnoreProxyDataStreamAttribute ignoreProxyDataStreamAttribute = systemField.GetCustomAttribute<IgnoreProxyDataStreamAttribute>();
-                if (ignoreProxyDataStreamAttribute != null)
-                {
-                    continue;
-                }
-
-                Debug_CheckFieldIsReadOnly(systemField);
-                Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
-
-                //Get the data type 
-                IProxyDataStream proxyDataStream = CreateProxyDataStream(systemField.FieldType.GenericTypeArguments[0]);
-
-                //Ensure the System's field is set to the data stream
-                systemField.SetValue(this, proxyDataStream);
+                DataFlowNode node = new DataFlowNode(dataStream, this, null);
+                m_DataFlowNodes.Add(dataStream, node);
+                m_AllDataStreams.Add(dataStream);
             }
-        }
-
-        private IProxyDataStream CreateProxyDataStream(Type proxyDataType)
-        {
-            IProxyDataStream proxyDataStream = ProxyDataStreamFactory.Create(proxyDataType);
-            //Initially null to keep record that this data doesn't have a corresponding Update Job
-            m_UpdateTaskProcessorMapping.Add(proxyDataStream, null);
-            m_PopulateTaskProcessorMapping.Add(proxyDataStream, null);
-
-            return proxyDataStream;
         }
 
         //TODO: #39 - Some way to remove the update Job
@@ -153,8 +142,7 @@ namespace Anvil.Unity.DOTS.Entities
             return ConfigureJobFor(dataStream,
                                    scheduleJobFunction,
                                    batchStrategy,
-                                   m_SystemLevelContext,
-                                   m_UpdateTaskProcessorMapping);
+                                   DataFlowNode.DataFlowPath.Update);
         }
 
         //TODO: Determine if we need custom configs for job types
@@ -167,29 +155,30 @@ namespace Anvil.Unity.DOTS.Entities
             return ConfigureJobFor(dataStream,
                                    scheduleJobFunction,
                                    batchStrategy,
-                                   taskDriver.Context,
-                                   m_PopulateTaskProcessorMapping);
+                                   DataFlowNode.DataFlowPath.Populate);
         }
 
 
         private IJobConfig ConfigureJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
                                                       JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
                                                       BatchStrategy batchStrategy,
-                                                      byte context,
-                                                      IDictionary<IProxyDataStream, ITaskProcessor> mapping)
+                                                      DataFlowNode.DataFlowPath path)
             where TInstance : unmanaged, IProxyInstance
         {
             //TODO: Double check error messages make sense depending if this came from a TaskDriver or the System
-            Debug_EnsureDataStreamIntegrity(dataStream);
+            Debug_EnsureDataStreamIntegrity(dataStream, typeof(TInstance));
+
+            DataFlowNode node = m_DataFlowNodes[dataStream];
+            
+            Debug_EnsurePriorToCreatePhaseComplete(node, path);
+
             JobConfig<TInstance> jobConfig = new JobConfig<TInstance>(World,
-                                                                      context,
+                                                                      node.TaskDriver?.Context ?? m_SystemLevelContext,
                                                                       scheduleJobFunction,
                                                                       batchStrategy,
                                                                       dataStream);
 
-            TaskProcessor<TInstance, JobConfig<TInstance>> taskProcessor = new TaskProcessor<TInstance, JobConfig<TInstance>>(dataStream, jobConfig);
-            //Update the mapping, we now have an update processor for the data stream
-            mapping[dataStream] = taskProcessor;
+            node.AddJobConfig(path, jobConfig);
 
             return jobConfig;
         }
@@ -197,31 +186,39 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void BuildOptimizedCollections()
         {
-            m_ProcessorDependenciesScratchPad = new NativeArray<JobHandle>(m_UpdateTaskProcessorMapping.Count, Allocator.Persistent);
-            m_UpdateTaskProcessors.AddRange(m_UpdateTaskProcessorMapping.Values);
-            m_PopulateTaskProcessors.AddRange(m_PopulateTaskProcessorMapping.Values);
+            foreach (DataFlowNode node in m_DataFlowNodes.Values)
+            {
+                foreach (DataFlowNode.DataFlowPath path in DataFlowNode.FlowPathValues)
+                {
+                    m_JobConfigsLookup[path].AddRange(node.GetJobConfigsFor(path));
+                }
+            }
 
-            m_AllTaskProcessors.AddRange(m_UpdateTaskProcessors);
-            m_AllTaskProcessors.AddRange(m_PopulateTaskProcessors);
+            foreach (DataFlowNode.DataFlowPath path in DataFlowNode.FlowPathValues)
+            {
+                m_JobDependenciesLookup.Add(path, new NativeArray<JobHandle>(m_JobConfigsLookup[path].Count, Allocator.Persistent));
+            }
+
+            m_AllDataStreamsDependencies = new NativeArray<JobHandle>(m_AllDataStreams.Count, Allocator.Persistent);
         }
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            //TODO: Renable once Task Drivers are enabled
-            // //Have drivers be given the chance to add to the Instance Data
-            // dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
+            //Have drivers be given the chance to write to system data
+            dependsOn = ScheduleJobs(dependsOn, DataFlowNode.DataFlowPath.Populate);
 
-            //Consolidate our owned data streams to operate on them
-            dependsOn = m_UpdateTaskProcessors.BulkScheduleParallel(dependsOn,
-                                                                    ref m_ProcessorDependenciesScratchPad,
-                                                                    ITaskProcessor.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+
+            //Consolidate all data streams associated to prepare to operate on them
+            //TODO: Should we only consolidate system level data?
+            dependsOn = m_AllDataStreams.BulkScheduleParallel(dependsOn,
+                                                              ref m_AllDataStreamsDependencies,
+                                                              IProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             //TODO: #38 - Allow for cancels to occur
 
             //Allow the update jobs to occur on our owned data streams
-            dependsOn = m_UpdateTaskProcessors.BulkScheduleParallel(dependsOn,
-                                                                    ref m_ProcessorDependenciesScratchPad,
-                                                                    ITaskProcessor.PREPARE_AND_SCHEDULE_FUNCTION);
+            //TODO: Only on System owned data or also Task Drivers?
+            dependsOn = ScheduleJobs(dependsOn, DataFlowNode.DataFlowPath.Update);
 
             //TODO: Renable once Task Drivers are enabled
             // //Have drivers consolidate their result data
@@ -235,6 +232,15 @@ namespace Anvil.Unity.DOTS.Entities
 
             //Ensure this system's dependency is written back
             return dependsOn;
+        }
+
+        private JobHandle ScheduleJobs(JobHandle dependsOn, DataFlowNode.DataFlowPath path)
+        {
+            List<IJobConfig> jobs = m_JobConfigsLookup[path];
+            NativeArray<JobHandle> dependencies = m_JobDependenciesLookup[path];
+            return jobs.BulkScheduleParallel(dependsOn,
+                                             ref dependencies,
+                                             IJobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
         }
 
 
@@ -257,71 +263,57 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_CheckFieldIsReadOnly(FieldInfo fieldInfo)
-        {
-            if (!fieldInfo.IsInitOnly)
-            {
-                throw new InvalidOperationException($"Field with name {fieldInfo.Name} on {fieldInfo.ReflectedType} is not marked as \"readonly\", please ensure that it is.");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_CheckFieldTypeGenericTypeArguments(Type fieldType)
-        {
-            if (fieldType.GenericTypeArguments.Length != 1)
-            {
-                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(ProxyDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_CheckDataStreamJobsExist()
         {
-            if (m_HasCheckedDataStreamJobIntegrity)
+            foreach (DataFlowNode node in m_DataFlowNodes.Values)
             {
-                return;
-            }
-
-            m_HasCheckedDataStreamJobIntegrity = true;
-
-            foreach (KeyValuePair<IProxyDataStream, ITaskProcessor> entry in m_UpdateTaskProcessorMapping)
-            {
-                if (entry.Value == null)
+                foreach (DataFlowNode.DataFlowPath path in DataFlowNode.FlowPathValues)
                 {
-                    throw new InvalidOperationException($"Data Stream of {entry.Key} exists but {nameof(ConfigureJobFor)} wasn't called in {nameof(OnCreate)}! Please ensure all {typeof(ProxyDataStream<>)} have a corresponding job configured via {nameof(ConfigureJobFor)} to ensure there is no data loss.");
-                }
-            }
+                    if (node.HasJobsFor(path))
+                    {
+                        continue;
+                    }
 
-            foreach (KeyValuePair<IProxyDataStream, ITaskProcessor> entry in m_PopulateTaskProcessorMapping)
-            {
-                if (entry.Value == null)
-                {
-                    throw new InvalidOperationException($"Data Stream of {entry.Key} exists but there are no populate jobs that exist. This data will never be written to.");
+                    string issue = path switch
+                    {
+                        DataFlowNode.DataFlowPath.Populate => $"The data will never be populated with any instances.",
+                        DataFlowNode.DataFlowPath.Update   => $"There will be data loss as this data will never be updated to flow to a results location or continue in the stream.",
+                        _                                  => throw new ArgumentOutOfRangeException($"Tried to generate issue string for {path} but no code path satisfies!")
+                    };
+                    
+                    throw new InvalidOperationException($"{node.DataStream.GetType()} located on {node.ToLocationString()}, does not have any job for {path}. {issue}");
                 }
             }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureDataStreamIntegrity(IProxyDataStream dataStream)
+        private void Debug_EnsureDataStreamIntegrity(IProxyDataStream dataStream, Type expectedType)
         {
             if (dataStream == null)
             {
                 throw new InvalidOperationException($"Data Stream is null! Possible causes: "
-                                                  + $"\n1. The incorrect reference to a {typeof(ProxyDataStream<>)} was passed in such as referencing a hidden variable or something not defined on this class. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class."
-                                                  + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {typeof(ProxyDataStream<>)}'s hasn't happened yet.");
+                                                  + $"\n1. The incorrect reference to a {typeof(ProxyDataStream<>).Name}<{expectedType.Name}> was passed in such as referencing a hidden variable or something not defined on this class. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class."
+                                                  + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {typeof(ProxyDataStream<>).Name}<{expectedType.Name}>'s hasn't happened yet.");
             }
 
-            //TODO: We're just using the update mapping, but maybe we should have a separate hashset or check all?
-            if (!m_UpdateTaskProcessorMapping.ContainsKey(dataStream))
+            if (!m_DataFlowNodes.ContainsKey(dataStream))
             {
-                throw new InvalidOperationException($"DataStream of {dataStream.GetType()} was not registered to this class. Was it defined as a part of this class?");
+                throw new InvalidOperationException($"DataStream of {dataStream.GetType().Name} was not registered to this class. Was it defined as a part of this class?");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsurePriorToCreatePhaseComplete(DataFlowNode node, DataFlowNode.DataFlowPath path)
+        {
+            if (m_IsCreatePhaseComplete)
+            {
+                throw new InvalidOperationException($"Trying to create a {path} job on {node.ToLocationString()} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
     }
-    
+
     //TODO: Might be able to get rid of this
     public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
-        
     }
 }

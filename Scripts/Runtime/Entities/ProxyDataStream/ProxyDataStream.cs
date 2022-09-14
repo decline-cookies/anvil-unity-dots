@@ -135,7 +135,8 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        //TODO: Hide if possible, might need to move bulkschedule delegate to abstract non-generic class
+        public JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,

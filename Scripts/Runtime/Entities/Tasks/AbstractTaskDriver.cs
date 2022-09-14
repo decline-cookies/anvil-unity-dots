@@ -3,7 +3,8 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriver<TTaskDriver, TTaskSystem> : AbstractTaskDriver
+    public abstract class AbstractTaskDriver<TTaskDriver, TTaskSystem> : AbstractTaskDriver,
+                                                                         ITaskDriver
         where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
     {
