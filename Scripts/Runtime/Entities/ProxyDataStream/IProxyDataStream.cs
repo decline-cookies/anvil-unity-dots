@@ -15,5 +15,10 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public JobHandle ConsolidateForFrame(JobHandle jobHandle);
+        
+        public string DebugString
+        {
+            get;
+        }
     }
 }

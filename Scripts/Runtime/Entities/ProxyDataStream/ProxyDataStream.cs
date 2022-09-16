@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -62,6 +63,13 @@ namespace Anvil.Unity.DOTS.Entities
             get => m_IterationTarget.ScheduleInfo;
         }
 
+        public string DebugString
+        {
+            get => m_Type.Name;
+        }
+
+        private readonly Type m_Type;
+
         //TODO: 2. A mechanism to handle the branching from Data to a Result type
         //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
         internal ProxyDataStream() : base()
@@ -74,6 +82,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_Pending = new UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
             m_IterationTarget = new DeferredNativeArray<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
                                                                                          Allocator.TempJob);
+
+            m_Type = GetType();
         }
 
         protected override void DisposeSelf()

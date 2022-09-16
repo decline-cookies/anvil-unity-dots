@@ -51,8 +51,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return TaskSystem.ConfigurePopulateJobFor(dataStream,
                                                       scheduleJobFunction,
-                                                      batchStrategy,
-                                                      m_TypedThis);
+                                                      batchStrategy);
         }
     }
 
