@@ -7,16 +7,16 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal static class TaskDataStreamUtil
     {
-        private static readonly Type I_PROXY_DATA_STREAM_TYPE = typeof(IProxyDataStream);
-        public static List<IProxyDataStream> GenerateProxyDataStreamsOnType(object instance)
+        private static readonly Type ABSTRACT_PROXY_DATA_STREAM_TYPE = typeof(AbstractProxyDataStream);
+        public static List<AbstractProxyDataStream> GenerateProxyDataStreamsOnType(object instance)
         {
-            List<IProxyDataStream> dataStreams = new List<IProxyDataStream>();
+            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
             Type type = instance.GetType();
             //Get all the fields
             FieldInfo[] systemFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             foreach (FieldInfo systemField in systemFields)
             {
-                if (!I_PROXY_DATA_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
+                if (!ABSTRACT_PROXY_DATA_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
                 {
                     continue;
                 }
@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities
                 Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
 
                 //Get the data type 
-                IProxyDataStream proxyDataStream = ProxyDataStreamFactory.Create(systemField.FieldType.GenericTypeArguments[0]);
+                AbstractProxyDataStream proxyDataStream = ProxyDataStreamFactory.Create(systemField.FieldType.GenericTypeArguments[0]);
                 dataStreams.Add(proxyDataStream);
                 
                 //Ensure the System's field is set to the data stream

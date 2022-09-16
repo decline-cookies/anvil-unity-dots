@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class TaskFlowNode : AbstractAnvilBase
     {
-        public IProxyDataStream DataStream
+        public AbstractProxyDataStream DataStream
         {
             get;
         }
@@ -29,14 +29,14 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly Dictionary<TaskFlowRoute, List<TaskFlowNode>> m_OutgoingNodesByRoute;
         private readonly Dictionary<TaskFlowRoute, List<TaskFlowNode>> m_IncomingNodesByRoute;
 
-        private readonly Dictionary<TaskFlowRoute, List<IJobConfig>> m_JobConfigLookup;
+        private readonly Dictionary<TaskFlowRoute, List<AbstractJobConfig>> m_JobConfigLookup;
 
         private readonly Type m_TaskSystemType;
         private readonly Type m_TaskDriverType;
 
         private readonly TaskFlowGraph m_TaskFlowGraph;
 
-        public TaskFlowNode(TaskFlowGraph taskFlowGraph, IProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        public TaskFlowNode(TaskFlowGraph taskFlowGraph, AbstractProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
             m_TaskFlowGraph = taskFlowGraph;
             DataStream = dataStream;
@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_TaskDriverType = TaskDriver.GetType();
             }
 
-            m_JobConfigLookup = new Dictionary<TaskFlowRoute, List<IJobConfig>>();
+            m_JobConfigLookup = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
             
             m_OutgoingNodesByRoute = new Dictionary<TaskFlowRoute, List<TaskFlowNode>>();
             m_IncomingNodesByRoute = new Dictionary<TaskFlowRoute, List<TaskFlowNode>>();
@@ -64,17 +64,17 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public void RegisterJobConfig(TaskFlowRoute route, IJobConfig jobConfig)
+        public void RegisterJobConfig(TaskFlowRoute route, AbstractJobConfig jobConfig)
         {
             GetJobConfigsFor(route).Add(jobConfig);
         }
 
 
-        public List<IJobConfig> GetJobConfigsFor(TaskFlowRoute route)
+        public List<AbstractJobConfig> GetJobConfigsFor(TaskFlowRoute route)
         {
-            if (!m_JobConfigLookup.TryGetValue(route, out List<IJobConfig> configs))
+            if (!m_JobConfigLookup.TryGetValue(route, out List<AbstractJobConfig> configs))
             {
-                configs = new List<IJobConfig>();
+                configs = new List<AbstractJobConfig>();
                 m_JobConfigLookup.Add(route, configs);
             }
 
@@ -91,8 +91,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void BuildConnectionsForRoute(TaskFlowRoute route)
         {
-            List<IJobConfig> jobConfigs = GetJobConfigsFor(route);
-            foreach (IJobConfig jobConfig in jobConfigs)
+            List<AbstractJobConfig> jobConfigs = GetJobConfigsFor(route);
+            foreach (AbstractJobConfig jobConfig in jobConfigs)
             {
                 //TODO: Get the data this JobConfig will operate on and in what context
                 

@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
             TYPED_GENERIC_METHODS.Clear();
         }
 
-        public static IProxyDataStream Create(Type instanceType)
+        public static AbstractProxyDataStream Create(Type instanceType)
         {
             Debug_CheckType(instanceType);
             if (!TYPED_GENERIC_METHODS.TryGetValue(instanceType, out MethodInfo typedGenericMethod))
@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
                 TYPED_GENERIC_METHODS.Add(instanceType, typedGenericMethod);
             }
 
-            return (IProxyDataStream)typedGenericMethod.Invoke(null, null);
+            return (AbstractProxyDataStream)typedGenericMethod.Invoke(null, null);
         }
 
         private static ProxyDataStream<TData> CreateProxyDataStream<TData>()

@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //TODO: Cross reference with JobTaskWorkConfig to include safety checks and other data
-        public override JobHandle PrepareAndSchedule(JobHandle dependsOn)
+        protected override JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
             //TODO Get access to all data we need based on the config
 

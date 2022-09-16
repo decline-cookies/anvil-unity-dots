@@ -9,19 +9,19 @@ namespace Anvil.Unity.DOTS.Entities
     {
         public static readonly TaskFlowRoute[] TASK_FLOW_ROUTE_VALUES = (TaskFlowRoute[])Enum.GetValues(typeof(TaskFlowRoute));
         
-        private readonly Dictionary<IProxyDataStream, TaskFlowNode> m_NodesLookupByDataStream;
+        private readonly Dictionary<AbstractProxyDataStream, TaskFlowNode> m_NodesLookupByDataStream;
         private readonly Dictionary<ITaskSystem, List<TaskFlowNode>> m_NodesLookupOwnedByTaskSystem;
         private readonly Dictionary<ITaskDriver, List<TaskFlowNode>> m_NodesLookupOwnedByTaskDriver;
         private bool m_IsHardened;
 
         public TaskFlowGraph()
         {
-            m_NodesLookupByDataStream = new Dictionary<IProxyDataStream, TaskFlowNode>();
+            m_NodesLookupByDataStream = new Dictionary<AbstractProxyDataStream, TaskFlowNode>();
             m_NodesLookupOwnedByTaskSystem = new Dictionary<ITaskSystem, List<TaskFlowNode>>();
             m_NodesLookupOwnedByTaskDriver = new Dictionary<ITaskDriver, List<TaskFlowNode>>();
         }
 
-        public void RegisterDataStream(IProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        public void RegisterDataStream(AbstractProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
             Debug_EnsureNotHardened();
             Debug_EnsureNoDuplicateNodes(dataStream);
@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
-        public IJobConfig CreateJobConfig<TInstance>(World world,
+        public AbstractJobConfig CreateJobConfig<TInstance>(World world,
                                                      ProxyDataStream<TInstance> dataStream,
                                                      JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
                                                      BatchStrategy batchStrategy,
@@ -62,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities
             return jobConfig;
         }
 
-        public bool IsDataStreamRegistered(IProxyDataStream dataStream)
+        public bool IsDataStreamRegistered(AbstractProxyDataStream dataStream)
         {
             return m_NodesLookupByDataStream.ContainsKey(dataStream);
         }
@@ -79,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
             DisposeNodes(nodes);
         }
 
-        public string GetDebugString(IProxyDataStream dataStream)
+        public string GetDebugString(AbstractProxyDataStream dataStream)
         {
             Debug_EnsureExists(dataStream);
             return m_NodesLookupByDataStream[dataStream].GetDebugString();
@@ -106,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        public TaskFlowNode this[IProxyDataStream dataStream]
+        public TaskFlowNode this[AbstractProxyDataStream dataStream]
         {
             get => m_NodesLookupByDataStream[dataStream];
         }
@@ -131,9 +131,9 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureJobFlowIsComplete();
         }
 
-        public BulkJobScheduler<IProxyDataStream> CreateDataStreamBulkJobSchedulerFor(ITaskSystem system)
+        public BulkJobScheduler<AbstractProxyDataStream> CreateDataStreamBulkJobSchedulerFor(ITaskSystem system)
         {
-            List<IProxyDataStream> dataStreams = new List<IProxyDataStream>();
+            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
 
             List<TaskFlowNode> nodes = m_NodesLookupOwnedByTaskSystem[system];
             foreach (TaskFlowNode node in nodes)
@@ -141,13 +141,13 @@ namespace Anvil.Unity.DOTS.Entities
                 dataStreams.Add(node.DataStream);
             }
 
-            return new BulkJobScheduler<IProxyDataStream>(dataStreams);
+            return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
         }
 
-        public BulkJobScheduler<IProxyDataStream> CreateDataStreamBulkJobSchedulerFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
+        public BulkJobScheduler<AbstractProxyDataStream> CreateDataStreamBulkJobSchedulerFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
             where TTaskDriver : class, ITaskDriver
         {
-            List<IProxyDataStream> dataStreams = new List<IProxyDataStream>();
+            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
 
             foreach (TTaskDriver driver in taskDrivers)
             {
@@ -158,12 +158,12 @@ namespace Anvil.Unity.DOTS.Entities
                 }
             }
 
-            return new BulkJobScheduler<IProxyDataStream>(dataStreams);
+            return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
         }
 
-        public Dictionary<TaskFlowRoute, BulkJobScheduler<IJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor(ITaskSystem system)
+        public Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor(ITaskSystem system)
         {
-            Dictionary<TaskFlowRoute, BulkJobScheduler<IJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<IJobConfig>>();
+            Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
 
             List<TaskFlowNode> nodes = m_NodesLookupOwnedByTaskSystem[system];
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
@@ -174,7 +174,7 @@ namespace Anvil.Unity.DOTS.Entities
             return lookup;
         }
 
-        public Dictionary<TaskFlowRoute, BulkJobScheduler<IJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
+        public Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
             where TTaskDriver : class, ITaskDriver
         {
             List<TaskFlowNode> nodes = new List<TaskFlowNode>();
@@ -185,7 +185,7 @@ namespace Anvil.Unity.DOTS.Entities
                 nodes.AddRange(taskDriverNodes);
             }
             
-            Dictionary<TaskFlowRoute, BulkJobScheduler<IJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<IJobConfig>>();
+            Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
             {
                 lookup.Add(route, CreateJobConfigBulkJobScheduler(route, nodes));
@@ -194,14 +194,14 @@ namespace Anvil.Unity.DOTS.Entities
             return lookup;
         }
 
-        private BulkJobScheduler<IJobConfig> CreateJobConfigBulkJobScheduler(TaskFlowRoute route, List<TaskFlowNode> nodes)
+        private BulkJobScheduler<AbstractJobConfig> CreateJobConfigBulkJobScheduler(TaskFlowRoute route, List<TaskFlowNode> nodes)
         {
-            List<IJobConfig> jobConfigs = new List<IJobConfig>();
+            List<AbstractJobConfig> jobConfigs = new List<AbstractJobConfig>();
             foreach (TaskFlowNode node in nodes)
             {
                 jobConfigs.AddRange(node.GetJobConfigsFor(route));
             }
-            return new BulkJobScheduler<IJobConfig>(jobConfigs);
+            return new BulkJobScheduler<AbstractJobConfig>(jobConfigs);
         }
 
         //*************************************************************************************************************
@@ -209,7 +209,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureExists(IProxyDataStream dataStream)
+        private void Debug_EnsureExists(AbstractProxyDataStream dataStream)
         {
             if (!m_NodesLookupByDataStream.ContainsKey(dataStream))
             {
@@ -218,7 +218,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateNodes(IProxyDataStream dataStream)
+        private void Debug_EnsureNoDuplicateNodes(AbstractProxyDataStream dataStream)
         {
             if (m_NodesLookupByDataStream.ContainsKey(dataStream))
             {

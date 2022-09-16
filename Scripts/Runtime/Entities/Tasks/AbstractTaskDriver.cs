@@ -37,14 +37,14 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void CreateProxyDataStreams()
         {
-            List<IProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
-            foreach (IProxyDataStream dataStream in dataStreams)
+            List<AbstractProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
+            foreach (AbstractProxyDataStream dataStream in dataStreams)
             {
                 TaskSystem.RegisterTaskDriverDataStream(dataStream, this);
             }
         }
 
-        public IJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
+        public AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
                                                              JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
                                                              BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
