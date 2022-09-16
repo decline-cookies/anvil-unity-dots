@@ -18,20 +18,22 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-
-        private readonly TTaskDriver m_TypedThis;
+        
+        private readonly TaskFlowGraph m_TaskFlowGraph;
 
         protected AbstractTaskDriver(World world)
         {
-            m_TypedThis = (TTaskDriver)this;
             TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
-            Context = TaskSystem.RegisterTaskDriver(m_TypedThis);
+            Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
+
+            m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowDataSystem>().TaskFlowGraph;
 
             CreateProxyDataStreams();
         }
 
         protected override void DisposeSelf()
         {
+            m_TaskFlowGraph.DisposeFor(this);
             base.DisposeSelf();
         }
 
@@ -45,8 +47,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                             JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                             BatchStrategy batchStrategy)
+                                                                    JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
+                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
             return TaskSystem.ConfigurePopulateJobFor(dataStream,

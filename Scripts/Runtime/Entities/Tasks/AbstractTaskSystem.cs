@@ -15,17 +15,16 @@ namespace Anvil.Unity.DOTS.Entities
         where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
     {
-        
         private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
         private readonly TaskFlowGraph m_TaskFlowGraph;
-        
+
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
-        
+
         private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
-        
+
         private bool m_IsHardened;
 
         public byte Context
@@ -55,14 +54,14 @@ namespace Anvil.Unity.DOTS.Entities
         {
             //We only want to dispose the data streams that we own, so only the system ones
             m_TaskFlowGraph.DisposeFor(this);
-            
+
             //Clean up all the native arrays
             m_SystemDataStreamBulkJobScheduler?.Dispose();
             m_DriverDataStreamBulkJobScheduler?.Dispose();
             DisposeJobConfigBulkJobSchedulerLookup(m_SystemJobConfigBulkJobSchedulerLookup);
             DisposeJobConfigBulkJobSchedulerLookup(m_DriverJobConfigBulkJobSchedulerLookup);
-            
-            
+
+
             m_TaskDriverIDProvider.Dispose();
 
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
@@ -77,10 +76,12 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return;
             }
+
             foreach (BulkJobScheduler<AbstractJobConfig> scheduler in lookup.Values)
             {
                 scheduler.Dispose();
             }
+
             lookup.Clear();
         }
 
@@ -91,8 +92,9 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return;
             }
+
             m_IsHardened = true;
-            
+
             BuildOptimizedCollections();
         }
 
@@ -132,8 +134,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         //TODO: Determine if we need custom configs for job types
         protected AbstractJobConfig ConfigureUpdateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                              JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                              BatchStrategy batchStrategy)
+                                                                     JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
+                                                                     BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
             return ConfigureJobFor(dataStream,
@@ -144,8 +146,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         //TODO: Determine if we need custom configs for job types
         internal AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                               JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                               BatchStrategy batchStrategy)
+                                                                      JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
+                                                                      BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
             return ConfigureJobFor(dataStream,
@@ -156,9 +158,9 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         private AbstractJobConfig ConfigureJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                      JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                      BatchStrategy batchStrategy,
-                                                      TaskFlowRoute route)
+                                                             JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
+                                                             BatchStrategy batchStrategy,
+                                                             TaskFlowRoute route)
             where TInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureDataStreamIntegrity(dataStream, typeof(TInstance));
@@ -187,7 +189,7 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
-            
+
             //Consolidate system data so that it can be operated on. (Was populated on previous step)
             dependsOn = m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
                                                                     AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
@@ -195,16 +197,16 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: #38 - Allow for cancels to occur
 
             //Schedule the Update Jobs to run on System Data
-            dependsOn = ScheduleJobs(dependsOn, 
+            dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
                                      m_SystemJobConfigBulkJobSchedulerLookup);
-            
+
             // //Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
             dependsOn = m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
                                                                     AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             //TODO: #38 - Allow for cancels on the drivers to occur
-            
+
             // //Have drivers to do their own generic work if necessary
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
@@ -214,7 +216,7 @@ namespace Anvil.Unity.DOTS.Entities
             return dependsOn;
         }
 
-        private JobHandle ScheduleJobs(JobHandle dependsOn, 
+        private JobHandle ScheduleJobs(JobHandle dependsOn,
                                        TaskFlowRoute route,
                                        Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup)
         {
@@ -266,8 +268,6 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Trying to create a {route} job on {m_TaskFlowGraph.GetDebugString(dataStream)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
-
-        
     }
 
     //TODO: Might be able to get rid of this

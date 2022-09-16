@@ -1,7 +1,5 @@
-using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -54,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => m_IterationTarget.ScheduleInfo;
         }
-        
+
         internal ProxyDataStream() : base()
         {
             m_Pending = new UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent);

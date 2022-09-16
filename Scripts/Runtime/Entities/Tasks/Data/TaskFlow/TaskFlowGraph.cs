@@ -42,10 +42,10 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public AbstractJobConfig CreateJobConfig<TInstance>(World world,
-                                                     ProxyDataStream<TInstance> dataStream,
-                                                     JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                     BatchStrategy batchStrategy,
-                                                     TaskFlowRoute route)
+                                                            ProxyDataStream<TInstance> dataStream,
+                                                            JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
+                                                            BatchStrategy batchStrategy,
+                                                            TaskFlowRoute route)
             where TInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureExists(dataStream);
