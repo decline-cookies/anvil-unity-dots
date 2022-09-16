@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class JobConfig<TInstance> : AbstractJobConfig<TInstance>
+    public class JobConfig<TInstance> : AbstractJobConfig
         where TInstance : unmanaged, IProxyInstance
     {
         public delegate JobHandle ScheduleJobDelegate(JobHandle jobHandle, JobData<TInstance> jobData, IScheduleInfo scheduleInfo);

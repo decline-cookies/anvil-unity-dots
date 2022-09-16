@@ -12,7 +12,8 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return jobConfig.PrepareAndSchedule(dependsOn);
         }
-
+        
+        //TODO: Hide this somehow
         public JobHandle PrepareAndSchedule(JobHandle jobHandle);
     }
 }

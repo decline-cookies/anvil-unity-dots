@@ -38,14 +38,9 @@ namespace Anvil.Unity.DOTS.Entities
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class ProxyDataStream<TInstance> : AbstractAnvilBase,
-                                              IProxyDataStream
+    public class ProxyDataStream<TInstance> : AbstractProxyDataStream
         where TInstance : unmanaged, IProxyInstance
     {
-        //TODO: RE-ENABLE IF NEEDED
-        // internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
-
-
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
@@ -55,35 +50,16 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
         private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_IterationTarget;
 
-        //TODO: Lock down to internal again
-        public AccessController AccessController { get; }
-
         public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
         }
-
-        public string DebugString
-        {
-            get => m_Type.Name;
-        }
-
-        private readonly Type m_Type;
-
-        //TODO: 2. A mechanism to handle the branching from Data to a Result type
-        //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
+        
         internal ProxyDataStream() : base()
         {
-            //TODO: Could split the data into definitions via Attributes or some other mechanism to set up the relationships. Then a "baking" into the actual structures. 
-            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960764532
-            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960737069
-            AccessController = new AccessController();
-
             m_Pending = new UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
             m_IterationTarget = new DeferredNativeArray<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
                                                                                          Allocator.TempJob);
-
-            m_Type = GetType();
         }
 
         protected override void DisposeSelf()
@@ -145,8 +121,9 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        //TODO: Hide if possible, might need to move bulkschedule delegate to abstract non-generic class
-        public JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        
+        //TODO: Hide this somehow
+        public override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
