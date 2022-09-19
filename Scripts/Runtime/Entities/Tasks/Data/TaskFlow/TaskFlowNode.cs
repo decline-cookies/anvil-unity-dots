@@ -34,9 +34,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly Dictionary<TaskFlowRoute, List<JobConfig>> m_JobConfigLookup;
 
-        private readonly Type m_TaskSystemType;
-        private readonly Type m_TaskDriverType;
-
         private readonly TaskFlowGraph m_TaskFlowGraph;
 
         public TaskFlowNode(TaskFlowGraph taskFlowGraph, AbstractProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
@@ -46,13 +43,10 @@ namespace Anvil.Unity.DOTS.Entities
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
             DataOwner = TaskFlowOwner.System;
-
-            m_TaskSystemType = TaskSystem.GetType();
-
+            
             if (taskDriver != null)
             {
                 DataOwner = TaskFlowOwner.Driver;
-                m_TaskDriverType = TaskDriver.GetType();
             }
 
             m_JobConfigLookup = new Dictionary<TaskFlowRoute, List<JobConfig>>();
@@ -67,6 +61,11 @@ namespace Anvil.Unity.DOTS.Entities
         {
             DataStream.Dispose();
             base.DisposeSelf();
+        }
+
+        public override string ToString()
+        {
+            return $"{DataStream} located in {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
         }
 
         public void RegisterJobConfig(TaskFlowRoute route, JobConfig jobConfig)
@@ -122,15 +121,6 @@ namespace Anvil.Unity.DOTS.Entities
 
             byte storedResolveChannel = UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel);
             return value == storedResolveChannel;
-        }
-
-        public string GetDebugString()
-        {
-            string location = (TaskDriver == null)
-                ? $"{m_TaskSystemType.Name}"
-                : $"{m_TaskDriverType.Name} as part of the {m_TaskSystemType.Name} system";
-
-            return $"${DataStream.DebugString} located in {location}";
         }
     }
 }

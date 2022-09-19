@@ -3,11 +3,11 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public abstract class AbstractTaskDriver<TTaskDriver, TTaskSystem> : AbstractTaskDriver,
+    public abstract class AbstractTaskDriver<TTaskDriver, TTaskSystem> : AbstractAnvilBase,
                                                                          ITaskDriver
         where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
-    
+
     {
         public TTaskSystem TaskSystem
         {
@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         private readonly TaskFlowGraph m_TaskFlowGraph;
 
         protected AbstractTaskDriver(World world)
@@ -37,17 +37,12 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         public JobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                                    JobConfig.ScheduleJobDelegate scheduleJobFunction)
+                                                            JobConfig.ScheduleJobDelegate scheduleJobFunction)
             where TInstance : unmanaged, IProxyInstance
         {
             return TaskSystem.ConfigurePopulateJobFor(this,
                                                       dataStream,
                                                       scheduleJobFunction);
         }
-    }
-
-    //TODO: Might be able to get rid of this
-    public abstract class AbstractTaskDriver : AbstractAnvilBase
-    {
     }
 }

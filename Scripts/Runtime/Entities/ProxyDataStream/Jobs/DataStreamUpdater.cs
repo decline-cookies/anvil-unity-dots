@@ -2,8 +2,9 @@ using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Diagnostics;
 using Unity.Collections;
-using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -19,17 +20,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        private enum UpdaterState
-        {
-            Uninitialized,
-            Ready,
-            Modifying
-        }
-
-        private UpdaterState m_State;
-#endif
-
         public int LaneIndex
         {
             get;
@@ -43,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         internal DataStreamUpdater(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer continueWriter,
-                                   NativeArray<ProxyInstanceWrapper<TInstance>> iteration)
+                                   NativeArray<ProxyInstanceWrapper<TInstance>> iteration) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
@@ -51,12 +41,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_ContinueLaneWriter = default;
             LaneIndex = UNSET_LANE_INDEX;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            m_State = UpdaterState.Uninitialized;
-#endif
-
             //TODO: This is odd to have this here. https://github.com/decline-cookies/anvil-unity-dots/pull/54#discussion_r961026947
             CurrentContext = ByteIDProvider.UNSET_ID;
+
+            Debug_InitializeUpdaterState();
         }
 
         /// <summary>
@@ -70,14 +58,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="nativeThreadIndex">The native thread index</param>
         public void InitForThread(int nativeThreadIndex)
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_State != UpdaterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
-            }
-
-            m_State = UpdaterState.Ready;
-#endif
+            Debug_EnsureInitThreadOnlyCalledOnce();
 
             LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(LaneIndex);
@@ -91,20 +72,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get
             {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                // ReSharper disable once ConvertIfStatementToSwitchStatement
-                if (m_State == UpdaterState.Uninitialized)
-                {
-                    throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to get an element.");
-                }
-
-                if (m_State == UpdaterState.Modifying)
-                {
-                    throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(ProxyDataStreamExtension.ContinueOn)} or {nameof(ProxyDataStreamExtension.Resolve)} gets called before the next iteration.");
-                }
-
-                m_State = UpdaterState.Modifying;
-#endif
+                Debug_EnsureCanUpdate();
                 ProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
                 CurrentContext = instanceWrapper.InstanceID.Context;
                 return instanceWrapper.Payload;
@@ -123,6 +91,63 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="Continue(TInstance)"/>
         public void Continue(ref TInstance instance)
         {
+            Debug_EnsureCanContinue(ref instance);
+            m_ContinueLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
+                                                                           CurrentContext,
+                                                                           ref instance));
+        }
+
+        internal void Resolve()
+        {
+            Debug_EnsureCanResolve();
+        }
+
+
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        private enum UpdaterState
+        {
+            Uninitialized,
+            Ready,
+            Modifying
+        }
+
+        private UpdaterState m_State;
+#endif
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_InitializeUpdaterState()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            m_State = UpdaterState.Uninitialized;
+#endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureCanUpdate()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == UpdaterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to get an element.");
+            }
+
+            if (m_State == UpdaterState.Modifying)
+            {
+                throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(ProxyDataStreamExtension.ContinueOn)} or {nameof(ProxyDataStreamExtension.Resolve)} gets called before the next iteration.");
+            }
+
+            m_State = UpdaterState.Modifying;
+#endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureCanContinue(ref TInstance instance)
+        {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (m_State == UpdaterState.Uninitialized)
@@ -137,12 +162,10 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_State = UpdaterState.Ready;
 #endif
-            m_ContinueLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                           CurrentContext,
-                                                                           ref instance));
         }
 
-        internal void Resolve()
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureCanResolve()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -157,6 +180,19 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);
+            m_State = UpdaterState.Ready;
+#endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureInitThreadOnlyCalledOnce()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_State != UpdaterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
+            }
+
             m_State = UpdaterState.Ready;
 #endif
         }

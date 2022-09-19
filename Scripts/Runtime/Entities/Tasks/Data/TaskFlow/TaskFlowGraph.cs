@@ -127,6 +127,9 @@ namespace Anvil.Unity.DOTS.Entities
         {
             List<TaskFlowNode> nodes = GetOrCreateNodeList(system, m_NodesLookupOwnedByTaskSystem);
             DisposeNodes(nodes);
+
+            List<ITaskDriver> taskDrivers = GetTaskDrivers(system);
+            taskDrivers.Clear();
         }
 
         public void DisposeFor(ITaskDriver driver)
@@ -138,7 +141,7 @@ namespace Anvil.Unity.DOTS.Entities
         public string GetDebugString(AbstractProxyDataStream dataStream)
         {
             Debug_EnsureExists(dataStream);
-            return m_NodesLookupByDataStream[dataStream].GetDebugString();
+            return m_NodesLookupByDataStream[dataStream].ToString();
         }
 
         private void DisposeNodes(List<TaskFlowNode> nodes)
@@ -338,7 +341,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (!m_NodesLookupByDataStream.ContainsKey(dataStream))
             {
-                throw new InvalidOperationException($"Trying to access a {nameof(TaskFlowNode)} with instance of {dataStream.DebugString} but it doesn't exist!");
+                throw new InvalidOperationException($"Trying to access a {nameof(TaskFlowNode)} with instance of {dataStream} but it doesn't exist!");
             }
         }
 
@@ -347,7 +350,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (m_NodesLookupByDataStream.ContainsKey(dataStream))
             {
-                throw new InvalidOperationException($"Trying to create a new {nameof(TaskFlowNode)} with instance of {dataStream.DebugString} but one already exists!");
+                throw new InvalidOperationException($"Trying to create a new {nameof(TaskFlowNode)} with instance of {dataStream} but one already exists!");
             }
         }
 

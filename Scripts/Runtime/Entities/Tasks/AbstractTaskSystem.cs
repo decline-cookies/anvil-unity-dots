@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
     /// </summary>
-    public abstract partial class AbstractTaskSystem<TTaskDriver, TTaskSystem> : AbstractTaskSystem,
+    public abstract partial class AbstractTaskSystem<TTaskDriver, TTaskSystem> : AbstractAnvilSystemBase,
                                                                                  ITaskSystem
         where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
@@ -60,7 +60,6 @@ namespace Anvil.Unity.DOTS.Entities
             DisposeJobConfigBulkJobSchedulerLookup(m_SystemJobConfigBulkJobSchedulerLookup);
             DisposeJobConfigBulkJobSchedulerLookup(m_DriverJobConfigBulkJobSchedulerLookup);
 
-
             m_TaskDriverIDProvider.Dispose();
 
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
@@ -97,25 +96,46 @@ namespace Anvil.Unity.DOTS.Entities
             BuildOptimizedCollections();
         }
 
+        private void BuildOptimizedCollections()
+        {
+            m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
+            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(m_TaskDrivers);
+
+            m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
+            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(m_TaskDrivers);
+        }
+
         //TODO: #39 - Some way to remove the update Job
+
+        //*************************************************************************************************************
+        // CONFIGURATION
+        //*************************************************************************************************************
 
         internal byte RegisterTaskDriver(TTaskDriver taskDriver)
         {
+            Debug_EnsureNotHardened(taskDriver);
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
             m_TaskDrivers.Add(taskDriver);
 
             return m_TaskDriverIDProvider.GetNextID();
         }
 
-        protected override void OnUpdate()
+        //TODO: Determine if we need custom configs for job types
+        internal JobConfig ConfigurePopulateJobFor(ITaskDriver taskDriver,
+                                                   AbstractProxyDataStream dataStream,
+                                                   JobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
-            Dependency = UpdateTaskDriverSystem(Dependency);
+            return ConfigureJobFor(taskDriver,
+                                   dataStream,
+                                   scheduleJobFunction,
+                                   TaskFlowRoute.Populate)
+               .RequireDataStreamForWrite(dataStream);
         }
 
         //TODO: Determine if we need custom configs for job types
         protected JobConfig ConfigureUpdateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                                     JobConfig.ScheduleJobDelegate scheduleJobFunction,
-                                                                     BatchStrategy batchStrategy)
+                                                             JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                                             BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
             return ConfigureJobFor(null,
@@ -123,26 +143,13 @@ namespace Anvil.Unity.DOTS.Entities
                                    scheduleJobFunction,
                                    TaskFlowRoute.Update)
                   .ScheduleOn(dataStream, batchStrategy)
-                  .RequireDataForUpdate(dataStream);
+                  .RequireDataStreamForUpdate(dataStream);
         }
-
-        //TODO: Determine if we need custom configs for job types
-        internal JobConfig ConfigurePopulateJobFor(ITaskDriver taskDriver,
-                                                           AbstractProxyDataStream dataStream,
-                                                           JobConfig.ScheduleJobDelegate scheduleJobFunction)
-        {
-            return ConfigureJobFor(taskDriver,
-                                   dataStream,
-                                   scheduleJobFunction,
-                                   TaskFlowRoute.Populate)
-               .RequireDataForWrite(dataStream);
-        }
-
 
         private JobConfig ConfigureJobFor(ITaskDriver taskDriver,
-                                                  AbstractProxyDataStream dataStream,
-                                                  JobConfig.ScheduleJobDelegate scheduleJobFunction,
-                                                  TaskFlowRoute route)
+                                          AbstractProxyDataStream dataStream,
+                                          JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                          TaskFlowRoute route)
         {
             Debug_EnsureDataStreamIntegrity(dataStream, dataStream.GetType());
             Debug_EnsureNotHardened(dataStream, route);
@@ -154,14 +161,12 @@ namespace Anvil.Unity.DOTS.Entities
                                                    route);
         }
 
-
-        private void BuildOptimizedCollections()
+        //*************************************************************************************************************
+        // EXECUTION
+        //*************************************************************************************************************
+        protected override void OnUpdate()
         {
-            m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
-            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(m_TaskDrivers);
-
-            m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
-            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(m_TaskDrivers);
+            Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
@@ -237,7 +242,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (!m_TaskFlowGraph.IsDataStreamRegistered(dataStream))
             {
-                throw new InvalidOperationException($"DataStream of {dataStream.DebugString} was not registered with the {nameof(TaskFlowGraph)}! Was it defined as a part of this class or TaskDrivers associated with this class?");
+                throw new InvalidOperationException($"DataStream of {dataStream} was not registered with the {nameof(TaskFlowGraph)}! Was it defined as a part of this class or TaskDrivers associated with this class?");
             }
         }
 
@@ -249,10 +254,14 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Trying to create a {route} job on {m_TaskFlowGraph.GetDebugString(dataStream)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
-    }
-
-    //TODO: Might be able to get rid of this
-    public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
-    {
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNotHardened(TTaskDriver taskDriver)
+        {
+            if (m_IsHardened)
+            {
+                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {typeof(TTaskDriver)}'s are created in {nameof(OnCreate)} or earlier.");
+            }
+        }
     }
 }

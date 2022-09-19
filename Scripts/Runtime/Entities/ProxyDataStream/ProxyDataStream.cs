@@ -85,36 +85,21 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // JOB STRUCTS
         //*************************************************************************************************************
-
-        internal DataStreamReader<TInstance> CreatePDSReader()
+        internal DataStreamReader<TInstance> CreateDataStreamReader()
         {
             return new DataStreamReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(byte context)
+        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater()
         {
             return new DataStreamUpdater<TInstance>(m_Pending.AsWriter(),
                                                     m_IterationTarget.AsDeferredJobArray());
         }
 
-        //TODO: Lock down to internal again
-        public DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)
+        internal DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)
         {
-            //TODO: RE-ENABLE IF NEEDED
-            // Debug_EnsureContextIsSet(context);
             return new DataStreamWriter<TInstance>(m_Pending.AsWriter(), context);
         }
-
-        //TODO: RE-ENABLE IF NEEDED
-        // internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
-        // {
-        //     if (!m_ResultsDestinationLookup.IsCreated)
-        //     {
-        //         m_ResultsDestinationLookup = new VDResultsDestinationLookup(ResultDestinations);
-        //     }
-        //
-        //     return m_ResultsDestinationLookup;
-        // }
 
         //*************************************************************************************************************
         // CONSOLIDATION
@@ -122,9 +107,9 @@ namespace Anvil.Unity.DOTS.Entities
         protected override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-            ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
-                                                                                 m_IterationTarget);
-            JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
+            ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,
+                                                               m_IterationTarget);
+            JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
             AccessController.ReleaseAsync(consolidateHandle);
 
@@ -136,13 +121,13 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         [BurstCompile]
-        private struct ConsolidateLookupJob : IJob
+        private struct ConsolidateJob : IJob
         {
             private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
             private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> pending,
-                                        DeferredNativeArray<ProxyInstanceWrapper<TInstance>> iteration)
+            public ConsolidateJob(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> pending,
+                                  DeferredNativeArray<ProxyInstanceWrapper<TInstance>> iteration)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;

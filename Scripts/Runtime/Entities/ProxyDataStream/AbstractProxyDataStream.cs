@@ -9,10 +9,10 @@ namespace Anvil.Unity.DOTS.Entities
     public abstract class AbstractProxyDataStream : AbstractAnvilBase
     {
         internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
-
-        public string DebugString
+        
+        public Type Type
         {
-            get => m_Type.Name;
+            get;
         }
 
         internal AccessController AccessController
@@ -20,11 +20,9 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        private readonly Type m_Type;
-
         protected AbstractProxyDataStream()
         {
-            m_Type = GetType();
+            Type = GetType();
             AccessController = new AccessController();
         }
 
@@ -32,6 +30,11 @@ namespace Anvil.Unity.DOTS.Entities
         {
             AccessController.Dispose();
             base.DisposeSelf();
+        }
+
+        public override string ToString()
+        {
+            return $"{Type.Name}";
         }
 
         protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);

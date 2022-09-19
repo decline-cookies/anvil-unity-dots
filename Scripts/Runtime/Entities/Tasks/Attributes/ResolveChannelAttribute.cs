@@ -13,12 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
         public ResolveChannelAttribute(object resolveChannel)
         {
             ResolveChannel = resolveChannel;
-            //TODO: Safety
-            Type type = ResolveChannel.GetType();
-            if (!type.IsEnum)
-            {
-                throw new InvalidOperationException($"Resolve Channel Type is {type} but needs to be a {typeof(Enum)}");
-            }
+            ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
         }
     }
 }
