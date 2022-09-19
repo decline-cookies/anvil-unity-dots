@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Core;
 using Unity.Entities;
 
@@ -50,6 +51,18 @@ namespace Anvil.Unity.DOTS.Entities
             ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(JobConfig.Usage.Read);
             DataStreamReader<TInstance> reader = dataStream.CreateDataStreamReader();
             return reader;
+        }
+
+        public NativeArray<T> GetNativeArrayReadWrite<T>()
+            where T : unmanaged
+        {
+            return m_JobConfig.GetNativeArray<T>(JobConfig.Usage.Write);
+        }
+
+        public NativeArray<T> GetNativeArrayReadOnly<T>()
+            where T : unmanaged
+        {
+            return m_JobConfig.GetNativeArray<T>(JobConfig.Usage.Read);
         }
     }
 }
