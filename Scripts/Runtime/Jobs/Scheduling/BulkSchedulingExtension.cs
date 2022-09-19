@@ -24,21 +24,24 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="scheduleFunc">The <see cref="BulkScheduleDelegate{T}"/> to call on each element</param>
         /// <typeparam name="TElement">The type of element in the collection</typeparam>
         /// <returns>A <see cref="JobHandle"/> that represents when all jobs are completed.</returns>
-        public static JobHandle BulkScheduleParallel<TElement>(this List<TElement> list, JobHandle dependsOn, BulkScheduleDelegate<TElement> scheduleFunc)
+        /// TODO: Docs
+        public static JobHandle BulkScheduleParallel<TElement>(this List<TElement> list, 
+                                                               JobHandle dependsOn, 
+                                                               ref NativeArray<JobHandle> dependenciesArrayScratchPad, 
+                                                               BulkScheduleDelegate<TElement> scheduleFunc)
         {
             int len = list.Count;
             if (len == 0)
             {
                 return dependsOn;
             }
-
-            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(len, Allocator.Temp);
+            
             for (int i = 0; i < len; ++i)
             {
-                dependencies[i] = scheduleFunc(list[i], dependsOn);
+                dependenciesArrayScratchPad[i] = scheduleFunc(list[i], dependsOn);
             }
 
-            return JobHandle.CombineDependencies(dependencies);
+            return JobHandle.CombineDependencies(dependenciesArrayScratchPad);
         }
         
         /// <inheritdoc cref="BulkScheduleParallel{TElement}"/>

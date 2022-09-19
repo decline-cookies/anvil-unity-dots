@@ -9,7 +9,7 @@
 // namespace Anvil.Unity.DOTS.Data
 // {
 //     /// <summary>
-//     /// A lookup collection of <see cref="ProxyDataStream{TData}"/> by <see cref="Type"/>
+//     /// A lookup collection of <see cref="ProxyDataStream{TInstance}"/> by <see cref="Type"/>
 //     /// </summary>
 //     internal class VirtualDataLookup : AbstractAnvilBase
 //     {
@@ -32,9 +32,9 @@
 //         }
 //         
 //         /// <summary>
-//         /// Adds <see cref="ProxyDataStream{TData}"/> to the lookup
+//         /// Adds <see cref="ProxyDataStream{TInstance}"/> to the lookup
 //         /// </summary>
-//         /// <param name="data">The <see cref="ProxyDataStream{TData}"/> to add</param>
+//         /// <param name="data">The <see cref="ProxyDataStream{TInstance}"/> to add</param>
 //         /// <typeparam name="TKey">The type of Key</typeparam>
 //         /// <typeparam name="TInstance">The type of Instance data</typeparam>
 //         public void AddData<TInstance>(ProxyDataStream<TInstance> data)
@@ -51,11 +51,11 @@
 //         }
 //         
 //         /// <summary>
-//         /// Returns <see cref="ProxyDataStream{TData}"/> from the lookup
+//         /// Returns <see cref="ProxyDataStream{TInstance}"/> from the lookup
 //         /// </summary>
 //         /// <typeparam name="TKey">The type of Key</typeparam>
 //         /// <typeparam name="TInstance">The type of Instance data</typeparam>
-//         /// <returns>The <see cref="ProxyDataStream{TData}"/> instance</returns>
+//         /// <returns>The <see cref="ProxyDataStream{TInstance}"/> instance</returns>
 //         public ProxyDataStream<TInstance> GetData<TKey, TInstance>()
 //             where TKey : unmanaged, IEquatable<TKey>
 //             where TInstance : unmanaged, IEntityProxyData
@@ -72,11 +72,11 @@
 //         }
 //         
 //         /// <summary>
-//         /// Consolidates all <see cref="ProxyDataStream{TData}"/> in the lookup in parallel.
+//         /// Consolidates all <see cref="ProxyDataStream{TInstance}"/> in the lookup in parallel.
 //         /// </summary>
 //         /// <param name="dependsOn">The <see cref="JobHandle"/> consolidation work depends on.</param>
 //         /// <returns>
-//         /// A <see cref="JobHandle"/> that represents when all <see cref="ProxyDataStream{TData}"/>
+//         /// A <see cref="JobHandle"/> that represents when all <see cref="ProxyDataStream{TInstance}"/>
 //         /// consolidation is complete.
 //         /// </returns>
 //         public JobHandle ConsolidateForFrame(JobHandle dependsOn)

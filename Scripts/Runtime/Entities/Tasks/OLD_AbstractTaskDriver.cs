@@ -24,18 +24,18 @@
 //         // protected Dictionary<byte, AbstractProxyDataStream> ResultDestinations { get; }
 //         // private const byte UNSET_RESULT_DESTINATION_TYPE = byte.MaxValue;
 //         // private VDResultsDestinationLookup m_ResultsDestinationLookup;
-//         // internal static ProxyDataStream<TData> Create()
+//         // internal static ProxyDataStream<TInstance> Create()
 //         // {
-//         //     ProxyDataStream<TData> virtualData = new ProxyDataStream<TData>(UNSET_RESULT_DESTINATION_TYPE);
+//         //     ProxyDataStream<TInstance> virtualData = new ProxyDataStream<TInstance>(UNSET_RESULT_DESTINATION_TYPE);
 //         //     return virtualData;
 //         // }
 //         //
-//         // internal static ProxyDataStream<TData> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractProxyDataStream source)
+//         // internal static ProxyDataStream<TInstance> CreateAsResultsDestination<TResultDestinationType>(TResultDestinationType resultDestinationType, AbstractProxyDataStream source)
 //         //     where TResultDestinationType : Enum
 //         // {
 //         //     //TODO: Add an assert that this is valid - https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960848904
 //         //     byte value = UnsafeUtility.As<TResultDestinationType, byte>(ref resultDestinationType);
-//         //     ProxyDataStream<TData> resultDestinationData = new ProxyDataStream<TData>(value);
+//         //     ProxyDataStream<TInstance> resultDestinationData = new ProxyDataStream<TInstance>(value);
 //         //     
 //         //     resultDestinationData.SetSource(source);
 //         //     source.AddResultDestination(value, resultDestinationData);
@@ -52,7 +52,7 @@
 //         //     //TODO: Deal with actually handling this
 //         //     if (context == IDProvider.UNSET_ID)
 //         //     {
-//         //         throw new InvalidOperationException($"Context for {typeof(TData)} is not set!");
+//         //         throw new InvalidOperationException($"Context for {typeof(TInstance)} is not set!");
 //         //     }
 //         // }
 //         //

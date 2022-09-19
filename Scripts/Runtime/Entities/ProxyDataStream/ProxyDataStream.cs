@@ -36,22 +36,23 @@ namespace Anvil.Unity.DOTS.Entities
     /// The type of key to use to lookup data. Usually <see cref="Entity"/> if this is being used as an
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
-    /// <typeparam name="TData">The type of data to store</typeparam>
-    public class ProxyDataStream<TData> : AbstractAnvilBase
-        where TData : unmanaged, IProxyData
+    /// <typeparam name="TInstance">The type of data to store</typeparam>
+    public class ProxyDataStream<TInstance> : AbstractAnvilBase,
+                                              IProxyDataStream
+        where TInstance : unmanaged, IProxyInstance
     {
         //TODO: RE-ENABLE IF NEEDED
         // internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
 
         /// <summary>
-        /// The number of elements of <typeparamref name="TData"/> that can fit into a chunk (16kb)
+        /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
         /// </summary>
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<ProxyDataWrapper<TData>>();
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<ProxyInstanceWrapper<TInstance>>();
 
-        private UnsafeTypedStream<ProxyDataWrapper<TData>> m_Pending;
-        private DeferredNativeArray<ProxyDataWrapper<TData>> m_IterationTarget;
+        private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
+        private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_IterationTarget;
 
         //TODO: Lock down to internal again
         public AccessController AccessController { get; }
@@ -60,19 +61,19 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => m_IterationTarget.ScheduleInfo;
         }
-        
+
         //TODO: 2. A mechanism to handle the branching from Data to a Result type
         //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
-        public ProxyDataStream() : base()
+        internal ProxyDataStream() : base()
         {
             //TODO: Could split the data into definitions via Attributes or some other mechanism to set up the relationships. Then a "baking" into the actual structures. 
             //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960764532
             //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960737069
             AccessController = new AccessController();
 
-            m_Pending = new UnsafeTypedStream<ProxyDataWrapper<TData>>(Allocator.Persistent);
-            m_IterationTarget = new DeferredNativeArray<ProxyDataWrapper<TData>>(Allocator.Persistent,
-                                                                                 Allocator.TempJob);
+            m_Pending = new UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
+            m_IterationTarget = new DeferredNativeArray<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
+                                                                                         Allocator.TempJob);
         }
 
         protected override void DisposeSelf()
@@ -101,23 +102,23 @@ namespace Anvil.Unity.DOTS.Entities
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal DataStreamReader<TData> CreatePDSReader()
+        internal DataStreamReader<TInstance> CreatePDSReader()
         {
-            return new DataStreamReader<TData>(m_IterationTarget.AsDeferredJobArray());
+            return new DataStreamReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal DataStreamUpdater<TData> CreateDataStreamUpdater(byte context)
+        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(byte context)
         {
-            return new DataStreamUpdater<TData>(m_Pending.AsWriter(),
-                                         m_IterationTarget.AsDeferredJobArray());
+            return new DataStreamUpdater<TInstance>(m_Pending.AsWriter(),
+                                                    m_IterationTarget.AsDeferredJobArray());
         }
 
         //TODO: Lock down to internal again
-        public DataStreamWriter<TData> CreateDataStreamWriter(byte context)
+        public DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)
         {
             //TODO: RE-ENABLE IF NEEDED
             // Debug_EnsureContextIsSet(context);
-            return new DataStreamWriter<TData>(m_Pending.AsWriter(), context);
+            return new DataStreamWriter<TInstance>(m_Pending.AsWriter(), context);
         }
 
         //TODO: RE-ENABLE IF NEEDED
@@ -153,11 +154,11 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompile]
         private struct ConsolidateLookupJob : IJob
         {
-            private UnsafeTypedStream<ProxyDataWrapper<TData>> m_Pending;
-            private DeferredNativeArray<ProxyDataWrapper<TData>> m_Iteration;
+            private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
+            private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<ProxyDataWrapper<TData>> pending,
-                                        DeferredNativeArray<ProxyDataWrapper<TData>> iteration)
+            public ConsolidateLookupJob(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> pending,
+                                        DeferredNativeArray<ProxyInstanceWrapper<TInstance>> iteration)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
@@ -167,7 +168,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 m_Iteration.Clear();
 
-                NativeArray<ProxyDataWrapper<TData>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                NativeArray<ProxyInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
             }

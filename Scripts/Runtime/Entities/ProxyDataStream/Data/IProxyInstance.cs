@@ -3,7 +3,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities
 {
     //TODO: Docs
-    public interface IProxyData
+    public interface IProxyInstance
     {
         /// <summary>
         /// The Entity this data belongs to
