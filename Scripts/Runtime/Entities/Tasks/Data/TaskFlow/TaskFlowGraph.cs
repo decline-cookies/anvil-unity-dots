@@ -1,17 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Entities;
+using System.Reflection;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class TaskFlowGraph
+    internal class TaskFlowGraph : ITaskFlowGraph
     {
         public static readonly TaskFlowRoute[] TASK_FLOW_ROUTE_VALUES = (TaskFlowRoute[])Enum.GetValues(typeof(TaskFlowRoute));
-        
+        private static readonly Type ABSTRACT_PROXY_DATA_STREAM_TYPE = typeof(AbstractProxyDataStream);
+
         private readonly Dictionary<AbstractProxyDataStream, TaskFlowNode> m_NodesLookupByDataStream;
         private readonly Dictionary<ITaskSystem, List<TaskFlowNode>> m_NodesLookupOwnedByTaskSystem;
         private readonly Dictionary<ITaskDriver, List<TaskFlowNode>> m_NodesLookupOwnedByTaskDriver;
+        private readonly Dictionary<ITaskSystem, List<ITaskDriver>> m_TaskDriversByTaskSystem;
         private bool m_IsHardened;
 
         public TaskFlowGraph()
@@ -19,18 +21,71 @@ namespace Anvil.Unity.DOTS.Entities
             m_NodesLookupByDataStream = new Dictionary<AbstractProxyDataStream, TaskFlowNode>();
             m_NodesLookupOwnedByTaskSystem = new Dictionary<ITaskSystem, List<TaskFlowNode>>();
             m_NodesLookupOwnedByTaskDriver = new Dictionary<ITaskDriver, List<TaskFlowNode>>();
+            m_TaskDriversByTaskSystem = new Dictionary<ITaskSystem, List<ITaskDriver>>();
         }
 
-        public void RegisterDataStream(AbstractProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        public void CreateDataStreams(ITaskSystem taskSystem, ITaskDriver taskDriver = null)
         {
             Debug_EnsureNotHardened();
-            Debug_EnsureNoDuplicateNodes(dataStream);
+            RegisterTaskDriverToTaskSystem(taskSystem, taskDriver);
 
+            Type type;
+            object instance;
+            if (taskDriver == null)
+            {
+                type = taskSystem.GetType();
+                instance = taskSystem;
+            }
+            else
+            {
+                type = taskDriver.GetType();
+                instance = taskDriver;
+            }
+
+            //Get all the fields
+            FieldInfo[] systemFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (FieldInfo systemField in systemFields)
+            {
+                if (!ABSTRACT_PROXY_DATA_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
+                {
+                    continue;
+                }
+
+                IgnoreProxyDataStreamAttribute ignoreProxyDataStreamAttribute = systemField.GetCustomAttribute<IgnoreProxyDataStreamAttribute>();
+                if (ignoreProxyDataStreamAttribute != null)
+                {
+                    continue;
+                }
+
+                Debug_CheckFieldIsReadOnly(systemField);
+                Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
+
+                //Get the data type 
+                AbstractProxyDataStream proxyDataStream = ProxyDataStreamFactory.Create(systemField.FieldType.GenericTypeArguments[0]);
+                Debug_EnsureNoDuplicateNodes(proxyDataStream);
+
+                //Ensure the System's field is set to the data stream
+                systemField.SetValue(instance, proxyDataStream);
+
+                //Create the node
+                TaskFlowNode node = CreateNode(proxyDataStream, taskSystem, taskDriver);
+
+                //Update the node for any resolve channels
+                IEnumerable<ResolveChannelAttribute> resolveChannelAttributes = systemField.GetCustomAttributes<ResolveChannelAttribute>();
+                foreach (ResolveChannelAttribute resolveChannelAttribute in resolveChannelAttributes)
+                {
+                    node.RegisterAsResolveChannel(resolveChannelAttribute);
+                }
+            }
+        }
+
+        private TaskFlowNode CreateNode(AbstractProxyDataStream proxyDataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        {
             TaskFlowNode node = new TaskFlowNode(this,
-                                                 dataStream,
+                                                 proxyDataStream,
                                                  taskSystem,
                                                  taskDriver);
-            m_NodesLookupByDataStream.Add(dataStream, node);
+            m_NodesLookupByDataStream.Add(proxyDataStream, node);
             if (taskDriver == null)
             {
                 GetOrCreateNodeList(taskSystem, m_NodesLookupOwnedByTaskSystem).Add(node);
@@ -39,23 +94,25 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 GetOrCreateNodeList(taskDriver, m_NodesLookupOwnedByTaskDriver).Add(node);
             }
+
+            return node;
         }
 
-        public AbstractJobConfig CreateJobConfig<TInstance>(World world,
+
+        public AbstractJobConfig CreateJobConfig<TInstance>(ITaskSystem taskSystem,
+                                                            ITaskDriver taskDriver,
                                                             ProxyDataStream<TInstance> dataStream,
                                                             JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                            BatchStrategy batchStrategy,
                                                             TaskFlowRoute route)
             where TInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureExists(dataStream);
             TaskFlowNode node = this[dataStream];
-            
-            JobConfig<TInstance> jobConfig = new JobConfig<TInstance>(world,
-                                                                      node.TaskDriver?.Context ?? node.TaskSystem.Context,
-                                                                      scheduleJobFunction,
-                                                                      batchStrategy,
-                                                                      dataStream);
+
+            JobConfig<TInstance> jobConfig = new JobConfig<TInstance>(this,
+                                                                      taskSystem,
+                                                                      taskDriver,
+                                                                      scheduleJobFunction);
 
             node.RegisterJobConfig(route, jobConfig);
 
@@ -178,13 +235,13 @@ namespace Anvil.Unity.DOTS.Entities
             where TTaskDriver : class, ITaskDriver
         {
             List<TaskFlowNode> nodes = new List<TaskFlowNode>();
-            
+
             foreach (TTaskDriver driver in taskDrivers)
             {
                 List<TaskFlowNode> taskDriverNodes = m_NodesLookupOwnedByTaskDriver[driver];
                 nodes.AddRange(taskDriverNodes);
             }
-            
+
             Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
             {
@@ -201,13 +258,81 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 jobConfigs.AddRange(node.GetJobConfigsFor(route));
             }
+
             return new BulkJobScheduler<AbstractJobConfig>(jobConfigs);
+        }
+
+        public List<AbstractProxyDataStream> GetResolveChannelDataStreams<TResolveChannel>(TResolveChannel resolveChannel, ITaskSystem taskSystem, ITaskDriver taskDriver)
+            where TResolveChannel : Enum
+        {
+            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
+            if (m_NodesLookupOwnedByTaskSystem.TryGetValue(taskSystem, out List<TaskFlowNode> nodes))
+            {
+                GetResolveChannelDataStreamsFromNodes(resolveChannel, nodes, dataStreams);
+            }
+
+            List<ITaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
+            foreach (ITaskDriver ownedTaskDriver in ownedTaskDrivers)
+            {
+                GetResolveChannelDataStreamsFromTaskDriver(resolveChannel, ownedTaskDriver, dataStreams);
+            }
+            
+            GetResolveChannelDataStreamsFromTaskDriver(resolveChannel, taskDriver, dataStreams);
+
+            return dataStreams;
+        }
+
+        private void GetResolveChannelDataStreamsFromTaskDriver<TResolveChannel>(TResolveChannel resolveChannel, ITaskDriver taskDriver, List<AbstractProxyDataStream> dataStreams)
+            where TResolveChannel : Enum
+        {
+            if (taskDriver != null && m_NodesLookupOwnedByTaskDriver.TryGetValue(taskDriver, out List<TaskFlowNode> nodes))
+            {
+                GetResolveChannelDataStreamsFromNodes(resolveChannel, nodes, dataStreams);
+            }
+        }
+
+        private void GetResolveChannelDataStreamsFromNodes<TResolveChannel>(TResolveChannel resolveChannel,
+                                                                   List<TaskFlowNode> nodes,
+                                                                   List<AbstractProxyDataStream> dataStreams)
+            where TResolveChannel : Enum
+        {
+            foreach (TaskFlowNode node in nodes)
+            {
+                if (!node.IsResolveChannel(resolveChannel))
+                {
+                    continue;
+                }
+
+                dataStreams.Add(node.DataStream);
+            }
+        }
+
+        private void RegisterTaskDriverToTaskSystem(ITaskSystem taskSystem, ITaskDriver taskDriver)
+        {
+            if (taskDriver == null)
+            {
+                return;
+            }
+
+            List<ITaskDriver> taskDrivers = GetTaskDrivers(taskSystem);
+            taskDrivers.Add(taskDriver);
+        }
+
+        private List<ITaskDriver> GetTaskDrivers(ITaskSystem taskSystem)
+        {
+            if (!m_TaskDriversByTaskSystem.TryGetValue(taskSystem, out List<ITaskDriver> taskDrivers))
+            {
+                taskDrivers = new List<ITaskDriver>();
+                m_TaskDriversByTaskSystem.Add(taskSystem, taskDrivers);
+            }
+
+            return taskDrivers;
         }
 
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureExists(AbstractProxyDataStream dataStream)
         {
@@ -216,7 +341,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Trying to access a {nameof(TaskFlowNode)} with instance of {dataStream.DebugString} but it doesn't exist!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoDuplicateNodes(AbstractProxyDataStream dataStream)
         {
@@ -234,7 +359,25 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Trying to modify the {nameof(TaskFlowGraph)} but connections have already been built! The graph needs to be complete before connections are built.");
             }
         }
-        
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_CheckFieldIsReadOnly(FieldInfo fieldInfo)
+        {
+            if (!fieldInfo.IsInitOnly)
+            {
+                throw new InvalidOperationException($"Field with name {fieldInfo.Name} on {fieldInfo.ReflectedType} is not marked as \"readonly\", please ensure that it is.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_CheckFieldTypeGenericTypeArguments(Type fieldType)
+        {
+            if (fieldType.GenericTypeArguments.Length != 1)
+            {
+                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(ProxyDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
+            }
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureJobFlowIsComplete()
         {

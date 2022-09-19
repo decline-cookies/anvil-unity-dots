@@ -43,8 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
             m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowDataSystem>().TaskFlowGraph;
-
-            CreateDataStreams();
+            m_TaskFlowGraph.CreateDataStreams(this);
 
             //TODO: 3. Custom Update Job Types
             //TODO: Create the custom Update Job so we can parse to the different result channels.
@@ -98,15 +97,6 @@ namespace Anvil.Unity.DOTS.Entities
             BuildOptimizedCollections();
         }
 
-        private void CreateDataStreams()
-        {
-            List<AbstractProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
-            foreach (AbstractProxyDataStream dataStream in dataStreams)
-            {
-                RegisterDataStream(dataStream, null);
-            }
-        }
-
         //TODO: #39 - Some way to remove the update Job
 
         internal byte RegisterTaskDriver(TTaskDriver taskDriver)
@@ -115,16 +105,6 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDrivers.Add(taskDriver);
 
             return m_TaskDriverIDProvider.GetNextID();
-        }
-
-        internal void RegisterTaskDriverDataStream(AbstractProxyDataStream dataStream, ITaskDriver taskDriver)
-        {
-            RegisterDataStream(dataStream, taskDriver);
-        }
-
-        private void RegisterDataStream(AbstractProxyDataStream dataStream, ITaskDriver taskDriver)
-        {
-            m_TaskFlowGraph.RegisterDataStream(dataStream, this, taskDriver);
         }
 
         protected override void OnUpdate()
@@ -138,38 +118,41 @@ namespace Anvil.Unity.DOTS.Entities
                                                                      BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
-            return ConfigureJobFor(dataStream,
+            return ConfigureJobFor(null,
+                                   dataStream,
                                    scheduleJobFunction,
-                                   batchStrategy,
-                                   TaskFlowRoute.Update);
+                                   TaskFlowRoute.Update)
+                  .ScheduleOn(dataStream, batchStrategy)
+                  .RequireDataForUpdate(dataStream);
         }
 
         //TODO: Determine if we need custom configs for job types
-        internal AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                                      JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                                      BatchStrategy batchStrategy)
+        internal AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ITaskDriver taskDriver,
+                                                                      ProxyDataStream<TInstance> dataStream,
+                                                                      JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction)
             where TInstance : unmanaged, IProxyInstance
         {
-            return ConfigureJobFor(dataStream,
+            return ConfigureJobFor(taskDriver,
+                                   dataStream,
                                    scheduleJobFunction,
-                                   batchStrategy,
-                                   TaskFlowRoute.Populate);
+                                   TaskFlowRoute.Populate)
+               .RequireDataForWrite(dataStream);
         }
 
 
-        private AbstractJobConfig ConfigureJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
+        private AbstractJobConfig ConfigureJobFor<TInstance>(ITaskDriver taskDriver,
+                                                             ProxyDataStream<TInstance> dataStream,
                                                              JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                             BatchStrategy batchStrategy,
                                                              TaskFlowRoute route)
             where TInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureDataStreamIntegrity(dataStream, typeof(TInstance));
             Debug_EnsureNotHardened(dataStream, route);
 
-            return m_TaskFlowGraph.CreateJobConfig(World,
+            return m_TaskFlowGraph.CreateJobConfig(this,
+                                                   taskDriver,
                                                    dataStream,
                                                    scheduleJobFunction,
-                                                   batchStrategy,
                                                    route);
         }
 

@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -28,6 +29,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly Dictionary<TaskFlowRoute, List<TaskFlowNode>> m_OutgoingNodesByRoute;
         private readonly Dictionary<TaskFlowRoute, List<TaskFlowNode>> m_IncomingNodesByRoute;
+        
+        private readonly Dictionary<Type, byte> m_ResolveChannelLookup;
 
         private readonly Dictionary<TaskFlowRoute, List<AbstractJobConfig>> m_JobConfigLookup;
 
@@ -43,9 +46,9 @@ namespace Anvil.Unity.DOTS.Entities
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
             DataOwner = TaskFlowOwner.System;
-            
+
             m_TaskSystemType = TaskSystem.GetType();
-            
+
             if (taskDriver != null)
             {
                 DataOwner = TaskFlowOwner.Driver;
@@ -53,7 +56,9 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             m_JobConfigLookup = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
-            
+
+            m_ResolveChannelLookup = new Dictionary<Type, byte>();
+
             m_OutgoingNodesByRoute = new Dictionary<TaskFlowRoute, List<TaskFlowNode>>();
             m_IncomingNodesByRoute = new Dictionary<TaskFlowRoute, List<TaskFlowNode>>();
         }
@@ -95,10 +100,29 @@ namespace Anvil.Unity.DOTS.Entities
             foreach (AbstractJobConfig jobConfig in jobConfigs)
             {
                 //TODO: Get the data this JobConfig will operate on and in what context
-                
             }
         }
 
+        public void RegisterAsResolveChannel(ResolveChannelAttribute resolveChannelAttribute)
+        {
+            Type type = resolveChannelAttribute.ResolveChannel.GetType();
+            byte value = (byte)resolveChannelAttribute.ResolveChannel;
+            
+            m_ResolveChannelLookup.Add(type, value);
+        }
+
+        public bool IsResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
+            where TResolveChannel : Enum
+        {
+            Type type = typeof(TResolveChannel);
+            if (!m_ResolveChannelLookup.TryGetValue(type, out byte value))
+            {
+                return false;
+            }
+
+            byte storedResolveChannel = UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel);
+            return value == storedResolveChannel;
+        }
 
         public string GetDebugString()
         {

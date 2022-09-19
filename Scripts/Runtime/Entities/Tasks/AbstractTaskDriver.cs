@@ -1,5 +1,4 @@
 using Anvil.CSharp.Core;
-using System.Collections.Generic;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -8,6 +7,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                                          ITaskDriver
         where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
+    
     {
         public TTaskSystem TaskSystem
         {
@@ -27,8 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowDataSystem>().TaskFlowGraph;
-
-            CreateProxyDataStreams();
+            m_TaskFlowGraph.CreateDataStreams(TaskSystem, this);
         }
 
         protected override void DisposeSelf()
@@ -37,23 +36,13 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        private void CreateProxyDataStreams()
-        {
-            List<AbstractProxyDataStream> dataStreams = TaskDataStreamUtil.GenerateProxyDataStreamsOnType(this);
-            foreach (AbstractProxyDataStream dataStream in dataStreams)
-            {
-                TaskSystem.RegisterTaskDriverDataStream(dataStream, this);
-            }
-        }
-
         public AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                                    JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                                    BatchStrategy batchStrategy)
+                                                                    JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction)
             where TInstance : unmanaged, IProxyInstance
         {
-            return TaskSystem.ConfigurePopulateJobFor(dataStream,
-                                                      scheduleJobFunction,
-                                                      batchStrategy);
+            return TaskSystem.ConfigurePopulateJobFor(this,
+                                                      dataStream,
+                                                      scheduleJobFunction);
         }
     }
 
