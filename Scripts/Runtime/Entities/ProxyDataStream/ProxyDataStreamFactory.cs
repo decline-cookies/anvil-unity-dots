@@ -16,6 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
+            //TODO: Double check this works as expected in a build. https://github.com/decline-cookies/anvil-unity-dots/pull/58/files#r974334409
             TYPED_GENERIC_METHODS.Clear();
         }
 
