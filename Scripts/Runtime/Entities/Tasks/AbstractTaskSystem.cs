@@ -19,8 +19,8 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly ByteIDProvider m_TaskDriverIDProvider;
         private readonly TaskFlowGraph m_TaskFlowGraph;
 
-        private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
-        private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
+        private Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
+        private Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
 
         private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
@@ -69,14 +69,14 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        private void DisposeJobConfigBulkJobSchedulerLookup(Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup)
+        private void DisposeJobConfigBulkJobSchedulerLookup(Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup)
         {
             if (lookup == null)
             {
                 return;
             }
 
-            foreach (BulkJobScheduler<AbstractJobConfig> scheduler in lookup.Values)
+            foreach (BulkJobScheduler<JobConfig> scheduler in lookup.Values)
             {
                 scheduler.Dispose();
             }
@@ -113,8 +113,8 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //TODO: Determine if we need custom configs for job types
-        protected AbstractJobConfig ConfigureUpdateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                                     JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
+        protected JobConfig ConfigureUpdateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
+                                                                     JobConfig.ScheduleJobDelegate scheduleJobFunction,
                                                                      BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
@@ -127,10 +127,9 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //TODO: Determine if we need custom configs for job types
-        internal AbstractJobConfig ConfigurePopulateJobFor<TInstance>(ITaskDriver taskDriver,
-                                                                      ProxyDataStream<TInstance> dataStream,
-                                                                      JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction)
-            where TInstance : unmanaged, IProxyInstance
+        internal JobConfig ConfigurePopulateJobFor(ITaskDriver taskDriver,
+                                                           AbstractProxyDataStream dataStream,
+                                                           JobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             return ConfigureJobFor(taskDriver,
                                    dataStream,
@@ -140,13 +139,12 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        private AbstractJobConfig ConfigureJobFor<TInstance>(ITaskDriver taskDriver,
-                                                             ProxyDataStream<TInstance> dataStream,
-                                                             JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                             TaskFlowRoute route)
-            where TInstance : unmanaged, IProxyInstance
+        private JobConfig ConfigureJobFor(ITaskDriver taskDriver,
+                                                  AbstractProxyDataStream dataStream,
+                                                  JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                                  TaskFlowRoute route)
         {
-            Debug_EnsureDataStreamIntegrity(dataStream, typeof(TInstance));
+            Debug_EnsureDataStreamIntegrity(dataStream, dataStream.GetType());
             Debug_EnsureNotHardened(dataStream, route);
 
             return m_TaskFlowGraph.CreateJobConfig(this,
@@ -201,11 +199,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle ScheduleJobs(JobHandle dependsOn,
                                        TaskFlowRoute route,
-                                       Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup)
+                                       Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup)
         {
-            BulkJobScheduler<AbstractJobConfig> scheduler = lookup[route];
+            BulkJobScheduler<JobConfig> scheduler = lookup[route];
             return scheduler.Schedule(dependsOn,
-                                      AbstractJobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
+                                      JobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
         }
 
 
@@ -233,8 +231,8 @@ namespace Anvil.Unity.DOTS.Entities
             if (dataStream == null)
             {
                 throw new InvalidOperationException($"Data Stream is null! Possible causes: "
-                                                  + $"\n1. The incorrect reference to a {typeof(ProxyDataStream<>).Name}<{expectedType.Name}> was passed in such as referencing a hidden variable or something not defined on this class or one of this classes TaskDrivers. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class and TaskDrivers."
-                                                  + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {typeof(ProxyDataStream<>).Name}<{expectedType.Name}>'s hasn't happened yet.");
+                                                  + $"\n1. The incorrect reference to a {expectedType.Name} was passed in such as referencing a hidden variable or something not defined on this class or one of this classes TaskDrivers. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class and TaskDrivers."
+                                                  + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {expectedType.Name}'s hasn't happened yet.");
             }
 
             if (!m_TaskFlowGraph.IsDataStreamRegistered(dataStream))

@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         private readonly Dictionary<Type, byte> m_ResolveChannelLookup;
 
-        private readonly Dictionary<TaskFlowRoute, List<AbstractJobConfig>> m_JobConfigLookup;
+        private readonly Dictionary<TaskFlowRoute, List<JobConfig>> m_JobConfigLookup;
 
         private readonly Type m_TaskSystemType;
         private readonly Type m_TaskDriverType;
@@ -55,7 +55,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_TaskDriverType = TaskDriver.GetType();
             }
 
-            m_JobConfigLookup = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            m_JobConfigLookup = new Dictionary<TaskFlowRoute, List<JobConfig>>();
 
             m_ResolveChannelLookup = new Dictionary<Type, byte>();
 
@@ -69,17 +69,17 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public void RegisterJobConfig(TaskFlowRoute route, AbstractJobConfig jobConfig)
+        public void RegisterJobConfig(TaskFlowRoute route, JobConfig jobConfig)
         {
             GetJobConfigsFor(route).Add(jobConfig);
         }
 
 
-        public List<AbstractJobConfig> GetJobConfigsFor(TaskFlowRoute route)
+        public List<JobConfig> GetJobConfigsFor(TaskFlowRoute route)
         {
-            if (!m_JobConfigLookup.TryGetValue(route, out List<AbstractJobConfig> configs))
+            if (!m_JobConfigLookup.TryGetValue(route, out List<JobConfig> configs))
             {
-                configs = new List<AbstractJobConfig>();
+                configs = new List<JobConfig>();
                 m_JobConfigLookup.Add(route, configs);
             }
 
@@ -96,8 +96,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void BuildConnectionsForRoute(TaskFlowRoute route)
         {
-            List<AbstractJobConfig> jobConfigs = GetJobConfigsFor(route);
-            foreach (AbstractJobConfig jobConfig in jobConfigs)
+            List<JobConfig> jobConfigs = GetJobConfigsFor(route);
+            foreach (JobConfig jobConfig in jobConfigs)
             {
                 //TODO: Get the data this JobConfig will operate on and in what context
             }

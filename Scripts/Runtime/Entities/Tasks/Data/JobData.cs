@@ -3,10 +3,9 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class JobData<TInstance>
-        where TInstance : unmanaged, IProxyInstance
+    public class JobData
     {
-        private readonly ProxyDataStream<TInstance> m_UpdateProxyDataStream;
+        private readonly JobConfig m_JobConfig;
 
         public World World
         {
@@ -23,18 +22,20 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public JobData(World world,
-                       byte context,
-                       ProxyDataStream<TInstance> updateProxyDataStream)
+        internal JobData(World world,
+                         byte context,
+                         JobConfig jobConfig)
         {
             World = world;
             Context = context;
-            m_UpdateProxyDataStream = updateProxyDataStream;
+            m_JobConfig = jobConfig;
         }
 
-        public DataStreamUpdater<TInstance> GetDataStreamUpdater()
+        public DataStreamUpdater<TInstance> GetDataStreamUpdater<TInstance>()
+            where TInstance : unmanaged, IProxyInstance
         {
-            DataStreamUpdater<TInstance> updater = m_UpdateProxyDataStream.CreateDataStreamUpdater(Context);
+            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(JobConfig.Usage.Update);
+            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(Context);
             return updater;
         }
     }

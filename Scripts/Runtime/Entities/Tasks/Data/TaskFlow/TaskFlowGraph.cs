@@ -99,20 +99,19 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        public AbstractJobConfig CreateJobConfig<TInstance>(ITaskSystem taskSystem,
-                                                            ITaskDriver taskDriver,
-                                                            ProxyDataStream<TInstance> dataStream,
-                                                            JobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction,
-                                                            TaskFlowRoute route)
-            where TInstance : unmanaged, IProxyInstance
+        public JobConfig CreateJobConfig(ITaskSystem taskSystem,
+                                                 ITaskDriver taskDriver,
+                                                 AbstractProxyDataStream dataStream,
+                                                 JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                                 TaskFlowRoute route)
         {
             Debug_EnsureExists(dataStream);
             TaskFlowNode node = this[dataStream];
 
-            JobConfig<TInstance> jobConfig = new JobConfig<TInstance>(this,
-                                                                      taskSystem,
-                                                                      taskDriver,
-                                                                      scheduleJobFunction);
+            JobConfig jobConfig = new JobConfig(this,
+                                                taskSystem,
+                                                taskDriver,
+                                                scheduleJobFunction);
 
             node.RegisterJobConfig(route, jobConfig);
 
@@ -218,9 +217,9 @@ namespace Anvil.Unity.DOTS.Entities
             return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
         }
 
-        public Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor(ITaskSystem system)
+        public Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> CreateJobConfigBulkJobSchedulerLookupFor(ITaskSystem system)
         {
-            Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
+            Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>>();
 
             List<TaskFlowNode> nodes = m_NodesLookupOwnedByTaskSystem[system];
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
@@ -231,7 +230,7 @@ namespace Anvil.Unity.DOTS.Entities
             return lookup;
         }
 
-        public Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
+        public Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> CreateJobConfigBulkJobSchedulerLookupFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
             where TTaskDriver : class, ITaskDriver
         {
             List<TaskFlowNode> nodes = new List<TaskFlowNode>();
@@ -242,7 +241,7 @@ namespace Anvil.Unity.DOTS.Entities
                 nodes.AddRange(taskDriverNodes);
             }
 
-            Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
+            Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup = new Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>>();
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
             {
                 lookup.Add(route, CreateJobConfigBulkJobScheduler(route, nodes));
@@ -251,15 +250,15 @@ namespace Anvil.Unity.DOTS.Entities
             return lookup;
         }
 
-        private BulkJobScheduler<AbstractJobConfig> CreateJobConfigBulkJobScheduler(TaskFlowRoute route, List<TaskFlowNode> nodes)
+        private BulkJobScheduler<JobConfig> CreateJobConfigBulkJobScheduler(TaskFlowRoute route, List<TaskFlowNode> nodes)
         {
-            List<AbstractJobConfig> jobConfigs = new List<AbstractJobConfig>();
+            List<JobConfig> jobConfigs = new List<JobConfig>();
             foreach (TaskFlowNode node in nodes)
             {
                 jobConfigs.AddRange(node.GetJobConfigsFor(route));
             }
 
-            return new BulkJobScheduler<AbstractJobConfig>(jobConfigs);
+            return new BulkJobScheduler<JobConfig>(jobConfigs);
         }
 
         public List<AbstractProxyDataStream> GetResolveChannelDataStreams<TResolveChannel>(TResolveChannel resolveChannel, ITaskSystem taskSystem, ITaskDriver taskDriver)
@@ -276,7 +275,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 GetResolveChannelDataStreamsFromTaskDriver(resolveChannel, ownedTaskDriver, dataStreams);
             }
-            
+
             GetResolveChannelDataStreamsFromTaskDriver(resolveChannel, taskDriver, dataStreams);
 
             return dataStreams;
@@ -285,15 +284,16 @@ namespace Anvil.Unity.DOTS.Entities
         private void GetResolveChannelDataStreamsFromTaskDriver<TResolveChannel>(TResolveChannel resolveChannel, ITaskDriver taskDriver, List<AbstractProxyDataStream> dataStreams)
             where TResolveChannel : Enum
         {
-            if (taskDriver != null && m_NodesLookupOwnedByTaskDriver.TryGetValue(taskDriver, out List<TaskFlowNode> nodes))
+            if (taskDriver != null
+             && m_NodesLookupOwnedByTaskDriver.TryGetValue(taskDriver, out List<TaskFlowNode> nodes))
             {
                 GetResolveChannelDataStreamsFromNodes(resolveChannel, nodes, dataStreams);
             }
         }
 
         private void GetResolveChannelDataStreamsFromNodes<TResolveChannel>(TResolveChannel resolveChannel,
-                                                                   List<TaskFlowNode> nodes,
-                                                                   List<AbstractProxyDataStream> dataStreams)
+                                                                            List<TaskFlowNode> nodes,
+                                                                            List<AbstractProxyDataStream> dataStreams)
             where TResolveChannel : Enum
         {
             foreach (TaskFlowNode node in nodes)
