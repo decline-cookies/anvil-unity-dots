@@ -134,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities
             //Any data streams that have registered for this resolve channel type either on the system or related task drivers will be needed.
             //When the updater runs, it doesn't know yet which resolve channel a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
-            List<AbstractProxyDataStream> dataStreams = m_TaskFlowGraph.GetResolveChannelDataStreams(resolveChannel, m_TaskSystem, m_TaskDriver);
+            List<AbstractProxyDataStream> dataStreams = m_TaskFlowGraph.GetResolveChannelDataStreams(resolveChannel, m_TaskSystem);
             foreach (AbstractProxyDataStream dataStream in dataStreams)
             {
                 RequireDataStreamForWrite(dataStream);
@@ -205,7 +205,7 @@ namespace Anvil.Unity.DOTS.Entities
                 dependsOn = JobHandle.CombineDependencies(dependsOn, wrapper.Acquire());
             }
 
-                //TODO: Async any entity queries we might be waiting on and ensure the job handles are part of dependsOn
+            //TODO: Async any entity queries we might be waiting on and ensure the job handles are part of dependsOn
 
             dependsOn = m_ScheduleJobFunction(dependsOn, m_JobData, m_ScheduleInfo);
 
@@ -256,7 +256,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (!m_DataStreamAccessWrappers.ContainsKey(id))
             {
-                throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type} data for {id.Usage} but it wasn't found. Did you call the right RequireDataStream function?");
+                throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type} data for {id.Usage} but it wasn't found. Did you call the right Require function?");
             }
         }
 

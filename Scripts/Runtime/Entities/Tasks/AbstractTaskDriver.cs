@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void DisposeSelf()
         {
-            m_TaskFlowGraph.DisposeFor(this);
+            m_TaskFlowGraph.DisposeFor(TaskSystem, this);
             base.DisposeSelf();
         }
 

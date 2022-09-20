@@ -99,10 +99,10 @@ namespace Anvil.Unity.DOTS.Entities
         private void BuildOptimizedCollections()
         {
             m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
-            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(m_TaskDrivers);
+            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, m_TaskDrivers);
 
             m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
-            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(m_TaskDrivers);
+            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, m_TaskDrivers);
         }
 
         //TODO: #39 - Some way to remove the update Job
@@ -151,13 +151,12 @@ namespace Anvil.Unity.DOTS.Entities
                                           JobConfig.ScheduleJobDelegate scheduleJobFunction,
                                           TaskFlowRoute route)
         {
-            Debug_EnsureDataStreamIntegrity(dataStream, dataStream.GetType());
-            Debug_EnsureNotHardened(dataStream, route);
+            Debug_EnsureDataStreamIntegrity(dataStream, dataStream.GetType(), taskDriver);
+            Debug_EnsureNotHardened(dataStream, route, taskDriver);
 
-            return m_TaskFlowGraph.CreateJobConfig(this,
-                                                   taskDriver,
-                                                   dataStream,
-                                                   scheduleJobFunction,
+            return m_TaskFlowGraph.CreateJobConfig(this, 
+                                                   taskDriver, 
+                                                   scheduleJobFunction, 
                                                    route);
         }
 
@@ -175,7 +174,7 @@ namespace Anvil.Unity.DOTS.Entities
             //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
-                                     m_SystemJobConfigBulkJobSchedulerLookup);
+                                     m_DriverJobConfigBulkJobSchedulerLookup);
 
             //Consolidate system data so that it can be operated on. (Was populated on previous step)
             dependsOn = m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
@@ -232,7 +231,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType)
+        private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, ITaskDriver taskDriver)
         {
             if (dataStream == null)
             {
@@ -241,18 +240,18 @@ namespace Anvil.Unity.DOTS.Entities
                                                   + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {expectedType.Name}'s hasn't happened yet.");
             }
 
-            if (!m_TaskFlowGraph.IsDataStreamRegistered(dataStream))
+            if (!m_TaskFlowGraph.IsDataStreamRegistered(dataStream, this, taskDriver))
             {
                 throw new InvalidOperationException($"DataStream of {dataStream} was not registered with the {nameof(TaskFlowGraph)}! Was it defined as a part of this class or TaskDrivers associated with this class?");
             }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNotHardened(AbstractProxyDataStream dataStream, TaskFlowRoute route)
+        private void Debug_EnsureNotHardened(AbstractProxyDataStream dataStream, TaskFlowRoute route, ITaskDriver taskDriver)
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to create a {route} job on {m_TaskFlowGraph.GetDebugString(dataStream)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to create a {route} job on {m_TaskFlowGraph.GetDebugString(dataStream, this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
         
