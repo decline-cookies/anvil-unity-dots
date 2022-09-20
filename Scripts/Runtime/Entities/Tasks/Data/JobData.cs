@@ -28,6 +28,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_Context = context;
             m_JobConfig = jobConfig;
         }
+        
+        //*************************************************************************************************************
+        // DATA STREAMS
+        //*************************************************************************************************************
 
         public DataStreamUpdater<TInstance> GetDataStreamUpdater<TInstance>()
             where TInstance : unmanaged, IProxyInstance
@@ -52,6 +56,10 @@ namespace Anvil.Unity.DOTS.Entities
             DataStreamReader<TInstance> reader = dataStream.CreateDataStreamReader();
             return reader;
         }
+        
+        //*************************************************************************************************************
+        // NATIVE ARRAY
+        //*************************************************************************************************************
 
         public NativeArray<T> GetNativeArrayReadWrite<T>()
             where T : unmanaged
@@ -63,6 +71,15 @@ namespace Anvil.Unity.DOTS.Entities
             where T : unmanaged
         {
             return m_JobConfig.GetNativeArray<T>(JobConfig.Usage.Read);
+        }
+        
+        //*************************************************************************************************************
+        // ENTITY QUERY
+        //*************************************************************************************************************
+
+        public NativeArray<Entity> GetEntityNativeArrayFromQuery()
+        {
+            return m_JobConfig.GetEntityNativeArrayFromQuery(JobConfig.Usage.Read);
         }
     }
 }

@@ -121,42 +121,31 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //TODO: Determine if we need custom configs for job types
-        internal JobConfig ConfigurePopulateJobFor(ITaskDriver taskDriver,
-                                                   AbstractProxyDataStream dataStream,
-                                                   JobConfig.ScheduleJobDelegate scheduleJobFunction)
+        internal JobConfig ConfigurePopulateJob(ITaskDriver taskDriver,
+                                                JobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
-            return ConfigureJobFor(taskDriver,
-                                   dataStream,
-                                   scheduleJobFunction,
-                                   TaskFlowRoute.Populate)
-               .RequireDataStreamForWrite(dataStream);
+            return ConfigureJob(taskDriver,
+                                scheduleJobFunction,
+                                TaskFlowRoute.Populate);
         }
 
         //TODO: Determine if we need custom configs for job types
-        protected JobConfig ConfigureUpdateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                             JobConfig.ScheduleJobDelegate scheduleJobFunction,
-                                                             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
+        protected JobConfig ConfigureUpdateJob(JobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
-            return ConfigureJobFor(null,
-                                   dataStream,
-                                   scheduleJobFunction,
-                                   TaskFlowRoute.Update)
-                  .ScheduleOn(dataStream, batchStrategy)
-                  .RequireDataStreamForUpdate(dataStream);
+            return ConfigureJob(null,
+                                scheduleJobFunction,
+                                TaskFlowRoute.Update);
         }
 
-        private JobConfig ConfigureJobFor(ITaskDriver taskDriver,
-                                          AbstractProxyDataStream dataStream,
-                                          JobConfig.ScheduleJobDelegate scheduleJobFunction,
-                                          TaskFlowRoute route)
+        private JobConfig ConfigureJob(ITaskDriver taskDriver,
+                                       JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                       TaskFlowRoute route)
         {
-            Debug_EnsureDataStreamIntegrity(dataStream, dataStream.GetType(), taskDriver);
-            Debug_EnsureNotHardened(dataStream, route, taskDriver);
+            Debug_EnsureNotHardened(route, taskDriver);
 
-            return m_TaskFlowGraph.CreateJobConfig(this, 
-                                                   taskDriver, 
-                                                   scheduleJobFunction, 
+            return m_TaskFlowGraph.CreateJobConfig(this,
+                                                   taskDriver,
+                                                   scheduleJobFunction,
                                                    route);
         }
 
@@ -231,30 +220,14 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, ITaskDriver taskDriver)
-        {
-            if (dataStream == null)
-            {
-                throw new InvalidOperationException($"Data Stream is null! Possible causes: "
-                                                  + $"\n1. The incorrect reference to a {expectedType.Name} was passed in such as referencing a hidden variable or something not defined on this class or one of this classes TaskDrivers. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class and TaskDrivers."
-                                                  + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {expectedType.Name}'s hasn't happened yet.");
-            }
-
-            if (!m_TaskFlowGraph.IsDataStreamRegistered(dataStream, this, taskDriver))
-            {
-                throw new InvalidOperationException($"DataStream of {dataStream} was not registered with the {nameof(TaskFlowGraph)}! Was it defined as a part of this class or TaskDrivers associated with this class?");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNotHardened(AbstractProxyDataStream dataStream, TaskFlowRoute route, ITaskDriver taskDriver)
+        private void Debug_EnsureNotHardened(TaskFlowRoute route, ITaskDriver taskDriver)
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to create a {route} job on {m_TaskFlowGraph.GetDebugString(dataStream, this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to create a {route} job on {TaskDebugUtil.GetLocation(this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened(TTaskDriver taskDriver)
         {

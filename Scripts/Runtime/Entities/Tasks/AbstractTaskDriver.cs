@@ -36,13 +36,10 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public JobConfig ConfigurePopulateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream,
-                                                            JobConfig.ScheduleJobDelegate scheduleJobFunction)
-            where TInstance : unmanaged, IProxyInstance
+        public JobConfig ConfigurePopulateJob(JobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
-            return TaskSystem.ConfigurePopulateJobFor(this,
-                                                      dataStream,
-                                                      scheduleJobFunction);
+            return TaskSystem.ConfigurePopulateJob(this,
+                                                   scheduleJobFunction);
         }
     }
 }

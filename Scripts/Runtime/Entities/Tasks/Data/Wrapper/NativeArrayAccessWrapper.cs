@@ -3,10 +3,11 @@ using System.Diagnostics;
 using System.Reflection;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal unsafe class NativeArrayAccessWrapper
+    internal unsafe class NativeArrayAccessWrapper : IAccessWrapper
     {
         private static readonly FieldInfo s_NativeArray_Allocator = typeof(NativeArray<>).GetField("m_AllocatorLabel", BindingFlags.Instance | BindingFlags.NonPublic);
         
@@ -34,6 +35,17 @@ namespace Anvil.Unity.DOTS.Entities
             m_Allocator = allocator;
         }
 
+        public JobHandle Acquire()
+        {
+            //Does nothing - We don't know what the access could be here, up to the author to manage
+            return default;
+        }
+
+        public void Release(JobHandle releaseAccessDependency)
+        {
+            //Does nothing - We don't know what the access could be here, up to the author to manage
+        }
+
         public NativeArray<T> ResolveNativeArray<T>()
             where T : unmanaged
         {
@@ -42,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                                                 m_Length,
                                                                                 m_Allocator);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************

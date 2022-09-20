@@ -1,8 +1,9 @@
 using Anvil.Unity.DOTS.Jobs;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class DataStreamAccessWrapper
+    public class DataStreamAccessWrapper : IAccessWrapper
     {
         public AbstractProxyDataStream DataStream
         {
@@ -18,6 +19,16 @@ namespace Anvil.Unity.DOTS.Entities
         {
             DataStream = dataStream;
             AccessType = accessType;
+        }
+
+        public JobHandle Acquire()
+        {
+            return DataStream.AccessController.AcquireAsync(AccessType);
+        }
+
+        public void Release(JobHandle releaseAccessDependency)
+        {
+            DataStream.AccessController.ReleaseAsync(releaseAccessDependency);
         }
     }
 }

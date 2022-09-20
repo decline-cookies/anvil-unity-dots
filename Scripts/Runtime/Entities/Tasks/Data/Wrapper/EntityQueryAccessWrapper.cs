@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class EntityQueryAccessWrapper
+    internal class EntityQueryAccessWrapper : IAccessWrapper
     {
         internal class EntityQueryType<TType>
         {
@@ -16,7 +16,11 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        private NativeArray<Entity> m_NativeArray;
+        public NativeArray<Entity> NativeArray
+        {
+            get;
+            private set;
+        }
         
         public EntityQueryAccessWrapper(EntityQuery entityQuery)
         {
@@ -25,13 +29,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobHandle Acquire()
         {
-            m_NativeArray = EntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle acquireHandle);
+            NativeArray = EntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle acquireHandle);
             return acquireHandle;
         }
 
         public void Release(JobHandle releaseAccessDependency)
         {
-            m_NativeArray.Dispose(releaseAccessDependency);
+            NativeArray.Dispose(releaseAccessDependency);
         }
     }
 }
