@@ -54,7 +54,6 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Type {proxyInstanceType} is not unmanaged!");
             }
-            
         }
     }
 }

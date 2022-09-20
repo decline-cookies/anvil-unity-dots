@@ -1,6 +1,6 @@
 namespace Anvil.Unity.DOTS.Entities
 {
-    public enum TaskFlowRoute
+    internal enum TaskFlowRoute
     {
         Populate,
         Update,

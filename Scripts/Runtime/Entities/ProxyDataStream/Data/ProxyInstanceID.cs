@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
         public readonly Entity Entity;
         public readonly byte Context;
 
-        internal ProxyInstanceID(Entity entity, byte context)
+        public ProxyInstanceID(Entity entity, byte context)
         {
             Entity = entity;
             Context = context;

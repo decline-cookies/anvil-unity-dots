@@ -3,7 +3,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class DataStreamAccessWrapper : IAccessWrapper
+    internal class DataStreamAccessWrapper : IAccessWrapper
     {
         public AbstractProxyDataStream DataStream
         {

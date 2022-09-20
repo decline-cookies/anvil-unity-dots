@@ -14,7 +14,18 @@ namespace Anvil.Unity.DOTS.Entities
             m_JobRouteNodes = new Dictionary<TaskFlowRoute, JobRouteNode>();
         }
 
-        public JobNode CreateJobNode(TaskFlowRoute route, JobConfig.ScheduleJobDelegate scheduleJobFunction)
+        protected override void DisposeSelf()
+        {
+            foreach (JobRouteNode node in m_JobRouteNodes.Values)
+            {
+                node.Dispose();
+            }
+            m_JobRouteNodes.Clear();
+            
+            base.DisposeSelf();
+        }
+
+        public JobNode CreateJobNode(TaskFlowRoute route, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             JobRouteNode routeNode = GetOrCreateRouteNode(route);
 

@@ -36,10 +36,12 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public JobConfig ConfigurePopulateJob(JobConfig.ScheduleJobDelegate scheduleJobFunction)
+        public IScheduleJobConfig ConfigurePopulateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             return TaskSystem.ConfigurePopulateJob(this,
                                                    scheduleJobFunction);
         }
+        
+        //TODO: Implement other job types
     }
 }

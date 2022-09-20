@@ -1,6 +1,5 @@
 using Anvil.Unity.DOTS.Data;
 using System;
-using Unity.Collections;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities

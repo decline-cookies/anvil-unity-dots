@@ -119,18 +119,16 @@ namespace Anvil.Unity.DOTS.Entities
 
             return m_TaskDriverIDProvider.GetNextID();
         }
-
-        //TODO: Determine if we need custom configs for job types
-        internal JobConfig ConfigurePopulateJob(ITaskDriver taskDriver,
-                                                JobConfig.ScheduleJobDelegate scheduleJobFunction)
+        
+        internal IScheduleJobConfig ConfigurePopulateJob(ITaskDriver taskDriver,
+                                                         IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             return ConfigureJob(taskDriver,
                                 scheduleJobFunction,
                                 TaskFlowRoute.Populate);
         }
-
-        //TODO: Determine if we need custom configs for job types
-        protected JobConfig ConfigureUpdateJob(JobConfig.ScheduleJobDelegate scheduleJobFunction)
+        
+        protected IScheduleUpdateJobConfig ConfigureUpdateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             return ConfigureJob(null,
                                 scheduleJobFunction,
@@ -138,7 +136,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private JobConfig ConfigureJob(ITaskDriver taskDriver,
-                                       JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                       IJobConfig.ScheduleJobDelegate scheduleJobFunction,
                                        TaskFlowRoute route)
         {
             Debug_EnsureNotHardened(route, taskDriver);

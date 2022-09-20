@@ -1,4 +1,3 @@
-using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -19,18 +18,8 @@ namespace Anvil.Unity.DOTS.Entities
         [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
 
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
-
-        public int LaneIndex
-        {
-            get;
-            private set;
-        }
-
-        public byte CurrentContext
-        {
-            get;
-            private set;
-        }
+        private int m_LaneIndex;
+        private byte m_CurrentContext;
 
         internal DataStreamUpdater(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer continueWriter,
                                    NativeArray<ProxyInstanceWrapper<TInstance>> iteration) : this()
@@ -39,10 +28,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_Iteration = iteration;
 
             m_ContinueLaneWriter = default;
-            LaneIndex = UNSET_LANE_INDEX;
+            m_LaneIndex = UNSET_LANE_INDEX;
 
-            //TODO: This is odd to have this here. https://github.com/decline-cookies/anvil-unity-dots/pull/54#discussion_r961026947
-            CurrentContext = ByteIDProvider.UNSET_ID;
+            m_CurrentContext = default;
 
             Debug_InitializeUpdaterState();
         }
@@ -60,8 +48,8 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Debug_EnsureInitThreadOnlyCalledOnce();
 
-            LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-            m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(LaneIndex);
+            m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
+            m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
         }
 
         /// <summary>
@@ -74,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 Debug_EnsureCanUpdate();
                 ProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
-                CurrentContext = instanceWrapper.InstanceID.Context;
+                m_CurrentContext = instanceWrapper.InstanceID.Context;
                 return instanceWrapper.Payload;
             }
         }
@@ -93,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Debug_EnsureCanContinue(ref instance);
             m_ContinueLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                           CurrentContext,
+                                                                           m_CurrentContext,
                                                                            ref instance));
         }
 

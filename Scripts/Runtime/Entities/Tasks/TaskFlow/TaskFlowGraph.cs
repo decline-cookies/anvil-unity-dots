@@ -27,8 +27,11 @@ namespace Anvil.Unity.DOTS.Entities
         
         public void DisposeFor(ITaskSystem taskSystem)
         {
-            DataStreamNodeLookup nodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
-            nodeLookup.Dispose();
+            DataStreamNodeLookup dataStreamNodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
+            dataStreamNodeLookup.Dispose();
+
+            JobNodeLookup jobNodeLookup = GetOrCreateJobNodeLookup(taskSystem, null);
+            jobNodeLookup.Dispose();
 
             List<ITaskDriver> taskDrivers = GetTaskDrivers(taskSystem);
             taskDrivers.Clear();
@@ -36,8 +39,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void DisposeFor(ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
-            DataStreamNodeLookup nodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
-            nodeLookup.Dispose();
+            DataStreamNodeLookup dataStreamNodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
+            dataStreamNodeLookup.Dispose();
+
+            JobNodeLookup jobNodeLookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);
+            jobNodeLookup.Dispose();
         }
         
         
@@ -201,7 +207,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobConfig CreateJobConfig(ITaskSystem taskSystem,
                                          ITaskDriver taskDriver,
-                                         JobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                         IJobConfig.ScheduleJobDelegate scheduleJobFunction,
                                          TaskFlowRoute route)
         {
             JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);

@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
         private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_IterationTarget;
 
-        public DeferredNativeArrayScheduleInfo ScheduleInfo
+        internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
         }
@@ -104,7 +104,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        protected override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        protected sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,

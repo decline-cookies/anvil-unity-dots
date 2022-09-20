@@ -25,6 +25,17 @@ namespace Anvil.Unity.DOTS.Entities
             m_JobsByConfig = new Dictionary<JobConfig, JobNode>();
         }
 
+        protected override void DisposeSelf()
+        {
+            foreach (JobNode node in m_JobsByConfig.Values)
+            {
+                node.Dispose();
+            }
+            m_JobsByConfig.Clear();
+            
+            base.DisposeSelf();
+        }
+
         public JobNode CreateNode(JobConfig jobConfig)
         {
             Debug_EnsureNoDuplicateNodes(jobConfig);

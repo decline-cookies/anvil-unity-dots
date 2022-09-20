@@ -10,7 +10,10 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class JobConfig
+    internal class JobConfig : IScheduleJobConfig,
+                               IScheduleUpdateJobConfig,
+                               IUpdateJobConfig,
+                               IJobConfig
     {
         internal enum Usage
         {
@@ -22,12 +25,9 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal static readonly BulkScheduleDelegate<JobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<JobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
+        
 
-        //TODO: Docs
-        public delegate JobHandle ScheduleJobDelegate(JobHandle jobHandle, JobData jobData, IScheduleInfo scheduleInfo);
-
-
-        private readonly ScheduleJobDelegate m_ScheduleJobFunction;
+        private readonly IJobConfig.ScheduleJobDelegate m_ScheduleJobFunction;
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
         private readonly ITaskFlowGraph m_TaskFlowGraph;
         private readonly ITaskSystem m_TaskSystem;
@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         private IScheduleInfo m_ScheduleInfo;
 
-        internal JobConfig(ITaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, ScheduleJobDelegate scheduleJobFunction)
+        public JobConfig(ITaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             m_TaskFlowGraph = taskFlowGraph;
             m_TaskSystem = taskSystem;
@@ -59,7 +59,12 @@ namespace Anvil.Unity.DOTS.Entities
         // CONFIGURATION - SCHEDULING
         //*************************************************************************************************************
 
-        public JobConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
+        IUpdateJobConfig IScheduleUpdateJobConfig.ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
+        {
+            return (IUpdateJobConfig)ScheduleOn(dataStream, batchStrategy);
+        }
+
+        public IJobConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
             //TODO: Ensure nothing else was called.
@@ -68,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobConfig ScheduleOn<T>(NativeArray<T> nativeArray, BatchStrategy batchStrategy)
+        public IJobConfig ScheduleOn<T>(NativeArray<T> nativeArray, BatchStrategy batchStrategy)
             where T : unmanaged
         {
             //TODO: Ensure nothing else was called.
@@ -77,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobConfig ScheduleOn(EntityQuery entityQuery, BatchStrategy batchStrategy)
+        public IJobConfig ScheduleOn(EntityQuery entityQuery, BatchStrategy batchStrategy)
         {
             //TODO: Ensure nothing else was called.
             Debug_EnsureNoScheduleInfo();
@@ -91,7 +96,7 @@ namespace Anvil.Unity.DOTS.Entities
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        public JobConfig RequireDataStreamForUpdate(AbstractProxyDataStream dataStream)
+        public IJobConfig RequireDataStreamForUpdate(AbstractProxyDataStream dataStream)
         {
             Debug_EnsureScheduleInfoExists();
             
@@ -105,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobConfig RequireDataStreamForWrite(AbstractProxyDataStream dataStream)
+        public IJobConfig RequireDataStreamForWrite(AbstractProxyDataStream dataStream)
         {
             Debug_EnsureScheduleInfoExists();
 
@@ -119,7 +124,7 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobConfig RequireDataStreamForRead(AbstractProxyDataStream dataStream)
+        public IJobConfig RequireDataStreamForRead(AbstractProxyDataStream dataStream)
         {
             Debug_EnsureScheduleInfoExists();
 
@@ -133,7 +138,7 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public JobConfig RequireResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
+        public IJobConfig RequireResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
             where TResolveChannel : Enum
         {
             Debug_EnsureScheduleInfoExists();
@@ -157,7 +162,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - NATIVE ARRAY
         //*************************************************************************************************************
-        public JobConfig RequireNativeArrayForWrite<T>(NativeArray<T> array)
+        public IJobConfig RequireNativeArrayForWrite<T>(NativeArray<T> array)
             where T : unmanaged
         {
             Debug_EnsureScheduleInfoExists();
@@ -171,7 +176,7 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
         
-        public JobConfig RequireNativeArrayForRead<T>(NativeArray<T> array)
+        public IJobConfig RequireNativeArrayForRead<T>(NativeArray<T> array)
             where T : unmanaged
         {
             Debug_EnsureScheduleInfoExists();
@@ -189,7 +194,7 @@ namespace Anvil.Unity.DOTS.Entities
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
         
-        public JobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
+        public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             Debug_EnsureScheduleInfoExists();
 
