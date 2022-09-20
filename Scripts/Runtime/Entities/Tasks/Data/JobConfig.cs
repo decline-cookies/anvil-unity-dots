@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -27,8 +28,9 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         private readonly ScheduleJobDelegate m_ScheduleJobFunction;
-        private readonly Dictionary<DataStreamJobConfigID, DataStreamAccessWrapper> m_DataStreamAccessWrappers;
-        private readonly Dictionary<NativeArrayJobConfigID, NativeArrayAccessWrapper> m_NativeArrayAccessWrappers;
+        private readonly Dictionary<JobConfigDataID, DataStreamAccessWrapper> m_DataStreamAccessWrappers;
+        private readonly Dictionary<JobConfigDataID, NativeArrayAccessWrapper> m_NativeArrayAccessWrappers;
+        private readonly Dictionary<JobConfigDataID, EntityQueryAccessWrapper> m_EntityQueryAccessWrappers;
         private readonly ITaskFlowGraph m_TaskFlowGraph;
         private readonly ITaskSystem m_TaskSystem;
         private readonly ITaskDriver m_TaskDriver;
@@ -43,8 +45,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriver = taskDriver;
             m_ScheduleJobFunction = scheduleJobFunction;
             
-            m_DataStreamAccessWrappers = new Dictionary<DataStreamJobConfigID, DataStreamAccessWrapper>();
-            m_NativeArrayAccessWrappers = new Dictionary<NativeArrayJobConfigID, NativeArrayAccessWrapper>();
+            m_DataStreamAccessWrappers = new Dictionary<JobConfigDataID, DataStreamAccessWrapper>();
+            m_NativeArrayAccessWrappers = new Dictionary<JobConfigDataID, NativeArrayAccessWrapper>();
+            m_EntityQueryAccessWrappers = new Dictionary<JobConfigDataID, EntityQueryAccessWrapper>();
             
             m_JobData = new JobData(m_TaskSystem.World,
                                     m_TaskDriver?.Context ?? m_TaskSystem.Context,
@@ -53,7 +56,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            return $"{nameof(JobConfig)} on {TaskDebugUtil.GetLocation(m_TaskSystem, m_TaskDriver)}";
+            return $"{nameof(JobConfig)} with schedule function name of {m_ScheduleJobFunction.Method.DeclaringType?.Name}.{m_ScheduleJobFunction.Method.Name} on {TaskDebugUtil.GetLocation(m_TaskSystem, m_TaskDriver)}";
         }
 
         //*************************************************************************************************************
@@ -63,6 +66,7 @@ namespace Anvil.Unity.DOTS.Entities
         public JobConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
+            //TODO: Ensure nothing else was called.
             Debug_EnsureNoScheduleInfo();
             m_ScheduleInfo = new ProxyDataStreamScheduleInfo<TInstance>(dataStream, batchStrategy);
             return this;
@@ -71,12 +75,21 @@ namespace Anvil.Unity.DOTS.Entities
         public JobConfig ScheduleOn<T>(NativeArray<T> nativeArray, BatchStrategy batchStrategy)
             where T : unmanaged
         {
+            //TODO: Ensure nothing else was called.
             Debug_EnsureNoScheduleInfo();
             m_ScheduleInfo = new NativeArrayScheduleInfo<T>(nativeArray, batchStrategy);
             return this;
         }
 
-        //TODO: Add in ScheduleOn for Query
+        public JobConfig ScheduleOn(EntityQuery entityQuery, BatchStrategy batchStrategy)
+        {
+            //TODO: Ensure nothing else was called.
+            Debug_EnsureNoScheduleInfo();
+            m_ScheduleInfo = new EntityQueryScheduleInfo(entityQuery, batchStrategy);
+            return this;
+        }
+
+        //TODO: Add in ScheduleOn for Query Components
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
@@ -84,7 +97,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobConfig RequireDataStreamForUpdate(AbstractProxyDataStream dataStream)
         {
-            DataStreamJobConfigID id = new DataStreamJobConfigID(dataStream, Usage.Update);
+            //TODO: Ensure ScheduleInfo exists
+            JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Update);
             Debug_EnsureWrapperValidity(id);
             m_DataStreamAccessWrappers.Add(id,
                                            new DataStreamAccessWrapper(dataStream, AccessType.ExclusiveWrite));
@@ -93,7 +107,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobConfig RequireDataStreamForWrite(AbstractProxyDataStream dataStream)
         {
-            DataStreamJobConfigID id = new DataStreamJobConfigID(dataStream, Usage.Write);
+            //TODO: Ensure ScheduleInfo exists
+            JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Write);
             Debug_EnsureWrapperValidity(id);
             m_DataStreamAccessWrappers.Add(id,
                                            new DataStreamAccessWrapper(dataStream, AccessType.SharedWrite));
@@ -102,7 +117,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobConfig RequireDataStreamForRead(AbstractProxyDataStream dataStream)
         {
-            DataStreamJobConfigID id = new DataStreamJobConfigID(dataStream, Usage.Read);
+            //TODO: Ensure ScheduleInfo exists
+            JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Read);
             Debug_EnsureWrapperValidity(id);
             m_DataStreamAccessWrappers.Add(id,
                                            new DataStreamAccessWrapper(dataStream, AccessType.SharedRead));
@@ -112,6 +128,7 @@ namespace Anvil.Unity.DOTS.Entities
         public JobConfig RequireResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
             where TResolveChannel : Enum
         {
+            //TODO: Ensure ScheduleInfo exists
             ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
 
             //Any data streams that have registered for this resolve channel type either on the system or related task drivers will be needed.
@@ -134,7 +151,8 @@ namespace Anvil.Unity.DOTS.Entities
         public JobConfig RequireNativeArrayForWrite<T>(NativeArray<T> array)
             where T : unmanaged
         {
-            NativeArrayJobConfigID id = NativeArrayJobConfigID.Create(array, Usage.Write);
+            //TODO: Ensure ScheduleInfo exists
+            JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), Usage.Write);
             Debug_EnsureWrapperValidity(id);
             m_NativeArrayAccessWrappers.Add(id,
                                             NativeArrayAccessWrapper.Create(array));
@@ -144,10 +162,27 @@ namespace Anvil.Unity.DOTS.Entities
         public JobConfig RequireNativeArrayForRead<T>(NativeArray<T> array)
             where T : unmanaged
         {
-            NativeArrayJobConfigID id = NativeArrayJobConfigID.Create(array, Usage.Read);
+            //TODO: Ensure ScheduleInfo exists
+            JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), Usage.Read);
             Debug_EnsureWrapperValidity(id);
             m_NativeArrayAccessWrappers.Add(id,
                                             NativeArrayAccessWrapper.Create(array));
+            return this;
+        }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
+        //*************************************************************************************************************
+        
+        public JobConfig RequireEntityArrayFromQueryForRead(EntityQuery entityQuery)
+        {
+            //TODO: Ensure ScheduleInfo exists
+            JobConfigDataID id = new JobConfigDataID(typeof(EntityQueryAccessWrapper.EntityQueryType<Entity>), Usage.Read);
+            Debug_EnsureWrapperValidity(id);
+            m_EntityQueryAccessWrappers.Add(id,
+                                            new EntityQueryAccessWrapper(entityQuery));
+            
+            //TODO: Check schedule info and marry if query matches
             return this;
         }
 
@@ -164,8 +199,13 @@ namespace Anvil.Unity.DOTS.Entities
                 //TODO: Convert to native array
                 dependsOn = JobHandle.CombineDependencies(dependsOn, wrapper.DataStream.AccessController.AcquireAsync(wrapper.AccessType));
             }
-            
-            //TODO: Async any entity queries we might be waiting on and ensure the job handles are part of dependsOn
+
+            foreach (EntityQueryAccessWrapper wrapper in m_EntityQueryAccessWrappers.Values)
+            {
+                dependsOn = JobHandle.CombineDependencies(dependsOn, wrapper.Acquire());
+            }
+
+                //TODO: Async any entity queries we might be waiting on and ensure the job handles are part of dependsOn
 
             dependsOn = m_ScheduleJobFunction(dependsOn, m_JobData, m_ScheduleInfo);
 
@@ -174,13 +214,18 @@ namespace Anvil.Unity.DOTS.Entities
                 wrapper.DataStream.AccessController.ReleaseAsync(dependsOn);
             }
 
+            foreach (EntityQueryAccessWrapper wrapper in m_EntityQueryAccessWrappers.Values)
+            {
+                wrapper.Release(dependsOn);
+            }
+
             return dependsOn;
         }
 
         internal ProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IProxyInstance
         {
-            DataStreamJobConfigID id = new DataStreamJobConfigID(typeof(ProxyDataStream<TInstance>), usage);
+            JobConfigDataID id = new JobConfigDataID(typeof(ProxyDataStream<TInstance>), usage);
             Debug_EnsureWrapperExists(id);
             return (ProxyDataStream<TInstance>)m_DataStreamAccessWrappers[id].DataStream;
         }
@@ -188,7 +233,7 @@ namespace Anvil.Unity.DOTS.Entities
         internal NativeArray<T> GetNativeArray<T>(Usage usage)
             where T : unmanaged
         {
-            NativeArrayJobConfigID id = new NativeArrayJobConfigID(typeof(NativeArray<T>), usage);
+            JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), usage);
             Debug_EnsureWrapperExists(id);
             return m_NativeArrayAccessWrappers[id].ResolveNativeArray<T>();
         }
@@ -207,43 +252,24 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperExists(DataStreamJobConfigID id)
+        private void Debug_EnsureWrapperExists(JobConfigDataID id)
         {
             if (!m_DataStreamAccessWrappers.ContainsKey(id))
             {
                 throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type} data for {id.Usage} but it wasn't found. Did you call the right RequireDataStream function?");
             }
         }
-        
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperExists(NativeArrayJobConfigID id)
-        {
-            if (!m_NativeArrayAccessWrappers.ContainsKey(id))
-            {
-                throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type} data for {id.Usage} but it wasn't found. Did you call the right RequireNativeArray function?");
-            }
-        }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperValidity(NativeArrayJobConfigID id)
-        {
-            //Straight duplicate check
-            if (m_NativeArrayAccessWrappers.ContainsKey(id))
-            {
-                throw new InvalidOperationException($"{this} is trying to require {id.Type} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
-            }
-        }
-
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperValidity(DataStreamJobConfigID id)
+        private void Debug_EnsureWrapperValidity(JobConfigDataID id)
         {
             //Straight duplicate check
             if (m_DataStreamAccessWrappers.ContainsKey(id))
             {
                 throw new InvalidOperationException($"{this} is trying to require {id.Type} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
             }
-
+            
+            //TODO: Can't go here if NativeArray or EntityQuery
             //Access checks
             switch (id.Usage)
             {
@@ -262,7 +288,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperTypesValid(DataStreamJobConfigID id, params Usage[] allowedUsages)
+        private void Debug_EnsureWrapperTypesValid(JobConfigDataID id, params Usage[] allowedUsages)
         {
             foreach (Usage usage in USAGE_TYPES)
             {
@@ -273,7 +299,7 @@ namespace Anvil.Unity.DOTS.Entities
                     continue;
                 }
 
-                DataStreamJobConfigID checkID = new DataStreamJobConfigID(id.Type, usage);
+                JobConfigDataID checkID = new JobConfigDataID(id.Type, usage);
                 if (m_DataStreamAccessWrappers.ContainsKey(checkID))
                 {
                     throw new InvalidOperationException($"{this} is trying to require {id.Type} data for {id.Usage} but the same type is being used for {usage} which is not allowed!");
