@@ -1,3 +1,4 @@
+using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,8 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class JobConfig : IScheduleJobConfig,
+    internal class JobConfig : AbstractAnvilBase,
+                               IScheduleJobConfig,
                                IScheduleUpdateJobConfig,
                                IUpdateJobConfig,
                                IJobConfig
@@ -34,6 +36,11 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly ITaskDriver m_TaskDriver;
         private readonly JobData m_JobData;
 
+        private readonly List<DataStreamAsResolveChannelAccessWrapper> m_ResolveChannelAccessWrappers;
+        private readonly List<IAccessWrapper> m_SchedulingAccessWrappers;
+        private NativeArray<JobHandle> m_AccessWrapperDependencies;
+
+
         private IScheduleInfo m_ScheduleInfo;
 
         public JobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
@@ -44,10 +51,21 @@ namespace Anvil.Unity.DOTS.Entities
             m_ScheduleJobFunction = scheduleJobFunction;
             
             m_AccessWrappers = new Dictionary<JobConfigDataID, IAccessWrapper>();
+            m_ResolveChannelAccessWrappers = new List<DataStreamAsResolveChannelAccessWrapper>();
+            m_SchedulingAccessWrappers = new List<IAccessWrapper>();
 
             m_JobData = new JobData(m_TaskSystem.World,
                                     m_TaskDriver?.Context ?? m_TaskSystem.Context,
                                     this);
+        }
+
+        protected override void DisposeSelf()
+        {
+            if (m_AccessWrapperDependencies.IsCreated)
+            {
+                m_AccessWrapperDependencies.Dispose();
+            }
+            base.DisposeSelf();
         }
 
         public override string ToString()
@@ -148,10 +166,20 @@ namespace Anvil.Unity.DOTS.Entities
             //Any data streams that have registered for this resolve channel type either on the system or related task drivers will be needed.
             //When the updater runs, it doesn't know yet which resolve channel a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
+            //TODO: Change this to ResolveChannel that includes the context where they came from
             List<AbstractProxyDataStream> dataStreams = m_TaskFlowGraph.GetResolveChannelDataStreams(resolveChannel, m_TaskSystem);
+            
             foreach (AbstractProxyDataStream dataStream in dataStreams)
             {
-                RequireDataStreamForWrite(dataStream);
+                JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Write);
+                
+                Debug_EnsureWrapperValidity(id);
+                Debug_EnsureWrapperUsage(id);
+
+                DataStreamAsResolveChannelAccessWrapper wrapper = DataStreamAsResolveChannelAccessWrapper.Create(resolveChannel, dataStream);
+                
+                m_AccessWrappers.Add(id, wrapper);
+                m_ResolveChannelAccessWrappers.Add(wrapper);
             }
 
             //TODO: Build the DOTS Hashmap of pointers to write to.
@@ -213,7 +241,21 @@ namespace Anvil.Unity.DOTS.Entities
             
             return this;
         }
+        
+        //*************************************************************************************************************
+        // HARDEN
+        //*************************************************************************************************************
 
+        public void Harden()
+        {
+            foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
+            {
+                m_SchedulingAccessWrappers.Add(wrapper);
+            }
+
+            m_AccessWrapperDependencies = new NativeArray<JobHandle>(m_SchedulingAccessWrappers.Count + 1, Allocator.Persistent);
+        }
+        
         //*************************************************************************************************************
         // EXECUTION
         //*************************************************************************************************************
@@ -221,18 +263,18 @@ namespace Anvil.Unity.DOTS.Entities
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
             Debug_EnsureScheduleInfoExists();
-
-            //TODO: Harden this so we can get optimized structures
-            foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
+            
+            int index = 0;
+            for (; index < m_SchedulingAccessWrappers.Count; ++index)
             {
-                //TODO: Convert to native array
-                dependsOn = JobHandle.CombineDependencies(dependsOn, wrapper.Acquire());
+                m_AccessWrapperDependencies[index] = m_SchedulingAccessWrappers[index].Acquire();
             }
+            m_AccessWrapperDependencies[index] = dependsOn;
 
+            dependsOn = JobHandle.CombineDependencies(m_AccessWrapperDependencies);
             dependsOn = m_ScheduleJobFunction(dependsOn, m_JobData, m_ScheduleInfo);
             
-            //TODO: Use optimized structure
-            foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
+            foreach (IAccessWrapper wrapper in m_SchedulingAccessWrappers)
             {
                 wrapper.Release(dependsOn);
             }

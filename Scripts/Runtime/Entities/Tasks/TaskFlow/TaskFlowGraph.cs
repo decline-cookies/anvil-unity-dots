@@ -288,6 +288,11 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_IsHardened = true;
 
+            foreach (JobNodeLookup jobNodeLookup in m_JobNodesByTaskSystem.Values)
+            {
+                jobNodeLookup.Harden();
+            }
+
             //Iterate through all nodes registered to the graph to try and develop relationships. 
             //We'll end up getting islands of relationships between all the data so you can't necessarily have 
             //one entry and one exit.

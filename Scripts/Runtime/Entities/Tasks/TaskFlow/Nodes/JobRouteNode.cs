@@ -36,6 +36,14 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
+        public void Harden()
+        {
+            foreach (JobNode node in m_JobsByConfig.Values)
+            {
+                node.Harden();
+            }
+        }
+
         public JobNode CreateNode(JobConfig jobConfig)
         {
             Debug_EnsureNoDuplicateNodes(jobConfig);

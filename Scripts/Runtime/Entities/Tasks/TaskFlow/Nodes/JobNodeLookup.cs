@@ -25,6 +25,14 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
+        public void Harden()
+        {
+            foreach (JobRouteNode jobRouteNode in m_JobRouteNodes.Values)
+            {
+                jobRouteNode.Harden();
+            }
+        }
+
         public JobNode CreateJobNode(TaskFlowRoute route, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             JobRouteNode routeNode = GetOrCreateRouteNode(route);
