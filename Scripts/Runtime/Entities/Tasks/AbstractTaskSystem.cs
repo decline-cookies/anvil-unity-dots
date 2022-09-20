@@ -157,7 +157,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            //TODO: Need to fix this so it pulls the right jobs
             //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
