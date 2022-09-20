@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskFlowGraph.CreateDataStreams(this);
 
             //TODO: 3. Custom Update Job Types
-            //TODO: Create the custom Update Job so we can parse to the different result channels.
+            //TODO: Create the custom Update Job so we can parse to the different result channels. Required Hardening JobConfig as part of the TaskFlowGraph hardening
         }
 
         protected override void OnDestroy()

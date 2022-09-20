@@ -55,7 +55,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return false;
             }
-
+            
+            ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
             byte storedResolveChannel = UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel);
             return value == storedResolveChannel;
         }

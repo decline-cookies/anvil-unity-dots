@@ -29,14 +29,14 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly IJobConfig.ScheduleJobDelegate m_ScheduleJobFunction;
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
-        private readonly ITaskFlowGraph m_TaskFlowGraph;
+        private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly ITaskSystem m_TaskSystem;
         private readonly ITaskDriver m_TaskDriver;
         private readonly JobData m_JobData;
 
         private IScheduleInfo m_ScheduleInfo;
 
-        public JobConfig(ITaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        public JobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             m_TaskFlowGraph = taskFlowGraph;
             m_TaskSystem = taskSystem;
@@ -67,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
         public IJobConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
-            //TODO: Ensure nothing else was called.
+            Debug_EnsureNoData();
             Debug_EnsureNoScheduleInfo();
             m_ScheduleInfo = new ProxyDataStreamScheduleInfo<TInstance>(dataStream, batchStrategy);
             return this;
@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Entities
         public IJobConfig ScheduleOn<T>(NativeArray<T> nativeArray, BatchStrategy batchStrategy)
             where T : unmanaged
         {
-            //TODO: Ensure nothing else was called.
+            Debug_EnsureNoData();
             Debug_EnsureNoScheduleInfo();
             m_ScheduleInfo = new NativeArrayScheduleInfo<T>(nativeArray, batchStrategy);
             return this;
@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public IJobConfig ScheduleOn(EntityQuery entityQuery, BatchStrategy batchStrategy)
         {
-            //TODO: Ensure nothing else was called.
+            Debug_EnsureNoData();
             Debug_EnsureNoScheduleInfo();
             m_ScheduleInfo = new EntityQueryScheduleInfo(entityQuery, batchStrategy);
             return this;
@@ -217,13 +217,12 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // EXECUTION
         //*************************************************************************************************************
-
-        //TODO: Cross reference with JobTaskWorkConfig to include safety checks and other data
+        
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
             Debug_EnsureScheduleInfoExists();
 
-            //TODO Harden this so we can get optimized structures
+            //TODO: Harden this so we can get optimized structures
             foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 //TODO: Convert to native array
@@ -231,7 +230,8 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             dependsOn = m_ScheduleJobFunction(dependsOn, m_JobData, m_ScheduleInfo);
-
+            
+            //TODO: Use optimized structure
             foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 wrapper.Release(dependsOn);
@@ -270,6 +270,16 @@ namespace Anvil.Unity.DOTS.Entities
         // SAFETY
         //*************************************************************************************************************
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoData()
+        {
+            if (m_AccessWrappers.Count > 0)
+            {
+                throw new InvalidOperationException($"{this} has required data specified but {nameof(ScheduleOn)} wasn't called first! This shouldn't happen due to interfaces but perhaps code changes invalidated this?");
+            }
+        }
+        
+        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoScheduleInfo()
         {
@@ -348,7 +358,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
         
         
-        //TODO: See where this can fit
+        //TODO: See where this can fit during hardening
         // [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         // private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, ITaskDriver taskDriver)
         // {

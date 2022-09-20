@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class TaskFlowGraph : ITaskFlowGraph
+    internal class TaskFlowGraph
     {
         private static readonly Type ABSTRACT_PROXY_DATA_STREAM_TYPE = typeof(AbstractProxyDataStream);
 
