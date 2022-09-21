@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             Debug_EnsureEnumIsSizedProperly(type);
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsureEnumIsSizedProperly(Type type)
         {

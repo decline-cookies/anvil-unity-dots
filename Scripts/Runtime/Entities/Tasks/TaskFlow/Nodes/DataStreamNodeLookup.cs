@@ -8,11 +8,17 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly Dictionary<AbstractProxyDataStream, DataStreamNode> m_NodesByDataStream;
 
+        public byte Context
+        {
+            get;
+        }
+
         public DataStreamNodeLookup(TaskFlowGraph taskFlowGraph,
                                     ITaskSystem taskSystem,
                                     ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_NodesByDataStream = new Dictionary<AbstractProxyDataStream, DataStreamNode>();
+            Context = taskDriver?.Context ?? taskSystem.Context;
         }
 
         protected override void DisposeSelf()
@@ -61,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
-        public void PopulateWithResolveChannelDataStreams<TResolveChannel>(List<AbstractProxyDataStream> dataStreams, TResolveChannel resolveChannel)
+        public void PopulateWithResolveChannelDataStreams<TResolveChannel>(JobResolveChannelMapping jobResolveChannelMapping, TResolveChannel resolveChannel)
             where TResolveChannel : Enum
         {
             foreach (DataStreamNode node in m_NodesByDataStream.Values)
@@ -71,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities
                     continue;
                 }
 
-                dataStreams.Add(node.DataStream);
+                jobResolveChannelMapping.RegisterDataStream(resolveChannel, node.DataStream, Context);
             }
         }
 

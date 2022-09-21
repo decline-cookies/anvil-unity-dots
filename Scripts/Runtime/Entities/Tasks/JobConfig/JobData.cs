@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TInstance : unmanaged, IProxyInstance
         {
             ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(JobConfig.Usage.Update);
-            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater();
+            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(m_JobConfig.DataStreamChannelResolver);
             return updater;
         }
 

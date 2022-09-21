@@ -38,10 +38,17 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly List<DataStreamAsResolveChannelAccessWrapper> m_ResolveChannelAccessWrappers;
         private readonly List<IAccessWrapper> m_SchedulingAccessWrappers;
+        private readonly JobResolveChannelMapping m_JobResolveChannelMapping;
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
 
-
+        private bool m_IsHardened;
         private IScheduleInfo m_ScheduleInfo;
+
+        internal DataStreamChannelResolver DataStreamChannelResolver
+        {
+            get;
+            private set;
+        }
 
         public JobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
@@ -53,6 +60,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_AccessWrappers = new Dictionary<JobConfigDataID, IAccessWrapper>();
             m_ResolveChannelAccessWrappers = new List<DataStreamAsResolveChannelAccessWrapper>();
             m_SchedulingAccessWrappers = new List<IAccessWrapper>();
+            m_JobResolveChannelMapping = new JobResolveChannelMapping();
 
             m_JobData = new JobData(m_TaskSystem.World,
                                     m_TaskDriver?.Context ?? m_TaskSystem.Context,
@@ -65,6 +73,9 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 m_AccessWrapperDependencies.Dispose();
             }
+            
+            DataStreamChannelResolver.Dispose();
+            
             base.DisposeSelf();
         }
 
@@ -166,23 +177,21 @@ namespace Anvil.Unity.DOTS.Entities
             //Any data streams that have registered for this resolve channel type either on the system or related task drivers will be needed.
             //When the updater runs, it doesn't know yet which resolve channel a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
-            //TODO: Change this to ResolveChannel that includes the context where they came from
-            List<AbstractProxyDataStream> dataStreams = m_TaskFlowGraph.GetResolveChannelDataStreams(resolveChannel, m_TaskSystem);
-            
-            foreach (AbstractProxyDataStream dataStream in dataStreams)
+            m_TaskFlowGraph.PopulateJobResolveChannelMappingForChannel(resolveChannel, m_JobResolveChannelMapping, m_TaskSystem);
+
+            IEnumerable<ResolveChannelData> resolveChannelData = m_JobResolveChannelMapping.GetResolveChannelData(resolveChannel);
+            foreach (ResolveChannelData data in resolveChannelData)
             {
-                JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Write);
+                JobConfigDataID id = new JobConfigDataID(data.DataStream, Usage.Write);
                 
                 Debug_EnsureWrapperValidity(id);
                 Debug_EnsureWrapperUsage(id);
 
-                DataStreamAsResolveChannelAccessWrapper wrapper = DataStreamAsResolveChannelAccessWrapper.Create(resolveChannel, dataStream);
+                DataStreamAsResolveChannelAccessWrapper wrapper = DataStreamAsResolveChannelAccessWrapper.Create(resolveChannel, data);
                 
                 m_AccessWrappers.Add(id, wrapper);
                 m_ResolveChannelAccessWrappers.Add(wrapper);
             }
-
-            //TODO: Build the DOTS Hashmap of pointers to write to.
 
             return this;
         }
@@ -248,12 +257,21 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void Harden()
         {
+            if (m_IsHardened)
+            {
+                return;
+            }
+
+            m_IsHardened = true;
+            
             foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 m_SchedulingAccessWrappers.Add(wrapper);
             }
 
             m_AccessWrapperDependencies = new NativeArray<JobHandle>(m_SchedulingAccessWrappers.Count + 1, Allocator.Persistent);
+
+            DataStreamChannelResolver = new DataStreamChannelResolver(m_JobResolveChannelMapping);
         }
         
         //*************************************************************************************************************
@@ -262,6 +280,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
+            Debug_EnsureIsHardened();
             Debug_EnsureScheduleInfoExists();
             
             int index = 0;
@@ -330,6 +349,16 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"{this} is trying to schedule a job but it already has Schedule Info {m_ScheduleInfo} defined! Only call {nameof(ScheduleOn)} once!");
             }
         }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureIsHardened()
+        {
+            if (m_IsHardened == false)
+            {
+                throw new InvalidOperationException($"{this} is not hardened yet!");
+            }
+        }
+        
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureScheduleInfoExists()

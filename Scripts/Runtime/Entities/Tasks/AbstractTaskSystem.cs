@@ -42,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: Talk to Mike about this. The World property is null for the default world because systems are created via Activator.CreateInstance.
             //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
-            m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowDataSystem>().TaskFlowGraph;
+            m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateDataStreams(this);
 
             //TODO: 3. Custom Update Job Types
@@ -83,21 +83,15 @@ namespace Anvil.Unity.DOTS.Entities
             lookup.Clear();
         }
 
-        protected override void OnStartRunning()
+        private void Harden()
         {
-            base.OnStartRunning();
             if (m_IsHardened)
             {
                 return;
             }
 
             m_IsHardened = true;
-
-            BuildOptimizedCollections();
-        }
-
-        private void BuildOptimizedCollections()
-        {
+            
             m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
             m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, m_TaskDrivers);
 
@@ -152,6 +146,12 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         protected override void OnUpdate()
         {
+            //TODO: Discuss with Mike about how we can get around this
+            if (!m_TaskFlowGraph.IsHardened)
+            {
+                return;
+            }
+            Harden();
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 

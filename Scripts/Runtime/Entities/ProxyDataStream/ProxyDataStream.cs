@@ -70,7 +70,7 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        internal unsafe void* GetWriterPointer()
+        internal sealed override unsafe void* GetWriterPointer()
         {
             return m_Pending.AsWriter().GetBufferPointer();
         }
@@ -90,10 +90,11 @@ namespace Anvil.Unity.DOTS.Entities
             return new DataStreamReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater()
+        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(DataStreamChannelResolver dataStreamChannelResolver)
         {
             return new DataStreamUpdater<TInstance>(m_Pending.AsWriter(),
-                                                    m_IterationTarget.AsDeferredJobArray());
+                                                    m_IterationTarget.AsDeferredJobArray(),
+                                                    dataStreamChannelResolver);
         }
 
         internal DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)

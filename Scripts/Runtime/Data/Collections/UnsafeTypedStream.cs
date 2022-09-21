@@ -3,6 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Assertions;
 using Unity.Burst;
@@ -486,9 +487,18 @@ namespace Anvil.Unity.DOTS.Data
         {
             internal static Writer ReinterpretFromPointer(void* ptr)
             {
-                //TODO: Throw error if null pointer
+                Debug_EnsurePointerNotNull(ptr);
                 Writer writer = new Writer(ptr);
                 return writer;
+            }
+
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            private static void Debug_EnsurePointerNotNull(void* ptr)
+            {
+                if (ptr == null)
+                {
+                    throw new InvalidOperationException($"Trying to reinterpret the writer from a pointer but the pointer is null!");
+                }
             }
 
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;

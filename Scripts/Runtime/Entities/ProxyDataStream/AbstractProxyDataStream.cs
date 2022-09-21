@@ -41,5 +41,6 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
+        internal abstract unsafe void* GetWriterPointer();
     }
 }

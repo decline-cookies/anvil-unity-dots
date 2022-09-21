@@ -1,5 +1,3 @@
-using Anvil.Unity.DOTS.Entities;
-
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>

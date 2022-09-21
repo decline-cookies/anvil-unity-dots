@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Entities
             TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
             Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
 
-            m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowDataSystem>().TaskFlowGraph;
+            m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateDataStreams(TaskSystem, this);
         }
 

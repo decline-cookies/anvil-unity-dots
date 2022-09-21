@@ -14,7 +14,12 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly Dictionary<ITaskSystem, List<ITaskDriver>> m_TaskDriversByTaskSystem;
         private readonly Dictionary<ITaskSystem, JobNodeLookup> m_JobNodesByTaskSystem;
         private readonly Dictionary<ITaskDriver, JobNodeLookup> m_JobNodesByTaskDriver;
-        private bool m_IsHardened;
+
+        public bool IsHardened
+        {
+            get;
+            private set;
+        }
 
         public TaskFlowGraph()
         {
@@ -181,24 +186,20 @@ namespace Anvil.Unity.DOTS.Entities
             return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
         }
         
-        public List<AbstractProxyDataStream> GetResolveChannelDataStreams<TResolveChannel>(TResolveChannel resolveChannel, ITaskSystem taskSystem)
+        public void PopulateJobResolveChannelMappingForChannel<TResolveChannel>(TResolveChannel resolveChannel, JobResolveChannelMapping jobResolveChannelMapping, ITaskSystem taskSystem)
             where TResolveChannel : Enum
         {
-            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
-            
             //Get the Resolve Channels that exist on the system
             DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
-            lookup.PopulateWithResolveChannelDataStreams(dataStreams, resolveChannel);
+            lookup.PopulateWithResolveChannelDataStreams(jobResolveChannelMapping, resolveChannel);
             
             //Get any Resolve Channels that exist on TaskDriver's owned by the system
             List<ITaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
             foreach (ITaskDriver ownedTaskDriver in ownedTaskDrivers)
             {
                 lookup = GetOrCreateDataStreamNodeLookup(taskSystem, ownedTaskDriver);
-                lookup.PopulateWithResolveChannelDataStreams(dataStreams, resolveChannel);
+                lookup.PopulateWithResolveChannelDataStreams(jobResolveChannelMapping, resolveChannel);
             }
-
-            return dataStreams;
         }
         
         //*************************************************************************************************************
@@ -281,14 +282,19 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void Harden()
         {
-            if (m_IsHardened)
+            if (IsHardened)
             {
                 return;
             }
 
-            m_IsHardened = true;
+            IsHardened = true;
 
             foreach (JobNodeLookup jobNodeLookup in m_JobNodesByTaskSystem.Values)
+            {
+                jobNodeLookup.Harden();
+            }
+
+            foreach (JobNodeLookup jobNodeLookup in m_JobNodesByTaskDriver.Values)
             {
                 jobNodeLookup.Harden();
             }
@@ -322,7 +328,7 @@ namespace Anvil.Unity.DOTS.Entities
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {
-            if (m_IsHardened)
+            if (IsHardened)
             {
                 throw new InvalidOperationException($"Trying to modify the {nameof(TaskFlowGraph)} but connections have already been built! The graph needs to be complete before connections are built.");
             }

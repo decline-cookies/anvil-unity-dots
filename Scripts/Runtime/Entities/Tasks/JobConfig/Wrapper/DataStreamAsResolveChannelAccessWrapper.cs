@@ -6,21 +6,27 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class DataStreamAsResolveChannelAccessWrapper : DataStreamAccessWrapper
     {
-        public static DataStreamAsResolveChannelAccessWrapper Create<TResolveChannel>(TResolveChannel resolveChannel, AbstractProxyDataStream dataStream)
+        public static DataStreamAsResolveChannelAccessWrapper Create<TResolveChannel>(TResolveChannel resolveChannel, ResolveChannelData wrapper)
             where TResolveChannel : Enum
         {
             ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
-            return new DataStreamAsResolveChannelAccessWrapper(UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel), dataStream);
+            return new DataStreamAsResolveChannelAccessWrapper(UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel), wrapper);
         }
         
         public byte ResolveChannel
         {
             get;
         }
+
+        public byte Context
+        {
+            get;
+        }
         
-        private DataStreamAsResolveChannelAccessWrapper(byte resolveChannel, AbstractProxyDataStream dataStream) : base(dataStream, AccessType.SharedWrite)
+        private DataStreamAsResolveChannelAccessWrapper(byte resolveChannel, ResolveChannelData wrapper) : base(wrapper.DataStream, AccessType.SharedWrite)
         {
             ResolveChannel = resolveChannel;
+            Context = wrapper.Context;
         }
     }
 }

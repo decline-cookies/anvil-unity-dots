@@ -37,6 +37,21 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_InitializeWriterState();
         }
 
+        internal unsafe DataStreamWriter(void* writerPtr,
+                                         byte context,
+                                         int laneIndex) : this()
+        {
+            m_InstanceWriter = UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
+            m_Context = context;
+            m_LaneIndex = laneIndex;
+
+            Debug_EnsureWriterIsValid();
+
+            m_InstanceLaneWriter = m_InstanceWriter.AsLaneWriter(m_LaneIndex);
+
+            Debug_InitializeWriterStateFromPointer();
+        }
+
         /// <summary>
         /// Initializes based on the thread it's being used on.
         /// This must be called before doing anything else with the struct.
@@ -70,6 +85,11 @@ namespace Anvil.Unity.DOTS.Entities
                                                                            ref instance));
         }
 
+        public void Add<TInstance1>(ref TInstance1 instance)
+            where TInstance1 : unmanaged, IProxyInstance
+        {
+        }
+
 
         //*************************************************************************************************************
         // SAFETY
@@ -90,6 +110,14 @@ namespace Anvil.Unity.DOTS.Entities
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_State = WriterState.Uninitialized;
+#endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_InitializeWriterStateFromPointer()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            m_State = WriterState.Ready;
 #endif
         }
 
@@ -115,6 +143,15 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_State = WriterState.Ready;
 #endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureWriterIsValid()
+        {
+            if (!m_InstanceWriter.IsCreated)
+            {
+                throw new InvalidOperationException($"Tried to reinterpret a pointer as the writer but the data at that pointer is not valid!");
+            }
         }
     }
 }

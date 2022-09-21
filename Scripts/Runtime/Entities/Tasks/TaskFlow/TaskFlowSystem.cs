@@ -1,24 +1,28 @@
+using Unity.Entities;
+
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Data System (no update) for managing the world's <see cref="TaskFlowGraph"/>
     /// </summary>
-    public partial class TaskFlowDataSystem : AbstractDataSystem
+    //TODO: Safer way to handle this. Discussion with Mike.
+    [UpdateInGroup(typeof(PresentationSystemGroup), OrderLast = true)]
+    public partial class TaskFlowSystem : AbstractAnvilSystemBase
     {
         internal TaskFlowGraph TaskFlowGraph
         {
             get;
         }
 
-        public TaskFlowDataSystem()
+        public TaskFlowSystem()
         {
             TaskFlowGraph = new TaskFlowGraph();
         }
 
-        protected override void OnStartRunning()
+        protected override void OnUpdate()
         {
-            base.OnStartRunning();
             TaskFlowGraph.Harden();
+            Enabled = false;
         }
     }
 }

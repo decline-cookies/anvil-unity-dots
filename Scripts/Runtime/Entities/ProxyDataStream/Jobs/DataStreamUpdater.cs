@@ -16,16 +16,19 @@ namespace Anvil.Unity.DOTS.Entities
 
         [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
         [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
+        [ReadOnly] private DataStreamChannelResolver m_DataStreamChannelResolver;
 
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
         private int m_LaneIndex;
         private byte m_CurrentContext;
 
         internal DataStreamUpdater(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer continueWriter,
-                                   NativeArray<ProxyInstanceWrapper<TInstance>> iteration) : this()
+                                   NativeArray<ProxyInstanceWrapper<TInstance>> iteration,
+                                   DataStreamChannelResolver dataStreamChannelResolver) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
+            m_DataStreamChannelResolver = dataStreamChannelResolver;
 
             m_ContinueLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -88,6 +91,18 @@ namespace Anvil.Unity.DOTS.Entities
         internal void Resolve()
         {
             Debug_EnsureCanResolve();
+        }
+
+        internal void Resolve<TResolveChannel, TResolvedInstance>(TResolveChannel resolveChannel,
+                                                                  ref TResolvedInstance resolvedInstance)
+            where TResolveChannel : Enum
+            where TResolvedInstance : unmanaged, IProxyInstance
+        {
+            Debug_EnsureCanResolve();
+            m_DataStreamChannelResolver.Resolve(resolveChannel, 
+                                                m_CurrentContext,
+                                                m_LaneIndex,
+                                                ref resolvedInstance);
         }
 
 
