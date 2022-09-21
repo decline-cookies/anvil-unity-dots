@@ -99,6 +99,8 @@ namespace Anvil.Unity.DOTS.Entities
             where TResolvedInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureCanResolve();
+            //TODO: Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
+            //manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
             m_DataStreamChannelResolver.Resolve(resolveChannel, 
                                                 m_CurrentContext,
                                                 m_LaneIndex,

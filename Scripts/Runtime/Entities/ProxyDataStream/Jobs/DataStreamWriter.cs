@@ -85,11 +85,6 @@ namespace Anvil.Unity.DOTS.Entities
                                                                            ref instance));
         }
 
-        public void Add<TInstance1>(ref TInstance1 instance)
-            where TInstance1 : unmanaged, IProxyInstance
-        {
-        }
-
 
         //*************************************************************************************************************
         // SAFETY
