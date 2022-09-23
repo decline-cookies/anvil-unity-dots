@@ -15,19 +15,26 @@ namespace Anvil.Unity.DOTS.Entities
         private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_PendingCancelWriter;
         [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
+        [ReadOnly] private RequestCancelReader m_RequestCancelReader;
         [ReadOnly] private DataStreamChannelResolver m_DataStreamChannelResolver;
 
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
+        private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingCancelLaneWriter;
         private int m_LaneIndex;
         private byte m_CurrentContext;
 
         internal DataStreamUpdater(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer continueWriter,
                                    NativeArray<ProxyInstanceWrapper<TInstance>> iteration,
+                                   RequestCancelReader requestCancelReader,
+                                   UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer pendingCancelWriter,
                                    DataStreamChannelResolver dataStreamChannelResolver) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
+            m_RequestCancelReader = requestCancelReader;
+            m_PendingCancelWriter = pendingCancelWriter;
             m_DataStreamChannelResolver = dataStreamChannelResolver;
 
             m_ContinueLaneWriter = default;
@@ -53,22 +60,9 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
+            m_PendingCancelLaneWriter = m_PendingCancelWriter.AsLaneWriter(m_LaneIndex);
         }
 
-        /// <summary>
-        /// Gets a <typeparamref name="TInstance"/> at the specified index.
-        /// </summary>
-        /// <param name="index">The index to the backing array</param>
-        public TInstance this[int index]
-        {
-            get
-            {
-                Debug_EnsureCanUpdate();
-                ProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
-                m_CurrentContext = instanceWrapper.InstanceID.Context;
-                return instanceWrapper.Payload;
-            }
-        }
 
         /// <summary>
         /// Signals that this instance should be updated again next frame.
@@ -101,10 +95,32 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureCanResolve();
             //TODO: Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
             //manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
-            m_DataStreamChannelResolver.Resolve(resolveChannel, 
+            m_DataStreamChannelResolver.Resolve(resolveChannel,
                                                 m_CurrentContext,
                                                 m_LaneIndex,
                                                 ref resolvedInstance);
+        }
+
+        private void MarkForCancel(ref ProxyInstanceWrapper<TInstance> wrapper)
+        {
+            Debug_EnsureCanMarkForCancel();
+            m_PendingCancelLaneWriter.Write(ref wrapper);
+        }
+
+        internal bool TryGetInstanceIfNotRequestedToCancel(int index, out TInstance instance)
+        {
+            Debug_EnsureCanUpdate();
+            ProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
+            m_CurrentContext = instanceWrapper.InstanceID.Context;
+            instance = instanceWrapper.Payload;
+
+            if (m_RequestCancelReader.ShouldCancel(instanceWrapper.InstanceID))
+            {
+                MarkForCancel(ref instanceWrapper);
+                return false;
+            }
+
+            return true;
         }
 
 
@@ -182,6 +198,26 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_State == UpdaterState.Ready)
             {
                 throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
+            }
+
+            Debug.Assert(m_State == UpdaterState.Modifying);
+            m_State = UpdaterState.Ready;
+#endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureCanMarkForCancel()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            // ReSharper disable once ConvertIfStatementToSwitchStatement
+            if (m_State == UpdaterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to cancel an element.");
+            }
+
+            if (m_State == UpdaterState.Ready)
+            {
+                throw new InvalidOperationException($"Attempting to call {nameof(MarkForCancel)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Something went very wrong. Investigate!");
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);

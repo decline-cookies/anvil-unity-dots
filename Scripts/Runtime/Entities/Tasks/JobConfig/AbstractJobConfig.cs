@@ -11,25 +11,23 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class JobConfig : AbstractAnvilBase,
-                               IScheduleJobConfig,
-                               IScheduleUpdateJobConfig,
-                               IUpdateJobConfig,
-                               IJobConfig
+    internal abstract class AbstractJobConfig : AbstractAnvilBase,
+                                                IScheduleJobConfig,
+                                                IJobConfig
     {
         internal enum Usage
         {
             //TODO: Docs
             Update,
             Write,
-            Read
+            Read,
+            WritePendingCancel
         }
 
-        internal static readonly BulkScheduleDelegate<JobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<JobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
+        internal static readonly BulkScheduleDelegate<AbstractJobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractJobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
-        
 
-        private readonly IJobConfig.ScheduleJobDelegate m_ScheduleJobFunction;
+        
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly ITaskSystem m_TaskSystem;
@@ -42,7 +40,6 @@ namespace Anvil.Unity.DOTS.Entities
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
 
         private bool m_IsHardened;
-        private IScheduleInfo m_ScheduleInfo;
 
         internal DataStreamChannelResolver DataStreamChannelResolver
         {
@@ -50,13 +47,12 @@ namespace Anvil.Unity.DOTS.Entities
             private set;
         }
 
-        public JobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        protected AbstractJobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
             m_TaskFlowGraph = taskFlowGraph;
             m_TaskSystem = taskSystem;
             m_TaskDriver = taskDriver;
-            m_ScheduleJobFunction = scheduleJobFunction;
-            
+
             m_AccessWrappers = new Dictionary<JobConfigDataID, IAccessWrapper>();
             m_ResolveChannelAccessWrappers = new List<DataStreamAsResolveChannelAccessWrapper>();
             m_SchedulingAccessWrappers = new List<IAccessWrapper>();
@@ -73,34 +69,21 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 m_AccessWrapperDependencies.Dispose();
             }
-            
+
             DataStreamChannelResolver.Dispose();
-            
+
             base.DisposeSelf();
         }
 
         public override string ToString()
         {
-            return $"{nameof(JobConfig)} with schedule function name of {m_ScheduleJobFunction.Method.DeclaringType?.Name}.{m_ScheduleJobFunction.Method.Name} on {TaskDebugUtil.GetLocation(m_TaskSystem, m_TaskDriver)}";
+            return $"{nameof(AbstractJobConfig)} with schedule function name of {m_ScheduleJobFunction.Method.DeclaringType?.Name}.{m_ScheduleJobFunction.Method.Name} on {TaskDebugUtil.GetLocation(m_TaskSystem, m_TaskDriver)}";
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - SCHEDULING
         //*************************************************************************************************************
 
-        IUpdateJobConfig IScheduleUpdateJobConfig.ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
-        {
-            return (IUpdateJobConfig)ScheduleOn(dataStream, batchStrategy);
-        }
-
-        public IJobConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
-        {
-            Debug_EnsureNoData();
-            Debug_EnsureNoScheduleInfo();
-            m_ScheduleInfo = new ProxyDataStreamScheduleInfo<TInstance>(dataStream, batchStrategy);
-            return this;
-        }
 
         public IJobConfig ScheduleOn<T>(NativeArray<T> nativeArray, BatchStrategy batchStrategy)
             where T : unmanaged
@@ -122,32 +105,61 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: Add in ScheduleOn for Query Components
 
         //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - CANCELLATION
+        //*************************************************************************************************************
+
+        private AbstractJobConfig RequireRequestCancelDataStreamForRead(RequestCancelDataStream requestCancelDataStream)
+        {
+            Debug_EnsureScheduleInfoExists();
+            JobConfigDataID id = new JobConfigDataID(requestCancelDataStream, Usage.Read);
+
+            Debug_EnsureWrapperValidity(id);
+            Debug_EnsureWrapperUsage(id);
+
+            m_AccessWrappers.Add(id,
+                                 new DataStreamAccessWrapper(requestCancelDataStream, AccessType.SharedRead));
+            return this;
+        }
+
+        //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        public IJobConfig RequireDataStreamForUpdate(AbstractProxyDataStream dataStream)
+        internal IJobConfig RequireDataStreamForUpdate<TInstance>(ITaskStream<TInstance> taskStream, RequestCancelDataStream requestCancelDataStream)
+            where TInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureScheduleInfoExists();
-            
-            JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Update);
-            
+
+            JobConfigDataID id = new JobConfigDataID(taskStream.DataStream, Usage.Update);
+
             Debug_EnsureWrapperValidity(id);
             Debug_EnsureWrapperUsage(id);
-            
-            m_AccessWrappers.Add(id,
-                                 new DataStreamAccessWrapper(dataStream, AccessType.ExclusiveWrite));
+
+            m_AccessWrappers.Add(id, new DataStreamAccessWrapper(taskStream.DataStream, AccessType.ExclusiveWrite));
+
+            if (taskStream is CancellableTaskStream<TInstance> cancellableTaskStream)
+            {
+                RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
+                RequireRequestCancelDataStreamForRead(requestCancelDataStream);
+            }
+
             return this;
         }
 
         public IJobConfig RequireDataStreamForWrite(AbstractProxyDataStream dataStream)
         {
+            return RequireDataStreamForWrite(dataStream, Usage.Write);
+        }
+
+        private IJobConfig RequireDataStreamForWrite(AbstractProxyDataStream dataStream, Usage usage)
+        {
             Debug_EnsureScheduleInfoExists();
 
-            JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Write);
-            
+            JobConfigDataID id = new JobConfigDataID(dataStream, usage);
+
             Debug_EnsureWrapperValidity(id);
             Debug_EnsureWrapperUsage(id);
-            
+
             m_AccessWrappers.Add(id,
                                  new DataStreamAccessWrapper(dataStream, AccessType.SharedWrite));
             return this;
@@ -158,10 +170,10 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureScheduleInfoExists();
 
             JobConfigDataID id = new JobConfigDataID(dataStream, Usage.Read);
-            
+
             Debug_EnsureWrapperValidity(id);
             Debug_EnsureWrapperUsage(id);
-            
+
             m_AccessWrappers.Add(id,
                                  new DataStreamAccessWrapper(dataStream, AccessType.SharedRead));
             return this;
@@ -183,12 +195,12 @@ namespace Anvil.Unity.DOTS.Entities
             foreach (ResolveChannelData data in resolveChannelData)
             {
                 JobConfigDataID id = new JobConfigDataID(data.DataStream, Usage.Write);
-                
+
                 Debug_EnsureWrapperValidity(id);
                 Debug_EnsureWrapperUsage(id);
 
                 DataStreamAsResolveChannelAccessWrapper wrapper = DataStreamAsResolveChannelAccessWrapper.Create(resolveChannel, data);
-                
+
                 m_AccessWrappers.Add(id, wrapper);
                 m_ResolveChannelAccessWrappers.Add(wrapper);
             }
@@ -205,52 +217,52 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureScheduleInfoExists();
 
             JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), Usage.Write);
-            
+
             Debug_EnsureWrapperValidity(id);
-            
+
             m_AccessWrappers.Add(id,
                                  NativeArrayAccessWrapper.Create(array));
             return this;
         }
-        
+
         public IJobConfig RequireNativeArrayForRead<T>(NativeArray<T> array)
             where T : unmanaged
         {
             Debug_EnsureScheduleInfoExists();
 
             JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), Usage.Read);
-            
+
             Debug_EnsureWrapperValidity(id);
-            
+
             m_AccessWrappers.Add(id,
                                  NativeArrayAccessWrapper.Create(array));
             return this;
         }
-        
+
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
-        
+
         public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             Debug_EnsureScheduleInfoExists();
 
             JobConfigDataID id = new JobConfigDataID(typeof(EntityQueryAccessWrapper.EntityQueryType<Entity>), Usage.Read);
-            
+
             Debug_EnsureWrapperValidity(id);
-            
+
             EntityQueryAccessWrapper wrapper = new EntityQueryAccessWrapper(entityQuery);
-            
+
             m_AccessWrappers.Add(id, wrapper);
 
             if (m_ScheduleInfo is EntityQueryScheduleInfo entityQueryScheduleInfo)
             {
                 entityQueryScheduleInfo.LinkWithWrapper(wrapper);
             }
-            
+
             return this;
         }
-        
+
         //*************************************************************************************************************
         // HARDEN
         //*************************************************************************************************************
@@ -263,7 +275,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             m_IsHardened = true;
-            
+
             foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 m_SchedulingAccessWrappers.Add(wrapper);
@@ -273,26 +285,27 @@ namespace Anvil.Unity.DOTS.Entities
 
             DataStreamChannelResolver = new DataStreamChannelResolver(m_JobResolveChannelMapping);
         }
-        
+
         //*************************************************************************************************************
         // EXECUTION
         //*************************************************************************************************************
-        
+
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
             Debug_EnsureIsHardened();
             Debug_EnsureScheduleInfoExists();
-            
+
             int index = 0;
             for (; index < m_SchedulingAccessWrappers.Count; ++index)
             {
                 m_AccessWrapperDependencies[index] = m_SchedulingAccessWrappers[index].Acquire();
             }
+
             m_AccessWrapperDependencies[index] = dependsOn;
 
             dependsOn = JobHandle.CombineDependencies(m_AccessWrapperDependencies);
-            dependsOn = m_ScheduleJobFunction(dependsOn, m_JobData, m_ScheduleInfo);
-            
+            dependsOn = CallScheduleFunction(dependsOn, m_JobData);
+
             foreach (IAccessWrapper wrapper in m_SchedulingAccessWrappers)
             {
                 wrapper.Release(dependsOn);
@@ -301,6 +314,9 @@ namespace Anvil.Unity.DOTS.Entities
             return dependsOn;
         }
 
+        protected abstract JobHandle CallScheduleFunction(JobHandle dependsOn, 
+                                                          JobData jobData);
+
         internal ProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IProxyInstance
         {
@@ -308,6 +324,14 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureWrapperExists(id);
             DataStreamAccessWrapper dataStreamAccessWrapper = (DataStreamAccessWrapper)m_AccessWrappers[id];
             return (ProxyDataStream<TInstance>)dataStreamAccessWrapper.DataStream;
+        }
+
+        internal RequestCancelDataStream GetRequestCancelDataStream(Usage usage)
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(RequestCancelDataStream), usage);
+            Debug_EnsureWrapperExists(id);
+            DataStreamAccessWrapper dataStreamAccessWrapper = (DataStreamAccessWrapper)m_AccessWrappers[id];
+            return (RequestCancelDataStream)dataStreamAccessWrapper.DataStream;
         }
 
         internal NativeArray<T> GetNativeArray<T>(Usage usage)
@@ -339,8 +363,8 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"{this} has required data specified but {nameof(ScheduleOn)} wasn't called first! This shouldn't happen due to interfaces but perhaps code changes invalidated this?");
             }
         }
-        
-        
+
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoScheduleInfo()
         {
@@ -349,7 +373,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"{this} is trying to schedule a job but it already has Schedule Info {m_ScheduleInfo} defined! Only call {nameof(ScheduleOn)} once!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureIsHardened()
         {
@@ -358,8 +382,8 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"{this} is not hardened yet!");
             }
         }
-        
-        
+
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureScheduleInfoExists()
         {
@@ -427,8 +451,8 @@ namespace Anvil.Unity.DOTS.Entities
                 }
             }
         }
-        
-        
+
+
         //TODO: See where this can fit during hardening
         // [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         // private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, ITaskDriver taskDriver)

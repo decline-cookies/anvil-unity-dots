@@ -49,6 +49,16 @@ namespace Anvil.Unity.DOTS.Entities
         //here but keeping the TODO for future reminder.
         
         //*************************************************************************************************************
+        // JOB STRUCTS
+        //*************************************************************************************************************
+        
+        //TODO: Maybe rename to "CancelRequestsReader"?
+        internal RequestCancelReader CreateRequestCancelReader()
+        {
+            return new RequestCancelReader(m_Lookup);
+        }
+        
+        //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
         protected sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)

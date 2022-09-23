@@ -9,14 +9,14 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public JobConfig JobConfig
+        public AbstractJobConfig JobConfig
         {
             get;
         }
 
         public JobNode(JobRouteNode routeNode,
                        TaskFlowRoute route,
-                       JobConfig jobConfig,
+                       AbstractJobConfig jobConfig,
                        TaskFlowGraph taskFlowGraph,
                        ITaskSystem taskSystem,
                        ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)

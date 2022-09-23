@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public interface IScheduleJobConfig
     {
-        public IJobConfig ScheduleOn<TInstance>(ProxyDataStream<TInstance> dataStream, BatchStrategy batchStrategy)
+        public IJobConfig ScheduleOn<TInstance>(ITaskStream<TInstance> dataStream, BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance;
 
         public IJobConfig ScheduleOn<T>(NativeArray<T> nativeArray, BatchStrategy batchStrategy)

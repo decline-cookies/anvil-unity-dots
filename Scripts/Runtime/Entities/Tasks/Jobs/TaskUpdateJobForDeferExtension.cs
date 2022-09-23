@@ -1,4 +1,3 @@
-using Anvil.Unity.DOTS.Data;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -15,8 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
-                                                                         DeferredNativeArrayScheduleInfo scheduleInfo,
-                                                                         int batchSize,
+                                                                         UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo,
                                                                          JobHandle dependsOn = default)
             where TJob : struct, ITaskUpdateJobForDefer<TInstance>
             where TInstance : unmanaged, IProxyInstance
@@ -24,14 +22,15 @@ namespace Anvil.Unity.DOTS.Entities
             void* atomicSafetyHandlePtr = null;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            atomicSafetyHandlePtr = scheduleInfo.SafetyHandlePtr;
+            atomicSafetyHandlePtr = scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr;
 #endif
 
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-            
+
             //TODO: Pass in the structs needed for filtering from the UpdateJobScheduleInfo into this wrapper struct
-            WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData);
+            WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
+                                                                                                  ref scheduleInfo);
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
@@ -40,8 +39,8 @@ namespace Anvil.Unity.DOTS.Entities
 
 
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
-                                                                      batchSize,
-                                                                      scheduleInfo.BufferPtr,
+                                                                      scheduleInfo.BatchSize,
+                                                                      scheduleInfo.DeferredNativeArrayScheduleInfo.BufferPtr,
                                                                       atomicSafetyHandlePtr);
 
             return dependsOn;
@@ -50,7 +49,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // STATIC HELPERS
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void ValidateReflectionData(IntPtr reflectionData)
         {
@@ -71,11 +70,14 @@ namespace Anvil.Unity.DOTS.Entities
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
 
             internal TJob JobData;
+            internal DataStreamUpdater<TInstance> Updater;
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
-            public WrapperJobStruct(ref TJob jobData)
+            public WrapperJobStruct(ref TJob jobData,
+                                    ref UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo)
             {
                 JobData = jobData;
+                Updater = scheduleInfo.Updater;
                 NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
             }
         }
@@ -89,9 +91,9 @@ namespace Anvil.Unity.DOTS.Entities
         {
             // ReSharper disable once StaticMemberInGenericType
             internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob, TInstance>),
-                                                                                                     typeof(TJob),
-                                                                                                     (ExecuteJobFunction)Execute);
-            
+                                                                                                      typeof(TJob),
+                                                                                                      (ExecuteJobFunction)Execute);
+
 
             private delegate void ExecuteJobFunction(ref WrapperJobStruct<TJob, TInstance> jobData,
                                                      IntPtr additionalPtr,
@@ -108,6 +110,9 @@ namespace Anvil.Unity.DOTS.Entities
                                               int jobIndex)
             {
                 ref TJob jobData = ref wrapperData.JobData;
+                ref DataStreamUpdater<TInstance> updater = ref wrapperData.Updater;
+
+                updater.InitForThread(wrapperData.NativeThreadIndex);
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
                 while (true)
@@ -123,7 +128,11 @@ namespace Anvil.Unity.DOTS.Entities
 
                     for (int i = beginIndex; i < endIndex; ++i)
                     {
-                        jobData.Execute(i);
+                        if (!updater.TryGetInstanceIfNotRequestedToCancel(i, out TInstance instance))
+                        {
+                            continue;
+                        }
+                        jobData.Execute(ref instance, ref updater);
                     }
                 }
             }

@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             JobRouteNode routeNode = GetOrCreateRouteNode(route);
 
-            JobConfig jobConfig = new JobConfig(TaskFlowGraph,
+            AbstractJobConfig jobConfig = new AbstractJobConfig(TaskFlowGraph,
                                                 TaskSystem,
                                                 TaskDriver,
                                                 scheduleJobFunction);
@@ -60,13 +60,13 @@ namespace Anvil.Unity.DOTS.Entities
             return routeNode;
         }
 
-        public void PopulateWithJobConfigs(Dictionary<TaskFlowRoute, List<JobConfig>> jobConfigs)
+        public void PopulateWithJobConfigs(Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs)
         {
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
             {
-                if (!jobConfigs.TryGetValue(route, out List<JobConfig> jobConfigList))
+                if (!jobConfigs.TryGetValue(route, out List<AbstractJobConfig> jobConfigList))
                 {
-                    jobConfigList = new List<JobConfig>();
+                    jobConfigList = new List<AbstractJobConfig>();
                     jobConfigs.Add(route, jobConfigList);
                 }
                 JobRouteNode routeNode = GetOrCreateRouteNode(route);

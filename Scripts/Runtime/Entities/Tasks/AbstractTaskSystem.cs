@@ -19,11 +19,13 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly ByteIDProvider m_TaskDriverIDProvider;
         private readonly TaskFlowGraph m_TaskFlowGraph;
 
-        private Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
-        private Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
+        private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
+        private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
 
         private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
+
+        private readonly RequestCancelDataStream m_RequestCancelDataStream;
 
         private bool m_IsHardened;
 
@@ -38,6 +40,8 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_TaskDriverIDProvider = new ByteIDProvider();
             Context = m_TaskDriverIDProvider.GetNextID();
+
+            m_RequestCancelDataStream = new RequestCancelDataStream();
 
             //TODO: Talk to Mike about this. The World property is null for the default world because systems are created via Activator.CreateInstance.
             //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
@@ -68,14 +72,14 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        private void DisposeJobConfigBulkJobSchedulerLookup(Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup)
+        private void DisposeJobConfigBulkJobSchedulerLookup(Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup)
         {
             if (lookup == null)
             {
                 return;
             }
 
-            foreach (BulkJobScheduler<JobConfig> scheduler in lookup.Values)
+            foreach (BulkJobScheduler<AbstractJobConfig> scheduler in lookup.Values)
             {
                 scheduler.Dispose();
             }
@@ -91,7 +95,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             m_IsHardened = true;
-            
+
             m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
             m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, m_TaskDrivers);
 
@@ -113,7 +117,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             return m_TaskDriverIDProvider.GetNextID();
         }
-        
+
         internal IScheduleJobConfig ConfigurePopulateJob(ITaskDriver taskDriver,
                                                          IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
@@ -122,14 +126,26 @@ namespace Anvil.Unity.DOTS.Entities
                                 TaskFlowRoute.Populate);
         }
         
-        protected IScheduleUpdateJobConfig ConfigureUpdateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        protected IJobConfig ConfigureUpdateJob<TInstance>(IUpdateJobConfig.ScheduleJobDelegate<TInstance> scheduleJobFunction,
+                                                           ITaskStream<TInstance> dataStream,
+                                                           BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IProxyInstance
         {
-            return ConfigureJob(null,
-                                scheduleJobFunction,
-                                TaskFlowRoute.Update);
+            Debug_EnsureNotHardened(TaskFlowRoute.Update, null);
+
+            UpdateJobConfig<TInstance> updateJobConfig = new UpdateJobConfig<TInstance>(m_TaskFlowGraph,
+                                                                                        this,
+                                                                                        null,
+                                                                                        scheduleJobFunction,
+                                                                                        dataStream,
+                                                                                        batchStrategy,
+                                                                                        m_RequestCancelDataStream);
+            //TODO: Register with the Task Flow Graph
+            
+            return updateJobConfig;
         }
 
-        private JobConfig ConfigureJob(ITaskDriver taskDriver,
+        private AbstractJobConfig ConfigureJob(ITaskDriver taskDriver,
                                        IJobConfig.ScheduleJobDelegate scheduleJobFunction,
                                        TaskFlowRoute route)
         {
@@ -151,6 +167,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return;
             }
+
             Harden();
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
@@ -190,11 +207,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle ScheduleJobs(JobHandle dependsOn,
                                        TaskFlowRoute route,
-                                       Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup)
+                                       Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup)
         {
-            BulkJobScheduler<JobConfig> scheduler = lookup[route];
+            BulkJobScheduler<AbstractJobConfig> scheduler = lookup[route];
             return scheduler.Schedule(dependsOn,
-                                      JobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
+                                      AbstractJobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
         }
 
 

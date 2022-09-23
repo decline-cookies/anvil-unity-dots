@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public class JobData
     {
-        private readonly JobConfig m_JobConfig;
+        private readonly AbstractJobConfig m_JobConfig;
         private readonly byte m_Context;
 
         public World World
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         internal JobData(World world,
                          byte context,
-                         JobConfig jobConfig)
+                         AbstractJobConfig jobConfig)
         {
             World = world;
             m_Context = context;
@@ -33,18 +33,27 @@ namespace Anvil.Unity.DOTS.Entities
         // DATA STREAMS
         //*************************************************************************************************************
 
-        public DataStreamUpdater<TInstance> GetDataStreamUpdater<TInstance>()
+        internal DataStreamUpdater<TInstance> GetDataStreamUpdater<TInstance>(RequestCancelReader requestCancelReader)
             where TInstance : unmanaged, IProxyInstance
         {
-            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(JobConfig.Usage.Update);
-            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(m_JobConfig.DataStreamChannelResolver);
+            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Update);
+            ProxyDataStream<TInstance> pendingCancelDataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.WritePendingCancel);
+            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(requestCancelReader,
+                                                                                      pendingCancelDataStream,
+                                                                                      m_JobConfig.DataStreamChannelResolver);
             return updater;
+        }
+
+        internal RequestCancelReader GetRequestCancelReader()
+        {
+            RequestCancelDataStream requestCancelDataStream = m_JobConfig.GetRequestCancelDataStream(AbstractJobConfig.Usage.Read);
+            return requestCancelDataStream.CreateRequestCancelReader();
         }
 
         public DataStreamWriter<TInstance> GetDataStreamWriter<TInstance>()
             where TInstance : unmanaged, IProxyInstance
         {
-            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(JobConfig.Usage.Write);
+            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Write);
             DataStreamWriter<TInstance> writer = dataStream.CreateDataStreamWriter(m_Context);
             return writer;
         }
@@ -52,11 +61,11 @@ namespace Anvil.Unity.DOTS.Entities
         public DataStreamReader<TInstance> GetDataStreamReader<TInstance>()
             where TInstance : unmanaged, IProxyInstance
         {
-            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(JobConfig.Usage.Read);
+            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Read);
             DataStreamReader<TInstance> reader = dataStream.CreateDataStreamReader();
             return reader;
         }
-        
+
         //*************************************************************************************************************
         // NATIVE ARRAY
         //*************************************************************************************************************
@@ -64,13 +73,13 @@ namespace Anvil.Unity.DOTS.Entities
         public NativeArray<T> GetNativeArrayReadWrite<T>()
             where T : unmanaged
         {
-            return m_JobConfig.GetNativeArray<T>(JobConfig.Usage.Write);
+            return m_JobConfig.GetNativeArray<T>(AbstractJobConfig.Usage.Write);
         }
 
         public NativeArray<T> GetNativeArrayReadOnly<T>()
             where T : unmanaged
         {
-            return m_JobConfig.GetNativeArray<T>(JobConfig.Usage.Read);
+            return m_JobConfig.GetNativeArray<T>(AbstractJobConfig.Usage.Read);
         }
         
         //*************************************************************************************************************
@@ -79,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public NativeArray<Entity> GetEntityNativeArrayFromQuery()
         {
-            return m_JobConfig.GetEntityNativeArrayFromQuery(JobConfig.Usage.Read);
+            return m_JobConfig.GetEntityNativeArrayFromQuery(AbstractJobConfig.Usage.Read);
         }
     }
 }

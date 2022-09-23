@@ -16,6 +16,6 @@ namespace Anvil.Unity.DOTS.Entities
         /// Implement this method to perform work against a specific iteration index.
         /// </summary>
         /// <param name="index">The index of the <see cref="NativeArray{T}"/> from a <see cref="DeferredNativeArray{T}"/></param>
-        void Execute(int index);
+        void Execute(ref TInstance instance, ref DataStreamUpdater<TInstance> updater);
     }
 }
