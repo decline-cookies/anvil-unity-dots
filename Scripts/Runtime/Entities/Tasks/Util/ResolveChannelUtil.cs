@@ -6,6 +6,8 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal static class ResolveChannelUtil
     {
+        public const byte CANCEL = byte.MaxValue;
+        
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -15,6 +17,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TResolveChannel : Enum
         {
             Debug_EnsureEnumIsSizedProperly(typeof(TResolveChannel));
+            Debug_EnsureValueIsValid(resolveChannel);
         }
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -27,6 +30,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             Debug_EnsureEnumIsSizedProperly(type);
+            Debug_EnsureValueIsValid(resolveChannel);
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -38,6 +42,29 @@ namespace Anvil.Unity.DOTS.Entities
             if (sizeOfType != sizeOfByte)
             {
                 throw new InvalidOperationException($"Resolve Channel Enum is of size {sizeOfType} bytes but needs to be the size of a {typeof(byte)} or {sizeOfByte} byte");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void Debug_EnsureValueIsValid(object resolveChannel)
+        {
+            byte value = UnsafeUtility.As<object, byte>(ref resolveChannel);
+            Debug_EnsureValueIsValid(value);
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void Debug_EnsureValueIsValid<TResolveChannel>(TResolveChannel resolveChannel)
+            where TResolveChannel : Enum
+        {
+            byte value = UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel);
+            Debug_EnsureValueIsValid(value);
+        }
+
+        private static void Debug_EnsureValueIsValid(byte value)
+        {
+            if (value >= CANCEL)
+            {
+                throw new InvalidOperationException($"Resolve Channel Enum is set to {value} but that is a reserved value for signaling Cancelling. Please choose another value.");
             }
         }
     }

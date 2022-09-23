@@ -196,16 +196,6 @@ namespace Anvil.Unity.DOTS.Entities
             return this;
         }
 
-        public IJobConfig TEMP_FilterOut<TResolveChannel>(TResolveChannel resolveChannel)
-            where TResolveChannel : Enum
-        {
-            Debug_EnsureScheduleInfoExists();
-            
-            ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
-            
-            
-        }
-        
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - NATIVE ARRAY
         //*************************************************************************************************************
