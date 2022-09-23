@@ -65,8 +65,6 @@ namespace Anvil.Unity.DOTS.Entities
             AccessController.Acquire(AccessType.Disposal);
             m_Pending.Dispose();
             m_IterationTarget.Dispose();
-
-            AccessController.Dispose();
             base.DisposeSelf();
         }
 

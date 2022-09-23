@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities
 {

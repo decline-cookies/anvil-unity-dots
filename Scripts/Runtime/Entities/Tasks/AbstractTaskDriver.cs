@@ -1,4 +1,5 @@
 using Anvil.CSharp.Core;
+using System.Collections.Generic;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -19,6 +20,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
+        private readonly List<ITaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
 
         protected AbstractTaskDriver(World world)
@@ -26,12 +28,20 @@ namespace Anvil.Unity.DOTS.Entities
             TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
             Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
 
+            m_SubTaskDrivers = new List<ITaskDriver>();
+
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateDataStreams(TaskSystem, this);
         }
 
         protected override void DisposeSelf()
         {
+            foreach (ITaskDriver subTaskDriver in m_SubTaskDrivers)
+            {
+                subTaskDriver.Dispose();
+            }
+            m_SubTaskDrivers.Clear();
+
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
             base.DisposeSelf();
         }
