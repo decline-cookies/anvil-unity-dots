@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_SubTaskDrivers = new List<ITaskDriver>();
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            m_TaskFlowGraph.CreateDataStreams(TaskSystem, this);
+            m_TaskFlowGraph.CreateTaskStreams(TaskSystem, this);
         }
 
         protected override void DisposeSelf()
@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public IScheduleJobConfig ConfigurePopulateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        public IJobConfigScheduling ConfigurePopulateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             return TaskSystem.ConfigurePopulateJob(this,
                                                    scheduleJobFunction);

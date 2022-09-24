@@ -33,14 +33,15 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public DataStreamNode CreateNode(AbstractProxyDataStream dataStream)
+        public DataStreamNode CreateNode(AbstractTaskStream taskStream, AbstractProxyDataStream dataStream)
         {
             Debug_EnsureNoDuplicateNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
                                                      dataStream,
                                                      TaskFlowGraph,
                                                      TaskSystem,
-                                                     TaskDriver);
+                                                     TaskDriver,
+                                                     taskStream);
             m_NodesByDataStream.Add(dataStream, node);
             return node;
         }

@@ -7,10 +7,10 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal static class ProxyDataStreamFactory
+    internal static class TaskStreamFactory
     {
         private static readonly Type I_PROXY_INSTANCE_TYPE = typeof(IProxyInstance);
-        private static readonly MethodInfo PROTOTYPE_METHOD = typeof(ProxyDataStreamFactory).GetMethod(nameof(CreateProxyDataStream), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo PROTOTYPE_METHOD = typeof(TaskStreamFactory).GetMethod(nameof(CreateTaskStream), BindingFlags.Static | BindingFlags.NonPublic);
         private static readonly Dictionary<Type, MethodInfo> TYPED_GENERIC_METHODS = new Dictionary<Type, MethodInfo>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -20,22 +20,23 @@ namespace Anvil.Unity.DOTS.Entities
             TYPED_GENERIC_METHODS.Clear();
         }
 
-        public static AbstractProxyDataStream Create(Type instanceType)
+        public static AbstractTaskStream Create(Type taskStreamType, Type instanceType)
         {
-            Debug_CheckType(instanceType);
-            if (!TYPED_GENERIC_METHODS.TryGetValue(instanceType, out MethodInfo typedGenericMethod))
+            Debug_CheckInstanceType(instanceType);
+            if (!TYPED_GENERIC_METHODS.TryGetValue(taskStreamType, out MethodInfo typedGenericMethod))
             {
-                typedGenericMethod = PROTOTYPE_METHOD.MakeGenericMethod(instanceType);
+                typedGenericMethod = PROTOTYPE_METHOD.MakeGenericMethod(taskStreamType, instanceType);
                 TYPED_GENERIC_METHODS.Add(instanceType, typedGenericMethod);
             }
 
-            return (AbstractProxyDataStream)typedGenericMethod.Invoke(null, null);
+            return (AbstractTaskStream)typedGenericMethod.Invoke(null, null);
         }
 
-        private static ProxyDataStream<TData> CreateProxyDataStream<TData>()
+        private static TTaskStream CreateTaskStream<TTaskStream, TData>()
+            where TTaskStream : AbstractTaskStream, ITaskStream<TData>, new()
             where TData : unmanaged, IProxyInstance
         {
-            return new ProxyDataStream<TData>();
+            return new TTaskStream();
         }
         
         //*************************************************************************************************************
@@ -43,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void Debug_CheckType(Type proxyInstanceType)
+        private static void Debug_CheckInstanceType(Type proxyInstanceType)
         {
             if (!I_PROXY_INSTANCE_TYPE.IsAssignableFrom(proxyInstanceType))
             {

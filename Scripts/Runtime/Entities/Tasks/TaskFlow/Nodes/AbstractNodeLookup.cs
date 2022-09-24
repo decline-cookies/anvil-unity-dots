@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
-        
+
         protected AbstractNodeLookup(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
             TaskFlowGraph = taskFlowGraph;

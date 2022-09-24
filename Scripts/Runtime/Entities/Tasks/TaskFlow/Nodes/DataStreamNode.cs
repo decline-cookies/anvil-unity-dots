@@ -13,15 +13,22 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get;
         }
+        
+        public AbstractTaskStream TaskStream
+        {
+            get;
+        }
 
         public DataStreamNode(DataStreamNodeLookup lookup,
                               AbstractProxyDataStream dataStream,
                               TaskFlowGraph taskFlowGraph,
                               ITaskSystem taskSystem,
-                              ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
+                              ITaskDriver taskDriver,
+                              AbstractTaskStream taskStream) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_Lookup = lookup;
             DataStream = dataStream;
+            TaskStream = taskStream;
 
             m_ResolveChannelLookup = new Dictionary<Type, byte>();
         }
@@ -36,6 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
+            //TODO: Update with Task Stream info
             return $"{DataStream} located in {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
         }
 

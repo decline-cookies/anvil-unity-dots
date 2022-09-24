@@ -47,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
             m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            m_TaskFlowGraph.CreateDataStreams(this);
+            m_TaskFlowGraph.CreateTaskStreams(this);
 
             //TODO: 3. Custom Update Job Types
             //TODO: Create the custom Update Job so we can parse to the different result channels. Required Hardening JobConfig as part of the TaskFlowGraph hardening
@@ -118,17 +118,17 @@ namespace Anvil.Unity.DOTS.Entities
             return m_TaskDriverIDProvider.GetNextID();
         }
 
-        internal IScheduleJobConfig ConfigurePopulateJob(ITaskDriver taskDriver,
-                                                         IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        internal IJobConfigScheduling ConfigurePopulateJob(ITaskDriver taskDriver,
+                                                           IJobConfig.ScheduleJobDelegate scheduleJobFunction)
         {
             return ConfigureJob(taskDriver,
                                 scheduleJobFunction,
                                 TaskFlowRoute.Populate);
         }
-        
-        protected IJobConfig ConfigureUpdateJob<TInstance>(IUpdateJobConfig.ScheduleJobDelegate<TInstance> scheduleJobFunction,
-                                                           ITaskStream<TInstance> dataStream,
-                                                           BatchStrategy batchStrategy)
+
+        protected IUpdateJobConfigRequirements ConfigureUpdateJob<TInstance>(IUpdateJobConfig.ScheduleJobDelegate<TInstance> scheduleJobFunction,
+                                                                             ITaskStream<TInstance> dataStream,
+                                                                             BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureNotHardened(TaskFlowRoute.Update, null);
@@ -140,21 +140,26 @@ namespace Anvil.Unity.DOTS.Entities
                                                                                         dataStream,
                                                                                         batchStrategy,
                                                                                         m_RequestCancelDataStream);
-            //TODO: Register with the Task Flow Graph
-            
+            m_TaskFlowGraph.RegisterJobConfig(updateJobConfig, TaskFlowRoute.Update);
+
             return updateJobConfig;
         }
 
-        private AbstractJobConfig ConfigureJob(ITaskDriver taskDriver,
+        private JobConfig ConfigureJob(ITaskDriver taskDriver,
                                        IJobConfig.ScheduleJobDelegate scheduleJobFunction,
                                        TaskFlowRoute route)
         {
             Debug_EnsureNotHardened(route, taskDriver);
+            Debug_EnsureRouteNotUpdate(route);
 
-            return m_TaskFlowGraph.CreateJobConfig(this,
-                                                   taskDriver,
-                                                   scheduleJobFunction,
-                                                   route);
+            JobConfig jobConfig = new JobConfig(m_TaskFlowGraph,
+                                                this,
+                                                taskDriver,
+                                                scheduleJobFunction);
+
+            m_TaskFlowGraph.RegisterJobConfig(jobConfig, route);
+
+            return jobConfig;
         }
 
         //*************************************************************************************************************
@@ -248,6 +253,15 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {typeof(TTaskDriver)}'s are created in {nameof(OnCreate)} or earlier.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureRouteNotUpdate(TaskFlowRoute route)
+        {
+            if (route == TaskFlowRoute.Update)
+            {
+                throw new InvalidOperationException($"Trying to register a job with the {TaskFlowRoute.Update} route but it's not an Update Job. Code change has caused an error. Investigate!");
             }
         }
     }

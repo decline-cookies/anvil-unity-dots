@@ -33,15 +33,9 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
-        public JobNode CreateJobNode(TaskFlowRoute route, IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        public JobNode CreateJobNode(TaskFlowRoute route, AbstractJobConfig jobConfig)
         {
             JobRouteNode routeNode = GetOrCreateRouteNode(route);
-
-            AbstractJobConfig jobConfig = new AbstractJobConfig(TaskFlowGraph,
-                                                TaskSystem,
-                                                TaskDriver,
-                                                scheduleJobFunction);
-            
             return routeNode.CreateNode(jobConfig);
         }
 

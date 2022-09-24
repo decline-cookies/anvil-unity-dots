@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities
             ProxyDataStream<TInstance> pendingCancelDataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.WritePendingCancel);
             DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(requestCancelReader,
                                                                                       pendingCancelDataStream,
-                                                                                      m_JobConfig.DataStreamChannelResolver);
+                                                                                      m_JobConfig.GetDataStreamChannelResolver());
             return updater;
         }
 
