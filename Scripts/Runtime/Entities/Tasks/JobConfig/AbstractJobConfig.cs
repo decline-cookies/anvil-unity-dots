@@ -34,9 +34,15 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<IAccessWrapper> m_SchedulingAccessWrappers;
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
 
+        private bool m_ShouldDisableAfterNextRun;
         private bool m_IsHardened;
         private IScheduleInfo m_ScheduleInfo;
-        
+
+        public bool IsEnabled
+        {
+            get;
+            set;
+        }
         
         protected TaskFlowGraph TaskFlowGraph { get; }
         protected internal ITaskSystem TaskSystem { get; }
@@ -55,6 +61,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractJobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
+            IsEnabled = true;
             m_Type = GetType();
             
             //TODO: Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
@@ -86,7 +93,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            return $"{m_Type.Name} with schedule function name of {GetScheduleJobFunctionDebugInfo()} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
+            return $"{m_TypeString} with schedule function name of {GetScheduleJobFunctionDebugInfo()} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
         }
 
         protected abstract string GetScheduleJobFunctionDebugInfo();
@@ -94,6 +101,12 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONFIGURATION - COMMON
         //*************************************************************************************************************
+
+        public IJobConfig RunOnce()
+        {
+            m_ShouldDisableAfterNextRun = true;
+            return this;
+        }
 
         protected void AddAccessWrapper(JobConfigDataID id, IAccessWrapper accessWrapper)
         {
@@ -201,6 +214,16 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
+            if (!IsEnabled)
+            {
+                return dependsOn;
+            }
+
+            if (m_ShouldDisableAfterNextRun)
+            {
+                IsEnabled = false;
+            }
+            
             Debug_EnsureIsHardened();
             Debug_EnsureScheduleInfoExists();
 

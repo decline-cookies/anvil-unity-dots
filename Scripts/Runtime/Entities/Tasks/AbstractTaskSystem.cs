@@ -115,14 +115,14 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         internal IJobConfigScheduling ConfigurePopulateJob(ITaskDriver taskDriver,
-                                                           IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+                                                           JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction)
         {
             return ConfigureJob(taskDriver,
                                 scheduleJobFunction,
                                 TaskFlowRoute.Populate);
         }
 
-        protected IUpdateJobConfigRequirements ConfigureUpdateJob<TInstance>(IUpdateJobConfig.ScheduleJobDelegate<TInstance> scheduleJobFunction,
+        protected IUpdateJobConfigRequirements ConfigureUpdateJob<TInstance>(JobConfigDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                              ITaskStream<TInstance> dataStream,
                                                                              BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
@@ -142,7 +142,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         private JobConfig ConfigureJob(ITaskDriver taskDriver,
-                                       IJobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                       JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction,
                                        TaskFlowRoute route)
         {
             Debug_EnsureNotHardened(route, taskDriver);

@@ -6,15 +6,14 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class JobConfig : AbstractJobConfig,
-                               IJobConfigScheduling,
-                               IJobConfig
+                               IJobConfigScheduling
     {
-        private readonly IJobConfig.ScheduleJobDelegate m_ScheduleJobFunction;
+        private readonly JobConfigDelegates.ScheduleJobDelegate m_ScheduleJobFunction;
 
         public JobConfig(TaskFlowGraph taskFlowGraph, 
                          ITaskSystem taskSystem, 
                          ITaskDriver taskDriver, 
-                         IJobConfig.ScheduleJobDelegate scheduleJobFunction) : base(taskFlowGraph, taskSystem, taskDriver)
+                         JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_ScheduleJobFunction = scheduleJobFunction;
         }

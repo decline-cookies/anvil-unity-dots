@@ -6,11 +6,10 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class UpdateJobConfig<TInstance> : AbstractJobConfig,
-                                                IUpdateJobConfig,
                                                 IUpdateJobConfigRequirements
         where TInstance : unmanaged, IProxyInstance
     {
-        private readonly IUpdateJobConfig.ScheduleJobDelegate<TInstance> m_ScheduleJobFunction;
+        private readonly JobConfigDelegates.ScheduleUpdateJobDelegate<TInstance> m_ScheduleJobFunction;
         private readonly UpdateTaskStreamScheduleInfo<TInstance> m_ScheduleInfo;
         private readonly JobResolveTargetMapping m_JobResolveTargetMapping;
 
@@ -19,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
                                ITaskSystem taskSystem,
                                ITaskDriver taskDriver,
-                               IUpdateJobConfig.ScheduleJobDelegate<TInstance> scheduleJobFunction,
+                               JobConfigDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                ITaskStream<TInstance> taskStream,
                                BatchStrategy batchStrategy,
                                CancelRequestsDataStream cancelRequestsDataStream) : base(taskFlowGraph, taskSystem, taskDriver)

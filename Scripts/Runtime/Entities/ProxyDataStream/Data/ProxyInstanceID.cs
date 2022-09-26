@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Util;
 using System;
 using Unity.Collections;
 using Unity.Entities;
@@ -37,16 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override int GetHashCode()
         {
-            //Taken from ValueTuple.cs GetHashCode. 
-            //https://github.com/dotnet/roslyn/blob/main/src/Compilers/Test/Resources/Core/NetFX/ValueTuple/ValueTuple.cs
-            //Licence is a-ok as per the top of the linked file:
-            // - Licensed to the .NET Foundation under one or more agreements.
-            // - The .NET Foundation licenses this file to you under the MIT license.
-            // - See the LICENSE file in the project root for more information.
-            //Unfortunately we can't use directly because it has a static Random class it creates which doesn't jive with Burst
-            uint uintContext = Context;
-            uint rol5 = (uintContext << 5) | (uintContext >> 27);
-            return ((int)rol5 + Context) ^ Entity.Index;
+            return HashCodeUtil.GetHashCode(Context, Entity.Index);
         }
 
         public override string ToString()

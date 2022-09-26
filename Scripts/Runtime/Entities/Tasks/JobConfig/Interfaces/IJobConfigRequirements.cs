@@ -3,7 +3,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IJobConfigRequirements
+    public interface IJobConfigRequirements : IJobConfig
     {
         public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(ITaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IProxyInstance;

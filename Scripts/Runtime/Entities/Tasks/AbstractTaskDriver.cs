@@ -47,7 +47,13 @@ namespace Anvil.Unity.DOTS.Entities
             base.DisposeSelf();
         }
 
-        public IJobConfigScheduling ConfigurePopulateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        public void Populate<TInstance>(IEnumerable<TInstance> instances, TaskStream<TInstance> taskStream)
+            where TInstance : unmanaged, IProxyInstance
+        {
+            
+        }
+
+        public IJobConfigScheduling ConfigurePopulateJob(JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction)
         {
             return TaskSystem.ConfigurePopulateJob(this,
                                                    scheduleJobFunction);
