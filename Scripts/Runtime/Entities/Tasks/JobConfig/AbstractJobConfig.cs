@@ -26,7 +26,8 @@ namespace Anvil.Unity.DOTS.Entities
         internal static readonly BulkScheduleDelegate<AbstractJobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractJobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
 
-        
+        private readonly Type m_Type;
+        private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
         private readonly JobData m_JobData;
         
@@ -54,6 +55,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractJobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
+            m_Type = GetType();
+            
+            //TODO: Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
+            m_TypeString = m_Type.IsGenericType
+                ? $"{m_Type.Name[..^2]}<{m_Type.GenericTypeArguments[0].Name}>"
+                : m_Type.Name;
+            
             TaskFlowGraph = taskFlowGraph;
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
@@ -78,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            return $"{nameof(AbstractJobConfig)} with schedule function name of {GetScheduleJobFunctionDebugInfo()} on {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
+            return $"{m_Type.Name} with schedule function name of {GetScheduleJobFunctionDebugInfo()} on {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
         }
 
         protected abstract string GetScheduleJobFunctionDebugInfo();
@@ -163,7 +171,7 @@ namespace Anvil.Unity.DOTS.Entities
         // HARDEN
         //*************************************************************************************************************
 
-        public virtual void Harden()
+        public void Harden()
         {
             if (m_IsHardened)
             {
@@ -178,6 +186,13 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             m_AccessWrapperDependencies = new NativeArray<JobHandle>(m_SchedulingAccessWrappers.Count + 1, Allocator.Persistent);
+            
+            HardenConfig();
+        }
+
+        protected virtual void HardenConfig()
+        {
+            
         }
 
         //*************************************************************************************************************
@@ -319,13 +334,20 @@ namespace Anvil.Unity.DOTS.Entities
             switch (id.Usage)
             {
                 case Usage.Update:
-                    Debug_EnsureWrapperUsageValid(id);
+                    //While updating, the same type could be cancelling.
+                    Debug_EnsureWrapperUsageValid(id, Usage.WritePendingCancel);
                     break;
                 case Usage.Write:
+                    //Allowed to read while writing because we are writing to UnsafeTypedStream and reading from NativeArray
                     Debug_EnsureWrapperUsageValid(id, Usage.Read);
                     break;
                 case Usage.Read:
+                    //Allowed to write while reading because we are writing to UnsafeTypedStream and reading from NativeArray
                     Debug_EnsureWrapperUsageValid(id, Usage.Write);
+                    break;
+                case Usage.WritePendingCancel:
+                    //We'll be updating when writing to cancel
+                    Debug_EnsureWrapperUsageValid(id, Usage.Update);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException($"Trying to switch on {nameof(id.Usage)} but no code path satisfies for {id.Usage}!");

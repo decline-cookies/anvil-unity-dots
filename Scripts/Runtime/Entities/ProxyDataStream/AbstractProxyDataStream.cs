@@ -20,12 +20,17 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        private readonly string m_DebugString;
+        private readonly string m_TypeString;
 
         protected AbstractProxyDataStream()
         {
             Type = GetType();
-            m_DebugString = $"{Type.Name[..^2]}<{Type.GenericTypeArguments[0].Name}>";
+            
+            //TODO: Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            m_TypeString = Type.IsGenericType
+                ? $"{Type.Name[..^2]}<{Type.GenericTypeArguments[0].Name}>"
+                : Type.Name;
+            
             AccessController = new AccessController();
         }
 
@@ -37,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            return m_DebugString;
+            return m_TypeString;
         }
 
         protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);

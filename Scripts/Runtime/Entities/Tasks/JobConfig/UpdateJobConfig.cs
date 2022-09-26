@@ -95,9 +95,8 @@ namespace Anvil.Unity.DOTS.Entities
         // HARDEN
         //*************************************************************************************************************
 
-        public override void Harden()
+        protected sealed override void HardenConfig()
         {
-            base.Harden();
             m_DataStreamChannelResolver = new DataStreamChannelResolver(m_JobResolveChannelMapping);
         }
 

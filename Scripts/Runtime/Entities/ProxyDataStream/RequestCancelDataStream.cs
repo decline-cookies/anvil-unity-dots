@@ -36,11 +36,6 @@ namespace Anvil.Unity.DOTS.Entities
             throw new NotSupportedException($"Trying to access the writer pointer for {this} but that is not supported!");
         }
 
-        public override string ToString()
-        {
-            return Type.Name;
-        }
-
         //*************************************************************************************************************
         // SERIALIZATION
         //*************************************************************************************************************

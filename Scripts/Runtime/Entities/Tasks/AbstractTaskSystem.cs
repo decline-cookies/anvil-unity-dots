@@ -48,9 +48,6 @@ namespace Anvil.Unity.DOTS.Entities
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
             m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateTaskStreams(this);
-
-            //TODO: 3. Custom Update Job Types
-            //TODO: Create the custom Update Job so we can parse to the different result channels. Required Hardening JobConfig as part of the TaskFlowGraph hardening
         }
 
         protected override void OnDestroy()
