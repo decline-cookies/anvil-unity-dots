@@ -16,10 +16,11 @@ namespace Anvil.Unity.DOTS.Entities
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
+            //TODO: Double check this works as expected in a build. https://github.com/decline-cookies/anvil-unity-dots/pull/58/files#r974334409
             TYPED_GENERIC_METHODS.Clear();
         }
 
-        public static IProxyDataStream Create(Type instanceType)
+        public static AbstractProxyDataStream Create(Type instanceType)
         {
             Debug_CheckType(instanceType);
             if (!TYPED_GENERIC_METHODS.TryGetValue(instanceType, out MethodInfo typedGenericMethod))
@@ -28,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
                 TYPED_GENERIC_METHODS.Add(instanceType, typedGenericMethod);
             }
 
-            return (IProxyDataStream)typedGenericMethod.Invoke(null, null);
+            return (AbstractProxyDataStream)typedGenericMethod.Invoke(null, null);
         }
 
         private static ProxyDataStream<TData> CreateProxyDataStream<TData>()
@@ -53,7 +54,6 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Type {proxyInstanceType} is not unmanaged!");
             }
-            
         }
     }
 }

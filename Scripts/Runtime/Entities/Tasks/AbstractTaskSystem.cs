@@ -1,10 +1,8 @@
 using Anvil.CSharp.Data;
-using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -12,166 +10,191 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
     /// </summary>
-    public abstract partial class AbstractTaskSystem : AbstractAnvilSystemBase,
-                                                       ITaskSystem
+    public abstract partial class AbstractTaskSystem<TTaskDriver, TTaskSystem> : AbstractAnvilSystemBase,
+                                                                                 ITaskSystem
+        where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
+        where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
     {
-        private static readonly Type I_PROXY_DATA_STREAM_TYPE = typeof(IProxyDataStream);
-
-        //TODO: Enable TaskDrivers again, a Task System can only have one type of TaskDriver since it governs them
-        // private readonly List<TTaskDriver> m_TaskDrivers;
+        private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
-        private readonly HashSet<IProxyDataStream> m_PendingDataStreams;
-        private readonly List<ISystemTaskProcessor> m_SystemTaskProcessors;
-        private readonly byte m_SystemLevelContext;
+        private readonly TaskFlowGraph m_TaskFlowGraph;
 
-        private NativeArray<JobHandle> m_ProcessorDependenciesScratchPad;
+        private Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
+        private Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        private bool m_HasCheckedDataStreamUpdateJobsIntegrity;
-#endif
+        private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
+        private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
+
+        private bool m_IsHardened;
+
+        public byte Context
+        {
+            get;
+        }
 
         protected AbstractTaskSystem()
         {
-            // m_TaskDrivers = new List<TTaskDriver>();
+            m_TaskDrivers = new List<TTaskDriver>();
 
             m_TaskDriverIDProvider = new ByteIDProvider();
-            m_SystemLevelContext = m_TaskDriverIDProvider.GetNextID();
+            Context = m_TaskDriverIDProvider.GetNextID();
 
-            m_PendingDataStreams = new HashSet<IProxyDataStream>();
-            m_SystemTaskProcessors = new List<ISystemTaskProcessor>();
+            //TODO: Talk to Mike about this. The World property is null for the default world because systems are created via Activator.CreateInstance.
+            //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
+            World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
+            m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowDataSystem>().TaskFlowGraph;
+            m_TaskFlowGraph.CreateDataStreams(this);
 
-            CreateProxyDataStreams();
-
-            //TODO: 2. Enable TaskDrivers
-            //TODO: Task Drivers will hook into the Systems and run their own Tasks to populate.
             //TODO: 3. Custom Update Job Types
-            //TODO: Create the custom Update Job so we can parse to the different result channels.
+            //TODO: Create the custom Update Job so we can parse to the different result channels. Required Hardening JobConfig as part of the TaskFlowGraph hardening
         }
 
         protected override void OnDestroy()
         {
-            foreach (ISystemTaskProcessor systemTaskProcessor in m_SystemTaskProcessors)
-            {
-                systemTaskProcessor.Dispose();
-            }
-            m_SystemTaskProcessors.Clear();
-            m_PendingDataStreams.Clear();
+            //We only want to dispose the data streams that we own, so only the system ones
+            m_TaskFlowGraph.DisposeFor(this);
+
+            //Clean up all the native arrays
+            m_SystemDataStreamBulkJobScheduler?.Dispose();
+            m_DriverDataStreamBulkJobScheduler?.Dispose();
+            DisposeJobConfigBulkJobSchedulerLookup(m_SystemJobConfigBulkJobSchedulerLookup);
+            DisposeJobConfigBulkJobSchedulerLookup(m_DriverJobConfigBulkJobSchedulerLookup);
 
             m_TaskDriverIDProvider.Dispose();
 
-            m_ProcessorDependenciesScratchPad.Dispose();
-
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
-            // m_TaskDrivers.Clear();
+            m_TaskDrivers.Clear();
 
             base.OnDestroy();
+        }
+
+        private void DisposeJobConfigBulkJobSchedulerLookup(Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup)
+        {
+            if (lookup == null)
+            {
+                return;
+            }
+
+            foreach (BulkJobScheduler<JobConfig> scheduler in lookup.Values)
+            {
+                scheduler.Dispose();
+            }
+
+            lookup.Clear();
         }
 
         protected override void OnStartRunning()
         {
             base.OnStartRunning();
-            Debug_CheckDataStreamUpdateJobsExist();
-        }
-
-        private void CreateProxyDataStreams()
-        {
-            Type systemType = GetType();
-            //Get all the fields
-            FieldInfo[] systemFields = systemType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (FieldInfo systemField in systemFields)
+            if (m_IsHardened)
             {
-                if (!I_PROXY_DATA_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
-                {
-                    continue;
-                }
-
-                IgnoreProxyDataStreamAttribute ignoreProxyDataStreamAttribute = systemField.GetCustomAttribute<IgnoreProxyDataStreamAttribute>();
-                if (ignoreProxyDataStreamAttribute != null)
-                {
-                    continue;
-                }
-                
-                Debug_CheckFieldIsReadOnly(systemField);
-                Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
-
-                //Get the data type 
-                IProxyDataStream proxyDataStream = CreateProxyDataStream(systemField.FieldType.GenericTypeArguments[0]);
-
-                //Ensure the System's field is set to the data stream
-                systemField.SetValue(this, proxyDataStream);
+                return;
             }
 
-            m_ProcessorDependenciesScratchPad = new NativeArray<JobHandle>(m_PendingDataStreams.Count, Allocator.Persistent);
+            m_IsHardened = true;
+
+            BuildOptimizedCollections();
         }
 
-        private IProxyDataStream CreateProxyDataStream(Type proxyDataType)
+        private void BuildOptimizedCollections()
         {
-            IProxyDataStream proxyDataStream = ProxyDataStreamFactory.Create(proxyDataType);
-            m_PendingDataStreams.Add(proxyDataStream);
+            m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
+            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, m_TaskDrivers);
 
-            return proxyDataStream;
+            m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
+            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, m_TaskDrivers);
         }
 
         //TODO: #39 - Some way to remove the update Job
 
-        //TODO: RE-ENABLE IF NEEDED
-        // internal byte RegisterTaskDriver(TTaskDriver taskDriver)
-        // {
-        //     Debug_EnsureTaskDriverSystemRelationship(taskDriver);
-        //     m_TaskDrivers.Add(taskDriver);
-        //     
-        //     return m_TaskDriverIDProvider.GetNextID();
-        // }
+        //*************************************************************************************************************
+        // CONFIGURATION
+        //*************************************************************************************************************
 
+        internal byte RegisterTaskDriver(TTaskDriver taskDriver)
+        {
+            Debug_EnsureNotHardened(taskDriver);
+            Debug_EnsureTaskDriverSystemRelationship(taskDriver);
+            m_TaskDrivers.Add(taskDriver);
+
+            return m_TaskDriverIDProvider.GetNextID();
+        }
+        
+        internal IScheduleJobConfig ConfigurePopulateJob(ITaskDriver taskDriver,
+                                                         IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        {
+            return ConfigureJob(taskDriver,
+                                scheduleJobFunction,
+                                TaskFlowRoute.Populate);
+        }
+        
+        protected IScheduleUpdateJobConfig ConfigureUpdateJob(IJobConfig.ScheduleJobDelegate scheduleJobFunction)
+        {
+            return ConfigureJob(null,
+                                scheduleJobFunction,
+                                TaskFlowRoute.Update);
+        }
+
+        private JobConfig ConfigureJob(ITaskDriver taskDriver,
+                                       IJobConfig.ScheduleJobDelegate scheduleJobFunction,
+                                       TaskFlowRoute route)
+        {
+            Debug_EnsureNotHardened(route, taskDriver);
+
+            return m_TaskFlowGraph.CreateJobConfig(this,
+                                                   taskDriver,
+                                                   scheduleJobFunction,
+                                                   route);
+        }
+
+        //*************************************************************************************************************
+        // EXECUTION
+        //*************************************************************************************************************
         protected override void OnUpdate()
         {
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
-        protected IUpdateJobConfig ConfigureUpdateJobFor<TInstance>(ProxyDataStream<TInstance> dataStream, UpdateJobConfig<TInstance>.ScheduleJobDelegate scheduleJobFunction, BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
-        {
-            Debug_EnsureDataStreamIntegrity(dataStream);
-
-            UpdateJobConfig<TInstance> updateJobConfig = new UpdateJobConfig<TInstance>(World, m_SystemLevelContext, scheduleJobFunction, batchStrategy, dataStream);
-            
-            SystemTaskProcessor<TInstance> systemTaskProcessor = new SystemTaskProcessor<TInstance>(dataStream, updateJobConfig);
-            m_SystemTaskProcessors.Add(systemTaskProcessor);
-            m_PendingDataStreams.Remove(dataStream);
-            
-            return updateJobConfig;
-        }
-
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            //TODO: Renable once Task Drivers are enabled
-            // //Have drivers be given the chance to add to the Instance Data
-            // dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.POPULATE_SCHEDULE_DELEGATE);
+            //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
+            dependsOn = ScheduleJobs(dependsOn,
+                                     TaskFlowRoute.Populate,
+                                     m_DriverJobConfigBulkJobSchedulerLookup);
 
-            //Consolidate our owned data streams to operate on them
-            dependsOn = m_SystemTaskProcessors.BulkScheduleParallel(dependsOn, 
-                                                                    ref m_ProcessorDependenciesScratchPad, 
-                                                                    ISystemTaskProcessor.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+            //Consolidate system data so that it can be operated on. (Was populated on previous step)
+            dependsOn = m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
+                                                                    AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             //TODO: #38 - Allow for cancels to occur
 
-            //Allow the update jobs to occur on our owned data streams
-            dependsOn = m_SystemTaskProcessors.BulkScheduleParallel(dependsOn, 
-                                                                    ref m_ProcessorDependenciesScratchPad, 
-                                                                    ISystemTaskProcessor.PREPARE_AND_SCHEDULE_FUNCTION);
+            //Schedule the Update Jobs to run on System Data
+            dependsOn = ScheduleJobs(dependsOn,
+                                     TaskFlowRoute.Update,
+                                     m_SystemJobConfigBulkJobSchedulerLookup);
 
-            //TODO: Renable once Task Drivers are enabled
-            // //Have drivers consolidate their result data
-            // dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.CONSOLIDATE_SCHEDULE_DELEGATE);
+            // //Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
+            dependsOn = m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
+                                                                    AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             //TODO: #38 - Allow for cancels on the drivers to occur
 
-            //TODO: Renable once Task Drivers are enabled
-            // //Have drivers to do their own generic work
-            // dependsOn = m_TaskDrivers.BulkScheduleParallel(dependsOn, AbstractTaskDriver.UPDATE_SCHEDULE_DELEGATE);
+            // //Have drivers to do their own generic work if necessary
+            dependsOn = ScheduleJobs(dependsOn,
+                                     TaskFlowRoute.Update,
+                                     m_DriverJobConfigBulkJobSchedulerLookup);
 
             //Ensure this system's dependency is written back
             return dependsOn;
+        }
+
+        private JobHandle ScheduleJobs(JobHandle dependsOn,
+                                       TaskFlowRoute route,
+                                       Dictionary<TaskFlowRoute, BulkJobScheduler<JobConfig>> lookup)
+        {
+            BulkJobScheduler<JobConfig> scheduler = lookup[route];
+            return scheduler.Schedule(dependsOn,
+                                      JobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
         }
 
 
@@ -179,68 +202,35 @@ namespace Anvil.Unity.DOTS.Entities
         // SAFETY
         //*************************************************************************************************************
 
-        //TODO: RENABLE IF NEEDED
-        // [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        // private void Debug_EnsureTaskDriverSystemRelationship(TTaskDriver taskDriver)
-        // {
-        //     if (taskDriver.System != this)
-        //     {
-        //         throw new InvalidOperationException($"{taskDriver} is part of system {taskDriver.System} but it should be {this}!");
-        //     }
-        //
-        //     if (m_TaskDrivers.Contains(taskDriver))
-        //     {
-        //         throw new InvalidOperationException($"Trying to add {taskDriver} to {this}'s list of Task Drivers but it is already there!");
-        //     }
-        // }
-
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_CheckFieldIsReadOnly(FieldInfo fieldInfo)
+        private void Debug_EnsureTaskDriverSystemRelationship(TTaskDriver taskDriver)
         {
-            if (!fieldInfo.IsInitOnly)
+            if (taskDriver.TaskSystem != this)
             {
-                throw new InvalidOperationException($"Field with name {fieldInfo.Name} on {fieldInfo.ReflectedType} is not marked as \"readonly\", please ensure that it is.");
+                throw new InvalidOperationException($"{taskDriver} is part of system {taskDriver.TaskSystem} but it should be {this}!");
+            }
+
+            if (m_TaskDrivers.Contains(taskDriver))
+            {
+                throw new InvalidOperationException($"Trying to add {taskDriver} to {this}'s list of Task Drivers but it is already there!");
             }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_CheckFieldTypeGenericTypeArguments(Type fieldType)
+        private void Debug_EnsureNotHardened(TaskFlowRoute route, ITaskDriver taskDriver)
         {
-            if (fieldType.GenericTypeArguments.Length != 1)
+            if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(ProxyDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
+                throw new InvalidOperationException($"Trying to create a {route} job on {TaskDebugUtil.GetLocation(this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_CheckDataStreamUpdateJobsExist()
+        private void Debug_EnsureNotHardened(TTaskDriver taskDriver)
         {
-            if (m_HasCheckedDataStreamUpdateJobsIntegrity)
+            if (m_IsHardened)
             {
-                return;
-            }
-
-            m_HasCheckedDataStreamUpdateJobsIntegrity = true;
-
-            foreach (IProxyDataStream remainingDataStream in m_PendingDataStreams)
-            {
-                throw new InvalidOperationException($"Data Stream of {remainingDataStream} exists but {nameof(ConfigureUpdateJobFor)} wasn't called in {nameof(OnCreate)}! Please ensure all {typeof(ProxyDataStream<>)} have a corresponding job configured via {nameof(ConfigureUpdateJobFor)} to ensure there is no data loss.");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureDataStreamIntegrity(IProxyDataStream dataStream)
-        {
-            if (dataStream == null)
-            {
-                throw new InvalidOperationException($"Data Stream is null! Possible causes: "
-                                                  + $"\n1. The incorrect reference to a {typeof(ProxyDataStream<>)} was passed in such as referencing a hidden variable or something not defined on this class. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class."
-                                                  + $"\n2. The {nameof(ConfigureUpdateJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {typeof(ProxyDataStream<>)}'s hasn't happened yet.");
-            }
-
-            if (!m_PendingDataStreams.Contains(dataStream))
-            {
-                throw new InvalidOperationException($"DataStream of {dataStream.GetType()} was not registered to this class. Was it defined as a part of this class?");
+                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {typeof(TTaskDriver)}'s are created in {nameof(OnCreate)} or earlier.");
             }
         }
     }

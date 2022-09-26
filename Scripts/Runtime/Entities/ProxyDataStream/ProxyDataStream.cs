@@ -1,4 +1,3 @@
-using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
@@ -37,14 +36,9 @@ namespace Anvil.Unity.DOTS.Entities
     /// alternative to adding component data to an <see cref="Entity"/>
     /// </typeparam>
     /// <typeparam name="TInstance">The type of data to store</typeparam>
-    public class ProxyDataStream<TInstance> : AbstractAnvilBase,
-                                              IProxyDataStream
+    public class ProxyDataStream<TInstance> : AbstractProxyDataStream
         where TInstance : unmanaged, IProxyInstance
     {
-        //TODO: RE-ENABLE IF NEEDED
-        // internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_DELEGATE = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
-
-
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
@@ -54,23 +48,13 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
         private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_IterationTarget;
 
-        //TODO: Lock down to internal again
-        public AccessController AccessController { get; }
-
-        public DeferredNativeArrayScheduleInfo ScheduleInfo
+        internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
         }
 
-        //TODO: 2. A mechanism to handle the branching from Data to a Result type
-        //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960787785
         internal ProxyDataStream() : base()
         {
-            //TODO: Could split the data into definitions via Attributes or some other mechanism to set up the relationships. Then a "baking" into the actual structures. 
-            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960764532
-            //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/52/files#r960737069
-            AccessController = new AccessController();
-
             m_Pending = new UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
             m_IterationTarget = new DeferredNativeArray<ProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
                                                                                          Allocator.TempJob);
@@ -101,46 +85,31 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // JOB STRUCTS
         //*************************************************************************************************************
-
-        internal DataStreamReader<TInstance> CreatePDSReader()
+        internal DataStreamReader<TInstance> CreateDataStreamReader()
         {
             return new DataStreamReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(byte context)
+        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater()
         {
             return new DataStreamUpdater<TInstance>(m_Pending.AsWriter(),
                                                     m_IterationTarget.AsDeferredJobArray());
         }
 
-        //TODO: Lock down to internal again
-        public DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)
+        internal DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)
         {
-            //TODO: RE-ENABLE IF NEEDED
-            // Debug_EnsureContextIsSet(context);
             return new DataStreamWriter<TInstance>(m_Pending.AsWriter(), context);
         }
-
-        //TODO: RE-ENABLE IF NEEDED
-        // internal VDResultsDestinationLookup GetOrCreateVDResultsDestinationLookup()
-        // {
-        //     if (!m_ResultsDestinationLookup.IsCreated)
-        //     {
-        //         m_ResultsDestinationLookup = new VDResultsDestinationLookup(ResultDestinations);
-        //     }
-        //
-        //     return m_ResultsDestinationLookup;
-        // }
 
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        internal JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        protected sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
-            ConsolidateLookupJob consolidateLookupJob = new ConsolidateLookupJob(m_Pending,
-                                                                                 m_IterationTarget);
-            JobHandle consolidateHandle = consolidateLookupJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
+            ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,
+                                                               m_IterationTarget);
+            JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
             AccessController.ReleaseAsync(consolidateHandle);
 
@@ -152,13 +121,13 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         [BurstCompile]
-        private struct ConsolidateLookupJob : IJob
+        private struct ConsolidateJob : IJob
         {
             private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> m_Pending;
             private DeferredNativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
 
-            public ConsolidateLookupJob(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> pending,
-                                        DeferredNativeArray<ProxyInstanceWrapper<TInstance>> iteration)
+            public ConsolidateJob(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>> pending,
+                                  DeferredNativeArray<ProxyInstanceWrapper<TInstance>> iteration)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;

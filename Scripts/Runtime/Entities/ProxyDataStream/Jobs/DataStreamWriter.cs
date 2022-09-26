@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Diagnostics;
 using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -25,17 +26,6 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
         private int m_LaneIndex;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        private enum WriterState
-        {
-            Uninitialized,
-            Ready
-        }
-
-        private WriterState m_State;
-#endif
-
-
         internal DataStreamWriter(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer instanceWriter, byte context) : this()
         {
             m_InstanceWriter = instanceWriter;
@@ -44,9 +34,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_InstanceLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            m_State = WriterState.Uninitialized;
-#endif
+            Debug_InitializeWriterState();
         }
 
         /// <summary>
@@ -56,14 +44,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="nativeThreadIndex">The native thread index</param>
         public void InitForThread(int nativeThreadIndex)
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_State != WriterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
-            }
-
-            m_State = WriterState.Ready;
-#endif
+            Debug_EnsureInitThreadOnlyCalledOnce();
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_InstanceLaneWriter = m_InstanceWriter.AsLaneWriter(m_LaneIndex);
@@ -83,16 +64,57 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="Add(TInstance)"/>
         public void Add(ref TInstance instance)
         {
+            Debug_EnsureCanAdd();
+            m_InstanceLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
+                                                                           m_Context,
+                                                                           ref instance));
+        }
+
+
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
+        private enum WriterState
+        {
+            Uninitialized,
+            Ready
+        }
+
+        private WriterState m_State;
+#endif
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_InitializeWriterState()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            m_State = WriterState.Uninitialized;
+#endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureCanAdd()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == WriterState.Uninitialized)
             {
                 throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
             }
 #endif
-            m_InstanceLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                   m_Context,
-                                                                   ref instance));
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureInitThreadOnlyCalledOnce()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_State != WriterState.Uninitialized)
+            {
+                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
+            }
+
+            m_State = WriterState.Ready;
+#endif
         }
     }
 }
