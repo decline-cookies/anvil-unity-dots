@@ -90,13 +90,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(CancelRequestsReader cancelRequestsReader,
                                                                       ProxyDataStream<TInstance> pendingCancelDataStream,
-                                                                      DataStreamChannelResolver dataStreamChannelResolver)
+                                                                      DataStreamTargetResolver dataStreamTargetResolver)
         {
             return new DataStreamUpdater<TInstance>(m_Pending.AsWriter(),
                                                     m_IterationTarget.AsDeferredJobArray(),
                                                     cancelRequestsReader,
                                                     pendingCancelDataStream.m_Pending.AsWriter(),
-                                                    dataStreamChannelResolver);
+                                                    dataStreamTargetResolver);
         }
 
         internal DataStreamWriter<TInstance> CreateDataStreamWriter(byte context)

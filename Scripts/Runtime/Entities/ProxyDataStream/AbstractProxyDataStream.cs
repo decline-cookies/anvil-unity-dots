@@ -6,6 +6,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    //TODO: Think on this name some more. Is is actually an AbstractDataStreamProxy? https://github.com/decline-cookies/anvil-unity-dots/pull/59#discussion_r977766979
     public abstract class AbstractProxyDataStream : AbstractAnvilBase
     {
         internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);

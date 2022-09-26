@@ -18,11 +18,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         [ReadOnly] private UnsafeParallelHashMap<byte, long> m_DataStreamByContext;
 
-        internal DataStreamResolver(Dictionary<byte, ResolveChannelData> mapping)
+        internal DataStreamResolver(Dictionary<byte, ResolveTargetData> mapping)
         {
             int numContexts = mapping.Count;
             m_DataStreamByContext = new UnsafeParallelHashMap<byte, long>(numContexts, Allocator.Persistent);
-            foreach (ResolveChannelData data in mapping.Values)
+            foreach (ResolveTargetData data in mapping.Values)
             {
                 m_DataStreamByContext.Add(data.Context, GetDataStreamPointerAddress(data.DataStream));
             }
@@ -58,7 +58,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (!m_DataStreamByContext.ContainsKey(context))
             {
-                throw new InvalidOperationException($"Trying to get Resolve Channel Data Stream with context of {context} but no data stream exists! Does the data you are expecting to write to have the {nameof(ResolveChannelAttribute)} attribute?");
+                throw new InvalidOperationException($"Trying to get Resolve Channel Data Stream with context of {context} but no data stream exists! Does the data you are expecting to write to have the {nameof(ResolveTargetAttribute)} attribute?");
             }
         }
     }

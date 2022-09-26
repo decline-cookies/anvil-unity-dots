@@ -58,9 +58,9 @@ namespace Anvil.Unity.DOTS.Entities
             return m_ScheduleJobFunction(dependsOn, jobData, ScheduleInfo);
         }
         
-        internal override DataStreamChannelResolver GetDataStreamChannelResolver()
+        internal override DataStreamTargetResolver GetDataStreamChannelResolver()
         {
-            throw new NotSupportedException($"Tried to get a {nameof(DataStreamChannelResolver)} but {this} doesn't support it!");
+            throw new NotSupportedException($"Tried to get a {nameof(DataStreamTargetResolver)} but {this} doesn't support it!");
         }
     }
 }

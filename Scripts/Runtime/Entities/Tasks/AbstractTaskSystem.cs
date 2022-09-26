@@ -43,8 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_CancelRequestsDataStream = new CancelRequestsDataStream();
 
-            //TODO: Talk to Mike about this. The World property is null for the default world because systems are created via Activator.CreateInstance.
-            //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
+            //TODO: Need to look at having this happen in OnCreate instead. The World is only set there. 
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
             m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateTaskStreams(this);

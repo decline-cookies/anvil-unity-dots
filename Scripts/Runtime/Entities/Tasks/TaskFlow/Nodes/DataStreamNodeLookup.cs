@@ -68,17 +68,17 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
-        public void PopulateWithResolveChannelDataStreams<TResolveChannel>(JobResolveChannelMapping jobResolveChannelMapping, TResolveChannel resolveChannel)
-            where TResolveChannel : Enum
+        public void PopulateWithResolveTargetDataStreams<TResolveTarget>(JobResolveTargetMapping jobResolveTargetMapping, TResolveTarget resolveTarget)
+            where TResolveTarget : Enum
         {
             foreach (DataStreamNode node in m_NodesByDataStream.Values)
             {
-                if (!node.IsResolveChannel(resolveChannel))
+                if (!node.IsResolveTarget(resolveTarget))
                 {
                     continue;
                 }
 
-                jobResolveChannelMapping.RegisterDataStream(resolveChannel, node.DataStream, Context);
+                jobResolveTargetMapping.RegisterDataStream(resolveTarget, node.DataStream, Context);
             }
         }
 

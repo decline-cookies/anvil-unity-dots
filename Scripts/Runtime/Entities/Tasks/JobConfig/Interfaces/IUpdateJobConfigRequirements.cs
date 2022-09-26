@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public interface IUpdateJobConfigRequirements : IJobConfigRequirements
     {
-        public IUpdateJobConfigRequirements RequireResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
-            where TResolveChannel : Enum;
+        public IUpdateJobConfigRequirements RequireResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
+            where TResolveTarget : Enum;
     }
 }

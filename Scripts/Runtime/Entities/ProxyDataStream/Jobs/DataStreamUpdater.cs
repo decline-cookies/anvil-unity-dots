@@ -19,8 +19,8 @@ namespace Anvil.Unity.DOTS.Entities
         [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
         [ReadOnly] private readonly bool m_HasCancelPath;
         [ReadOnly] private CancelRequestsReader m_CancelRequestsReader;
-        [ReadOnly] private DataStreamChannelResolver m_DataStreamChannelResolver;
-        
+        [ReadOnly] private DataStreamTargetResolver m_DataStreamTargetResolver;
+
 
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingCancelLaneWriter;
@@ -31,16 +31,16 @@ namespace Anvil.Unity.DOTS.Entities
                                    NativeArray<ProxyInstanceWrapper<TInstance>> iteration,
                                    CancelRequestsReader cancelRequestsReader,
                                    UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer pendingCancelWriter,
-                                   DataStreamChannelResolver dataStreamChannelResolver) : this()
+                                   DataStreamTargetResolver dataStreamTargetResolver) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
             m_CancelRequestsReader = cancelRequestsReader;
             m_PendingCancelWriter = pendingCancelWriter;
-            m_DataStreamChannelResolver = dataStreamChannelResolver;
+            m_DataStreamTargetResolver = dataStreamTargetResolver;
 
             m_HasCancelPath = m_PendingCancelWriter.IsCreated;
-            
+
             m_ContinueLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
-            
+
             if (m_HasCancelPath)
             {
                 m_PendingCancelLaneWriter = m_PendingCancelWriter.AsLaneWriter(m_LaneIndex);
@@ -95,18 +95,18 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureCanResolve();
         }
 
-        internal void Resolve<TResolveChannel, TResolvedInstance>(TResolveChannel resolveChannel,
-                                                                  ref TResolvedInstance resolvedInstance)
-            where TResolveChannel : Enum
+        internal void Resolve<TResolveTarget, TResolvedInstance>(TResolveTarget resolveTarget,
+                                                                 ref TResolvedInstance resolvedInstance)
+            where TResolveTarget : Enum
             where TResolvedInstance : unmanaged, IProxyInstance
         {
             Debug_EnsureCanResolve();
             //TODO: Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
             //TODO: manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
-            m_DataStreamChannelResolver.Resolve(resolveChannel,
-                                                m_CurrentContext,
-                                                m_LaneIndex,
-                                                ref resolvedInstance);
+            m_DataStreamTargetResolver.Resolve(resolveTarget,
+                                               m_CurrentContext,
+                                               m_LaneIndex,
+                                               ref resolvedInstance);
         }
 
         private void WriteToPendingCancel(ref ProxyInstanceWrapper<TInstance> wrapper)

@@ -226,7 +226,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected abstract JobHandle CallScheduleFunction(JobHandle dependsOn, 
                                                           JobData jobData);
 
-        internal abstract DataStreamChannelResolver GetDataStreamChannelResolver();
+        internal abstract DataStreamTargetResolver GetDataStreamChannelResolver();
 
         internal ProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IProxyInstance

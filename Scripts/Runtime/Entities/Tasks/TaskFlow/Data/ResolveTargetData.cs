@@ -1,6 +1,6 @@
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class ResolveChannelData
+    internal class ResolveTargetData
     {
         public AbstractProxyDataStream DataStream
         {
@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public ResolveChannelData(AbstractProxyDataStream dataStream, byte context)
+        public ResolveTargetData(AbstractProxyDataStream dataStream, byte context)
         {
             DataStream = dataStream;
             Context = context;

@@ -103,17 +103,17 @@ namespace Anvil.Unity.DOTS.Entities
                 //Create the node
                 DataStreamNode dataStreamNode = lookup.CreateNode(taskStream, taskStream.GetDataStream());
 
-                //Update the node for any resolve channels
-                IEnumerable<ResolveChannelAttribute> resolveChannelAttributes = systemField.GetCustomAttributes<ResolveChannelAttribute>();
-                foreach (ResolveChannelAttribute resolveChannelAttribute in resolveChannelAttributes)
+                //Update the node for any resolve targets
+                IEnumerable<ResolveTargetAttribute> resolveTargetAttributes = systemField.GetCustomAttributes<ResolveTargetAttribute>();
+                foreach (ResolveTargetAttribute resolveTargetAttribute in resolveTargetAttributes)
                 {
-                    dataStreamNode.RegisterAsResolveChannel(resolveChannelAttribute);
+                    dataStreamNode.RegisterAsResolveTarget(resolveTargetAttribute);
                 }
 
                 if (taskStream.IsCancellable)
                 {
                     DataStreamNode pendingCancelDataStreamNode = lookup.CreateNode(taskStream, taskStream.GetPendingCancelDataStream());
-                    //No Resolve channels for this
+                    //No Resolve targets for this
                 }
             }
         }
@@ -192,19 +192,19 @@ namespace Anvil.Unity.DOTS.Entities
             return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
         }
 
-        public void PopulateJobResolveChannelMappingForChannel<TResolveChannel>(TResolveChannel resolveChannel, JobResolveChannelMapping jobResolveChannelMapping, ITaskSystem taskSystem)
-            where TResolveChannel : Enum
+        public void PopulateJobResolveTargetMappingForChannel<TResolveTarget>(TResolveTarget resolveTarget, JobResolveTargetMapping jobResolveTargetMapping, ITaskSystem taskSystem)
+            where TResolveTarget : Enum
         {
             //Get the Resolve Channels that exist on the system
             DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
-            lookup.PopulateWithResolveChannelDataStreams(jobResolveChannelMapping, resolveChannel);
+            lookup.PopulateWithResolveTargetDataStreams(jobResolveTargetMapping, resolveTarget);
 
             //Get any Resolve Channels that exist on TaskDriver's owned by the system
             List<ITaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
             foreach (ITaskDriver ownedTaskDriver in ownedTaskDrivers)
             {
                 lookup = GetOrCreateDataStreamNodeLookup(taskSystem, ownedTaskDriver);
-                lookup.PopulateWithResolveChannelDataStreams(jobResolveChannelMapping, resolveChannel);
+                lookup.PopulateWithResolveTargetDataStreams(jobResolveTargetMapping, resolveTarget);
             }
         }
 

@@ -12,9 +12,9 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly IUpdateJobConfig.ScheduleJobDelegate<TInstance> m_ScheduleJobFunction;
         private readonly UpdateTaskStreamScheduleInfo<TInstance> m_ScheduleInfo;
-        private readonly JobResolveChannelMapping m_JobResolveChannelMapping;
+        private readonly JobResolveTargetMapping m_JobResolveTargetMapping;
 
-        private DataStreamChannelResolver m_DataStreamChannelResolver;
+        private DataStreamTargetResolver m_DataStreamTargetResolver;
 
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
                                ITaskSystem taskSystem,
@@ -26,14 +26,14 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_ScheduleJobFunction = scheduleJobFunction;
             ScheduleInfo = m_ScheduleInfo = new UpdateTaskStreamScheduleInfo<TInstance>(taskStream.DataStream, batchStrategy);
-            m_JobResolveChannelMapping = new JobResolveChannelMapping();
+            m_JobResolveTargetMapping = new JobResolveTargetMapping();
 
             RequireDataStreamForUpdate(taskStream, cancelRequestsDataStream);
         }
 
         protected override void DisposeSelf()
         {
-            m_DataStreamChannelResolver.Dispose();
+            m_DataStreamTargetResolver.Dispose();
 
             base.DisposeSelf();
         }
@@ -61,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Update),
                              new DataStreamAccessWrapper(taskStream.DataStream, AccessType.ExclusiveWrite));
-            
+
             RequireRequestCancelDataStreamForRead(cancelRequestsDataStream);
 
             if (taskStream is not CancellableTaskStream<TInstance> cancellableTaskStream)
@@ -72,21 +72,21 @@ namespace Anvil.Unity.DOTS.Entities
             RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
         }
 
-        public IUpdateJobConfigRequirements RequireResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
-            where TResolveChannel : Enum
+        public IUpdateJobConfigRequirements RequireResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
+            where TResolveTarget : Enum
         {
-            ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
+            ResolveTargetUtil.Debug_EnsureEnumValidity(resolveTarget);
 
-            //Any data streams that have registered for this resolve channel type either on the system or related task drivers will be needed.
-            //When the updater runs, it doesn't know yet which resolve channel a particular instance will resolve to yet until it actually resolves.
+            //Any data streams that have registered for this resolve target type either on the system or related task drivers will be needed.
+            //When the updater runs, it doesn't know yet which resolve target a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
-            TaskFlowGraph.PopulateJobResolveChannelMappingForChannel(resolveChannel, m_JobResolveChannelMapping, TaskSystem);
+            TaskFlowGraph.PopulateJobResolveTargetMappingForChannel(resolveTarget, m_JobResolveTargetMapping, TaskSystem);
 
-            IEnumerable<ResolveChannelData> resolveChannelData = m_JobResolveChannelMapping.GetResolveChannelData(resolveChannel);
-            foreach (ResolveChannelData data in resolveChannelData)
+            IEnumerable<ResolveTargetData> resolveTargetData = m_JobResolveTargetMapping.GetResolveTargetData(resolveTarget);
+            foreach (ResolveTargetData data in resolveTargetData)
             {
                 AddAccessWrapper(new JobConfigDataID(data.DataStream, Usage.Write),
-                                 DataStreamAsResolveChannelAccessWrapper.Create(resolveChannel, data));
+                                 DataStreamAsResolveTargetAccessWrapper.Create(resolveTarget, data));
             }
 
             return this;
@@ -98,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected sealed override void HardenConfig()
         {
-            m_DataStreamChannelResolver = new DataStreamChannelResolver(m_JobResolveChannelMapping);
+            m_DataStreamTargetResolver = new DataStreamTargetResolver(m_JobResolveTargetMapping);
         }
 
         //*************************************************************************************************************
@@ -113,9 +113,9 @@ namespace Anvil.Unity.DOTS.Entities
             return m_ScheduleJobFunction(dependsOn, jobData, m_ScheduleInfo);
         }
 
-        internal override DataStreamChannelResolver GetDataStreamChannelResolver()
+        internal override DataStreamTargetResolver GetDataStreamChannelResolver()
         {
-            return m_DataStreamChannelResolver;
+            return m_DataStreamTargetResolver;
         }
     }
 }

@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class DataStreamNode : AbstractNode
     {
-        private readonly Dictionary<Type, byte> m_ResolveChannelLookup;
+        private readonly Dictionary<Type, byte> m_ResolveTargetLookup;
         private readonly DataStreamNodeLookup m_Lookup;
 
         public AbstractProxyDataStream DataStream
@@ -30,13 +30,13 @@ namespace Anvil.Unity.DOTS.Entities
             DataStream = dataStream;
             TaskStream = taskStream;
 
-            m_ResolveChannelLookup = new Dictionary<Type, byte>();
+            m_ResolveTargetLookup = new Dictionary<Type, byte>();
         }
 
         protected override void DisposeSelf()
         {
             DataStream.Dispose();
-            m_ResolveChannelLookup.Clear();
+            m_ResolveTargetLookup.Clear();
 
             base.DisposeSelf();
         }
@@ -46,26 +46,26 @@ namespace Anvil.Unity.DOTS.Entities
             return $"{DataStream} as part of {TaskStream} located in {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
         }
 
-        public void RegisterAsResolveChannel(ResolveChannelAttribute resolveChannelAttribute)
+        public void RegisterAsResolveTarget(ResolveTargetAttribute resolveTargetAttribute)
         {
-            Type type = resolveChannelAttribute.ResolveChannel.GetType();
-            byte value = (byte)resolveChannelAttribute.ResolveChannel;
+            Type type = resolveTargetAttribute.ResolveTarget.GetType();
+            byte value = (byte)resolveTargetAttribute.ResolveTarget;
 
-            m_ResolveChannelLookup.Add(type, value);
+            m_ResolveTargetLookup.Add(type, value);
         }
 
-        public bool IsResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
-            where TResolveChannel : Enum
+        public bool IsResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
+            where TResolveTarget : Enum
         {
-            Type type = typeof(TResolveChannel);
-            if (!m_ResolveChannelLookup.TryGetValue(type, out byte value))
+            Type type = typeof(TResolveTarget);
+            if (!m_ResolveTargetLookup.TryGetValue(type, out byte value))
             {
                 return false;
             }
             
-            ResolveChannelUtil.Debug_EnsureEnumValidity(resolveChannel);
-            byte storedResolveChannel = UnsafeUtility.As<TResolveChannel, byte>(ref resolveChannel);
-            return value == storedResolveChannel;
+            ResolveTargetUtil.Debug_EnsureEnumValidity(resolveTarget);
+            byte storedResolveTarget = UnsafeUtility.As<TResolveTarget, byte>(ref resolveTarget);
+            return value == storedResolveTarget;
         }
     }
 }
