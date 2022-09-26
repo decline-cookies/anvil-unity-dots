@@ -13,9 +13,9 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public DataStreamNodeLookup(TaskFlowGraph taskFlowGraph,
+        public DataStreamNodeLookup(TaskFlowGraph taskGraph,
                                     ITaskSystem taskSystem,
-                                    ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
+                                    ITaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
             m_NodesByDataStream = new Dictionary<AbstractProxyDataStream, DataStreamNode>();
             Context = taskDriver?.Context ?? taskSystem.Context;
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureNoDuplicateNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
                                                      dataStream,
-                                                     TaskFlowGraph,
+                                                     TaskGraph,
                                                      TaskSystem,
                                                      TaskDriver,
                                                      taskStream);

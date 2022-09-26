@@ -6,6 +6,8 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal static class ResolveTargetUtil
     {
+        private static readonly Type BYTE_TYPE = typeof(byte);
+        
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -32,9 +34,14 @@ namespace Anvil.Unity.DOTS.Entities
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsureEnumIsSizedProperly(Type type)
         {
+            if (Enum.GetUnderlyingType(type) != BYTE_TYPE)
+            {
+                throw new InvalidOperationException($"Resolve Target Enum type {type} does not have underlying type of {BYTE_TYPE}. Please change to {BYTE_TYPE}.");
+            }
+            
             int sizeOfType = UnsafeUtility.SizeOf(type);
             int sizeOfByte = UnsafeUtility.SizeOf<byte>();
-            
+
             if (sizeOfType != sizeOfByte)
             {
                 throw new InvalidOperationException($"Resolve Target Enum is of size {sizeOfType} bytes but needs to be the size of a {typeof(byte)} or {sizeOfByte} byte");

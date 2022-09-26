@@ -104,8 +104,8 @@ namespace Anvil.Unity.DOTS.Entities
                 DataStreamNode dataStreamNode = lookup.CreateNode(taskStream, taskStream.GetDataStream());
 
                 //Update the node for any resolve targets
-                IEnumerable<ResolveTargetAttribute> resolveTargetAttributes = systemField.GetCustomAttributes<ResolveTargetAttribute>();
-                foreach (ResolveTargetAttribute resolveTargetAttribute in resolveTargetAttributes)
+                IEnumerable<ResolveTargetForAttribute> resolveTargetAttributes = systemField.GetCustomAttributes<ResolveTargetForAttribute>();
+                foreach (ResolveTargetForAttribute resolveTargetAttribute in resolveTargetAttributes)
                 {
                     dataStreamNode.RegisterAsResolveTarget(resolveTargetAttribute);
                 }

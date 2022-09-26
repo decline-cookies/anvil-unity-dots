@@ -86,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            return $"{m_Type.Name} with schedule function name of {GetScheduleJobFunctionDebugInfo()} on {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
+            return $"{m_Type.Name} with schedule function name of {GetScheduleJobFunctionDebugInfo()} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
         }
 
         protected abstract string GetScheduleJobFunctionDebugInfo();

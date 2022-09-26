@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
         
         private readonly Dictionary<TaskFlowRoute, JobRouteNode> m_JobRouteNodes;
         
-        public JobNodeLookup(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
+        public JobNodeLookup(TaskFlowGraph taskGraph, ITaskSystem taskSystem, ITaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
             m_JobRouteNodes = new Dictionary<TaskFlowRoute, JobRouteNode>();
         }
@@ -45,7 +45,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 routeNode = new JobRouteNode(this, 
                                              route, 
-                                             TaskFlowGraph, 
+                                             TaskGraph, 
                                              TaskSystem, 
                                              TaskDriver);
                 m_JobRouteNodes.Add(route, routeNode);

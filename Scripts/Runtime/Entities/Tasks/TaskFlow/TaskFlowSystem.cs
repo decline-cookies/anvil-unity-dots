@@ -21,6 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnUpdate()
         {
+            //TODO: Probably a better way to do this via a factory type. https://github.com/decline-cookies/anvil-unity-dots/pull/59#discussion_r977823711
             TaskFlowGraph.Harden();
             Enabled = false;
         }

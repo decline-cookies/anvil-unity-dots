@@ -58,7 +58,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (!m_DataStreamByContext.ContainsKey(context))
             {
-                throw new InvalidOperationException($"Trying to get Resolve Channel Data Stream with context of {context} but no data stream exists! Does the data you are expecting to write to have the {nameof(ResolveTargetAttribute)} attribute?");
+                throw new InvalidOperationException($"Trying to get Resolve Channel Data Stream with context of {context} but no data stream exists! Does the data you are expecting to write to have the {nameof(ResolveTargetForAttribute)} attribute?");
             }
         }
     }

@@ -43,15 +43,14 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            return $"{DataStream} as part of {TaskStream} located in {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
+            return $"{DataStream} as part of {TaskStream} located in {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
         }
 
-        public void RegisterAsResolveTarget(ResolveTargetAttribute resolveTargetAttribute)
+        public void RegisterAsResolveTarget(ResolveTargetForAttribute resolveTargetAttribute)
         {
-            Type type = resolveTargetAttribute.ResolveTarget.GetType();
             byte value = (byte)resolveTargetAttribute.ResolveTarget;
 
-            m_ResolveTargetLookup.Add(type, value);
+            m_ResolveTargetLookup.Add(resolveTargetAttribute.ResolveTargetEnumType, value);
         }
 
         public bool IsResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)

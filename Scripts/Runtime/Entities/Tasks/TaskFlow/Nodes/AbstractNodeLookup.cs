@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities
     internal abstract class AbstractNodeLookup : AbstractAnvilBase
     {
         
-        public TaskFlowGraph TaskFlowGraph
+        public TaskFlowGraph TaskGraph
         {
             get;
         }
@@ -20,9 +20,9 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        protected AbstractNodeLookup(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        protected AbstractNodeLookup(TaskFlowGraph taskGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
-            TaskFlowGraph = taskFlowGraph;
+            TaskGraph = taskGraph;
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
         }

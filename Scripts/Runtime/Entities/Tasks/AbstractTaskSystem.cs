@@ -239,7 +239,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to create a {route} job on {TaskDebugUtil.GetLocation(this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to create a {route} job on {TaskDebugUtil.GetLocationName(this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
             }
         }
 
