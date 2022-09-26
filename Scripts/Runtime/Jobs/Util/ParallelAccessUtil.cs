@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Jobs
         public static int CollectionIndexForThread(int nativeThreadIndex)
         {
             DetectMultipleXThreads(nativeThreadIndex);
-            Debug.Assert(nativeThreadIndex > 0 && nativeThreadIndex <= JobsUtility.MaxJobThreadCount);
+            Debug.Assert(nativeThreadIndex is > 0 and <= JobsUtility.MaxJobThreadCount);
             return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
         }
 
@@ -132,19 +132,19 @@ namespace Anvil.Unity.DOTS.Jobs
 
 
         [BurstDiscard]
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
         private static void DetectMultipleXThreads(int nativeThreadIndex)
         {
 // HACK: This shouldn't be required in addition to the `Conditional` attribute above but Unity's build system doesn't
 // seem to respect the attribute.
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
 #endif
         }
 
     }
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
     internal static class ThreadHelper
     {
         private static readonly ConcurrentDictionary<int, bool> s_ThreadIndicesSeen = new ConcurrentDictionary<int, bool>();
