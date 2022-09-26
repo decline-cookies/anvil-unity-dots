@@ -43,8 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public override string ToString()
         {
-            //TODO: Update with Task Stream info
-            return $"{DataStream} located in {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
+            return $"{DataStream} as part of {TaskStream} located in {TaskDebugUtil.GetLocation(TaskSystem, TaskDriver)}";
         }
 
         public void RegisterAsResolveChannel(ResolveChannelAttribute resolveChannelAttribute)

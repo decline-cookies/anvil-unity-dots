@@ -17,8 +17,10 @@ namespace Anvil.Unity.DOTS.Entities
         [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
         [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_PendingCancelWriter;
         [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
-        [ReadOnly] private RequestCancelReader m_RequestCancelReader;
+        [ReadOnly] private readonly bool m_HasCancelPath;
+        [ReadOnly] private CancelRequestsReader m_CancelRequestsReader;
         [ReadOnly] private DataStreamChannelResolver m_DataStreamChannelResolver;
+        
 
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
         private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingCancelLaneWriter;
@@ -27,16 +29,18 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal DataStreamUpdater(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer continueWriter,
                                    NativeArray<ProxyInstanceWrapper<TInstance>> iteration,
-                                   RequestCancelReader requestCancelReader,
+                                   CancelRequestsReader cancelRequestsReader,
                                    UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer pendingCancelWriter,
                                    DataStreamChannelResolver dataStreamChannelResolver) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
-            m_RequestCancelReader = requestCancelReader;
+            m_CancelRequestsReader = cancelRequestsReader;
             m_PendingCancelWriter = pendingCancelWriter;
             m_DataStreamChannelResolver = dataStreamChannelResolver;
 
+            m_HasCancelPath = m_PendingCancelWriter.IsCreated;
+            
             m_ContinueLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
@@ -60,7 +64,11 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
-            m_PendingCancelLaneWriter = m_PendingCancelWriter.AsLaneWriter(m_LaneIndex);
+            
+            if (m_HasCancelPath)
+            {
+                m_PendingCancelLaneWriter = m_PendingCancelWriter.AsLaneWriter(m_LaneIndex);
+            }
         }
 
 
@@ -94,17 +102,21 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Debug_EnsureCanResolve();
             //TODO: Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
-            //manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
+            //TODO: manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
             m_DataStreamChannelResolver.Resolve(resolveChannel,
                                                 m_CurrentContext,
                                                 m_LaneIndex,
                                                 ref resolvedInstance);
         }
 
-        private void MarkForCancel(ref ProxyInstanceWrapper<TInstance> wrapper)
+        private void WriteToPendingCancel(ref ProxyInstanceWrapper<TInstance> wrapper)
         {
-            Debug_EnsureCanMarkForCancel();
-            m_PendingCancelLaneWriter.Write(ref wrapper);
+            Debug_EnsureCanWriteToPendingCancel();
+            //If no cancel path, this instance of data will cease to exist and cancelling is the same as deleting.
+            if (m_HasCancelPath)
+            {
+                m_PendingCancelLaneWriter.Write(ref wrapper);
+            }
         }
 
         internal bool TryGetInstanceIfNotRequestedToCancel(int index, out TInstance instance)
@@ -114,9 +126,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_CurrentContext = instanceWrapper.InstanceID.Context;
             instance = instanceWrapper.Payload;
 
-            if (m_RequestCancelReader.ShouldCancel(instanceWrapper.InstanceID))
+            if (m_CancelRequestsReader.ShouldCancel(instanceWrapper.InstanceID))
             {
-                MarkForCancel(ref instanceWrapper);
+                WriteToPendingCancel(ref instanceWrapper);
                 return false;
             }
 
@@ -206,7 +218,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureCanMarkForCancel()
+        private void Debug_EnsureCanWriteToPendingCancel()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -217,7 +229,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(MarkForCancel)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Something went very wrong. Investigate!");
+                throw new InvalidOperationException($"Attempting to call {nameof(WriteToPendingCancel)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Something went very wrong. Investigate!");
             }
 
             Debug.Assert(m_State == UpdaterState.Modifying);

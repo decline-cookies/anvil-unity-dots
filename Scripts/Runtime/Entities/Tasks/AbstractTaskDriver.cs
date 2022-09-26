@@ -40,6 +40,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 subTaskDriver.Dispose();
             }
+
             m_SubTaskDrivers.Clear();
 
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
@@ -51,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities
             return TaskSystem.ConfigurePopulateJob(this,
                                                    scheduleJobFunction);
         }
-        
+
         //TODO: Implement other job types
     }
 }

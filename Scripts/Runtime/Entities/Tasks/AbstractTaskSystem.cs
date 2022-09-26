@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities
         private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
 
-        private readonly RequestCancelDataStream m_RequestCancelDataStream;
+        private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
 
         private bool m_IsHardened;
 
@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             Context = m_TaskDriverIDProvider.GetNextID();
 
-            m_RequestCancelDataStream = new RequestCancelDataStream();
+            m_CancelRequestsDataStream = new CancelRequestsDataStream();
 
             //TODO: Talk to Mike about this. The World property is null for the default world because systems are created via Activator.CreateInstance.
             //TODO: They don't go through the GetOrCreateSystem path. Is this the case for other worlds? Can we assume a null World is the default one?
@@ -136,7 +136,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                                                         scheduleJobFunction,
                                                                                         dataStream,
                                                                                         batchStrategy,
-                                                                                        m_RequestCancelDataStream);
+                                                                                        m_CancelRequestsDataStream);
             m_TaskFlowGraph.RegisterJobConfig(updateJobConfig, TaskFlowRoute.Update);
 
             return updateJobConfig;

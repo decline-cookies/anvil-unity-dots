@@ -33,21 +33,21 @@ namespace Anvil.Unity.DOTS.Entities
         // DATA STREAMS
         //*************************************************************************************************************
 
-        internal DataStreamUpdater<TInstance> GetDataStreamUpdater<TInstance>(RequestCancelReader requestCancelReader)
+        internal DataStreamUpdater<TInstance> GetDataStreamUpdater<TInstance>(CancelRequestsReader cancelRequestsReader)
             where TInstance : unmanaged, IProxyInstance
         {
             ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Update);
             ProxyDataStream<TInstance> pendingCancelDataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.WritePendingCancel);
-            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(requestCancelReader,
+            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(cancelRequestsReader,
                                                                                       pendingCancelDataStream,
                                                                                       m_JobConfig.GetDataStreamChannelResolver());
             return updater;
         }
 
-        internal RequestCancelReader GetRequestCancelReader()
+        internal CancelRequestsReader GetRequestCancelReader()
         {
-            RequestCancelDataStream requestCancelDataStream = m_JobConfig.GetRequestCancelDataStream(AbstractJobConfig.Usage.Read);
-            return requestCancelDataStream.CreateRequestCancelReader();
+            CancelRequestsDataStream cancelRequestsDataStream = m_JobConfig.GetRequestCancelDataStream(AbstractJobConfig.Usage.Read);
+            return cancelRequestsDataStream.CreateRequestCancelReader();
         }
 
         public DataStreamWriter<TInstance> GetDataStreamWriter<TInstance>()

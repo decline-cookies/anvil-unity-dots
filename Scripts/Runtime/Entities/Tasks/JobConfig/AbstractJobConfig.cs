@@ -237,12 +237,12 @@ namespace Anvil.Unity.DOTS.Entities
             return (ProxyDataStream<TInstance>)dataStreamAccessWrapper.DataStream;
         }
 
-        internal RequestCancelDataStream GetRequestCancelDataStream(Usage usage)
+        internal CancelRequestsDataStream GetRequestCancelDataStream(Usage usage)
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(RequestCancelDataStream), usage);
+            JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
             Debug_EnsureWrapperExists(id);
             DataStreamAccessWrapper dataStreamAccessWrapper = (DataStreamAccessWrapper)m_AccessWrappers[id];
-            return (RequestCancelDataStream)dataStreamAccessWrapper.DataStream;
+            return (CancelRequestsDataStream)dataStreamAccessWrapper.DataStream;
         }
 
         internal NativeArray<T> GetNativeArray<T>(Usage usage)

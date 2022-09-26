@@ -88,13 +88,13 @@ namespace Anvil.Unity.DOTS.Entities
             return new DataStreamReader<TInstance>(m_IterationTarget.AsDeferredJobArray());
         }
 
-        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(RequestCancelReader requestCancelReader,
+        internal DataStreamUpdater<TInstance> CreateDataStreamUpdater(CancelRequestsReader cancelRequestsReader,
                                                                       ProxyDataStream<TInstance> pendingCancelDataStream,
                                                                       DataStreamChannelResolver dataStreamChannelResolver)
         {
             return new DataStreamUpdater<TInstance>(m_Pending.AsWriter(),
                                                     m_IterationTarget.AsDeferredJobArray(),
-                                                    requestCancelReader,
+                                                    cancelRequestsReader,
                                                     pendingCancelDataStream.m_Pending.AsWriter(),
                                                     dataStreamChannelResolver);
         }

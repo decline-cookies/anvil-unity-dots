@@ -9,13 +9,13 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class RequestCancelDataStream : AbstractProxyDataStream
+    internal class CancelRequestsDataStream : AbstractProxyDataStream
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<ProxyInstanceID>();
 
         private UnsafeTypedStream<ProxyInstanceID> m_Pending;
         private UnsafeParallelHashMap<ProxyInstanceID, byte> m_Lookup;
-        public RequestCancelDataStream()
+        public CancelRequestsDataStream()
         {
             m_Pending = new UnsafeTypedStream<ProxyInstanceID>(Allocator.Persistent);
             m_Lookup = new UnsafeParallelHashMap<ProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
@@ -47,10 +47,9 @@ namespace Anvil.Unity.DOTS.Entities
         // JOB STRUCTS
         //*************************************************************************************************************
         
-        //TODO: Maybe rename to "CancelRequestsReader"?
-        internal RequestCancelReader CreateRequestCancelReader()
+        internal CancelRequestsReader CreateRequestCancelReader()
         {
-            return new RequestCancelReader(m_Lookup);
+            return new CancelRequestsReader(m_Lookup);
         }
         
         //*************************************************************************************************************
@@ -106,7 +105,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 if (m_Lookup.ContainsKey(id))
                 {
-                    throw new InvalidOperationException($"Trying to add id {id} but the same id already exists in the lookup! This should never happen! Investigate.");
+                    throw new InvalidOperationException($"Trying to add id of {id} but the same id already exists in the lookup! This should never happen! Investigate.");
                 }
             }
         }

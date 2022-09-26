@@ -22,13 +22,13 @@ namespace Anvil.Unity.DOTS.Entities
                                IUpdateJobConfig.ScheduleJobDelegate<TInstance> scheduleJobFunction,
                                ITaskStream<TInstance> taskStream,
                                BatchStrategy batchStrategy,
-                               RequestCancelDataStream requestCancelDataStream) : base(taskFlowGraph, taskSystem, taskDriver)
+                               CancelRequestsDataStream cancelRequestsDataStream) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_ScheduleJobFunction = scheduleJobFunction;
             ScheduleInfo = m_ScheduleInfo = new UpdateTaskStreamScheduleInfo<TInstance>(taskStream.DataStream, batchStrategy);
             m_JobResolveChannelMapping = new JobResolveChannelMapping();
 
-            RequireDataStreamForUpdate(taskStream, requestCancelDataStream);
+            RequireDataStreamForUpdate(taskStream, cancelRequestsDataStream);
         }
 
         protected override void DisposeSelf()
@@ -47,20 +47,22 @@ namespace Anvil.Unity.DOTS.Entities
         // CONFIGURATION - REQUIRED DATA - CANCELLATION
         //*************************************************************************************************************
 
-        private void RequireRequestCancelDataStreamForRead(RequestCancelDataStream requestCancelDataStream)
+        private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
         {
-            AddAccessWrapper(new JobConfigDataID(requestCancelDataStream, Usage.Read),
-                             new DataStreamAccessWrapper(requestCancelDataStream, AccessType.SharedRead));
+            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Read),
+                             new DataStreamAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead));
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireDataStreamForUpdate(ITaskStream<TInstance> taskStream, RequestCancelDataStream requestCancelDataStream)
+        private void RequireDataStreamForUpdate(ITaskStream<TInstance> taskStream, CancelRequestsDataStream cancelRequestsDataStream)
         {
             AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Update),
                              new DataStreamAccessWrapper(taskStream.DataStream, AccessType.ExclusiveWrite));
+            
+            RequireRequestCancelDataStreamForRead(cancelRequestsDataStream);
 
             if (taskStream is not CancellableTaskStream<TInstance> cancellableTaskStream)
             {
@@ -68,7 +70,6 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
-            RequireRequestCancelDataStreamForRead(requestCancelDataStream);
         }
 
         public IUpdateJobConfigRequirements RequireResolveChannel<TResolveChannel>(TResolveChannel resolveChannel)
@@ -107,8 +108,8 @@ namespace Anvil.Unity.DOTS.Entities
         protected sealed override JobHandle CallScheduleFunction(JobHandle dependsOn,
                                                                  JobData jobData)
         {
-            RequestCancelReader requestCancelReader = jobData.GetRequestCancelReader();
-            m_ScheduleInfo.Updater = jobData.GetDataStreamUpdater<TInstance>(requestCancelReader);
+            CancelRequestsReader cancelRequestsReader = jobData.GetRequestCancelReader();
+            m_ScheduleInfo.Updater = jobData.GetDataStreamUpdater<TInstance>(cancelRequestsReader);
             return m_ScheduleJobFunction(dependsOn, jobData, m_ScheduleInfo);
         }
 

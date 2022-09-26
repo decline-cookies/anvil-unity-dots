@@ -10,15 +10,9 @@ namespace Anvil.Unity.DOTS.Entities
     {
         internal static readonly BulkScheduleDelegate<AbstractProxyDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractProxyDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        public Type Type
-        {
-            get;
-        }
+        public Type Type { get; }
 
-        internal AccessController AccessController
-        {
-            get;
-        }
+        internal AccessController AccessController { get; }
 
         private readonly string m_TypeString;
 
