@@ -13,9 +13,9 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal DataStreamTargetResolver(JobResolveTargetMapping jobResolveTargetMapping)
         {
-            int numChannels = jobResolveTargetMapping.m_Mapping.Count;
+            int numChannels = jobResolveTargetMapping.Mapping.Count;
             m_ResolversByTarget = new UnsafeParallelHashMap<byte, DataStreamResolver>(numChannels, Allocator.Persistent);
-            foreach (KeyValuePair<byte, Dictionary<byte, ResolveTargetData>> entry in jobResolveTargetMapping.m_Mapping)
+            foreach (KeyValuePair<byte, Dictionary<byte, ResolveTargetData>> entry in jobResolveTargetMapping.Mapping)
             {
                 m_ResolversByTarget.Add(entry.Key, new DataStreamResolver(entry.Value));
             }

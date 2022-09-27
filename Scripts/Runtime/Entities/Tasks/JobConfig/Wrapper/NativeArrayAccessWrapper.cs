@@ -34,6 +34,11 @@ namespace Anvil.Unity.DOTS.Entities
             m_Length = length;
             m_Allocator = allocator;
         }
+        
+        public void Dispose()
+        {
+            //Not needed
+        }
 
         public JobHandle Acquire()
         {

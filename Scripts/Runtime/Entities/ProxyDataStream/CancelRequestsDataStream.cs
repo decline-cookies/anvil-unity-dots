@@ -48,9 +48,14 @@ namespace Anvil.Unity.DOTS.Entities
         // JOB STRUCTS
         //*************************************************************************************************************
 
-        internal CancelRequestsReader CreateRequestCancelReader()
+        internal CancelRequestsReader CreateCancelRequestsReader()
         {
             return new CancelRequestsReader(m_Lookup);
+        }
+
+        internal CancelRequestsWriter CreateCancelRequestsWriter(byte context)
+        {
+            return new CancelRequestsWriter(m_Pending.AsWriter(), context);
         }
 
         //*************************************************************************************************************

@@ -25,14 +25,10 @@ namespace Anvil.Unity.DOTS.Entities
         private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
 
-        private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
-
         private bool m_IsHardened;
 
-        public byte Context
-        {
-            get;
-        }
+        public byte Context { get; }
+        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
 
         protected AbstractTaskSystem()
         {
@@ -41,7 +37,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             Context = m_TaskDriverIDProvider.GetNextID();
 
-            m_CancelRequestsDataStream = new CancelRequestsDataStream();
+            //TODO: Make sure the Graph is aware of this
+            CancelRequestsDataStream = new CancelRequestsDataStream();
 
             //TODO: Need to look at having this happen in OnCreate instead. The World is only set there. 
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
@@ -53,6 +50,8 @@ namespace Anvil.Unity.DOTS.Entities
         {
             //We only want to dispose the data streams that we own, so only the system ones
             m_TaskFlowGraph.DisposeFor(this);
+            //TODO: Once the graph is aware, this should go away
+            CancelRequestsDataStream.Dispose();
 
             //Clean up all the native arrays
             m_SystemDataStreamBulkJobScheduler?.Dispose();
@@ -135,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                                                         scheduleJobFunction,
                                                                                         dataStream,
                                                                                         batchStrategy,
-                                                                                        m_CancelRequestsDataStream);
+                                                                                        CancelRequestsDataStream);
             m_TaskFlowGraph.RegisterJobConfig(updateJobConfig, TaskFlowRoute.Update);
 
             return updateJobConfig;

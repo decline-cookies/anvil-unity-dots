@@ -20,13 +20,13 @@ namespace Anvil.Unity.DOTS.Entities
             Update,
             Write,
             Read,
-            WritePendingCancel
+            WritePendingCancel,
+            Resolve
         }
 
         internal static readonly BulkScheduleDelegate<AbstractJobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractJobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
 
-        private readonly Type m_Type;
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
         private readonly JobData m_JobData;
@@ -62,12 +62,12 @@ namespace Anvil.Unity.DOTS.Entities
         protected AbstractJobConfig(TaskFlowGraph taskFlowGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
             IsEnabled = true;
-            m_Type = GetType();
-            
+            Type type = GetType();
+
             //TODO: Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
-            m_TypeString = m_Type.IsGenericType
-                ? $"{m_Type.Name[..^2]}<{m_Type.GenericTypeArguments[0].Name}>"
-                : m_Type.Name;
+            m_TypeString = type.IsGenericType
+                ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
+                : type.Name;
             
             TaskFlowGraph = taskFlowGraph;
             TaskSystem = taskSystem;
@@ -86,6 +86,11 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_AccessWrapperDependencies.IsCreated)
             {
                 m_AccessWrapperDependencies.Dispose();
+            }
+
+            foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
+            {
+                wrapper.Dispose();
             }
 
             base.DisposeSelf();
@@ -138,6 +143,15 @@ namespace Anvil.Unity.DOTS.Entities
         {
             AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Read),
                              new DataStreamAccessWrapper(taskStream.DataStream, AccessType.SharedRead));
+            
+            return this;
+        }
+
+        public IJobConfigRequirements RequireTaskDriverForRequestCancel(ITaskDriver taskDriver)
+        {
+            CancelRequestsDataStream cancelRequestsDataStream = taskDriver.GetCancelRequestsDataStream();
+            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Write),
+                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, taskDriver.Context));
             
             return this;
         }
@@ -260,13 +274,23 @@ namespace Anvil.Unity.DOTS.Entities
             return (ProxyDataStream<TInstance>)dataStreamAccessWrapper.DataStream;
         }
 
-        internal CancelRequestsDataStream GetRequestCancelDataStream(Usage usage)
+        internal CancelRequestsDataStream GetCancelRequestsDataStream(Usage usage)
         {
             JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
             Debug_EnsureWrapperExists(id);
-            DataStreamAccessWrapper dataStreamAccessWrapper = (DataStreamAccessWrapper)m_AccessWrappers[id];
+            CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
             return (CancelRequestsDataStream)dataStreamAccessWrapper.DataStream;
         }
+        
+        internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestsDataStream dataStream, out byte context)
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
+            Debug_EnsureWrapperExists(id);
+            CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
+            dataStream = (CancelRequestsDataStream)dataStreamAccessWrapper.DataStream;
+            context = dataStreamAccessWrapper.Context;
+        }
+        
 
         internal NativeArray<T> GetNativeArray<T>(Usage usage)
             where T : unmanaged

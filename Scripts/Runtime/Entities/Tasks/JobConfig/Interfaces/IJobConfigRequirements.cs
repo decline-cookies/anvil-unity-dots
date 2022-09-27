@@ -18,5 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
             where T : unmanaged;
 
         public IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery);
+
+        public IJobConfigRequirements RequireTaskDriverForRequestCancel(ITaskDriver taskDriver);
     }
 }

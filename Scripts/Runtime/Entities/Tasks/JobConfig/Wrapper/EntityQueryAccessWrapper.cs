@@ -27,6 +27,11 @@ namespace Anvil.Unity.DOTS.Entities
             EntityQuery = entityQuery;
         }
 
+        public void Dispose()
+        {
+            //Not needed
+        }
+
         public JobHandle Acquire()
         {
             NativeArray = EntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle acquireHandle);

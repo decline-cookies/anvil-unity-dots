@@ -192,7 +192,7 @@ namespace Anvil.Unity.DOTS.Entities
             return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
         }
 
-        public void PopulateJobResolveTargetMappingForChannel<TResolveTarget>(TResolveTarget resolveTarget, JobResolveTargetMapping jobResolveTargetMapping, ITaskSystem taskSystem)
+        public void PopulateJobResolveTargetMappingForTarget<TResolveTarget>(TResolveTarget resolveTarget, JobResolveTargetMapping jobResolveTargetMapping, ITaskSystem taskSystem)
             where TResolveTarget : Enum
         {
             //Get the Resolve Channels that exist on the system

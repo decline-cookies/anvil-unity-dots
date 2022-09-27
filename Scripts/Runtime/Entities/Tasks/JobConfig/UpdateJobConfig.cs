@@ -49,7 +49,7 @@ namespace Anvil.Unity.DOTS.Entities
         private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
         {
             AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Read),
-                             new DataStreamAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead));
+                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, byte.MaxValue));
         }
 
         //*************************************************************************************************************
@@ -79,14 +79,16 @@ namespace Anvil.Unity.DOTS.Entities
             //Any data streams that have registered for this resolve target type either on the system or related task drivers will be needed.
             //When the updater runs, it doesn't know yet which resolve target a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
-            TaskFlowGraph.PopulateJobResolveTargetMappingForChannel(resolveTarget, m_JobResolveTargetMapping, TaskSystem);
+            TaskFlowGraph.PopulateJobResolveTargetMappingForTarget(resolveTarget, m_JobResolveTargetMapping, TaskSystem);
 
-            IEnumerable<ResolveTargetData> resolveTargetData = m_JobResolveTargetMapping.GetResolveTargetData(resolveTarget);
-            foreach (ResolveTargetData data in resolveTargetData)
+            if (m_JobResolveTargetMapping.Mapping.Count == 0)
             {
-                AddAccessWrapper(new JobConfigDataID(data.DataStream, Usage.Write),
-                                 DataStreamAsResolveTargetAccessWrapper.Create(resolveTarget, data));
+                return this;
             }
+            
+            List<ResolveTargetData> resolveTargetData = m_JobResolveTargetMapping.GetResolveTargetData(resolveTarget);
+            AddAccessWrapper(new JobConfigDataID(m_JobResolveTargetMapping.DataStreamType, Usage.Resolve),
+                             DataStreamAsResolveTargetAccessWrapper.Create(resolveTarget, resolveTargetData));
 
             return this;
         }
@@ -107,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected sealed override JobHandle CallScheduleFunction(JobHandle dependsOn,
                                                                  JobData jobData)
         {
-            CancelRequestsReader cancelRequestsReader = jobData.GetRequestCancelReader();
+            CancelRequestsReader cancelRequestsReader = jobData.GetCancelRequestsReader();
             m_ScheduleInfo.Updater = jobData.GetDataStreamUpdater<TInstance>(cancelRequestsReader);
             return m_ScheduleJobFunction(dependsOn, jobData, m_ScheduleInfo);
         }

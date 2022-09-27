@@ -5,20 +5,18 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class DataStreamAccessWrapper : IAccessWrapper
     {
-        public AbstractProxyDataStream DataStream
-        {
-            get;
-        }
-
-        public AccessType AccessType
-        {
-            get;
-        }
+        public AbstractProxyDataStream DataStream { get; }
+        public AccessType AccessType { get; }
 
         public DataStreamAccessWrapper(AbstractProxyDataStream dataStream, AccessType accessType)
         {
             DataStream = dataStream;
             AccessType = accessType;
+        }
+
+        public void Dispose()
+        {
+            //Not needed
         }
 
         public JobHandle Acquire()

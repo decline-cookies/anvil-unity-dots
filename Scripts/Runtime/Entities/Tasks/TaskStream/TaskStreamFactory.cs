@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Entities
             if (!TYPED_GENERIC_METHODS.TryGetValue(taskStreamType, out MethodInfo typedGenericMethod))
             {
                 typedGenericMethod = PROTOTYPE_METHOD.MakeGenericMethod(taskStreamType, instanceType);
-                TYPED_GENERIC_METHODS.Add(instanceType, typedGenericMethod);
+                TYPED_GENERIC_METHODS.Add(taskStreamType, typedGenericMethod);
             }
 
             return (AbstractTaskStream)typedGenericMethod.Invoke(null, null);

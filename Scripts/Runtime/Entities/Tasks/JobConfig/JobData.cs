@@ -44,10 +44,17 @@ namespace Anvil.Unity.DOTS.Entities
             return updater;
         }
 
-        internal CancelRequestsReader GetRequestCancelReader()
+        internal CancelRequestsReader GetCancelRequestsReader()
         {
-            CancelRequestsDataStream cancelRequestsDataStream = m_JobConfig.GetRequestCancelDataStream(AbstractJobConfig.Usage.Read);
-            return cancelRequestsDataStream.CreateRequestCancelReader();
+            CancelRequestsDataStream cancelRequestsDataStream = m_JobConfig.GetCancelRequestsDataStream(AbstractJobConfig.Usage.Read);
+            return cancelRequestsDataStream.CreateCancelRequestsReader();
+        }
+
+        public CancelRequestsWriter GetCancelRequestsWriter()
+        { 
+            m_JobConfig.GetCancelRequestsDataStreamWithContext(AbstractJobConfig.Usage.Write, out CancelRequestsDataStream cancelRequestsDataStream, out byte context);
+            //We want the context of who we're writing to, NOT our own context
+            return cancelRequestsDataStream.CreateCancelRequestsWriter(context);
         }
 
         public DataStreamWriter<TInstance> GetDataStreamWriter<TInstance>()

@@ -10,23 +10,22 @@ namespace Anvil.Unity.DOTS.Entities
         where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
 
     {
-        public TTaskSystem TaskSystem
-        {
-            get;
-        }
-
-        public byte Context
-        {
-            get;
-        }
-
         private readonly List<ITaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
+
+
+        public TTaskSystem TaskSystem { get; }
+        public byte Context { get; }
+        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
+
 
         protected AbstractTaskDriver(World world)
         {
             TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
             Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
+
+            //TODO: Make sure the graph is aware
+            CancelRequestsDataStream = new CancelRequestsDataStream();
 
             m_SubTaskDrivers = new List<ITaskDriver>();
 
@@ -43,14 +42,16 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_SubTaskDrivers.Clear();
 
+            //TODO: Once the graph is aware, this can go away
+            CancelRequestsDataStream.Dispose();
+
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
             base.DisposeSelf();
         }
 
-        public void Populate<TInstance>(IEnumerable<TInstance> instances, TaskStream<TInstance> taskStream)
-            where TInstance : unmanaged, IProxyInstance
+        CancelRequestsDataStream ITaskDriver.GetCancelRequestsDataStream()
         {
-            
+            return CancelRequestsDataStream;
         }
 
         public IJobConfigScheduling ConfigurePopulateJob(JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction)
