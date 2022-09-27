@@ -9,8 +9,8 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private static readonly Type ABSTRACT_TASK_STREAM_TYPE = typeof(AbstractTaskStream);
 
-        private readonly Dictionary<ITaskSystem, DataStreamNodeLookup> m_DataNodesByTaskSystem;
-        private readonly Dictionary<ITaskDriver, DataStreamNodeLookup> m_DataNodesByTaskDriver;
+        private readonly Dictionary<ITaskSystem, NodeLookup> m_DataNodesByTaskSystem;
+        private readonly Dictionary<ITaskDriver, NodeLookup> m_DataNodesByTaskDriver;
         private readonly Dictionary<ITaskSystem, List<ITaskDriver>> m_TaskDriversByTaskSystem;
         private readonly Dictionary<ITaskSystem, JobNodeLookup> m_JobNodesByTaskSystem;
         private readonly Dictionary<ITaskDriver, JobNodeLookup> m_JobNodesByTaskDriver;
@@ -23,8 +23,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         public TaskFlowGraph()
         {
-            m_DataNodesByTaskSystem = new Dictionary<ITaskSystem, DataStreamNodeLookup>();
-            m_DataNodesByTaskDriver = new Dictionary<ITaskDriver, DataStreamNodeLookup>();
+            m_DataNodesByTaskSystem = new Dictionary<ITaskSystem, NodeLookup>();
+            m_DataNodesByTaskDriver = new Dictionary<ITaskDriver, NodeLookup>();
             m_JobNodesByTaskSystem = new Dictionary<ITaskSystem, JobNodeLookup>();
             m_JobNodesByTaskDriver = new Dictionary<ITaskDriver, JobNodeLookup>();
             m_TaskDriversByTaskSystem = new Dictionary<ITaskSystem, List<ITaskDriver>>();
@@ -32,8 +32,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void DisposeFor(ITaskSystem taskSystem)
         {
-            DataStreamNodeLookup dataStreamNodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
-            dataStreamNodeLookup.Dispose();
+            NodeLookup nodeLookup = GetOrCreateNodeLookup(taskSystem, null);
+            nodeLookup.Dispose();
 
             JobNodeLookup jobNodeLookup = GetOrCreateJobNodeLookup(taskSystem, null);
             jobNodeLookup.Dispose();
@@ -44,8 +44,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void DisposeFor(ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
-            DataStreamNodeLookup dataStreamNodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
-            dataStreamNodeLookup.Dispose();
+            NodeLookup nodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
+            nodeLookup.Dispose();
 
             JobNodeLookup jobNodeLookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);
             jobNodeLookup.Dispose();
@@ -92,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities
                 Debug_CheckFieldIsReadOnly(systemField);
                 Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
 
-                DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
+                NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
 
                 //Get the data type 
                 AbstractTaskStream taskStream = TaskStreamFactory.Create(systemField.FieldType, systemField.FieldType.GenericTypeArguments[0]);
@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities
                 systemField.SetValue(instance, taskStream);
 
                 //Create the node
-                DataStreamNode dataStreamNode = lookup.CreateNode(taskStream, taskStream.GetDataStream());
+                DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetDataStream());
 
                 //Update the node for any resolve targets
                 IEnumerable<ResolveTargetForAttribute> resolveTargetAttributes = systemField.GetCustomAttributes<ResolveTargetForAttribute>();
@@ -112,10 +112,16 @@ namespace Anvil.Unity.DOTS.Entities
 
                 if (taskStream.IsCancellable)
                 {
-                    DataStreamNode pendingCancelDataStreamNode = lookup.CreateNode(taskStream, taskStream.GetPendingCancelDataStream());
+                    DataStreamNode pendingCancelDataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream());
                     //No Resolve targets for this
                 }
             }
+        }
+
+        public void RegisterCancelRequestsDataStream(CancelRequestsDataStream cancelRequestsDataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        {
+            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
+            CancelRequestsNode cancelRequestsNode = lookup.CreateCancelRequestsNode(cancelRequestsDataStream);
         }
 
         private void RegisterTaskDriverToTaskSystem(ITaskSystem taskSystem, ITaskDriver taskDriver)
@@ -142,26 +148,26 @@ namespace Anvil.Unity.DOTS.Entities
 
         public bool IsDataStreamRegistered(AbstractProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
-            DataStreamNodeLookup systemNodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
-            DataStreamNodeLookup driverNodeLookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
+            NodeLookup systemNodeLookup = GetOrCreateNodeLookup(taskSystem, null);
+            NodeLookup driverNodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             return systemNodeLookup.IsDataStreamRegistered(dataStream) || driverNodeLookup.IsDataStreamRegistered(dataStream);
         }
 
-        private DataStreamNodeLookup GetOrCreateDataStreamNodeLookup(ITaskSystem taskSystem, ITaskDriver taskDriver)
+        private NodeLookup GetOrCreateNodeLookup(ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
             return (taskDriver == null)
-                ? GetOrCreateDataStreamNodeLookup(taskSystem, m_DataNodesByTaskSystem, taskSystem, null)
-                : GetOrCreateDataStreamNodeLookup(taskDriver, m_DataNodesByTaskDriver, taskSystem, taskDriver);
+                ? GetOrCreateNodeLookup(taskSystem, m_DataNodesByTaskSystem, taskSystem, null)
+                : GetOrCreateNodeLookup(taskDriver, m_DataNodesByTaskDriver, taskSystem, taskDriver);
         }
 
-        private DataStreamNodeLookup GetOrCreateDataStreamNodeLookup<TKey>(TKey key,
-                                                                           Dictionary<TKey, DataStreamNodeLookup> dictionary,
-                                                                           ITaskSystem taskSystem,
-                                                                           ITaskDriver taskDriver)
+        private NodeLookup GetOrCreateNodeLookup<TKey>(TKey key,
+                                                       Dictionary<TKey, NodeLookup> dictionary,
+                                                       ITaskSystem taskSystem,
+                                                       ITaskDriver taskDriver)
         {
-            if (!dictionary.TryGetValue(key, out DataStreamNodeLookup lookup))
+            if (!dictionary.TryGetValue(key, out NodeLookup lookup))
             {
-                lookup = new DataStreamNodeLookup(this, taskSystem, taskDriver);
+                lookup = new NodeLookup(this, taskSystem, taskDriver);
                 dictionary.Add(key, lookup);
             }
 
@@ -172,7 +178,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
 
-            DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
+            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
             lookup.PopulateWithDataStreams(dataStreams);
 
             return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
@@ -185,7 +191,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
-                DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
+                NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
                 lookup.PopulateWithDataStreams(dataStreams);
             }
 
@@ -196,16 +202,35 @@ namespace Anvil.Unity.DOTS.Entities
             where TResolveTarget : Enum
         {
             //Get the Resolve Channels that exist on the system
-            DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, null);
+            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
             lookup.PopulateWithResolveTargetDataStreams(jobResolveTargetMapping, resolveTarget);
 
             //Get any Resolve Channels that exist on TaskDriver's owned by the system
             List<ITaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
             foreach (ITaskDriver ownedTaskDriver in ownedTaskDrivers)
             {
-                lookup = GetOrCreateDataStreamNodeLookup(taskSystem, ownedTaskDriver);
+                lookup = GetOrCreateNodeLookup(taskSystem, ownedTaskDriver);
                 lookup.PopulateWithResolveTargetDataStreams(jobResolveTargetMapping, resolveTarget);
             }
+        }
+
+        public BulkJobScheduler<TaskDriverCancellationPropagator> CreateTaskDriversCancellationBulkJobSchedulerFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
+            where TTaskDriver : class, ITaskDriver
+        {
+            List<TaskDriverCancellationPropagator> propagators = new List<TaskDriverCancellationPropagator>();
+            //For each task driver that exists, generate a propagator for it
+            foreach (TTaskDriver taskDriver in taskDrivers)
+            {
+                //TODO: Register with TaskGraph Nodes
+                ITaskSystem taskSystem = taskDriver.GetTaskSystem();
+                TaskDriverCancellationPropagator propagator = new TaskDriverCancellationPropagator(taskDriver,
+                                                                                                   taskDriver.GetCancelRequestsDataStream(),
+                                                                                                   taskSystem.GetCancelRequestsDataStream(),
+                                                                                                   taskDriver.GetSubTaskDriverCancelRequests());
+                propagators.Add(propagator);
+            }
+
+            return new BulkJobScheduler<TaskDriverCancellationPropagator>(propagators);
         }
 
         //*************************************************************************************************************
@@ -321,7 +346,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public string GetDebugString(AbstractProxyDataStream dataStream, ITaskSystem taskSystem, ITaskDriver taskDriver)
         {
-            DataStreamNodeLookup lookup = GetOrCreateDataStreamNodeLookup(taskSystem, taskDriver);
+            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             return lookup[dataStream].ToString();
         }
 

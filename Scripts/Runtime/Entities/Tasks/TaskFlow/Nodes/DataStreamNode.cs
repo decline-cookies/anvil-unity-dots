@@ -7,19 +7,12 @@ namespace Anvil.Unity.DOTS.Entities
     internal class DataStreamNode : AbstractNode
     {
         private readonly Dictionary<Type, byte> m_ResolveTargetLookup;
-        private readonly DataStreamNodeLookup m_Lookup;
+        private readonly NodeLookup m_Lookup;
 
-        public AbstractProxyDataStream DataStream
-        {
-            get;
-        }
-        
-        public AbstractTaskStream TaskStream
-        {
-            get;
-        }
+        public AbstractProxyDataStream DataStream { get; }
+        public AbstractTaskStream TaskStream { get; }
 
-        public DataStreamNode(DataStreamNodeLookup lookup,
+        public DataStreamNode(NodeLookup lookup,
                               AbstractProxyDataStream dataStream,
                               TaskFlowGraph taskFlowGraph,
                               ITaskSystem taskSystem,

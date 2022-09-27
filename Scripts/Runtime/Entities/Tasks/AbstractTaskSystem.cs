@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
         private readonly TaskFlowGraph m_TaskFlowGraph;
+        private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
@@ -25,11 +26,12 @@ namespace Anvil.Unity.DOTS.Entities
         private BulkJobScheduler<AbstractProxyDataStream> m_SystemDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractProxyDataStream> m_DriverDataStreamBulkJobScheduler;
 
+        private BulkJobScheduler<TaskDriverCancellationPropagator> m_TaskDriversCancellationBulkJobScheduler;
+
         private bool m_IsHardened;
 
         public byte Context { get; }
-        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
-
+        
         protected AbstractTaskSystem()
         {
             m_TaskDrivers = new List<TTaskDriver>();
@@ -37,25 +39,24 @@ namespace Anvil.Unity.DOTS.Entities
             m_TaskDriverIDProvider = new ByteIDProvider();
             Context = m_TaskDriverIDProvider.GetNextID();
 
-            //TODO: Make sure the Graph is aware of this
-            CancelRequestsDataStream = new CancelRequestsDataStream();
+            m_CancelRequestsDataStream = new CancelRequestsDataStream();
 
             //TODO: Need to look at having this happen in OnCreate instead. The World is only set there. 
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
             m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateTaskStreams(this);
+            m_TaskFlowGraph.RegisterCancelRequestsDataStream(m_CancelRequestsDataStream, this, null);
         }
 
         protected override void OnDestroy()
         {
             //We only want to dispose the data streams that we own, so only the system ones
             m_TaskFlowGraph.DisposeFor(this);
-            //TODO: Once the graph is aware, this should go away
-            CancelRequestsDataStream.Dispose();
 
             //Clean up all the native arrays
             m_SystemDataStreamBulkJobScheduler?.Dispose();
             m_DriverDataStreamBulkJobScheduler?.Dispose();
+            m_TaskDriversCancellationBulkJobScheduler?.Dispose();
             DisposeJobConfigBulkJobSchedulerLookup(m_SystemJobConfigBulkJobSchedulerLookup);
             DisposeJobConfigBulkJobSchedulerLookup(m_DriverJobConfigBulkJobSchedulerLookup);
 
@@ -82,6 +83,11 @@ namespace Anvil.Unity.DOTS.Entities
             lookup.Clear();
         }
 
+        CancelRequestsDataStream ITaskSystem.GetCancelRequestsDataStream()
+        {
+            return m_CancelRequestsDataStream;
+        }
+
         private void Harden()
         {
             if (m_IsHardened)
@@ -96,9 +102,9 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
             m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, m_TaskDrivers);
-        }
 
-        //TODO: #39 - Some way to remove the update Job
+            m_TaskDriversCancellationBulkJobScheduler = m_TaskFlowGraph.CreateTaskDriversCancellationBulkJobSchedulerFor(m_TaskDrivers);
+        }
 
         //*************************************************************************************************************
         // CONFIGURATION
@@ -134,7 +140,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                                                         scheduleJobFunction,
                                                                                         dataStream,
                                                                                         batchStrategy,
-                                                                                        CancelRequestsDataStream);
+                                                                                        m_CancelRequestsDataStream);
             m_TaskFlowGraph.RegisterJobConfig(updateJobConfig, TaskFlowRoute.Update);
 
             return updateJobConfig;
@@ -178,14 +184,19 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
+            
+            //All TaskDrivers consolidate their CancelRequestsDataStream which also writes into this system's CancelRequestsDataStream.
+            //At the same time, it will propagate the cancel request to any sub-task drivers
+            dependsOn = m_TaskDriversCancellationBulkJobScheduler.Schedule(dependsOn,
+                                                                           TaskDriverCancellationPropagator.CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION);
 
             //Consolidate system data so that it can be operated on. (Was populated on previous step)
-            dependsOn = m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
-                                                                    AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
-
-            //TODO: #38 - Allow for cancels to occur
-
-            //Schedule the Update Jobs to run on System Data
+            //The system data and the system's cancel requests can be consolidated in parallel
+            dependsOn = JobHandle.CombineDependencies(m_CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
+                                                      m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
+                                                                                                  AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION));
+            
+            //Schedule the Update Jobs to run on System Data, we are guaranteed to have up to date Cancel Requests
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
                                      m_SystemJobConfigBulkJobSchedulerLookup);

@@ -4,20 +4,19 @@ using System.Diagnostics;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class DataStreamNodeLookup : AbstractNodeLookup
+    internal class NodeLookup : AbstractNodeLookup
     {
         private readonly Dictionary<AbstractProxyDataStream, DataStreamNode> m_NodesByDataStream;
+        private readonly Dictionary<CancelRequestsDataStream, CancelRequestsNode> m_NodesByCancelRequests;
 
-        public byte Context
-        {
-            get;
-        }
+        public byte Context { get; }
 
-        public DataStreamNodeLookup(TaskFlowGraph taskGraph,
-                                    ITaskSystem taskSystem,
-                                    ITaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
+        public NodeLookup(TaskFlowGraph taskGraph,
+                          ITaskSystem taskSystem,
+                          ITaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
             m_NodesByDataStream = new Dictionary<AbstractProxyDataStream, DataStreamNode>();
+            m_NodesByCancelRequests = new Dictionary<CancelRequestsDataStream, CancelRequestsNode>();
             Context = taskDriver?.Context ?? taskSystem.Context;
         }
 
@@ -28,14 +27,20 @@ namespace Anvil.Unity.DOTS.Entities
                 node.Dispose();
             }
 
+            foreach (CancelRequestsNode cancelRequestsNode in m_NodesByCancelRequests.Values)
+            {
+                cancelRequestsNode.Dispose();
+            }
+
             m_NodesByDataStream.Clear();
+            m_NodesByCancelRequests.Clear();
 
             base.DisposeSelf();
         }
 
-        public DataStreamNode CreateNode(AbstractTaskStream taskStream, AbstractProxyDataStream dataStream)
+        public DataStreamNode CreateDataStreamNode(AbstractTaskStream taskStream, AbstractProxyDataStream dataStream)
         {
-            Debug_EnsureNoDuplicateNodes(dataStream);
+            Debug_EnsureNoDuplicateDataStreamNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
                                                      dataStream,
                                                      TaskGraph,
@@ -43,6 +48,18 @@ namespace Anvil.Unity.DOTS.Entities
                                                      TaskDriver,
                                                      taskStream);
             m_NodesByDataStream.Add(dataStream, node);
+            return node;
+        }
+
+        public CancelRequestsNode CreateCancelRequestsNode(CancelRequestsDataStream cancelRequestsDataStream)
+        {
+            Debug_EnsureNoDuplicateCancelRequestNodes(cancelRequestsDataStream);
+            CancelRequestsNode node = new CancelRequestsNode(this,
+                                                             cancelRequestsDataStream,
+                                                             TaskGraph,
+                                                             TaskSystem,
+                                                             TaskDriver);
+            m_NodesByCancelRequests.Add(cancelRequestsDataStream, node);
             return node;
         }
 
@@ -87,14 +104,23 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateNodes(AbstractProxyDataStream dataStream)
+        private void Debug_EnsureNoDuplicateDataStreamNodes(AbstractProxyDataStream dataStream)
         {
             if (m_NodesByDataStream.ContainsKey(dataStream))
             {
                 throw new InvalidOperationException($"Trying to create a new {nameof(DataStreamNode)} with instance of {dataStream} but one already exists!");
             }
         }
-        
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateCancelRequestNodes(CancelRequestsDataStream cancelRequestsDataStream)
+        {
+            if (m_NodesByCancelRequests.ContainsKey(cancelRequestsDataStream))
+            {
+                throw new InvalidOperationException($"Trying to create a new {nameof(CancelRequestsNode)} with instance of {cancelRequestsDataStream} but one already exists!");
+            }
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureExists(AbstractProxyDataStream dataStream)
         {

@@ -7,5 +7,8 @@ namespace Anvil.Unity.DOTS.Entities
         public byte Context { get; }
 
         public World World { get; }
+        
+        //TODO: Maybe just make an AbstractTaskSystem without generics for this
+        internal CancelRequestsDataStream GetCancelRequestsDataStream();
     }
 }

@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities
             get;
         }
 
-        public JobConfigDataID(AbstractProxyDataStream dataStream, AbstractJobConfig.Usage usage) : this(dataStream.Type, usage)
+        public JobConfigDataID(AbstractDataStream dataStream, AbstractJobConfig.Usage usage) : this(dataStream.Type, usage)
         {
         }
 

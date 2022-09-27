@@ -12,25 +12,24 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly List<ITaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
-
+        private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
 
         public TTaskSystem TaskSystem { get; }
         public byte Context { get; }
-        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
-
+        
 
         protected AbstractTaskDriver(World world)
         {
             TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
             Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
-
-            //TODO: Make sure the graph is aware
-            CancelRequestsDataStream = new CancelRequestsDataStream();
+            
+            m_CancelRequestsDataStream = new CancelRequestsDataStream();
 
             m_SubTaskDrivers = new List<ITaskDriver>();
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateTaskStreams(TaskSystem, this);
+            m_TaskFlowGraph.RegisterCancelRequestsDataStream(m_CancelRequestsDataStream, TaskSystem, this);
         }
 
         protected override void DisposeSelf()
@@ -42,16 +41,29 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_SubTaskDrivers.Clear();
 
-            //TODO: Once the graph is aware, this can go away
-            CancelRequestsDataStream.Dispose();
-
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
             base.DisposeSelf();
         }
 
         CancelRequestsDataStream ITaskDriver.GetCancelRequestsDataStream()
         {
-            return CancelRequestsDataStream;
+            return m_CancelRequestsDataStream;
+        }
+
+        List<CancelRequestsDataStream> ITaskDriver.GetSubTaskDriverCancelRequests()
+        {
+            List<CancelRequestsDataStream> cancelRequestsDataStreams = new List<CancelRequestsDataStream>();
+            foreach (ITaskDriver subTaskDriver in m_SubTaskDrivers)
+            {
+                cancelRequestsDataStreams.Add(subTaskDriver.GetCancelRequestsDataStream());
+            }
+
+            return cancelRequestsDataStreams;
+        }
+
+        ITaskSystem ITaskDriver.GetTaskSystem()
+        {
+            return TaskSystem;
         }
 
         public IJobConfigScheduling ConfigurePopulateJob(JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction)

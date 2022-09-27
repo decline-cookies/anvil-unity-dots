@@ -9,7 +9,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class CancelRequestsDataStream : AbstractProxyDataStream
+    internal class CancelRequestsDataStream : AbstractDataStream
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<ProxyInstanceID>();
 
@@ -30,11 +30,6 @@ namespace Anvil.Unity.DOTS.Entities
 
 
             base.DisposeSelf();
-        }
-
-        internal sealed override unsafe void* GetWriterPointer()
-        {
-            throw new NotSupportedException($"Trying to access the writer pointer for {this} but that is not supported!");
         }
 
         //*************************************************************************************************************
@@ -61,7 +56,8 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
-        protected sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
+
+        public JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(m_Pending,
@@ -73,6 +69,16 @@ namespace Anvil.Unity.DOTS.Entities
             return consolidateHandle;
         }
 
+        internal UnsafeTypedStream<ProxyInstanceID> GetPending()
+        {
+            return m_Pending;
+        }
+
+        internal UnsafeParallelHashMap<ProxyInstanceID, byte> GetLookup()
+        {
+            return m_Lookup;
+        }
+
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
@@ -80,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompile]
         private struct ConsolidateCancelRequestsJob : IJob
         {
-            private UnsafeTypedStream<ProxyInstanceID> m_Pending;
+            [ReadOnly] private UnsafeTypedStream<ProxyInstanceID> m_Pending;
             private UnsafeParallelHashMap<ProxyInstanceID, byte> m_Lookup;
 
             public ConsolidateCancelRequestsJob(UnsafeTypedStream<ProxyInstanceID> pending,
@@ -102,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities
 
                 m_Pending.Clear();
             }
-
+            
             //*************************************************************************************************************
             // SAFETY
             //*************************************************************************************************************
@@ -116,5 +122,8 @@ namespace Anvil.Unity.DOTS.Entities
                 }
             }
         }
+
+
+        
     }
 }

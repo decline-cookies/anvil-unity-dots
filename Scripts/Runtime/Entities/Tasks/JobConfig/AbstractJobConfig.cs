@@ -279,7 +279,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
             Debug_EnsureWrapperExists(id);
             CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
-            return (CancelRequestsDataStream)dataStreamAccessWrapper.DataStream;
+            return dataStreamAccessWrapper.CancelRequestsDataStream;
         }
         
         internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestsDataStream dataStream, out byte context)
@@ -287,7 +287,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
             Debug_EnsureWrapperExists(id);
             CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
-            dataStream = (CancelRequestsDataStream)dataStreamAccessWrapper.DataStream;
+            dataStream = dataStreamAccessWrapper.CancelRequestsDataStream;
             context = dataStreamAccessWrapper.Context;
         }
         
