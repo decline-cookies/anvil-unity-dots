@@ -241,6 +241,7 @@ namespace Anvil.Unity.DOTS.Entities
             
             Debug_EnsureIsHardened();
             Debug_EnsureScheduleInfoExists();
+            //TODO: Debug - Check Schedule Info and ensure that we've also required it as Read or Update etc
 
             int index = 0;
             for (; index < m_SchedulingAccessWrappers.Count; ++index)

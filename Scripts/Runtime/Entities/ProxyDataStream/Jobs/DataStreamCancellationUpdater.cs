@@ -162,7 +162,11 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
 
-            Debug.Assert(m_State == UpdaterState.Modifying);
+            if (m_State != UpdaterState.Modifying)
+            {
+                throw new InvalidOperationException($"Caught unhandled state {m_State}");
+            }
+            
             m_State = UpdaterState.Ready;
 #endif
         }
