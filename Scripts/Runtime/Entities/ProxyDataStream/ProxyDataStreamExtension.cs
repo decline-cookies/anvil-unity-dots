@@ -19,11 +19,33 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Resolve(instance, resolveTarget, ref resolvedInstance, ref updater);
         }
+        
+        public static void Resolve<TInstance, TResolveTarget, TResolvedInstance>(this TInstance instance,
+                                                                                 TResolveTarget resolveTarget,
+                                                                                 TResolvedInstance resolvedInstance,
+                                                                                 ref DataStreamCancellationUpdater<TInstance> updater)
+            where TInstance : unmanaged, IProxyInstance
+            where TResolveTarget : Enum
+            where TResolvedInstance : unmanaged, IProxyInstance
+        {
+            Resolve(instance, resolveTarget, ref resolvedInstance, ref updater);
+        }
 
         public static void Resolve<TInstance, TResolveTarget, TResolvedInstance>(this TInstance instance,
                                                                                  TResolveTarget resolveTarget,
                                                                                  ref TResolvedInstance resolvedInstance,
                                                                                  ref DataStreamUpdater<TInstance> updater)
+            where TInstance : unmanaged, IProxyInstance
+            where TResolveTarget : Enum
+            where TResolvedInstance : unmanaged, IProxyInstance
+        {
+            updater.Resolve(resolveTarget, ref resolvedInstance);
+        }
+        
+        public static void Resolve<TInstance, TResolveTarget, TResolvedInstance>(this TInstance instance,
+                                                                                 TResolveTarget resolveTarget,
+                                                                                 ref TResolvedInstance resolvedInstance,
+                                                                                 ref DataStreamCancellationUpdater<TInstance> updater)
             where TInstance : unmanaged, IProxyInstance
             where TResolveTarget : Enum
             where TResolvedInstance : unmanaged, IProxyInstance
@@ -38,9 +60,21 @@ namespace Anvil.Unity.DOTS.Entities
         {
             updater.Resolve();
         }
+        
+        public static void Resolve<TInstance>(this TInstance instance, ref DataStreamCancellationUpdater<TInstance> updater)
+            where TInstance : unmanaged, IProxyInstance
+        {
+            updater.Resolve();
+        }
 
         //TODO: DOCS
         public static void ContinueOn<TInstance>(this TInstance instance, ref DataStreamUpdater<TInstance> updater)
+            where TInstance : unmanaged, IProxyInstance
+        {
+            updater.Continue(ref instance);
+        }
+        
+        public static void ContinueOn<TInstance>(this TInstance instance, ref DataStreamCancellationUpdater<TInstance> updater)
             where TInstance : unmanaged, IProxyInstance
         {
             updater.Continue(ref instance);

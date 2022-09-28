@@ -221,12 +221,9 @@ namespace Anvil.Unity.DOTS.Entities
             //For each task driver that exists, generate a propagator for it
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
-                //TODO: Register with TaskGraph Nodes
                 ITaskSystem taskSystem = taskDriver.GetTaskSystem();
-                TaskDriverCancellationPropagator propagator = new TaskDriverCancellationPropagator(taskDriver,
-                                                                                                   taskDriver.GetCancelRequestsDataStream(),
-                                                                                                   taskSystem.GetCancelRequestsDataStream(),
-                                                                                                   taskDriver.GetSubTaskDriverCancelRequests());
+                NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
+                TaskDriverCancellationPropagator propagator = lookup.CreateCancellationPropagator();
                 propagators.Add(propagator);
             }
 

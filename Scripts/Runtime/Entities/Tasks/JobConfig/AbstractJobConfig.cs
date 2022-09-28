@@ -21,6 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
             Write,
             Read,
             WritePendingCancel,
+            Cancelling,
             Resolve
         }
 
@@ -395,6 +396,10 @@ namespace Anvil.Unity.DOTS.Entities
                 case Usage.WritePendingCancel:
                     //We'll be updating when writing to cancel
                     Debug_EnsureWrapperUsageValid(id, Usage.Update);
+                    break;
+                case Usage.Cancelling:
+                    //When we're cancelling, we can read or write to others because we're operating on a different stream
+                    Debug_EnsureWrapperUsageValid(id, Usage.Read, Usage.Write);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException($"Trying to switch on {nameof(id.Usage)} but no code path satisfies for {id.Usage}!");

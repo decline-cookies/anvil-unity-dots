@@ -3,20 +3,20 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class UpdateTaskStreamScheduleInfo<TInstance> : IScheduleInfo
+    public class CancelTaskStreamScheduleInfo<TInstance> : IScheduleInfo
         where TInstance : unmanaged, IProxyInstance
     {
 
-        internal DataStreamUpdater<TInstance> Updater { get; private set; }
+        internal DataStreamCancellationUpdater<TInstance> CancellationUpdater { get; private set; }
         public int BatchSize { get; }
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
-
+        
         public int Length
         {
             get => throw new NotSupportedException($"This scheduling info is based on {nameof(ProxyDataStream<TInstance>)} which uses {nameof(DeferredNativeArray<TInstance>)}. The {nameof(Length)} is not known at schedule time as it will be filled in by a later job.");
         }
-
-        public UpdateTaskStreamScheduleInfo(ProxyDataStream<TInstance> data, BatchStrategy batchStrategy)
+        
+        public CancelTaskStreamScheduleInfo(ProxyDataStream<TInstance> data, BatchStrategy batchStrategy)
         {
             DeferredNativeArrayScheduleInfo = data.ScheduleInfo;
 
@@ -25,9 +25,9 @@ namespace Anvil.Unity.DOTS.Entities
                 : 1;
         }
 
-        internal void SetUpdater(DataStreamUpdater<TInstance> updater)
+        internal void SetCancellationUpdater(DataStreamCancellationUpdater<TInstance> cancellationUpdater)
         {
-            Updater = updater;
+            CancellationUpdater = cancellationUpdater;
         }
     }
 }

@@ -44,6 +44,14 @@ namespace Anvil.Unity.DOTS.Entities
             return updater;
         }
 
+        internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater<TInstance>()
+            where TInstance : unmanaged, IProxyInstance
+        {
+            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
+            DataStreamCancellationUpdater<TInstance> cancellationUpdater = dataStream.CreateDataStreamCancellationUpdater(m_JobConfig.GetDataStreamChannelResolver());
+            return cancellationUpdater;
+        }
+
         internal CancelRequestsReader GetCancelRequestsReader()
         {
             CancelRequestsDataStream cancelRequestsDataStream = m_JobConfig.GetCancelRequestsDataStream(AbstractJobConfig.Usage.Read);

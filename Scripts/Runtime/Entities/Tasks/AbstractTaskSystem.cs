@@ -127,8 +127,26 @@ namespace Anvil.Unity.DOTS.Entities
                                 TaskFlowRoute.Populate);
         }
 
-        protected IUpdateJobConfigRequirements ConfigureUpdateJob<TInstance>(JobConfigDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                             ITaskStream<TInstance> dataStream,
+        protected IUpdatableJobConfigRequirements ConfigureCancelJob<TInstance>(JobConfigDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                CancellableTaskStream<TInstance> taskStream,
+                                                                                BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IProxyInstance
+        {
+            Debug_EnsureNotHardened(TaskFlowRoute.Cancel, null);
+
+            CancelJobConfig<TInstance> cancelJobConfig = new CancelJobConfig<TInstance>(m_TaskFlowGraph,
+                                                                                        this,
+                                                                                        null,
+                                                                                        scheduleJobFunction,
+                                                                                        taskStream,
+                                                                                        batchStrategy);
+            m_TaskFlowGraph.RegisterJobConfig(cancelJobConfig, TaskFlowRoute.Cancel);
+            
+            return cancelJobConfig;
+        }
+
+        protected IUpdatableJobConfigRequirements ConfigureUpdateJob<TInstance>(JobConfigDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                                             ITaskStream<TInstance> taskStream,
                                                                              BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
@@ -138,7 +156,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                                                         this,
                                                                                         null,
                                                                                         scheduleJobFunction,
-                                                                                        dataStream,
+                                                                                        taskStream,
                                                                                         batchStrategy,
                                                                                         m_CancelRequestsDataStream);
             m_TaskFlowGraph.RegisterJobConfig(updateJobConfig, TaskFlowRoute.Update);
@@ -199,6 +217,11 @@ namespace Anvil.Unity.DOTS.Entities
             //Schedule the Update Jobs to run on System Data, we are guaranteed to have up to date Cancel Requests
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
+                                     m_SystemJobConfigBulkJobSchedulerLookup);
+            
+            //Schedule the Cancel Jobs to run on System Data, we are guaranteed to have Cancelled instances now if they were requested
+            dependsOn = ScheduleJobs(dependsOn,
+                                     TaskFlowRoute.Cancel,
                                      m_SystemJobConfigBulkJobSchedulerLookup);
 
             // //Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)

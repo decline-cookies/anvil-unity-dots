@@ -10,5 +10,8 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: Docs
         public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(JobHandle jobHandle, JobData jobData, UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IProxyInstance;
+        
+        public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle, JobData jobData, CancelTaskStreamScheduleInfo<TInstance> scheduleInfo)
+            where TInstance : unmanaged, IProxyInstance;
     }
 }

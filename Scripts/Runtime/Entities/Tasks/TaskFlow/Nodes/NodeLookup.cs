@@ -8,6 +8,7 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly Dictionary<AbstractProxyDataStream, DataStreamNode> m_NodesByDataStream;
         private readonly Dictionary<CancelRequestsDataStream, CancelRequestsNode> m_NodesByCancelRequests;
+        private TaskDriverCancellationPropagator m_CancellationPropagator;
 
         public byte Context { get; }
 
@@ -31,6 +32,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 cancelRequestsNode.Dispose();
             }
+            
+            m_CancellationPropagator?.Dispose();
 
             m_NodesByDataStream.Clear();
             m_NodesByCancelRequests.Clear();
@@ -61,6 +64,15 @@ namespace Anvil.Unity.DOTS.Entities
                                                              TaskDriver);
             m_NodesByCancelRequests.Add(cancelRequestsDataStream, node);
             return node;
+        }
+
+        public TaskDriverCancellationPropagator CreateCancellationPropagator()
+        {
+            m_CancellationPropagator = new TaskDriverCancellationPropagator(TaskDriver,
+                                                                            TaskDriver.GetCancelRequestsDataStream(),
+                                                                            TaskSystem.GetCancelRequestsDataStream(),
+                                                                            TaskDriver.GetSubTaskDriverCancelRequests());
+            return m_CancellationPropagator;
         }
 
         public bool IsDataStreamRegistered(AbstractProxyDataStream dataStream)
