@@ -2,8 +2,7 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public class TaskStream<TInstance> : AbstractTaskStream,
-                                         ITaskStream<TInstance>
+    public class TaskStream<TInstance> : AbstractTaskStream
         where TInstance : unmanaged, IProxyInstance
     {
         public ProxyDataStream<TInstance> DataStream { get; }

@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using System.Collections.Generic;
 using Unity.Entities;
+using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -66,11 +67,27 @@ namespace Anvil.Unity.DOTS.Entities
             return TaskSystem;
         }
 
-        public IJobConfigScheduling ConfigurePopulateJob(JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction)
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,
+                                                                         JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
+                                                                         BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IProxyInstance
         {
-            return TaskSystem.ConfigurePopulateJob(this,
-                                                   scheduleJobFunction);
+            return TaskSystem.ConfigureJobTriggeredBy(this,
+                                                      taskStream,
+                                                      scheduleJobFunction,
+                                                      batchStrategy);
         }
+
+        public IJobConfigRequirements ConfigureJobTriggeredBy(EntityQuery entityQuery,
+                                                              JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                              BatchStrategy batchStrategy)
+        {
+            return TaskSystem.ConfigureJobTriggeredBy(this,
+                                                      entityQuery,
+                                                      scheduleJobFunction,
+                                                      batchStrategy);
+        }
+        
 
         //TODO: Implement other job types
     }

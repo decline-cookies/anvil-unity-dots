@@ -25,16 +25,15 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_CheckInstanceType(instanceType);
             if (!TYPED_GENERIC_METHODS.TryGetValue(taskStreamType, out MethodInfo typedGenericMethod))
             {
-                typedGenericMethod = PROTOTYPE_METHOD.MakeGenericMethod(taskStreamType, instanceType);
+                typedGenericMethod = PROTOTYPE_METHOD.MakeGenericMethod(taskStreamType);
                 TYPED_GENERIC_METHODS.Add(taskStreamType, typedGenericMethod);
             }
 
             return (AbstractTaskStream)typedGenericMethod.Invoke(null, null);
         }
 
-        private static TTaskStream CreateTaskStream<TTaskStream, TData>()
-            where TTaskStream : AbstractTaskStream, ITaskStream<TData>, new()
-            where TData : unmanaged, IProxyInstance
+        private static TTaskStream CreateTaskStream<TTaskStream>()
+            where TTaskStream : AbstractTaskStream, new()
         {
             return new TTaskStream();
         }

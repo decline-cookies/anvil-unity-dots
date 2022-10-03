@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities
         private bool m_IsHardened;
 
         public byte Context { get; }
-        
+
         protected AbstractTaskSystem()
         {
             m_TaskDrivers = new List<TTaskDriver>();
@@ -119,64 +119,87 @@ namespace Anvil.Unity.DOTS.Entities
             return m_TaskDriverIDProvider.GetNextID();
         }
 
-        internal IJobConfigScheduling ConfigurePopulateJob(ITaskDriver taskDriver,
-                                                           JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction)
+        internal IJobConfigRequirements ConfigureJobTriggeredBy(ITaskDriver taskDriver,
+                                                                EntityQuery entityQuery,
+                                                                JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                                BatchStrategy batchStrategy)
         {
-            return ConfigureJob(taskDriver,
-                                scheduleJobFunction,
-                                TaskFlowRoute.Populate);
+            EntityQueryJobConfig jobConfig = JobConfigFactory.CreateEntityQueryJobConfig(m_TaskFlowGraph,
+                                                                                         this,
+                                                                                         taskDriver,
+                                                                                         entityQuery,
+                                                                                         scheduleJobFunction,
+                                                                                         batchStrategy);
+            RegisterJob(taskDriver,
+                        jobConfig,
+                        TaskFlowRoute.Populate);
+
+            return jobConfig;
         }
 
-        protected IUpdatableJobConfigRequirements ConfigureCancelJob<TInstance>(JobConfigDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                                CancellableTaskStream<TInstance> taskStream,
-                                                                                BatchStrategy batchStrategy)
+        internal IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(ITaskDriver taskDriver,
+                                                                           TaskStream<TInstance> taskStream,
+                                                                           JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
+                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
-            Debug_EnsureNotHardened(TaskFlowRoute.Cancel, null);
+            TaskStreamJobConfig<TInstance> jobConfig = JobConfigFactory.CreateTaskStreamJobConfig(m_TaskFlowGraph,
+                                                                                                  this,
+                                                                                                  taskDriver,
+                                                                                                  taskStream,
+                                                                                                  scheduleJobFunction,
+                                                                                                  batchStrategy);
+            RegisterJob(taskDriver,
+                        jobConfig,
+                        TaskFlowRoute.Populate);
 
-            CancelJobConfig<TInstance> cancelJobConfig = new CancelJobConfig<TInstance>(m_TaskFlowGraph,
-                                                                                        this,
-                                                                                        null,
-                                                                                        scheduleJobFunction,
-                                                                                        taskStream,
-                                                                                        batchStrategy);
-            m_TaskFlowGraph.RegisterJobConfig(cancelJobConfig, TaskFlowRoute.Cancel);
-            
-            return cancelJobConfig;
+            return jobConfig;
         }
 
-        protected IUpdatableJobConfigRequirements ConfigureUpdateJob<TInstance>(JobConfigDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                             ITaskStream<TInstance> taskStream,
-                                                                             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
-        {
-            Debug_EnsureNotHardened(TaskFlowRoute.Update, null);
-
-            UpdateJobConfig<TInstance> updateJobConfig = new UpdateJobConfig<TInstance>(m_TaskFlowGraph,
-                                                                                        this,
-                                                                                        null,
-                                                                                        scheduleJobFunction,
-                                                                                        taskStream,
-                                                                                        batchStrategy,
-                                                                                        m_CancelRequestsDataStream);
-            m_TaskFlowGraph.RegisterJobConfig(updateJobConfig, TaskFlowRoute.Update);
-
-            return updateJobConfig;
-        }
-
-        private JobConfig ConfigureJob(ITaskDriver taskDriver,
-                                       JobConfigDelegates.ScheduleJobDelegate scheduleJobFunction,
-                                       TaskFlowRoute route)
+        private void RegisterJob(ITaskDriver taskDriver,
+                                 AbstractJobConfig jobConfig,
+                                 TaskFlowRoute route)
         {
             Debug_EnsureNotHardened(route, taskDriver);
-            Debug_EnsureRouteNotUpdate(route);
-
-            JobConfig jobConfig = new JobConfig(m_TaskFlowGraph,
-                                                this,
-                                                taskDriver,
-                                                scheduleJobFunction);
-
             m_TaskFlowGraph.RegisterJobConfig(jobConfig, route);
+        }
+
+
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(CancellableTaskStream<TInstance> taskStream,
+                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                   BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IProxyInstance
+        {
+            CancelJobConfig<TInstance> jobConfig = JobConfigFactory.CreateCancelJobConfig(m_TaskFlowGraph,
+                                                                                          this,
+                                                                                          null,
+                                                                                          taskStream,
+                                                                                          scheduleJobFunction,
+                                                                                          batchStrategy);
+
+            RegisterJob(null,
+                        jobConfig,
+                        TaskFlowRoute.Cancel);
+
+            return jobConfig;
+        }
+
+        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(TaskStream<TInstance> taskStream,
+                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                                                   BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IProxyInstance
+        {
+            //TODO: Could get the Graph to create for us
+            UpdateJobConfig<TInstance> jobConfig = JobConfigFactory.CreateUpdateJobConfig(m_TaskFlowGraph,
+                                                                                          this,
+                                                                                          null,
+                                                                                          taskStream,
+                                                                                          m_CancelRequestsDataStream,
+                                                                                          scheduleJobFunction,
+                                                                                          batchStrategy);
+            RegisterJob(null,
+                        jobConfig,
+                        TaskFlowRoute.Update);
 
             return jobConfig;
         }
@@ -202,7 +225,7 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
-            
+
             //All TaskDrivers consolidate their CancelRequestsDataStream which also writes into this system's CancelRequestsDataStream.
             //At the same time, it will propagate the cancel request to any sub-task drivers
             dependsOn = m_TaskDriversCancellationBulkJobScheduler.Schedule(dependsOn,
@@ -213,12 +236,12 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = JobHandle.CombineDependencies(m_CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
                                                       m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
                                                                                                   AbstractProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION));
-            
+
             //Schedule the Update Jobs to run on System Data, we are guaranteed to have up to date Cancel Requests
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
                                      m_SystemJobConfigBulkJobSchedulerLookup);
-            
+
             //Schedule the Cancel Jobs to run on System Data, we are guaranteed to have Cancelled instances now if they were requested
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Cancel,
@@ -282,15 +305,6 @@ namespace Anvil.Unity.DOTS.Entities
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {typeof(TTaskDriver)}'s are created in {nameof(OnCreate)} or earlier.");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureRouteNotUpdate(TaskFlowRoute route)
-        {
-            if (route == TaskFlowRoute.Update)
-            {
-                throw new InvalidOperationException($"Trying to register a job with the {TaskFlowRoute.Update} route but it's not an Update Job. Code change has caused an error. Investigate!");
             }
         }
     }

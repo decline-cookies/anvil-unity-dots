@@ -83,8 +83,8 @@ namespace Anvil.Unity.DOTS.Entities
                     continue;
                 }
 
-                IgnoreProxyDataStreamAttribute ignoreProxyDataStreamAttribute = systemField.GetCustomAttribute<IgnoreProxyDataStreamAttribute>();
-                if (ignoreProxyDataStreamAttribute != null)
+                IgnoreTaskDataStreamAttribute ignoreTaskDataStreamAttribute = systemField.GetCustomAttribute<IgnoreTaskDataStreamAttribute>();
+                if (ignoreTaskDataStreamAttribute != null)
                 {
                     continue;
                 }
