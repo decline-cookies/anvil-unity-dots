@@ -1,10 +1,9 @@
-using Anvil.CSharp.Core;
 using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal abstract class AbstractEntityQueryNativeArray : AbstractAnvilBase
+    internal abstract class AbstractEntityQueryNativeArray
     {
         public abstract int Length { get; }
 

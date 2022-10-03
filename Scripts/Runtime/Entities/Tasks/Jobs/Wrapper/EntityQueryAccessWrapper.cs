@@ -23,10 +23,10 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_EntityQueryNativeArray = entityQueryNativeArray;
         }
-
+        
         public void Dispose()
         {
-            m_EntityQueryNativeArray.Dispose();
+            //Not needed
         }
 
         public JobHandle Acquire()

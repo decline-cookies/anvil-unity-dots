@@ -17,15 +17,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
         }
 
-        protected sealed override void DisposeSelf()
-        {
-            if (NativeArray.IsCreated)
-            {
-                NativeArray.Dispose();
-            }
-            base.DisposeSelf();
-        }
-
         public sealed override JobHandle Acquire()
         {
             NativeArray = EntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle dependsOn);
