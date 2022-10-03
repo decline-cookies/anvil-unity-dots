@@ -1,6 +1,6 @@
 using Unity.Jobs.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [JobProducerType(typeof(TaskCancelJobForDeferExtension.WrapperJobStruct<,>))]
     public interface ITaskCancelJobForDefer<TInstance>

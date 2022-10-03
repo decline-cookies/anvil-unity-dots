@@ -1,7 +1,7 @@
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class EntityQueryComponentScheduleInfo<T> : AbstractScheduleInfo,
                                                          IScheduleInfo

@@ -2,7 +2,7 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     //TODO: Move to Tasks folder/namespace?
     [BurstCompatible]

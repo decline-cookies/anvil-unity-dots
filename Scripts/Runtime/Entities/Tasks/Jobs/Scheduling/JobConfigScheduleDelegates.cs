@@ -1,6 +1,6 @@
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public static class JobConfigScheduleDelegates
     {

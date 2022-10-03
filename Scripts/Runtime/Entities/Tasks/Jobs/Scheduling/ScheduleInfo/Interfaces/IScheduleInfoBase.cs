@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
     /// Common interface for job scheduling parameters.

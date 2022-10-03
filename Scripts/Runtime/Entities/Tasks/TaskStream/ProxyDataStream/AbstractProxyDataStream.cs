@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System.Reflection;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public abstract class AbstractProxyDataStream : AbstractDataStream
     {

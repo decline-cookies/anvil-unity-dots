@@ -1,6 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public interface IDeferredScheduleInfo : IScheduleInfoBase
     {

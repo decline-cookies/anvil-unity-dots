@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
     /// Similar to <see cref="ScheduleGranularity"/> but can be used outside of Entity specific jobs.

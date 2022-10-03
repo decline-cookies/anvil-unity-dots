@@ -5,7 +5,7 @@ using System.Reflection;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal static class TaskStreamFactory
     {

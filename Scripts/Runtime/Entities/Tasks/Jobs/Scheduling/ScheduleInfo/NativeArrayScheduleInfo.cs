@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class NativeArrayScheduleInfo<T> : AbstractScheduleInfo,
                                                 IScheduleInfo

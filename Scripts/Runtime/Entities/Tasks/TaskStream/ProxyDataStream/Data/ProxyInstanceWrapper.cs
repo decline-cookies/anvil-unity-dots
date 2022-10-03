@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal readonly struct ProxyInstanceWrapper<TInstance> : IEquatable<ProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IProxyInstance

@@ -1,7 +1,7 @@
 using System.Reflection;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractScheduleInfo
     {

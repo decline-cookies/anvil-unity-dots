@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     // ReSharper disable once ClassNeverInstantiated.Global
     public class CancellableTaskStream<TInstance> : TaskStream<TInstance>

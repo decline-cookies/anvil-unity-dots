@@ -1,7 +1,7 @@
 using Anvil.CSharp.Core;
 using System.Collections.Generic;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public interface ITaskDriver : IAnvilDisposable
     {

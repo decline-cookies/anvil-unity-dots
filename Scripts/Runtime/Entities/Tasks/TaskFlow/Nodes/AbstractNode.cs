@@ -1,6 +1,6 @@
 using Anvil.CSharp.Core;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractNode : AbstractAnvilBase
     {

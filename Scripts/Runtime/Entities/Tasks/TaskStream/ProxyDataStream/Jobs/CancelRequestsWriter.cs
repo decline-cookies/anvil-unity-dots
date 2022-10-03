@@ -5,7 +5,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
     public struct CancelRequestsWriter

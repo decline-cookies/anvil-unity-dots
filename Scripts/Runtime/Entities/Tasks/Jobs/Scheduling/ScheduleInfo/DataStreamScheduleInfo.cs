@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStreamScheduleInfo<TInstance> : AbstractScheduleInfo,
                                                        IDeferredScheduleInfo

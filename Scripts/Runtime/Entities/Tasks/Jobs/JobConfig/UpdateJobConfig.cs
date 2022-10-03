@@ -1,6 +1,6 @@
 using Anvil.Unity.DOTS.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class UpdateJobConfig<TInstance> : AbstractResolvableJobConfig
         where TInstance : unmanaged, IProxyInstance

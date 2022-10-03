@@ -4,7 +4,7 @@ using System;
 using System.Reflection;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     //TODO: Think on this name some more. Is is actually an AbstractDataStreamProxy? https://github.com/decline-cookies/anvil-unity-dots/pull/59#discussion_r977766979
     public abstract class AbstractDataStream : AbstractAnvilBase

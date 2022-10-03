@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskFlowGraph
     {
@@ -83,8 +83,8 @@ namespace Anvil.Unity.DOTS.Entities
                     continue;
                 }
 
-                IgnoreTaskDataStreamAttribute ignoreTaskDataStreamAttribute = systemField.GetCustomAttribute<IgnoreTaskDataStreamAttribute>();
-                if (ignoreTaskDataStreamAttribute != null)
+                IgnoreTaskStreamAttribute ignoreTaskStreamAttribute = systemField.GetCustomAttribute<IgnoreTaskStreamAttribute>();
+                if (ignoreTaskStreamAttribute != null)
                 {
                     continue;
                 }

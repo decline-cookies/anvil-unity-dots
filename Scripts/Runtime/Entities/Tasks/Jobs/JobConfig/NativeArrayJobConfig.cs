@@ -1,6 +1,6 @@
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class NativeArrayJobConfig<T> : AbstractJobConfig
         where T : struct

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
     public struct DataStreamResolver : IDisposable

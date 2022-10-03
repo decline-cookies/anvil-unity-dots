@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
     /// Data System (no update) for managing the world's <see cref="TaskFlowGraph"/>

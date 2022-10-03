@@ -5,7 +5,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Debug = UnityEngine.Debug;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     //TODO: Docs
     [BurstCompatible]

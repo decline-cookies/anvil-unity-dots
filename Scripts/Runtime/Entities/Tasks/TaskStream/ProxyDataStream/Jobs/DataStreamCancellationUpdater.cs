@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
     public struct DataStreamCancellationUpdater<TInstance>

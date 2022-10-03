@@ -1,6 +1,6 @@
 using System;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
     /// Helper methods when working with <see cref="ProxyDataStream{TInstance}"/>

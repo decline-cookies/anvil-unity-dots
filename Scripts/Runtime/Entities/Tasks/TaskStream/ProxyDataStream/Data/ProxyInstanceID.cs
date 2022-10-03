@@ -3,7 +3,7 @@ using System;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal readonly struct ProxyInstanceID : IEquatable<ProxyInstanceID>
     {

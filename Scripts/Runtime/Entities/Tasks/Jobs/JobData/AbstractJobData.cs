@@ -2,7 +2,7 @@ using Unity.Collections;
 using Unity.Core;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public abstract class AbstractJobData
     {

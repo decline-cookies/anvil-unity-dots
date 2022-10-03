@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class JobNodeLookup : AbstractNodeLookup
     {

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal static class ResolveTargetUtil
     {

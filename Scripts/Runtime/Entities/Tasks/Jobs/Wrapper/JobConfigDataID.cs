@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Util;
 using System;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal readonly struct JobConfigDataID : IEquatable<JobConfigDataID>
     {

@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public class CancelJobData<TInstance> : AbstractJobData
         where TInstance : unmanaged, IProxyInstance

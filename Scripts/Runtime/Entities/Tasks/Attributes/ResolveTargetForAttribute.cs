@@ -1,17 +1,20 @@
 using System;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    //TODO: Maybe allow properties as well in the future? TaskFlowGraph will need updates to support that.
+    /// <summary>
+    /// An attribute which will register the corresponding <see cref="TaskStream{TInstance}"/> as a target
+    /// that Update or Cancel jobs can write to.
+    /// </summary>
+    //TODO: #63 - Expand to support Properties
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
     public class ResolveTargetForAttribute : Attribute
     {
         internal object ResolveTarget { get; }
 
         internal Type ResolveTargetEnumType { get; }
-
-        //TODO: Once we get C# 10 support, change this to a generic Attribute 
-        //TODO: Ex: public ResolveTargetAttribute<TResolveTarget>(TResolveTarget resolveTarget) where TResolveTarget : Enum
+        
+        //TODO: #64 - Remove the enum and rename this.
         public ResolveTargetForAttribute(object resolveTarget)
         {
             ResolveTarget = resolveTarget;

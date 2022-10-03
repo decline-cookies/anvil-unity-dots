@@ -5,7 +5,7 @@ using System.Diagnostics;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
     /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.

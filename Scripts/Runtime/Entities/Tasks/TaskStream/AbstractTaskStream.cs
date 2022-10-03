@@ -1,6 +1,6 @@
 using System;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public abstract class AbstractTaskStream
     {

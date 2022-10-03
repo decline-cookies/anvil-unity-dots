@@ -1,6 +1,6 @@
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
     /// Represents a read only reference to <see cref="ProxyDataStream{TInstance}"/>

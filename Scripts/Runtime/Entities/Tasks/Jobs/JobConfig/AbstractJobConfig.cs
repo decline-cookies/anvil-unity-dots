@@ -9,7 +9,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractJobConfig : AbstractAnvilBase,
                                                 IJobConfigRequirements
@@ -30,11 +30,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
-
-        
-        
-
         private readonly List<IAccessWrapper> m_SchedulingAccessWrappers;
+        
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
         private AbstractScheduleInfo m_ScheduleInfo;
         private bool m_ShouldDisableAfterNextRun;
@@ -58,7 +55,7 @@ namespace Anvil.Unity.DOTS.Entities
             IsEnabled = true;
             Type type = GetType();
 
-            //TODO: Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
+            //TODO: #112 (c-sharp-core) Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
             m_TypeString = type.IsGenericType
                 ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
                 : type.Name;

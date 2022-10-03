@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class EntityQueryComponentJobConfig<T> : AbstractJobConfig
         where T : struct, IComponentData

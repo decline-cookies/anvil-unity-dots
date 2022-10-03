@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities
+namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class JobResolveTargetMapping
     {
