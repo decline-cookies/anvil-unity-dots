@@ -29,8 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-
-            //TODO: Pass in the structs needed for filtering from the UpdateJobScheduleInfo into this wrapper struct
+            
             WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
                                                                                                   ref typedScheduleInfo);
 

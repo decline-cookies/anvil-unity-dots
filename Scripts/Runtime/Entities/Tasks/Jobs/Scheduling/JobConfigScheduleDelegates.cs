@@ -1,3 +1,4 @@
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -5,13 +6,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public static class JobConfigScheduleDelegates
     {
         //TODO: Docs
-        public delegate JobHandle ScheduleDeferredJobDelegate(JobHandle jobHandle,
-                                                              AbstractJobData jobData,
-                                                              IDeferredScheduleInfo scheduleInfo);
+        public delegate JobHandle ScheduleTaskStreamJobDelegate<TInstance>(JobHandle jobHandle,
+                                                                           TaskStreamJobData<TInstance> jobData,
+                                                                           ITaskStreamScheduleInfo<TInstance> scheduleInfo)
+            where TInstance : unmanaged, IProxyInstance;
 
-        public delegate JobHandle ScheduleJobDelegate(JobHandle jobHandle,
-                                                      AbstractJobData jobData,
-                                                      IScheduleInfo scheduleInfo);
+
+        public delegate JobHandle ScheduleEntityQueryJobDelegate(JobHandle jobHandle,
+                                                                 EntityQueryJobData jobData,
+                                                                 IEntityQueryScheduleInfo scheduleInfo);
+
+        public delegate JobHandle ScheduleEntityQueryComponentJobDelegate<T>(JobHandle jobHandle,
+                                                                             EntityQueryComponentJobData<T> jobData,
+                                                                             IEntityQueryComponentScheduleInfo<T> scheduleInfo)
+            where T : struct, IComponentData;
+
+
+        public delegate JobHandle ScheduleNativeArrayJobDelegate<T>(JobHandle jobHandle,
+                                                                    NativeArrayJobData<T> jobData,
+                                                                    INativeArrayScheduleInfo<T> scheduleInfo)
+            where T : struct;
+
 
         //TODO: Docs
         public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(JobHandle jobHandle,

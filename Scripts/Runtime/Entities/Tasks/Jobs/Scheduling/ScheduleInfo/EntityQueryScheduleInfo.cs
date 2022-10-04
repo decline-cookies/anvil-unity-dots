@@ -4,9 +4,9 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class EntityQueryScheduleInfo : AbstractScheduleInfo,
-                                             IScheduleInfo
+                                             IEntityQueryScheduleInfo
     {
-        private readonly JobConfigScheduleDelegates.ScheduleJobDelegate m_ScheduleJobFunction;
+        private readonly JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate m_ScheduleJobFunction;
         private readonly EntityQueryJobData m_JobData;
 
         public int BatchSize { get; }
@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public EntityQueryScheduleInfo(EntityQueryJobData jobData,
                                        EntityQueryNativeArray entityQueryNativeArray,
                                        BatchStrategy batchStrategy,
-                                       JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction) : base(scheduleJobFunction.Method)
+                                       JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
             m_JobData = jobData;
             EntityQueryNativeArray = entityQueryNativeArray;

@@ -16,12 +16,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         internal enum Usage
         {
-            //TODO: Docs
+            /// <summary>
+            /// The data is being Updated. It will either continue to be processed again the next frame or be
+            /// resolved into a resolve target <see cref="TaskStream{TInstance}"/>
+            /// Represents an Exclusive Write lock on the underlying data.
+            /// </summary>
             Update,
+            /// <summary>
+            /// The data is being written to.
+            /// Represents a Shared Write lock on the underlying data.
+            /// </summary>
             Write,
+            /// <summary>
+            /// The data is being read from.
+            /// Represents a Shared Read lock on the underlying data.
+            /// </summary>
             Read,
+            /// <summary>
+            /// The special id data is being written to so specific instances can be cancelled.
+            /// Represents a Shared Write lock on the underlying data.
+            /// </summary>
             WritePendingCancel,
+            /// <summary>
+            /// The data is being Cancelled. It will either continue to be processed again the next frame or be
+            /// resolved into a resolve target <see cref="TaskStream{TInstance}"/>
+            /// Represents an Exclusive Write lock on the underlying data.
+            /// Similar to <see cref="Update"/> but operates only on instances that have been cancelled.
+            /// </summary>
             Cancelling,
+            /// <summary>
+            /// The data is being written to a resolve target <see cref="TaskStream{TInstance}"/>.
+            /// Represents a Shared Write lock on the underlying data.
+            /// </summary>
             Resolve
         }
 
@@ -31,25 +57,26 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
         private readonly List<IAccessWrapper> m_SchedulingAccessWrappers;
-        
+
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
         private AbstractScheduleInfo m_ScheduleInfo;
         private bool m_ShouldDisableAfterNextRun;
         private bool m_IsHardened;
-
+        
+        /// <inheritdoc cref="IJobConfig.IsEnabled"/>
         public bool IsEnabled
         {
             get;
             set;
         }
-        
+
         protected TaskFlowGraph TaskFlowGraph { get; }
         protected internal AbstractTaskSystem TaskSystem { get; }
         protected internal AbstractTaskDriver TaskDriver { get; }
-        
 
-        protected AbstractJobConfig(TaskFlowGraph taskFlowGraph, 
-                                    AbstractTaskSystem taskSystem, 
+
+        protected AbstractJobConfig(TaskFlowGraph taskFlowGraph,
+                                    AbstractTaskSystem taskSystem,
                                     AbstractTaskDriver taskDriver)
         {
             IsEnabled = true;
@@ -59,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TypeString = type.IsGenericType
                 ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
                 : type.Name;
-            
+
             TaskFlowGraph = taskFlowGraph;
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
@@ -92,13 +119,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public override string ToString()
         {
             return $"{m_TypeString} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionDebugInfo ?? "NOT YET SET"} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
-            
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - COMMON
         //*************************************************************************************************************
-
+        
+        /// <inheritdoc cref="IJobConfig.RunOnce"/>
         public IJobConfig RunOnce()
         {
             m_ShouldDisableAfterNextRun = true;
@@ -115,56 +142,46 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForWrite{TInstance}"/>
         public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IProxyInstance
         {
             return RequireDataStreamForWrite(taskStream.DataStream, Usage.Write);
         }
-
-        protected IJobConfigRequirements RequireCancellableTaskStreamForWrite<TInstance>(CancellableTaskStream<TInstance> cancellableTaskStream)
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForRead{TInstance}"/>
+        public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IProxyInstance
         {
-            return RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
+            AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Read),
+                             new DataStreamAccessWrapper(taskStream.DataStream, AccessType.SharedRead));
+
+            return this;
+        }
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
+        public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
+        {
+            CancelRequestsDataStream cancelRequestsDataStream = taskDriver.CancelRequestsDataStream;
+            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Write),
+                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, taskDriver.Context));
+
+            return this;
         }
 
-        private IJobConfigRequirements RequireDataStreamForWrite(AbstractProxyDataStream dataStream, Usage usage)
+        protected IJobConfigRequirements RequireDataStreamForWrite(AbstractProxyDataStream dataStream, Usage usage)
         {
             AddAccessWrapper(new JobConfigDataID(dataStream, usage),
                              new DataStreamAccessWrapper(dataStream, AccessType.SharedWrite));
             return this;
         }
 
-        public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
-            where TInstance : unmanaged, IProxyInstance
-        {
-            AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Read),
-                             new DataStreamAccessWrapper(taskStream.DataStream, AccessType.SharedRead));
-            
-            return this;
-        }
-
-        public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
-        {
-            CancelRequestsDataStream cancelRequestsDataStream = taskDriver.CancelRequestsDataStream;
-            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Write),
-                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, taskDriver.Context));
-            
-            return this;
-        }
-
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - NATIVE ARRAY
         //*************************************************************************************************************
-        public IJobConfigRequirements RequireNativeArrayForWrite<T>(NativeArray<T> array)
-            where T : struct
-        {
-            AddAccessWrapper(new JobConfigDataID(typeof(NativeArray<T>), Usage.Write),
-                             NativeArrayAccessWrapper.Create(array));
-            
-            return this;
-        }
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireNativeArrayForRead{T}"/>
         public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
             where T : struct
         {
@@ -176,18 +193,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireEntityNativeArrayFromQueryForRead"/>
         public IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeArray(entityQuery));
         }
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireIComponentDataNativeArrayFromQueryForRead{T}"/>
         public IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData
         {
             return RequireIComponentDataNativeArrayFromQueryForRead(new EntityQueryComponentNativeArray<T>(entityQuery));
         }
-        
+
         protected IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQueryNativeArray entityQueryNativeArray)
         {
             EntityQueryAccessWrapper wrapper = new EntityQueryAccessWrapper(entityQueryNativeArray);
@@ -196,7 +215,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
+
         protected IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
             where T : struct, IComponentData
         {
@@ -213,26 +232,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void Harden()
         {
-            if (m_IsHardened)
-            {
-                return;
-            }
-
+            //During Hardening we can optimize by pre-allocating native arrays for dependency combining and convert
+            //dictionary iterations into lists. We also allow for sub classes to do their own optimizing if needed.
+            
+            Debug_EnsureNotHardened();
             m_IsHardened = true;
-
+            
             foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 m_SchedulingAccessWrappers.Add(wrapper);
             }
 
             m_AccessWrapperDependencies = new NativeArray<JobHandle>(m_SchedulingAccessWrappers.Count + 1, Allocator.Persistent);
-            
+
             HardenConfig();
         }
 
         protected virtual void HardenConfig()
         {
-            
         }
 
         //*************************************************************************************************************
@@ -241,8 +258,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private JobHandle PrepareAndSchedule(JobHandle dependsOn)
         {
-            Debug_EnsureScheduleInfoExists();
+            //The main use for JobConfig's, this handles getting the dependency for every piece of data that the job
+            //will read from or write to and combine them into one to actually schedule the job with Unity's job 
+            //system. The resulting handle from that job is then fed back to each piece of data to allow Unity's
+            //dependency system to know when it's safe to use the data again.
             
+            Debug_EnsureScheduleInfoExists();
+
             if (!IsEnabled)
             {
                 return dependsOn;
@@ -252,7 +274,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 IsEnabled = false;
             }
-            
+
             Debug_EnsureIsHardened();
 
             int index = 0;
@@ -290,7 +312,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
             return dataStreamAccessWrapper.CancelRequestsDataStream;
         }
-        
+
         internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestsDataStream dataStream, out byte context)
         {
             JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
@@ -299,10 +321,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dataStream = dataStreamAccessWrapper.CancelRequestsDataStream;
             context = dataStreamAccessWrapper.Context;
         }
-        
+
 
         internal NativeArray<T> GetNativeArray<T>(Usage usage)
-            where T : unmanaged
+            where T : struct
         {
             JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), usage);
             Debug_EnsureWrapperExists(id);
@@ -318,7 +340,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return entityQueryAccessWrapper.NativeArray;
         }
 
-        internal NativeArray<T> GetIComponentNativeArrayFromQuery<T>(Usage usage)
+        internal NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>(Usage usage)
             where T : struct, IComponentData
         {
             JobConfigDataID id = new JobConfigDataID(typeof(EntityQueryComponentAccessWrapper<T>.EntityQueryComponentType), usage);
@@ -337,6 +359,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (m_IsHardened == false)
             {
                 throw new InvalidOperationException($"{this} is not hardened yet!");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNotHardened()
+        {
+            if (m_IsHardened == true)
+            {
+                throw new InvalidOperationException($"{this} is already hardened!");
             }
         }
 
@@ -366,7 +397,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 return;
             }
-            
+
             //Access checks
             switch (id.Usage)
             {
@@ -414,7 +445,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNoScheduleInfo()
         {
@@ -433,24 +464,5 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"{this} does not have a {nameof(IScheduleInfo)} yet! Please schedule on some data first.");
             }
         }
-
-
-
-        //TODO: See where this can fit during hardening
-        // [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        // private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, AbstractTaskDriver taskDriver)
-        // {
-        //     if (dataStream == null)
-        //     {
-        //         throw new InvalidOperationException($"Data Stream is null! Possible causes: "
-        //                                           + $"\n1. The incorrect reference to a {expectedType.Name} was passed in such as referencing a hidden variable or something not defined on this class or one of this classes TaskDrivers. {typeof(ProxyDataStream<>)}'s are created via reflection in the constructor of this class and TaskDrivers."
-        //                                           + $"\n2. The {nameof(ConfigureJobFor)} function wasn't called from {nameof(OnCreate)}. The reflection to create {expectedType.Name}'s hasn't happened yet.");
-        //     }
-        //
-        //     if (!m_TaskFlowGraph.IsDataStreamRegistered(dataStream, this, taskDriver))
-        //     {
-        //         throw new InvalidOperationException($"DataStream of {dataStream} was not registered with the {nameof(TaskFlowGraph)}! Was it defined as a part of this class or TaskDrivers associated with this class?");
-        //     }
-        // }
     }
 }

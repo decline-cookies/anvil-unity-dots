@@ -3,19 +3,19 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class DataStreamScheduleInfo<TInstance> : AbstractScheduleInfo,
-                                                       IDeferredScheduleInfo
+    internal class TaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo,
+                                                       ITaskStreamScheduleInfo<TInstance>
         where TInstance : unmanaged, IProxyInstance
     {
-        private readonly JobConfigScheduleDelegates.ScheduleDeferredJobDelegate m_ScheduleJobFunction;
+        private readonly JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> m_ScheduleJobFunction;
         private readonly TaskStreamJobData<TInstance> m_JobData;
 
         public int BatchSize { get; }
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
         
-        public DataStreamScheduleInfo(ProxyDataStream<TInstance> dataStream, 
+        public TaskStreamScheduleInfo(ProxyDataStream<TInstance> dataStream, 
                                       BatchStrategy batchStrategy,
-                                      JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
+                                      JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                       TaskStreamJobData<TInstance> jobData) : base(scheduleJobFunction.Method)
         {
             DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;

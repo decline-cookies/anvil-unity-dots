@@ -115,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal IJobConfigRequirements ConfigureJobTriggeredBy(AbstractTaskDriver taskDriver,
                                                                 EntityQuery entityQuery,
-                                                                JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                                JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                                 BatchStrategy batchStrategy)
         {
             EntityQueryJobConfig jobConfig = JobConfigFactory.CreateEntityQueryJobConfig(m_TaskFlowGraph,
@@ -133,7 +133,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(AbstractTaskDriver taskDriver,
                                                                            TaskStream<TInstance> taskStream,
-                                                                           JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
+                                                                           JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {

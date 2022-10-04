@@ -25,7 +25,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
-
+        
+        /// <inheritdoc cref="IResolvableJobConfigRequirements.RequireResolveTarget{TResolveTarget}"/>
         public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
             where TResolveTarget : Enum
         {
@@ -60,7 +61,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // EXECUTION
         //*************************************************************************************************************
-
+        
+        /// <summary>
+        /// Returns the job-safe struct of <see cref="DataStreamTargetResolver"/> so that jobs can
+        /// resolve to the right <see cref="ProxyDataStream{TInstance}"/> based on context and id. 
+        /// </summary>
+        /// <returns>The <see cref="DataStreamTargetResolver"/> for this job config</returns>
         public DataStreamTargetResolver GetDataStreamChannelResolver()
         {
             return m_DataStreamTargetResolver;

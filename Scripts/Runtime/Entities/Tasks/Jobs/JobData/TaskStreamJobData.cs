@@ -2,6 +2,12 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Specific <see cref="AbstractJobData"/> for use when triggering a job based on
+    /// a <see cref="TaskStream{TInstance}"/>
+    /// </summary>
+    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> in
+    /// the <see cref="TaskStream{TInstance}"/></typeparam>
     public class TaskStreamJobData<TInstance> : AbstractJobData
         where TInstance : unmanaged, IProxyInstance
     {

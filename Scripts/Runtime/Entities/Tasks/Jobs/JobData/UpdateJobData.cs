@@ -2,6 +2,10 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Specific <see cref="AbstractJobData"/> for use when updating instances of data in a data stream.
+    /// </summary>
+    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/></typeparam>
     public class UpdateJobData<TInstance> : AbstractJobData
         where TInstance : unmanaged, IProxyInstance
     {

@@ -18,16 +18,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - CANCELLATION
-        //*************************************************************************************************************
-
-        private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
-        {
-            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Read),
-                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, byte.MaxValue));
-        }
-
-        //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
@@ -44,6 +34,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
             
             RequireCancellableTaskStreamForWrite(cancellableTaskStream);
+        }
+        
+        private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
+        {
+            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Read),
+                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, byte.MaxValue));
+        }
+        
+        private void RequireCancellableTaskStreamForWrite(CancellableTaskStream<TInstance> cancellableTaskStream)
+        {
+            RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
         }
     }
 }

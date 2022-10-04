@@ -69,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
         
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,
-                                                                         JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
+                                                                         in JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
@@ -80,7 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public IJobConfigRequirements ConfigureJobTriggeredBy(EntityQuery entityQuery,
-                                                              JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                              JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                               BatchStrategy batchStrategy)
         {
             return TaskSystem.ConfigureJobTriggeredBy(this,

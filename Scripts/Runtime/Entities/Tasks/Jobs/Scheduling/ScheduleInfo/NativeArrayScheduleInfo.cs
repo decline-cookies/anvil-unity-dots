@@ -4,10 +4,10 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class NativeArrayScheduleInfo<T> : AbstractScheduleInfo,
-                                                IScheduleInfo
+                                                INativeArrayScheduleInfo<T>
         where T : struct
     {
-        private readonly JobConfigScheduleDelegates.ScheduleJobDelegate m_ScheduleJobFunction;
+        private readonly JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> m_ScheduleJobFunction;
         private readonly NativeArray<T> m_Array;
         private readonly NativeArrayJobData<T> m_JobData;
 
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public NativeArrayScheduleInfo(NativeArrayJobData<T> jobData,
                                        NativeArray<T> array,
                                        BatchStrategy batchStrategy,
-                                       JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction) : base(scheduleJobFunction.Method)
+                                       JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
             m_Array = array;
             m_ScheduleJobFunction = scheduleJobFunction;

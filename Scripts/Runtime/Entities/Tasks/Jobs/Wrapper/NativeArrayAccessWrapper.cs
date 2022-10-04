@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public NativeArray<T> ResolveNativeArray<T>()
-            where T : unmanaged
+            where T : struct
         {
             Debug_EnsureSameType(typeof(T));   
             return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_NativeArrayPtr,

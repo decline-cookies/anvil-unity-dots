@@ -60,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           AbstractTaskSystem taskSystem,
                                                                                           AbstractTaskDriver taskDriver,
                                                                                           TaskStream<TInstance> taskStream,
-                                                                                          JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
+                                                                                          JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IProxyInstance
         {
@@ -73,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                     taskSystem.World,
                                                                                     taskDriver?.Context ?? taskSystem.Context);
 
-            DataStreamScheduleInfo<TInstance> scheduleInfo = new DataStreamScheduleInfo<TInstance>(taskStream.DataStream,
+            TaskStreamScheduleInfo<TInstance> scheduleInfo = new TaskStreamScheduleInfo<TInstance>(taskStream.DataStream,
                                                                                                    batchStrategy,
                                                                                                    scheduleJobFunction,
                                                                                                    jobData);
@@ -85,7 +85,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                       AbstractTaskSystem taskSystem,
                                                                       AbstractTaskDriver taskDriver,
                                                                       EntityQuery entityQuery,
-                                                                      JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                                      JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                                       BatchStrategy batchStrategy)
         {
             EntityQueryNativeArray entityQueryNativeArray = new EntityQueryNativeArray(entityQuery);
@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                               AbstractTaskSystem taskSystem,
                                                                                               AbstractTaskDriver taskDriver,
                                                                                               EntityQuery entityQuery,
-                                                                                              JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                                                              JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
                                                                                               BatchStrategy batchStrategy)
             where T : struct, IComponentData
         {
@@ -138,7 +138,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                             AbstractTaskSystem taskSystem,
                                                                             AbstractTaskDriver taskDriver,
                                                                             NativeArray<T> nativeArray,
-                                                                            JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
+                                                                            JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction,
                                                                             BatchStrategy batchStrategy)
             where T : struct
         {
