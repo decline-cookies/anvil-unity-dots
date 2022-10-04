@@ -14,7 +14,7 @@ The code is reasonably clean but documentation and examples are sparse. Feel fre
 ⚠️ We welcome PRs and bug reports but making this repo a public success is not our priority. No promises on when it will be addressed!
 
 # Dependencies
-- [Unity 2020 LTS (2020.3.30+)](https://unity.com/)
+- [Unity 2021.3.5+](https://unity.com/)
 - [anvil-csharp-core (main...usually 😬)](https://github.com/decline-cookies/anvil-csharp-core)
 - [anvil-unity-core (main...usually 😬)](https://github.com/decline-cookies/anvil-unity-core)
 - *DOTS Packages*
