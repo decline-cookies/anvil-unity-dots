@@ -6,8 +6,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct
     {
         public NativeArrayJobConfig(TaskFlowGraph taskFlowGraph,
-                                    ITaskSystem taskSystem,
-                                    ITaskDriver taskDriver,
+                                    AbstractTaskSystem taskSystem,
+                                    AbstractTaskDriver taskDriver,
                                     NativeArray<T> nativeArray)
             : base(taskFlowGraph,
                    taskSystem,

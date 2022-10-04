@@ -7,16 +7,10 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    /// <summary>
-    /// A type of System that runs <see cref="AbstractTaskDriver"/>s during its update phase.
-    /// </summary>
-    public abstract partial class AbstractTaskSystem<TTaskDriver, TTaskSystem> : AbstractAnvilSystemBase,
-                                                                                 ITaskSystem
-        where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
-        where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
+    public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
-        private readonly List<TTaskDriver> m_TaskDrivers;
         private readonly ByteIDProvider m_TaskDriverIDProvider;
+        private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
 
@@ -34,9 +28,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractTaskSystem()
         {
-            m_TaskDrivers = new List<TTaskDriver>();
-
             m_TaskDriverIDProvider = new ByteIDProvider();
+            m_TaskDrivers = new List<AbstractTaskDriver>();
+
             Context = m_TaskDriverIDProvider.GetNextID();
 
             m_CancelRequestsDataStream = new CancelRequestsDataStream();
@@ -83,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             lookup.Clear();
         }
 
-        CancelRequestsDataStream ITaskSystem.GetCancelRequestsDataStream()
+        internal CancelRequestsDataStream GetCancelRequestsDataStream()
         {
             return m_CancelRequestsDataStream;
         }
@@ -110,7 +104,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION
         //*************************************************************************************************************
 
-        internal byte RegisterTaskDriver(TTaskDriver taskDriver)
+        internal byte RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             Debug_EnsureNotHardened(taskDriver);
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
@@ -119,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return m_TaskDriverIDProvider.GetNextID();
         }
 
-        internal IJobConfigRequirements ConfigureJobTriggeredBy(ITaskDriver taskDriver,
+        internal IJobConfigRequirements ConfigureJobTriggeredBy(AbstractTaskDriver taskDriver,
                                                                 EntityQuery entityQuery,
                                                                 JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
                                                                 BatchStrategy batchStrategy)
@@ -137,7 +131,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return jobConfig;
         }
 
-        internal IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(ITaskDriver taskDriver,
+        internal IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(AbstractTaskDriver taskDriver,
                                                                            TaskStream<TInstance> taskStream,
                                                                            JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
                                                                            BatchStrategy batchStrategy)
@@ -156,7 +150,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return jobConfig;
         }
 
-        private void RegisterJob(ITaskDriver taskDriver,
+        private void RegisterJob(AbstractTaskDriver taskDriver,
                                  AbstractJobConfig jobConfig,
                                  TaskFlowRoute route)
         {
@@ -277,7 +271,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureTaskDriverSystemRelationship(TTaskDriver taskDriver)
+        private void Debug_EnsureTaskDriverSystemRelationship(AbstractTaskDriver taskDriver)
         {
             if (taskDriver.TaskSystem != this)
             {
@@ -291,7 +285,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNotHardened(TaskFlowRoute route, ITaskDriver taskDriver)
+        private void Debug_EnsureNotHardened(TaskFlowRoute route, AbstractTaskDriver taskDriver)
         {
             if (m_IsHardened)
             {
@@ -300,11 +294,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNotHardened(TTaskDriver taskDriver)
+        private void Debug_EnsureNotHardened(AbstractTaskDriver taskDriver)
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {typeof(TTaskDriver)}'s are created in {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {taskDriver.GetType()}'s are created in {nameof(OnCreate)} or earlier.");
             }
         }
     }

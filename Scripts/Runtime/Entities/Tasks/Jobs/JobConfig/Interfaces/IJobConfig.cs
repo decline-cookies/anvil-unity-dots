@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Whether the Job is enabled or not.
         /// A job that is not enabled will not be scheduled or run but will still exist as part of the
-        /// <see cref="ITaskSystem"/> or <see cref="ITaskDriver"/> that it is a part of.
+        /// <see cref="AbstractTaskSystem"/> or <see cref="AbstractTaskDriver"/> that it is a part of.
         /// </summary>
         public bool IsEnabled { get; set; }
         

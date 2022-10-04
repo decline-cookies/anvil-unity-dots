@@ -1,8 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System;
-using System.Reflection;
-using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {

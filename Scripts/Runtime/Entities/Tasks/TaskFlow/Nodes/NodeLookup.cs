@@ -13,8 +13,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public byte Context { get; }
 
         public NodeLookup(TaskFlowGraph taskGraph,
-                          ITaskSystem taskSystem,
-                          ITaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
+                          AbstractTaskSystem taskSystem,
+                          AbstractTaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
             m_NodesByDataStream = new Dictionary<AbstractProxyDataStream, DataStreamNode>();
             m_NodesByCancelRequests = new Dictionary<CancelRequestsDataStream, CancelRequestsNode>();
@@ -69,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public TaskDriverCancellationPropagator CreateCancellationPropagator()
         {
             m_CancellationPropagator = new TaskDriverCancellationPropagator(TaskDriver,
-                                                                            TaskDriver.GetCancelRequestsDataStream(),
+                                                                            TaskDriver.CancelRequestsDataStream,
                                                                             TaskSystem.GetCancelRequestsDataStream(),
                                                                             TaskDriver.GetSubTaskDriverCancelRequests());
             return m_CancellationPropagator;

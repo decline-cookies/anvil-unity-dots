@@ -10,17 +10,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get;
         }
         
-        public ITaskSystem TaskSystem
+        public AbstractTaskSystem TaskSystem
         {
             get;
         }
 
-        public ITaskDriver TaskDriver
+        public AbstractTaskDriver TaskDriver
         {
             get;
         }
 
-        protected AbstractNodeLookup(TaskFlowGraph taskGraph, ITaskSystem taskSystem, ITaskDriver taskDriver)
+        protected AbstractNodeLookup(TaskFlowGraph taskGraph, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             TaskGraph = taskGraph;
             TaskSystem = taskSystem;

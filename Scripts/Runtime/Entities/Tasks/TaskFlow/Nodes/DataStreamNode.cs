@@ -15,8 +15,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamNode(NodeLookup lookup,
                               AbstractProxyDataStream dataStream,
                               TaskFlowGraph taskFlowGraph,
-                              ITaskSystem taskSystem,
-                              ITaskDriver taskDriver,
+                              AbstractTaskSystem taskSystem,
+                              AbstractTaskDriver taskDriver,
                               AbstractTaskStream taskStream) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_Lookup = lookup;

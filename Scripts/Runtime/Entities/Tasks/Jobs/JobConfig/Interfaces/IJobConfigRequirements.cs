@@ -19,6 +19,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery);
 
-        public IJobConfigRequirements RequireTaskDriverForRequestCancel(ITaskDriver taskDriver);
+        public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver);
     }
 }

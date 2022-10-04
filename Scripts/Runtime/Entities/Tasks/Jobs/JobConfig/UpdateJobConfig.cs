@@ -6,8 +6,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IProxyInstance
     {
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
-                               ITaskSystem taskSystem,
-                               ITaskDriver taskDriver,
+                               AbstractTaskSystem taskSystem,
+                               AbstractTaskDriver taskDriver,
                                TaskStream<TInstance> taskStream,
                                CancelRequestsDataStream cancelRequestsDataStream) 
             : base(taskFlowGraph, 

@@ -1,72 +1,73 @@
 using Anvil.CSharp.Core;
 using System.Collections.Generic;
 using Unity.Entities;
-using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    public abstract class AbstractTaskDriver<TTaskDriver, TTaskSystem> : AbstractAnvilBase,
-                                                                         ITaskDriver
-        where TTaskDriver : AbstractTaskDriver<TTaskDriver, TTaskSystem>
-        where TTaskSystem : AbstractTaskSystem<TTaskDriver, TTaskSystem>
-
+    public abstract class AbstractTaskDriver<TTaskSystem> : AbstractTaskDriver
+        where TTaskSystem : AbstractTaskSystem
     {
-        private readonly List<ITaskDriver> m_SubTaskDrivers;
-        private readonly TaskFlowGraph m_TaskFlowGraph;
-        private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
+        public new TTaskSystem TaskSystem
+        {
+            get => (TTaskSystem)base.TaskSystem;
+        }
+        
+        protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskSystem>())
+        {
+        }
+    }
 
-        public TTaskSystem TaskSystem { get; }
+    public abstract class AbstractTaskDriver : AbstractAnvilBase
+    {
+        private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
+        private readonly TaskFlowGraph m_TaskFlowGraph;
+        
         public byte Context { get; }
         
+        public AbstractTaskSystem TaskSystem { get; }
+        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
 
-        protected AbstractTaskDriver(World world)
+        protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
         {
-            TaskSystem = world.GetOrCreateSystem<TTaskSystem>();
-            Context = TaskSystem.RegisterTaskDriver((TTaskDriver)this);
+            TaskSystem = abstractTaskSystem;
             
-            m_CancelRequestsDataStream = new CancelRequestsDataStream();
-
-            m_SubTaskDrivers = new List<ITaskDriver>();
-
+            Context = TaskSystem.RegisterTaskDriver(this);
+            
+            m_SubTaskDrivers = new List<AbstractTaskDriver>();
+            //TODO: Let the TaskFlowGraph create this for us.
+            CancelRequestsDataStream = new CancelRequestsDataStream();
+            
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateTaskStreams(TaskSystem, this);
-            m_TaskFlowGraph.RegisterCancelRequestsDataStream(m_CancelRequestsDataStream, TaskSystem, this);
+            m_TaskFlowGraph.RegisterCancelRequestsDataStream(CancelRequestsDataStream, TaskSystem, this);
         }
 
         protected override void DisposeSelf()
         {
-            foreach (ITaskDriver subTaskDriver in m_SubTaskDrivers)
+            //TODO: Let the Task Graph handle disposing this for us
+            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
             {
                 subTaskDriver.Dispose();
             }
-
             m_SubTaskDrivers.Clear();
-
+            
+            //CancelRequestsDataStream is disposed by the TaskFlowGraph
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
+            
             base.DisposeSelf();
         }
 
-        CancelRequestsDataStream ITaskDriver.GetCancelRequestsDataStream()
-        {
-            return m_CancelRequestsDataStream;
-        }
-
-        List<CancelRequestsDataStream> ITaskDriver.GetSubTaskDriverCancelRequests()
+        internal List<CancelRequestsDataStream> GetSubTaskDriverCancelRequests()
         {
             List<CancelRequestsDataStream> cancelRequestsDataStreams = new List<CancelRequestsDataStream>();
-            foreach (ITaskDriver subTaskDriver in m_SubTaskDrivers)
+            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
             {
-                cancelRequestsDataStreams.Add(subTaskDriver.GetCancelRequestsDataStream());
+                cancelRequestsDataStreams.Add(subTaskDriver.CancelRequestsDataStream);
             }
 
             return cancelRequestsDataStreams;
         }
-
-        ITaskSystem ITaskDriver.GetTaskSystem()
-        {
-            return TaskSystem;
-        }
-
+        
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,
                                                                          JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
@@ -87,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       scheduleJobFunction,
                                                       batchStrategy);
         }
-        
+
 
         //TODO: Implement other job types
     }

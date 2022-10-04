@@ -6,8 +6,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct, IComponentData
     {
         public EntityQueryComponentJobConfig(TaskFlowGraph taskFlowGraph,
-                                             ITaskSystem taskSystem,
-                                             ITaskDriver taskDriver,
+                                             AbstractTaskSystem taskSystem,
+                                             AbstractTaskDriver taskDriver,
                                              EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray)
             : base(taskFlowGraph,
                    taskSystem,

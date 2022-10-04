@@ -6,8 +6,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IProxyInstance
     {
         public CancelJobConfig(TaskFlowGraph taskFlowGraph,
-                               ITaskSystem taskSystem,
-                               ITaskDriver taskDriver,
+                               AbstractTaskSystem taskSystem,
+                               AbstractTaskDriver taskDriver,
                                CancellableTaskStream<TInstance> taskStream)
             : base(taskFlowGraph,
                    taskSystem,

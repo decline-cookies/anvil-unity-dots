@@ -44,13 +44,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
         
         protected TaskFlowGraph TaskFlowGraph { get; }
-        protected internal ITaskSystem TaskSystem { get; }
-        protected internal ITaskDriver TaskDriver { get; }
+        protected internal AbstractTaskSystem TaskSystem { get; }
+        protected internal AbstractTaskDriver TaskDriver { get; }
         
 
         protected AbstractJobConfig(TaskFlowGraph taskFlowGraph, 
-                                    ITaskSystem taskSystem, 
-                                    ITaskDriver taskDriver)
+                                    AbstractTaskSystem taskSystem, 
+                                    AbstractTaskDriver taskDriver)
         {
             IsEnabled = true;
             Type type = GetType();
@@ -144,9 +144,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        public IJobConfigRequirements RequireTaskDriverForRequestCancel(ITaskDriver taskDriver)
+        public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
-            CancelRequestsDataStream cancelRequestsDataStream = taskDriver.GetCancelRequestsDataStream();
+            CancelRequestsDataStream cancelRequestsDataStream = taskDriver.CancelRequestsDataStream;
             AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Write),
                              new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, taskDriver.Context));
             
@@ -438,7 +438,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         //TODO: See where this can fit during hardening
         // [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        // private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, ITaskDriver taskDriver)
+        // private void Debug_EnsureDataStreamIntegrity(AbstractProxyDataStream dataStream, Type expectedType, AbstractTaskDriver taskDriver)
         // {
         //     if (dataStream == null)
         //     {

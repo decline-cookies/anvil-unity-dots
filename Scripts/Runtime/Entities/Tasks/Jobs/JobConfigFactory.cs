@@ -6,8 +6,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal static class JobConfigFactory
     {
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
-                                                                                  ITaskSystem taskSystem,
-                                                                                  ITaskDriver taskDriver,
+                                                                                  AbstractTaskSystem taskSystem,
+                                                                                  AbstractTaskDriver taskDriver,
                                                                                   TaskStream<TInstance> taskStream,
                                                                                   CancelRequestsDataStream cancelRequestsDataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
@@ -33,8 +33,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
-                                                                                  ITaskSystem taskSystem,
-                                                                                  ITaskDriver taskDriver,
+                                                                                  AbstractTaskSystem taskSystem,
+                                                                                  AbstractTaskDriver taskDriver,
                                                                                   CancellableTaskStream<TInstance> taskStream,
                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
@@ -57,8 +57,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static TaskStreamJobConfig<TInstance> CreateTaskStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
-                                                                                          ITaskSystem taskSystem,
-                                                                                          ITaskDriver taskDriver,
+                                                                                          AbstractTaskSystem taskSystem,
+                                                                                          AbstractTaskDriver taskDriver,
                                                                                           TaskStream<TInstance> taskStream,
                                                                                           JobConfigScheduleDelegates.ScheduleDeferredJobDelegate scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
@@ -82,8 +82,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static EntityQueryJobConfig CreateEntityQueryJobConfig(TaskFlowGraph taskFlowGraph,
-                                                                      ITaskSystem taskSystem,
-                                                                      ITaskDriver taskDriver,
+                                                                      AbstractTaskSystem taskSystem,
+                                                                      AbstractTaskDriver taskDriver,
                                                                       EntityQuery entityQuery,
                                                                       JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
                                                                       BatchStrategy batchStrategy)
@@ -108,8 +108,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static EntityQueryComponentJobConfig<T> CreateEntityQueryComponentJobConfig<T>(TaskFlowGraph taskFlowGraph,
-                                                                                              ITaskSystem taskSystem,
-                                                                                              ITaskDriver taskDriver,
+                                                                                              AbstractTaskSystem taskSystem,
+                                                                                              AbstractTaskDriver taskDriver,
                                                                                               EntityQuery entityQuery,
                                                                                               JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
                                                                                               BatchStrategy batchStrategy)
@@ -135,8 +135,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static NativeArrayJobConfig<T> CreateNativeArrayJobConfig<T>(TaskFlowGraph taskFlowGraph,
-                                                                            ITaskSystem taskSystem,
-                                                                            ITaskDriver taskDriver,
+                                                                            AbstractTaskSystem taskSystem,
+                                                                            AbstractTaskDriver taskDriver,
                                                                             NativeArray<T> nativeArray,
                                                                             JobConfigScheduleDelegates.ScheduleJobDelegate scheduleJobFunction,
                                                                             BatchStrategy batchStrategy)

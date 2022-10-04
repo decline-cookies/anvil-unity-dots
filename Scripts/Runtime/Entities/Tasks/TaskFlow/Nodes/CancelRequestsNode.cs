@@ -9,8 +9,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelRequestsNode(NodeLookup lookup,
                                   CancelRequestsDataStream cancelRequestsDataStream,
                                   TaskFlowGraph taskFlowGraph,
-                                  ITaskSystem taskSystem,
-                                  ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
+                                  AbstractTaskSystem taskSystem,
+                                  AbstractTaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_Lookup = lookup;
             CancelRequestsDataStream = cancelRequestsDataStream;

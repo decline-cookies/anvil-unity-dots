@@ -34,12 +34,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         private NativeArray<JobHandle> m_Dependencies;
 
-        public ITaskDriver TaskDriver { get; }
+        public AbstractTaskDriver TaskDriver { get; }
 
-        public TaskDriverCancellationPropagator(ITaskDriver taskDriver, 
-                                          CancelRequestsDataStream taskDriverCancelRequests, 
-                                          CancelRequestsDataStream systemCancelRequests, 
-                                          List<CancelRequestsDataStream> subTaskDriverCancelRequests)
+        public TaskDriverCancellationPropagator(AbstractTaskDriver taskDriver, 
+                                                CancelRequestsDataStream taskDriverCancelRequests, 
+                                                CancelRequestsDataStream systemCancelRequests, 
+                                                List<CancelRequestsDataStream> subTaskDriverCancelRequests)
         {
             TaskDriver = taskDriver;
             m_TaskDriverCancelRequests = taskDriverCancelRequests;

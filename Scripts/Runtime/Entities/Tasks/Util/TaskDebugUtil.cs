@@ -2,7 +2,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal static class TaskDebugUtil
     {
-        public static string GetLocationName(ITaskSystem taskSystem, ITaskDriver taskDriver)
+        public static string GetLocationName(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             return (taskDriver == null)
                 ? $"{taskSystem.GetType().Name}"

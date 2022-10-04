@@ -3,8 +3,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class EntityQueryJobConfig : AbstractJobConfig
     {
         public EntityQueryJobConfig(TaskFlowGraph taskFlowGraph,
-                                    ITaskSystem taskSystem,
-                                    ITaskDriver taskDriver,
+                                    AbstractTaskSystem taskSystem,
+                                    AbstractTaskDriver taskDriver,
                                     EntityQueryNativeArray entityQueryNativeArray)
             : base(taskFlowGraph,
                    taskSystem,

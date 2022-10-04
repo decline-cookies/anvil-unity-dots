@@ -17,8 +17,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public JobRouteNode(JobNodeLookup lookup,
                             TaskFlowRoute route,
                             TaskFlowGraph taskFlowGraph,
-                            ITaskSystem taskSystem,
-                            ITaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
+                            AbstractTaskSystem taskSystem,
+                            AbstractTaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_Lookup = lookup;
             Route = route;

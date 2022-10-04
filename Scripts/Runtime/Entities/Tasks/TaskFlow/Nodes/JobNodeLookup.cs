@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         private readonly Dictionary<TaskFlowRoute, JobRouteNode> m_JobRouteNodes;
         
-        public JobNodeLookup(TaskFlowGraph taskGraph, ITaskSystem taskSystem, ITaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
+        public JobNodeLookup(TaskFlowGraph taskGraph, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
             m_JobRouteNodes = new Dictionary<TaskFlowRoute, JobRouteNode>();
         }
