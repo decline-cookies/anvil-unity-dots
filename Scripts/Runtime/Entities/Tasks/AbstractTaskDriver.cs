@@ -4,9 +4,15 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <inheritdoc cref="AbstractTaskDriver"/>
+    /// <typeparam name="TTaskSystem">The type of <see cref="AbstractTaskSystem"/></typeparam>
     public abstract class AbstractTaskDriver<TTaskSystem> : AbstractTaskDriver
         where TTaskSystem : AbstractTaskSystem
     {
+        /// <summary>
+        /// Reference to the associated <typeparamref name="TTaskSystem"/>
+        /// Hides the base reference to the abstract version.
+        /// </summary>
         public new TTaskSystem TaskSystem
         {
             get => (TTaskSystem)base.TaskSystem;
@@ -16,15 +22,31 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
         }
     }
-
+    
+    /// <summary>
+    /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
+    /// The goal of a TaskDriver is to convert specific data into general data that the corresponding
+    /// <see cref="AbstractTaskSystem"/> will process en mass and in parallel. The results of that general processing
+    /// are then picked up by the TaskDriver to be converted to specific data again and passed on to a sub task driver
+    /// or to another general system. 
+    /// </summary>
+    //TODO: #74 - Add support for Sub-Task Drivers properly when building an example nested TaskDriver.
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
         
+        /// <summary>
+        /// The context associated with this TaskDriver. Will be unique to the corresponding
+        /// <see cref="AbstractTaskSystem"/> and any other TaskDrivers of the same type.
+        /// </summary>
         public byte Context { get; }
         
+        /// <summary>
+        /// Reference to the associated <see cref="AbstractTaskSystem"/>
+        /// </summary>
         public AbstractTaskSystem TaskSystem { get; }
+        
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
 
         protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
@@ -33,8 +55,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             
             Context = TaskSystem.RegisterTaskDriver(this);
             
+            //TODO: #71 - Let the TaskFlowGraph create this for us.
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
-            //TODO: Let the TaskFlowGraph create this for us.
             CancelRequestsDataStream = new CancelRequestsDataStream();
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
@@ -44,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
-            //TODO: Let the Task Graph handle disposing this for us
+            //TODO: #71 - Let the Task Graph handle disposing this for us
             foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
             {
                 subTaskDriver.Dispose();
@@ -90,6 +112,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        //TODO: Implement other job types
+        //TODO: #73 - Implement other job types
     }
 }

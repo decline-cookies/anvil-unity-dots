@@ -7,6 +7,11 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// A <see cref="SystemBase"/> that is used in the Task System for running generic jobs on generic data en mass
+    /// in conjunction with context specific <see cref="AbstractTaskDriver"/>s that will populate the generic data
+    /// and receive the results, should they exist.
+    /// </summary>
     public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
         private readonly ByteIDProvider m_TaskDriverIDProvider;
@@ -23,7 +28,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private BulkJobScheduler<TaskDriverCancellationPropagator> m_TaskDriversCancellationBulkJobScheduler;
 
         private bool m_IsHardened;
-
+        
+        /// <summary>
+        /// The context of this <see cref="AbstractTaskSystem"/>.
+        /// This will always be the first ID given by a <see cref="ByteIDProvider"/> and is used to differentiate
+        /// between instances running in the generic system job(s) versus more specific Task Drivers.
+        /// </summary>
         public byte Context { get; }
 
         protected AbstractTaskSystem()
@@ -32,10 +42,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
             Context = m_TaskDriverIDProvider.GetNextID();
-
+            
+            //TODO: #71 - Let the TaskFlowGraph handle creating this for us.
             m_CancelRequestsDataStream = new CancelRequestsDataStream();
 
-            //TODO: Need to look at having this happen in OnCreate instead. The World is only set there. 
+            //TODO: #65 - Need to look at having this happen in OnCreate instead. The World is only set there. 
             World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
             m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.CreateTaskStreams(this);
@@ -154,6 +165,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                  AbstractJobConfig jobConfig,
                                  TaskFlowRoute route)
         {
+            //TODO: #71 - Should TaskFlowGraph actually create?
             Debug_EnsureNotHardened(route, taskDriver);
             m_TaskFlowGraph.RegisterJobConfig(jobConfig, route);
         }
@@ -183,7 +195,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            //TODO: Could get the Graph to create for us
             UpdateJobConfig<TInstance> jobConfig = JobConfigFactory.CreateUpdateJobConfig(m_TaskFlowGraph,
                                                                                           this,
                                                                                           null,
@@ -203,7 +214,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         protected override void OnUpdate()
         {
-            //TODO: Discuss with Mike about how we can get around this
+            //TODO: #64 - World ordering will fix this
             if (!m_TaskFlowGraph.IsHardened)
             {
                 return;
@@ -245,7 +256,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
                                                                     AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
-            //TODO: #38 - Allow for cancels on the drivers to occur
+            //TODO: #72 - Allow for other phases as needed, try to make as parallel as possible
 
             // //Have drivers to do their own generic work if necessary
             dependsOn = ScheduleJobs(dependsOn,

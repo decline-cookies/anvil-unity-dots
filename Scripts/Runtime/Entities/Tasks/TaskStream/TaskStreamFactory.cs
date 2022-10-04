@@ -33,9 +33,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         private static TTaskStream CreateTaskStream<TTaskStream>()
-            where TTaskStream : AbstractTaskStream, new()
+            where TTaskStream : AbstractTaskStream
         {
-            return new TTaskStream();
+            return (TTaskStream)Activator.CreateInstance(typeof(TTaskStream), true);
         }
         
         //*************************************************************************************************************

@@ -12,6 +12,8 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //Helper class to manage writing cancellation requests (which come in from one TaskDriver) to that TaskDriver's 
+    //TaskSystem and to all sub-TaskDrivers in one quick job.
     internal class TaskDriverCancellationPropagator : AbstractAnvilBase
     {
         internal static readonly BulkScheduleDelegate<TaskDriverCancellationPropagator> CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<TaskDriverCancellationPropagator>(nameof(ConsolidateAndPropagate), BindingFlags.Instance | BindingFlags.NonPublic);
