@@ -3,37 +3,45 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class NativeArrayScheduleInfo<T> : AbstractScheduleInfo,
-                                                INativeArrayScheduleInfo<T>
+    /// <summary>
+    /// Specific scheduling information for a <see cref="NativeArrayJobConfig{T}"/>
+    /// </summary>
+    /// <typeparam name="T">The type of struct in the <see cref="NativeArray{T}"/></typeparam>
+    public class NativeArrayScheduleInfo<T> : AbstractScheduleInfo
         where T : struct
     {
-        private readonly JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> m_ScheduleJobFunction;
-        private readonly NativeArray<T> m_Array;
         private readonly NativeArrayJobData<T> m_JobData;
+        private readonly NativeArray<T> m_Array;
+        private readonly JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> m_ScheduleJobFunction;
 
+        /// <summary>
+        /// The number of instances to process per batch.
+        /// </summary>
         public int BatchSize { get; }
 
+        /// <summary>
+        /// The total number of instances to process.
+        /// </summary>
         public int Length
         {
             get => m_Array.Length;
         }
 
-
-        public NativeArrayScheduleInfo(NativeArrayJobData<T> jobData,
-                                       NativeArray<T> array,
-                                       BatchStrategy batchStrategy,
-                                       JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction) : base(scheduleJobFunction.Method)
+        internal NativeArrayScheduleInfo(NativeArrayJobData<T> jobData,
+                                         NativeArray<T> array,
+                                         BatchStrategy batchStrategy,
+                                         JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
+            m_JobData = jobData;
             m_Array = array;
             m_ScheduleJobFunction = scheduleJobFunction;
-            m_JobData = jobData;
-
+            
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
                 ? ChunkUtil.MaxElementsPerChunk<T>()
                 : 1;
         }
 
-        public override JobHandle CallScheduleFunction(JobHandle dependsOn)
+        internal override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }

@@ -1,10 +1,11 @@
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class EntityQueryComponentAccessWrapper<T> : IAccessWrapper
+    internal class EntityQueryComponentAccessWrapper<T> : AbstractAccessWrapper
         where T : struct, IComponentData
     {
         internal class EntityQueryComponentType
@@ -17,23 +18,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             get => m_EntityQueryNativeArray.NativeArray;
         }
-        
-        public EntityQueryComponentAccessWrapper(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
+
+        public EntityQueryComponentAccessWrapper(EntityQueryComponentNativeArray<T> entityQueryNativeArray) : base(AccessType.SharedRead)
         {
             m_EntityQueryNativeArray = entityQueryNativeArray;
         }
-        
-        public void Dispose()
-        {
-            //Not needed
-        }
 
-        public JobHandle Acquire()
+        public sealed override JobHandle Acquire()
         {
             return m_EntityQueryNativeArray.Acquire();
         }
 
-        public void Release(JobHandle releaseAccessDependency)
+        public sealed override void Release(JobHandle releaseAccessDependency)
         {
             m_EntityQueryNativeArray.Release(releaseAccessDependency);
         }

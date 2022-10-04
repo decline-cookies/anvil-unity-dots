@@ -233,14 +233,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // JOBS
         //*************************************************************************************************************
 
-        public AbstractJobConfig RegisterJobConfig(AbstractJobConfig jobConfig,
-                                                   TaskFlowRoute route)
+        public void RegisterJobConfig(AbstractJobConfig jobConfig,
+                                      TaskFlowRoute route)
         {
             JobNodeLookup lookup = GetOrCreateJobNodeLookup(jobConfig.TaskSystem, jobConfig.TaskDriver);
 
             JobNode jobNode = lookup.CreateJobNode(route, jobConfig);
-
-            return jobNode.JobConfig;
         }
 
         private JobNodeLookup GetOrCreateJobNodeLookup(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
@@ -307,11 +305,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void Harden()
         {
-            if (IsHardened)
-            {
-                return;
-            }
-
+            Debug_EnsureNotHardened();
             IsHardened = true;
 
             foreach (JobNodeLookup jobNodeLookup in m_JobNodesByTaskSystem.Values)
@@ -323,13 +317,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobNodeLookup.Harden();
             }
-
+            
+            //TODO: #66 - Build Relationships
             //Iterate through all nodes registered to the graph to try and develop relationships. 
             //We'll end up getting islands of relationships between all the data so you can't necessarily have 
             //one entry and one exit.
             // foreach (DataStreamNode node in m_DataNodesLookupByDataStream.Values)
             // {
-            //     //TODO: Implement
             //     // node.BuildConnections();
             // }
 
@@ -355,7 +349,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (IsHardened)
             {
-                throw new InvalidOperationException($"Trying to modify the {nameof(TaskFlowGraph)} but connections have already been built! The graph needs to be complete before connections are built.");
+                throw new InvalidOperationException($"{nameof(TaskFlowGraph)} is already hardened!");
             }
         }
 
@@ -380,7 +374,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureJobFlowIsComplete()
         {
-            //TODO: Ensure that all data is written to somehow and used
+            //TODO: #67 - Ensure that all data is written to somehow and used so we don't have data loss.
             // foreach (DataFlowNode node in m_DataFlowNodes.Values)
             // {
             //     foreach (DataFlowNode.DataFlowPath path in DataFlowNode.FlowPathValues)

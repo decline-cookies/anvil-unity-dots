@@ -3,28 +3,38 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class CancelTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo,
-                                                             ICancelTaskStreamScheduleInfo<TInstance>
+    /// <summary>
+    /// Specific scheduling information for a <see cref="CancelJobConfig{TInstance}"/>
+    /// </summary>
+    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> data</typeparam>
+    public class CancelTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo
         where TInstance : unmanaged, IProxyInstance
     {
-        private readonly JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> m_ScheduleJobFunction;
         private readonly CancelJobData<TInstance> m_JobData;
+        private readonly JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> m_ScheduleJobFunction;
 
+        /// <summary>
+        /// The number of instances to process per batch.
+        /// </summary>
         public int BatchSize { get; }
+        
+        /// <summary>
+        /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
+        /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
 
-        public DataStreamCancellationUpdater<TInstance> CancellationUpdater
+        internal DataStreamCancellationUpdater<TInstance> CancellationUpdater
         {
             get => m_JobData.GetDataStreamCancellationUpdater();
         }
 
-        public CancelTaskStreamScheduleInfo(ProxyDataStream<TInstance> dataStream,
-                                            BatchStrategy batchStrategy,
-                                            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                            CancelJobData<TInstance> jobData) : base(scheduleJobFunction.Method)
+        internal CancelTaskStreamScheduleInfo(CancelJobData<TInstance> jobData,
+                                              ProxyDataStream<TInstance> dataStream,
+                                              BatchStrategy batchStrategy,
+                                              JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
-            m_ScheduleJobFunction = scheduleJobFunction;
             m_JobData = jobData;
+            m_ScheduleJobFunction = scheduleJobFunction;
             
             DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
 
@@ -33,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 : 1;
         }
 
-        public sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
+        internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }

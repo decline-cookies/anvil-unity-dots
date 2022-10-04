@@ -14,13 +14,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
-                                                                         ICancelTaskStreamScheduleInfo<TInstance> scheduleInfo,
+                                                                         CancelTaskStreamScheduleInfo<TInstance> scheduleInfo,
                                                                          JobHandle dependsOn = default)
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
             where TInstance : unmanaged, IProxyInstance
         {
-            CancelTaskStreamScheduleInfo<TInstance> typedScheduleInfo = (CancelTaskStreamScheduleInfo<TInstance>)scheduleInfo;
-
             void* atomicSafetyHandlePtr = null;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -31,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ValidateReflectionData(reflectionData);
             
             WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
-                                                                                                  ref typedScheduleInfo);
+                                                                                                  ref scheduleInfo);
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,

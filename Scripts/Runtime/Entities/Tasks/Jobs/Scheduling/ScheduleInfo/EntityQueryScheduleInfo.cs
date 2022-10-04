@@ -3,37 +3,43 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class EntityQueryScheduleInfo : AbstractScheduleInfo,
-                                             IEntityQueryScheduleInfo
+    /// <summary>
+    /// Specific scheduling information for a <see cref="EntityQueryJobConfig"/>
+    /// </summary>
+    public class EntityQueryScheduleInfo : AbstractScheduleInfo
     {
-        private readonly JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate m_ScheduleJobFunction;
         private readonly EntityQueryJobData m_JobData;
-
+        private readonly EntityQueryNativeArray m_EntityQueryNativeArray;
+        private readonly JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate m_ScheduleJobFunction;
+        
+        /// <summary>
+        /// The number of instances to process per batch.
+        /// </summary>
         public int BatchSize { get; }
-
-        public EntityQueryNativeArray EntityQueryNativeArray { get; }
-
+        
+        /// <summary>
+        /// The total number of instances to process.
+        /// </summary>
         public int Length
         {
-            get => EntityQueryNativeArray.Length;
+            get => m_EntityQueryNativeArray.Length;
         }
 
-        public EntityQueryScheduleInfo(EntityQueryJobData jobData,
-                                       EntityQueryNativeArray entityQueryNativeArray,
-                                       BatchStrategy batchStrategy,
-                                       JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction) : base(scheduleJobFunction.Method)
+        internal EntityQueryScheduleInfo(EntityQueryJobData jobData,
+                                         EntityQueryNativeArray entityQueryNativeArray,
+                                         BatchStrategy batchStrategy,
+                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
             m_JobData = jobData;
-            EntityQueryNativeArray = entityQueryNativeArray;
+            m_EntityQueryNativeArray = entityQueryNativeArray;
+            m_ScheduleJobFunction = scheduleJobFunction;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
                 ? ChunkUtil.MaxElementsPerChunk<Entity>()
                 : 1;
-
-            m_ScheduleJobFunction = scheduleJobFunction;
         }
 
-        public sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
+        internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }

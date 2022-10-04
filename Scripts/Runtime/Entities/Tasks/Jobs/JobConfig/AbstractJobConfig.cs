@@ -55,8 +55,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
 
         private readonly string m_TypeString;
-        private readonly Dictionary<JobConfigDataID, IAccessWrapper> m_AccessWrappers;
-        private readonly List<IAccessWrapper> m_SchedulingAccessWrappers;
+        private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
+        private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
 
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
         private AbstractScheduleInfo m_ScheduleInfo;
@@ -91,8 +91,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
 
-            m_AccessWrappers = new Dictionary<JobConfigDataID, IAccessWrapper>();
-            m_SchedulingAccessWrappers = new List<IAccessWrapper>();
+            m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
+            m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
         }
 
         internal void AssignScheduleInfo(AbstractScheduleInfo scheduleInfo)
@@ -108,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_AccessWrapperDependencies.Dispose();
             }
 
-            foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
+            foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 wrapper.Dispose();
             }
@@ -132,7 +132,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        protected void AddAccessWrapper(JobConfigDataID id, IAccessWrapper accessWrapper)
+        protected void AddAccessWrapper(JobConfigDataID id, AbstractAccessWrapper accessWrapper)
         {
             Debug_EnsureWrapperValidity(id);
             Debug_EnsureWrapperUsage(id, accessWrapper);
@@ -238,7 +238,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureNotHardened();
             m_IsHardened = true;
             
-            foreach (IAccessWrapper wrapper in m_AccessWrappers.Values)
+            foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 m_SchedulingAccessWrappers.Add(wrapper);
             }
@@ -288,7 +288,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = JobHandle.CombineDependencies(m_AccessWrapperDependencies);
             dependsOn = m_ScheduleInfo.CallScheduleFunction(dependsOn);
 
-            foreach (IAccessWrapper wrapper in m_SchedulingAccessWrappers)
+            foreach (AbstractAccessWrapper wrapper in m_SchedulingAccessWrappers)
             {
                 wrapper.Release(dependsOn);
             }
@@ -391,7 +391,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperUsage(JobConfigDataID id, IAccessWrapper wrapper)
+        private void Debug_EnsureWrapperUsage(JobConfigDataID id, AbstractAccessWrapper wrapper)
         {
             if (wrapper is not DataStreamAccessWrapper)
             {
@@ -461,7 +461,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (m_ScheduleInfo == null)
             {
-                throw new InvalidOperationException($"{this} does not have a {nameof(IScheduleInfo)} yet! Please schedule on some data first.");
+                throw new InvalidOperationException($"{this} does not have a {nameof(AbstractScheduleInfo)} yet! Please schedule on some data first.");
             }
         }
     }

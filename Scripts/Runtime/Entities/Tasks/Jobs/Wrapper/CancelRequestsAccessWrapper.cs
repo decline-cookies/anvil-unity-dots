@@ -3,31 +3,25 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class CancelRequestsAccessWrapper : IAccessWrapper
+    internal class CancelRequestsAccessWrapper : AbstractAccessWrapper
     {
         public CancelRequestsDataStream CancelRequestsDataStream { get; }
-        public AccessType AccessType { get; }
+        
         public byte Context { get; }
         
 
-        public CancelRequestsAccessWrapper(CancelRequestsDataStream cancelRequestsDataStream, AccessType accessType, byte context)
+        public CancelRequestsAccessWrapper(CancelRequestsDataStream cancelRequestsDataStream, AccessType accessType, byte context) : base(accessType)
         {
             CancelRequestsDataStream = cancelRequestsDataStream;
-            AccessType = accessType;
             Context = context;
         }
-        
-        public void Dispose()
-        {
-            //Not needed
-        }
 
-        public JobHandle Acquire()
+        public sealed override JobHandle Acquire()
         {
             return CancelRequestsDataStream.AccessController.AcquireAsync(AccessType);
         }
 
-        public void Release(JobHandle releaseAccessDependency)
+        public sealed override void Release(JobHandle releaseAccessDependency)
         {
             CancelRequestsDataStream.AccessController.ReleaseAsync(releaseAccessDependency);
         }

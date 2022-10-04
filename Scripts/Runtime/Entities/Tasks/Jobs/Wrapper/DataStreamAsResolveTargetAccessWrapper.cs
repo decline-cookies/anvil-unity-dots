@@ -2,47 +2,45 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class DataStreamAsResolveTargetAccessWrapper : IAccessWrapper
+    internal class DataStreamAsResolveTargetAccessWrapper : AbstractAccessWrapper
     {
         public static DataStreamAsResolveTargetAccessWrapper Create<TResolveTarget>(TResolveTarget resolveTarget, List<ResolveTargetData> resolveTargetData)
             where TResolveTarget : Enum
         {
             ResolveTargetUtil.Debug_EnsureEnumValidity(resolveTarget);
-            return new DataStreamAsResolveTargetAccessWrapper(UnsafeUtility.As<TResolveTarget, byte>(ref resolveTarget), resolveTargetData);
+            return new DataStreamAsResolveTargetAccessWrapper(resolveTargetData);
         }
-
-        public byte ResolveTarget { get; }
 
         private readonly List<ResolveTargetData> m_ResolveTargetData;
         private NativeArray<JobHandle> m_Dependencies;
 
-        private DataStreamAsResolveTargetAccessWrapper(byte resolveTarget, List<ResolveTargetData> resolveTargetData)
+        private DataStreamAsResolveTargetAccessWrapper(List<ResolveTargetData> resolveTargetData) : base(AccessType.SharedWrite)
         {
-            ResolveTarget = resolveTarget;
             m_ResolveTargetData = resolveTargetData;
             m_Dependencies = new NativeArray<JobHandle>(m_ResolveTargetData.Count, Allocator.Persistent);
         }
 
-        public void Dispose()
+        protected override void DisposeSelf()
         {
             m_Dependencies.Dispose();
+            base.DisposeSelf();
         }
 
-        public JobHandle Acquire()
+        public sealed override JobHandle Acquire()
         {
             for (int i = 0; i < m_ResolveTargetData.Count; ++i)
             {
-                m_Dependencies[i] = m_ResolveTargetData[i].DataStream.AccessController.AcquireAsync(AccessType.SharedWrite);
+                m_Dependencies[i] = m_ResolveTargetData[i].DataStream.AccessController.AcquireAsync(AccessType);
             }
+
             return JobHandle.CombineDependencies(m_Dependencies);
         }
 
-        public void Release(JobHandle releaseAccessDependency)
+        public sealed override void Release(JobHandle releaseAccessDependency)
         {
             foreach (ResolveTargetData resolveTargetData in m_ResolveTargetData)
             {

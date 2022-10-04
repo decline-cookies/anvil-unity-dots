@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -7,10 +8,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal unsafe class NativeArrayAccessWrapper : IAccessWrapper
+    internal unsafe class NativeArrayAccessWrapper : AbstractAccessWrapper
     {
-        private static readonly FieldInfo s_NativeArray_Allocator = typeof(NativeArray<>).GetField("m_AllocatorLabel", BindingFlags.Instance | BindingFlags.NonPublic);
-        
+        private static readonly FieldInfo NATIVE_ARRAY_ALLOCATOR = typeof(NativeArray<>).GetField("m_AllocatorLabel", BindingFlags.Instance | BindingFlags.NonPublic);
 
         public static NativeArrayAccessWrapper Create<T>(NativeArray<T> array)
             where T : struct
@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                 NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array),
                                                 array.Length,
                                                 //TODO: There's probably a way to create a delegate here but I'm not sure
-                                                (Allocator)s_NativeArray_Allocator.GetValue(array));
+                                                (Allocator)NATIVE_ARRAY_ALLOCATOR.GetValue(array));
         }
 
         private readonly Type m_Type;
@@ -27,26 +27,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly int m_Length;
         private readonly Allocator m_Allocator;
 
-        private NativeArrayAccessWrapper(Type type, void* nativeArrayPtr, int length, Allocator allocator)
+        private NativeArrayAccessWrapper(Type type, void* nativeArrayPtr, int length, Allocator allocator) : base(AccessType.SharedRead)
         {
             m_Type = type;
             m_NativeArrayPtr = nativeArrayPtr;
             m_Length = length;
             m_Allocator = allocator;
         }
-        
-        public void Dispose()
-        {
-            //Not needed
-        }
 
-        public JobHandle Acquire()
+
+        public sealed override JobHandle Acquire()
         {
             //Does nothing - We don't know what the access could be here, up to the author to manage
             return default;
         }
 
-        public void Release(JobHandle releaseAccessDependency)
+        public sealed override void Release(JobHandle releaseAccessDependency)
         {
             //Does nothing - We don't know what the access could be here, up to the author to manage
         }
@@ -54,7 +50,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public NativeArray<T> ResolveNativeArray<T>()
             where T : struct
         {
-            Debug_EnsureSameType(typeof(T));   
+            Debug_EnsureSameType(typeof(T));
             return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_NativeArrayPtr,
                                                                                 m_Length,
                                                                                 m_Allocator);

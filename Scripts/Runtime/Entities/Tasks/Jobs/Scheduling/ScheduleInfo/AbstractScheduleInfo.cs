@@ -3,11 +3,15 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract class AbstractScheduleInfo
+    /// <summary>
+    /// Scheduling info for a <see cref="AbstractJobConfig"/> for use with a <see cref="JobConfigScheduleDelegates"/>
+    /// delegate.
+    /// </summary>
+    public abstract class AbstractScheduleInfo
     {
-        public abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
+        internal abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
 
-        public string ScheduleJobFunctionDebugInfo { get; }
+        internal string ScheduleJobFunctionDebugInfo { get; }
 
         protected AbstractScheduleInfo(MemberInfo scheduleJobFunctionMethodInfo)
         {

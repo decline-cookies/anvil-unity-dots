@@ -3,6 +3,12 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// <see cref="AbstractJobConfig"/>s, <see cref="AbstractJobData"/>s, and <see cref="AbstractScheduleInfo"/>
+    /// all work together and are somewhat interdependent on each other.
+    /// These functions serve to construct the matching pairs and stitch together relationships in a nice and easy
+    /// manner.
+    /// </summary>
     internal static class JobConfigFactory
     {
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
@@ -24,10 +30,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                             taskSystem.World,
                                                                             taskDriver?.Context ?? taskSystem.Context);
 
-            UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo = new UpdateTaskStreamScheduleInfo<TInstance>(taskStream.DataStream,
+            UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo = new UpdateTaskStreamScheduleInfo<TInstance>(jobData,
+                                                                                                               taskStream.DataStream,
                                                                                                                batchStrategy,
-                                                                                                               scheduleJobFunction,
-                                                                                                               jobData);
+                                                                                                               scheduleJobFunction);
 
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
@@ -49,10 +55,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                             taskSystem.World,
                                                                             taskDriver?.Context ?? taskSystem.Context);
 
-            CancelTaskStreamScheduleInfo<TInstance> scheduleInfo = new CancelTaskStreamScheduleInfo<TInstance>(taskStream.PendingCancelDataStream,
+            CancelTaskStreamScheduleInfo<TInstance> scheduleInfo = new CancelTaskStreamScheduleInfo<TInstance>(jobData,
+                                                                                                               taskStream.PendingCancelDataStream,
                                                                                                                batchStrategy,
-                                                                                                               scheduleJobFunction,
-                                                                                                               jobData);
+                                                                                                               scheduleJobFunction);
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
@@ -73,10 +79,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                     taskSystem.World,
                                                                                     taskDriver?.Context ?? taskSystem.Context);
 
-            TaskStreamScheduleInfo<TInstance> scheduleInfo = new TaskStreamScheduleInfo<TInstance>(taskStream.DataStream,
+            TaskStreamScheduleInfo<TInstance> scheduleInfo = new TaskStreamScheduleInfo<TInstance>(jobData,
+                                                                                                   taskStream.DataStream,
                                                                                                    batchStrategy,
-                                                                                                   scheduleJobFunction,
-                                                                                                   jobData);
+                                                                                                   scheduleJobFunction);
 
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }

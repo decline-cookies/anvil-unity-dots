@@ -3,17 +3,27 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class UpdateTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo,
-                                                             IUpdateTaskStreamScheduleInfo<TInstance>
+    /// <summary>
+    /// Specific scheduling information for a <see cref="UpdateJobConfig{TInstance}"/>
+    /// </summary>
+    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> data</typeparam>
+    public class UpdateTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo
         where TInstance : unmanaged, IProxyInstance
     {
-        private readonly JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> m_ScheduleJobFunction;
         private readonly UpdateJobData<TInstance> m_JobData;
+        private readonly JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> m_ScheduleJobFunction;
 
+        /// <summary>
+        /// The number of instances to process per batch.
+        /// </summary>
         public int BatchSize { get; }
+
+        /// <summary>
+        /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
+        /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
 
-        public DataStreamUpdater<TInstance> Updater
+        internal DataStreamUpdater<TInstance> Updater
         {
             get
             {
@@ -22,14 +32,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public UpdateTaskStreamScheduleInfo(ProxyDataStream<TInstance> dataStream,
-                                            BatchStrategy batchStrategy,
-                                            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                            UpdateJobData<TInstance> jobData) : base(scheduleJobFunction.Method)
+        internal UpdateTaskStreamScheduleInfo(UpdateJobData<TInstance> jobData,
+                                              ProxyDataStream<TInstance> dataStream,
+                                              BatchStrategy batchStrategy,
+                                              JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
-            m_ScheduleJobFunction = scheduleJobFunction;
             m_JobData = jobData;
-
+            m_ScheduleJobFunction = scheduleJobFunction;
+            
             DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
@@ -37,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 : 1;
         }
 
-        public override JobHandle CallScheduleFunction(JobHandle dependsOn)
+        internal override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
