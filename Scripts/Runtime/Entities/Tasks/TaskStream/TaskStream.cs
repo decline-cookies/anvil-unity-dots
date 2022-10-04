@@ -2,27 +2,32 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Represents a stream of data for use in the task system via <see cref="AbstractTaskDriver"/> and/or
+    /// <see cref="AbstractTaskSystem"/>.
+    /// </summary>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in this stream</typeparam>
     public class TaskStream<TInstance> : AbstractTaskStream
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        public ProxyDataStream<TInstance> DataStream { get; }
+        internal EntityProxyDataStream<TInstance> DataStream { get; }
 
         internal override bool IsCancellable
         {
             get => false;
         }
 
-        public TaskStream()
+        internal TaskStream()
         {
-            DataStream = new ProxyDataStream<TInstance>();
+            DataStream = new EntityProxyDataStream<TInstance>();
         }
 
-        internal sealed override AbstractProxyDataStream GetDataStream()
+        internal sealed override AbstractEntityProxyDataStream GetDataStream()
         {
             return DataStream;
         }
 
-        internal override AbstractProxyDataStream GetPendingCancelDataStream()
+        internal override AbstractEntityProxyDataStream GetPendingCancelDataStream()
         {
             throw new NotSupportedException($"Tried to get Pending Cancel Data Stream on {this} but it doesn't exists. Check {IsCancellable} first!");
         }

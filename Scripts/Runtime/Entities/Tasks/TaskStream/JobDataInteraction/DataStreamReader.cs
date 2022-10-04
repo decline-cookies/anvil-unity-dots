@@ -3,20 +3,17 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Represents a read only reference to <see cref="ProxyDataStream{TInstance}"/>
+    /// Represents a read only reference to a <see cref="TaskStream{TInstance}"/>
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
-    /// <remarks>
-    /// Commonly used to read the data and trigger something else.
-    /// </remarks>
-    /// <typeparam name="TInstance">They type of data to read</typeparam>
+    /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to read</typeparam>
     [BurstCompatible]
     public readonly struct DataStreamReader<TInstance>
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        [ReadOnly] private readonly NativeArray<ProxyInstanceWrapper<TInstance>> m_Iteration;
+        [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
 
-        internal DataStreamReader(NativeArray<ProxyInstanceWrapper<TInstance>> iteration)
+        internal DataStreamReader(NativeArray<EntityProxyInstanceWrapper<TInstance>> iteration)
         {
             m_Iteration = iteration;
         }

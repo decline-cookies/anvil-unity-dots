@@ -4,6 +4,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //TODO: #64 - Might be able to get rid of most of this if not all
     internal static class ResolveTargetUtil
     {
         private static readonly Type BYTE_TYPE = typeof(byte);

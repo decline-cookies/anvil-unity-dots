@@ -7,26 +7,23 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Represents a write only reference to <see cref="ProxyDataStream{TInstance}"/>
-    /// for writing new <typeparamref name="TInstance"/> to.
+    /// Represents a write only reference to a <see cref="TaskStream{TInstance}"/>
+    /// To be used in jobs that only allows for writing of this data.
     /// </summary>
-    /// <remarks>
-    /// Commonly used to add new instances.
-    /// </remarks>
-    /// <typeparam name="TInstance">The type of instance to add</typeparam>
+    /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to write</typeparam>
     [BurstCompatible]
     public struct DataStreamWriter<TInstance>
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer m_InstanceWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_InstanceWriter;
         [ReadOnly] private readonly byte m_Context;
 
-        private UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
+        private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_InstanceLaneWriter;
         private int m_LaneIndex;
 
-        internal DataStreamWriter(UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer instanceWriter, byte context) : this()
+        internal DataStreamWriter(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer instanceWriter, byte context) : this()
         {
             m_InstanceWriter = instanceWriter;
             m_Context = context;
@@ -41,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                          byte context,
                                          int laneIndex) : this()
         {
-            m_InstanceWriter = UnsafeTypedStream<ProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
+            m_InstanceWriter = UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
             m_Context = context;
             m_LaneIndex = laneIndex;
 
@@ -53,10 +50,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         /// <summary>
-        /// Initializes based on the thread it's being used on.
-        /// This must be called before doing anything else with the struct.
+        /// Called once per thread to allow for initialization of state in the job
         /// </summary>
-        /// <param name="nativeThreadIndex">The native thread index</param>
+        /// <remarks>
+        /// In most cases this will be called automatically by the Anvil Job type. If using this in a vanilla Unity
+        /// Job type, this must be called manually before any other interaction with this struct.
+        /// </remarks>
+        /// <param name="nativeThreadIndex">The native thread index that the job is running on</param>
         public void InitForThread(int nativeThreadIndex)
         {
             Debug_EnsureInitThreadOnlyCalledOnce();
@@ -66,11 +66,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         /// <summary>
-        /// Adds the instance to the <see cref="ProxyDataStream{TInstance}"/>'s
-        /// underlying pending collection to be added the next time the virtual data is
+        /// Adds the instance to the <see cref="TaskStream{TInstance}"/>'s
+        /// underlying pending collection to be added the next time the data is
         /// consolidated.
         /// </summary>
-        /// <param name="instance">The instance to add</param>
+        /// <param name="instance">The <see cref="IEntityProxyInstance"/></param>
         public void Add(TInstance instance)
         {
             Add(ref instance);
@@ -80,7 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void Add(ref TInstance instance)
         {
             Debug_EnsureCanAdd();
-            m_InstanceLaneWriter.Write(new ProxyInstanceWrapper<TInstance>(instance.Entity,
+            m_InstanceLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
                                                                            m_Context,
                                                                            ref instance));
         }

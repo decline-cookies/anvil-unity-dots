@@ -5,9 +5,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// <summary>
     /// Specific <see cref="AbstractJobData"/> for use when cancelling instances of data in a data stream.
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/></typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
     public class CancelJobData<TInstance> : AbstractJobData
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly CancelJobConfig<TInstance> m_CancelJobConfig;
 
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
         {
-            ProxyDataStream<TInstance> dataStream = m_CancelJobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
+            EntityProxyDataStream<TInstance> dataStream = m_CancelJobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
             DataStreamCancellationUpdater<TInstance> cancellationUpdater = dataStream.CreateDataStreamCancellationUpdater(m_CancelJobConfig.GetDataStreamChannelResolver());
             return cancellationUpdater;
         }

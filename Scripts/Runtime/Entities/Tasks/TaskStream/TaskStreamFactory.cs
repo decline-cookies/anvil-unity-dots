@@ -9,14 +9,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal static class TaskStreamFactory
     {
-        private static readonly Type I_PROXY_INSTANCE_TYPE = typeof(IProxyInstance);
+        private static readonly Type I_ENTITY_PROXY_INSTANCE_TYPE = typeof(IEntityProxyInstance);
         private static readonly MethodInfo PROTOTYPE_METHOD = typeof(TaskStreamFactory).GetMethod(nameof(CreateTaskStream), BindingFlags.Static | BindingFlags.NonPublic);
         private static readonly Dictionary<Type, MethodInfo> TYPED_GENERIC_METHODS = new Dictionary<Type, MethodInfo>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
-            //TODO: Double check this works as expected in a build. https://github.com/decline-cookies/anvil-unity-dots/pull/58/files#r974334409
+            //TODO: #70 - Double check this works as expected in a build. https://github.com/decline-cookies/anvil-unity-dots/pull/58/files#r974334409
             TYPED_GENERIC_METHODS.Clear();
         }
 
@@ -45,9 +45,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_CheckInstanceType(Type proxyInstanceType)
         {
-            if (!I_PROXY_INSTANCE_TYPE.IsAssignableFrom(proxyInstanceType))
+            if (!I_ENTITY_PROXY_INSTANCE_TYPE.IsAssignableFrom(proxyInstanceType))
             {
-                throw new InvalidOperationException($"Type {proxyInstanceType} does not implement {I_PROXY_INSTANCE_TYPE}!");
+                throw new InvalidOperationException($"Type {proxyInstanceType} does not implement {I_ENTITY_PROXY_INSTANCE_TYPE}!");
             }
 
             if (!UnsafeUtility.IsUnmanaged(proxyInstanceType))

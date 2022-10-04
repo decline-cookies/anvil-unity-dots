@@ -11,15 +11,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelRequestsDataStream : AbstractDataStream
     {
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<ProxyInstanceID>();
+        private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
 
-        private UnsafeTypedStream<ProxyInstanceID> m_Pending;
-        private UnsafeParallelHashMap<ProxyInstanceID, byte> m_Lookup;
+        private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
+        private UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_Lookup;
 
         public CancelRequestsDataStream()
         {
-            m_Pending = new UnsafeTypedStream<ProxyInstanceID>(Allocator.Persistent);
-            m_Lookup = new UnsafeParallelHashMap<ProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
+            m_Pending = new UnsafeTypedStream<EntityProxyInstanceID>(Allocator.Persistent);
+            m_Lookup = new UnsafeParallelHashMap<EntityProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -69,12 +69,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return consolidateHandle;
         }
 
-        internal UnsafeTypedStream<ProxyInstanceID> GetPending()
+        internal UnsafeTypedStream<EntityProxyInstanceID> GetPending()
         {
             return m_Pending;
         }
 
-        internal UnsafeParallelHashMap<ProxyInstanceID, byte> GetLookup()
+        internal UnsafeParallelHashMap<EntityProxyInstanceID, byte> GetLookup()
         {
             return m_Lookup;
         }
@@ -86,11 +86,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [BurstCompile]
         private struct ConsolidateCancelRequestsJob : IJob
         {
-            [ReadOnly] private UnsafeTypedStream<ProxyInstanceID> m_Pending;
-            private UnsafeParallelHashMap<ProxyInstanceID, byte> m_Lookup;
+            [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
+            private UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_Lookup;
 
-            public ConsolidateCancelRequestsJob(UnsafeTypedStream<ProxyInstanceID> pending,
-                                                UnsafeParallelHashMap<ProxyInstanceID, byte> lookup)
+            public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, byte> lookup)
             {
                 m_Pending = pending;
                 m_Lookup = lookup;
@@ -100,7 +100,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 m_Lookup.Clear();
 
-                foreach (ProxyInstanceID proxyInstanceID in m_Pending)
+                foreach (EntityProxyInstanceID proxyInstanceID in m_Pending)
                 {
                     Debug_EnsureNoDuplicates(proxyInstanceID);
                     m_Lookup.TryAdd(proxyInstanceID, 1);
@@ -114,7 +114,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //*************************************************************************************************************
 
             [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
-            private void Debug_EnsureNoDuplicates(ProxyInstanceID id)
+            private void Debug_EnsureNoDuplicates(EntityProxyInstanceID id)
             {
                 if (m_Lookup.ContainsKey(id))
                 {

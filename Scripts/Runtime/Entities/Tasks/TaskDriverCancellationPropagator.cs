@@ -17,15 +17,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal static readonly BulkScheduleDelegate<TaskDriverCancellationPropagator> CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<TaskDriverCancellationPropagator>(nameof(ConsolidateAndPropagate), BindingFlags.Instance | BindingFlags.NonPublic);
     
         private readonly CancelRequestsDataStream m_TaskDriverCancelRequests;
-        private readonly UnsafeTypedStream<ProxyInstanceID> m_TaskDriverPending;
-        private readonly UnsafeParallelHashMap<ProxyInstanceID, byte> m_TaskDriverLookup;
+        private readonly UnsafeTypedStream<EntityProxyInstanceID> m_TaskDriverPending;
+        private readonly UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_TaskDriverLookup;
         
         private readonly CancelRequestsDataStream m_SystemCancelRequests;
-        private readonly UnsafeTypedStream<ProxyInstanceID>.Writer m_SystemPendingWriter;
+        private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_SystemPendingWriter;
         
         private readonly List<CancelRequestsDataStream> m_SubTaskDriverCancelRequests;
-        private NativeArray<UnsafeTypedStream<ProxyInstanceID>.Writer> m_SubTaskDriverPendingWriters;
-        private NativeArray<UnsafeTypedStream<ProxyInstanceID>.LaneWriter> m_SubTaskDriverPendingLaneWriters;
+        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_SubTaskDriverPendingWriters;
+        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_SubTaskDriverPendingLaneWriters;
 
         private readonly int m_TaskDriverDependencyIndex;
         private readonly int m_SystemDependencyIndex;
@@ -50,8 +50,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_SystemPendingWriter = m_SystemCancelRequests.GetPending().AsWriter();
             
             m_SubTaskDriverCancelRequests = subTaskDriverCancelRequests;
-            m_SubTaskDriverPendingWriters = new NativeArray<UnsafeTypedStream<ProxyInstanceID>.Writer>(m_SubTaskDriverCancelRequests.Count, Allocator.Persistent);
-            m_SubTaskDriverPendingLaneWriters = new NativeArray<UnsafeTypedStream<ProxyInstanceID>.LaneWriter>(m_SubTaskDriverPendingWriters.Length, Allocator.Persistent);
+            m_SubTaskDriverPendingWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer>(m_SubTaskDriverCancelRequests.Count, Allocator.Persistent);
+            m_SubTaskDriverPendingLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(m_SubTaskDriverPendingWriters.Length, Allocator.Persistent);
             for (int i = 0; i < m_SubTaskDriverPendingWriters.Length; ++i)
             {
                 m_SubTaskDriverPendingWriters[i] = m_SubTaskDriverCancelRequests[i].GetPending().AsWriter();
@@ -121,20 +121,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
             
-            [ReadOnly] private UnsafeTypedStream<ProxyInstanceID> m_Pending;
-            private UnsafeParallelHashMap<ProxyInstanceID, byte> m_Lookup;
+            [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
+            private UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_Lookup;
 
-            private readonly UnsafeTypedStream<ProxyInstanceID>.Writer m_PendingSystemWriter;
-            private NativeArray<UnsafeTypedStream<ProxyInstanceID>.Writer> m_PendingSubTaskDriverWriters;
-            private NativeArray<UnsafeTypedStream<ProxyInstanceID>.LaneWriter> m_PendingSubTaskDriverLaneWriters;
+            private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_PendingSystemWriter;
+            private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_PendingSubTaskDriverWriters;
+            private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_PendingSubTaskDriverLaneWriters;
 
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
-            public ConsolidateAndPropagateCancelRequestsJob(UnsafeTypedStream<ProxyInstanceID> pending,
-                                                            UnsafeParallelHashMap<ProxyInstanceID, byte> lookup,
-                                                            UnsafeTypedStream<ProxyInstanceID>.Writer pendingSystemWriter,
-                                                            NativeArray<UnsafeTypedStream<ProxyInstanceID>.Writer> pendingSubTaskDriverWriters,
-                                                            NativeArray<UnsafeTypedStream<ProxyInstanceID>.LaneWriter> pendingSubTaskDriverLaneWriters)
+            public ConsolidateAndPropagateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
+                                                            UnsafeParallelHashMap<EntityProxyInstanceID, byte> lookup,
+                                                            UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingSystemWriter,
+                                                            NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> pendingSubTaskDriverWriters,
+                                                            NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> pendingSubTaskDriverLaneWriters)
             {
                 m_Pending = pending;
                 m_Lookup = lookup;
@@ -149,7 +149,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
                 
-                UnsafeTypedStream<ProxyInstanceID>.LaneWriter pendingSystemLaneWriter = m_PendingSystemWriter.AsLaneWriter(laneIndex);
+                UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter pendingSystemLaneWriter = m_PendingSystemWriter.AsLaneWriter(laneIndex);
                 for (int i = 0; i < m_PendingSubTaskDriverWriters.Length; ++i)
                 {
                     m_PendingSubTaskDriverLaneWriters[i] = m_PendingSubTaskDriverWriters[i].AsLaneWriter(laneIndex);
@@ -157,7 +157,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 m_Lookup.Clear();
 
-                foreach (ProxyInstanceID proxyInstanceID in m_Pending)
+                foreach (EntityProxyInstanceID proxyInstanceID in m_Pending)
                 {
                     Debug_EnsureNoDuplicates(proxyInstanceID);
                     m_Lookup.TryAdd(proxyInstanceID, 1);
@@ -177,7 +177,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //*************************************************************************************************************
 
             [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
-            private void Debug_EnsureNoDuplicates(ProxyInstanceID id)
+            private void Debug_EnsureNoDuplicates(EntityProxyInstanceID id)
             {
                 if (m_Lookup.ContainsKey(id))
                 {

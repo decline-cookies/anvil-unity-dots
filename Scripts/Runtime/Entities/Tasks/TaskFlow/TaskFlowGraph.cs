@@ -146,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return taskDrivers;
         }
 
-        public bool IsDataStreamRegistered(AbstractProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public bool IsDataStreamRegistered(AbstractEntityProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup systemNodeLookup = GetOrCreateNodeLookup(taskSystem, null);
             NodeLookup driverNodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
@@ -174,20 +174,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return lookup;
         }
 
-        public BulkJobScheduler<AbstractProxyDataStream> CreateDataStreamBulkJobSchedulerFor(AbstractTaskSystem taskSystem)
+        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateDataStreamBulkJobSchedulerFor(AbstractTaskSystem taskSystem)
         {
-            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
+            List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
 
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
             lookup.PopulateWithDataStreams(dataStreams);
 
-            return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
+            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams);
         }
 
-        public BulkJobScheduler<AbstractProxyDataStream> CreateDataStreamBulkJobSchedulerFor<TTaskDriver>(AbstractTaskSystem taskSystem, List<TTaskDriver> taskDrivers)
+        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateDataStreamBulkJobSchedulerFor<TTaskDriver>(AbstractTaskSystem taskSystem, List<TTaskDriver> taskDrivers)
             where TTaskDriver : AbstractTaskDriver
         {
-            List<AbstractProxyDataStream> dataStreams = new List<AbstractProxyDataStream>();
+            List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
 
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
@@ -195,7 +195,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 lookup.PopulateWithDataStreams(dataStreams);
             }
 
-            return new BulkJobScheduler<AbstractProxyDataStream>(dataStreams);
+            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams);
         }
 
         public void PopulateJobResolveTargetMappingForTarget<TResolveTarget>(TResolveTarget resolveTarget, JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskSystem taskSystem)
@@ -334,7 +334,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // UTILITY
         //*************************************************************************************************************
 
-        public string GetDebugString(AbstractProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public string GetDebugString(AbstractEntityProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             return lookup[dataStream].ToString();
@@ -367,7 +367,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (fieldType.GenericTypeArguments.Length != 1)
             {
-                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(ProxyDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
+                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(EntityProxyDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
             }
         }
 

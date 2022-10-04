@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelJobConfig<TInstance> : AbstractResolvableJobConfig
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         public CancelJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,

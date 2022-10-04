@@ -6,9 +6,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// <summary>
     /// Specific scheduling information for a <see cref="CancelJobConfig{TInstance}"/>
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> data</typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
     public class CancelTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly CancelJobData<TInstance> m_JobData;
         private readonly JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> m_ScheduleJobFunction;
@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal CancelTaskStreamScheduleInfo(CancelJobData<TInstance> jobData,
-                                              ProxyDataStream<TInstance> dataStream,
+                                              EntityProxyDataStream<TInstance> dataStream,
                                               BatchStrategy batchStrategy,
                                               JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? ProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK
+                ? EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK
                 : 1;
         }
 

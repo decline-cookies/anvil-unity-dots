@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class UpdateJobConfig<TInstance> : AbstractResolvableJobConfig
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,

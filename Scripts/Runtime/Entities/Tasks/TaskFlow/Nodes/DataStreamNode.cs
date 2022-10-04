@@ -9,11 +9,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly Dictionary<Type, byte> m_ResolveTargetLookup;
         private readonly NodeLookup m_Lookup;
 
-        public AbstractProxyDataStream DataStream { get; }
+        public AbstractEntityProxyDataStream DataStream { get; }
         public AbstractTaskStream TaskStream { get; }
 
         public DataStreamNode(NodeLookup lookup,
-                              AbstractProxyDataStream dataStream,
+                              AbstractEntityProxyDataStream dataStream,
                               TaskFlowGraph taskFlowGraph,
                               AbstractTaskSystem taskSystem,
                               AbstractTaskDriver taskDriver,

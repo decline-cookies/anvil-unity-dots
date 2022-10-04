@@ -6,10 +6,14 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Represents a collection of <see cref="DataStreamWriter{TInstance}"/> for a given
+    /// resolve target and the various contexts that may be associated to that target.
+    /// </summary>
     [BurstCompatible]
-    public struct DataStreamResolver : IDisposable
+    internal struct DataStreamResolver
     {
-        private static unsafe long GetDataStreamPointerAddress(AbstractProxyDataStream dataStream)
+        private static unsafe long GetDataStreamPointerAddress(AbstractEntityProxyDataStream dataStream)
         {
             void* writerPtr = dataStream.GetWriterPointer();
             long address = (long)writerPtr;
@@ -28,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public void Dispose()
+        internal void Dispose()
         {
             if (m_DataStreamByContext.IsCreated)
             {
@@ -36,19 +40,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        internal unsafe void Resolve<TResolvedInstance>(byte context, 
+        internal unsafe void Resolve<TResolvedInstance>(byte context,
                                                         int laneIndex,
                                                         ref TResolvedInstance resolvedInstance)
-            where TResolvedInstance : unmanaged, IProxyInstance
+            where TResolvedInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureContainsContext(context);
             long address = m_DataStreamByContext[context];
             void* writerPtr = (void*)address;
             DataStreamWriter<TResolvedInstance> writer = new DataStreamWriter<TResolvedInstance>(writerPtr, context, laneIndex);
-            
+
             writer.Add(ref resolvedInstance);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************

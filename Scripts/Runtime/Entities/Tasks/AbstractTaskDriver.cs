@@ -71,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,
                                                                          in JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskSystem.ConfigureJobTriggeredBy(this,
                                                       taskStream,

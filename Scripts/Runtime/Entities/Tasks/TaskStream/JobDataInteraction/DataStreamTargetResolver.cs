@@ -6,8 +6,11 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Represents a collection of <see cref="DataStreamResolver"/>s keyed on different resolve targets.
+    /// </summary>
     [BurstCompatible]
-    public struct DataStreamTargetResolver : IDisposable
+    internal struct DataStreamTargetResolver
     {
         [ReadOnly] private UnsafeParallelHashMap<byte, DataStreamResolver> m_ResolversByTarget;
 
@@ -21,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public void Dispose()
+        internal void Dispose()
         {
             if (!m_ResolversByTarget.IsCreated)
             {
@@ -41,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                  int laneIndex,
                                                                  ref TResolvedInstance resolvedInstance)
             where TResolveTarget : Enum
-            where TResolvedInstance : unmanaged, IProxyInstance
+            where TResolvedInstance : unmanaged, IEntityProxyInstance
         {
             byte key = UnsafeUtility.As<TResolveTarget, byte>(ref resolveTarget);
             Debug_EnsureContainsResolveTarget(key);

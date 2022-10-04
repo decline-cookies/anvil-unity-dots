@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class NodeLookup : AbstractNodeLookup
     {
-        private readonly Dictionary<AbstractProxyDataStream, DataStreamNode> m_NodesByDataStream;
+        private readonly Dictionary<AbstractEntityProxyDataStream, DataStreamNode> m_NodesByDataStream;
         private readonly Dictionary<CancelRequestsDataStream, CancelRequestsNode> m_NodesByCancelRequests;
         private TaskDriverCancellationPropagator m_CancellationPropagator;
 
@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                           AbstractTaskSystem taskSystem,
                           AbstractTaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
-            m_NodesByDataStream = new Dictionary<AbstractProxyDataStream, DataStreamNode>();
+            m_NodesByDataStream = new Dictionary<AbstractEntityProxyDataStream, DataStreamNode>();
             m_NodesByCancelRequests = new Dictionary<CancelRequestsDataStream, CancelRequestsNode>();
             Context = taskDriver?.Context ?? taskSystem.Context;
         }
@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.DisposeSelf();
         }
 
-        public DataStreamNode CreateDataStreamNode(AbstractTaskStream taskStream, AbstractProxyDataStream dataStream)
+        public DataStreamNode CreateDataStreamNode(AbstractTaskStream taskStream, AbstractEntityProxyDataStream dataStream)
         {
             Debug_EnsureNoDuplicateDataStreamNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
@@ -75,12 +75,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return m_CancellationPropagator;
         }
 
-        public bool IsDataStreamRegistered(AbstractProxyDataStream dataStream)
+        public bool IsDataStreamRegistered(AbstractEntityProxyDataStream dataStream)
         {
             return m_NodesByDataStream.ContainsKey(dataStream);
         }
 
-        public DataStreamNode this[AbstractProxyDataStream dataStream]
+        public DataStreamNode this[AbstractEntityProxyDataStream dataStream]
         {
             get
             {
@@ -89,9 +89,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public void PopulateWithDataStreams(List<AbstractProxyDataStream> dataStreams)
+        public void PopulateWithDataStreams(List<AbstractEntityProxyDataStream> dataStreams)
         {
-            foreach (AbstractProxyDataStream dataStream in m_NodesByDataStream.Keys)
+            foreach (AbstractEntityProxyDataStream dataStream in m_NodesByDataStream.Keys)
             {
                 dataStreams.Add(dataStream);
             }
@@ -116,7 +116,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateDataStreamNodes(AbstractProxyDataStream dataStream)
+        private void Debug_EnsureNoDuplicateDataStreamNodes(AbstractEntityProxyDataStream dataStream)
         {
             if (m_NodesByDataStream.ContainsKey(dataStream))
             {
@@ -134,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureExists(AbstractProxyDataStream dataStream)
+        private void Debug_EnsureExists(AbstractEntityProxyDataStream dataStream)
         {
             if (!m_NodesByDataStream.ContainsKey(dataStream))
             {

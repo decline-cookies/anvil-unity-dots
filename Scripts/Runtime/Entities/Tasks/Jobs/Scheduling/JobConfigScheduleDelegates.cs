@@ -13,11 +13,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// For scheduling a job triggered by a <see cref="TaskStream{TInstance}"/> from
         /// a <see cref="TaskStreamJobConfig{TInstance}"/>
         /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/></typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleTaskStreamJobDelegate<TInstance>(JobHandle jobHandle,
                                                                            TaskStreamJobData<TInstance> jobData,
                                                                            TaskStreamScheduleInfo<TInstance> scheduleInfo)
-            where TInstance : unmanaged, IProxyInstance;
+            where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
         /// For scheduling a job triggered by the entities in an <see cref="EntityQuery"/> from
@@ -52,20 +52,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// For scheduling a job triggered by instances in a <see cref="TaskStream{TInstance}"/> that need to be
         /// updated. Used with <see cref="UpdateJobConfig{TInstance}"/>
         /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/></typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(JobHandle jobHandle,
                                                                        UpdateJobData<TInstance> jobData,
                                                                        UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo)
-            where TInstance : unmanaged, IProxyInstance;
+            where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
         /// For scheduling a job triggered by instances in a <see cref="TaskStream{TInstance}"/> that have been
         /// requested to cancel. Used with <see cref="CancelJobConfig{TInstance}"/>
         /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/></typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle,
                                                                        CancelJobData<TInstance> jobData,
                                                                        CancelTaskStreamScheduleInfo<TInstance> scheduleInfo)
-            where TInstance : unmanaged, IProxyInstance;
+            where TInstance : unmanaged, IEntityProxyInstance;
     }
 }

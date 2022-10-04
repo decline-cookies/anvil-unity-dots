@@ -1,22 +1,28 @@
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Represents a stream of data for use in the task system via <see cref="AbstractTaskDriver"/> and/or
+    /// <see cref="AbstractTaskSystem"/>. This stream also contains a secondary internal stream
+    /// specifically for holding cancelled instances allowing them to trigger Cancel jobs.
+    /// </summary>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the streams</typeparam>
     // ReSharper disable once ClassNeverInstantiated.Global
     public class CancellableTaskStream<TInstance> : TaskStream<TInstance>
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        public readonly ProxyDataStream<TInstance> PendingCancelDataStream;
+        internal readonly EntityProxyDataStream<TInstance> PendingCancelDataStream;
 
         internal sealed override bool IsCancellable
         {
             get => true;
         }
 
-        public CancellableTaskStream()
+        internal CancellableTaskStream()
         {
-            PendingCancelDataStream = new ProxyDataStream<TInstance>();
+            PendingCancelDataStream = new EntityProxyDataStream<TInstance>();
         }
 
-        internal sealed override AbstractProxyDataStream GetPendingCancelDataStream()
+        internal sealed override AbstractEntityProxyDataStream GetPendingCancelDataStream()
         {
             return PendingCancelDataStream;
         }

@@ -13,21 +13,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Specifies a <see cref="TaskStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
         /// <param name="taskStream">The <see cref="TaskStream{TInstance}"/> to write to.</param>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> data in
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
         /// <returns>Reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
-            where TInstance : unmanaged, IProxyInstance;
+            where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
         /// Specifies a <see cref="TaskStream{TInstance}"/> to be read from in a shared-read context.
         /// </summary>
         /// <param name="taskStream">The <see cref="TaskStream{TInstance}"/> to read from.</param>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> data in
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
         /// <returns>Reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
-            where TInstance : unmanaged, IProxyInstance;
+            where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
         /// Specifies a <see cref="NativeArray{T}"/> to be read from in a shared-read context.

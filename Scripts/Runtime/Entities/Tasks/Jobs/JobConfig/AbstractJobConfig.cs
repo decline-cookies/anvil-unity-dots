@@ -145,14 +145,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForWrite{TInstance}"/>
         public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             return RequireDataStreamForWrite(taskStream.DataStream, Usage.Write);
         }
         
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForRead{TInstance}"/>
         public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Read),
                              new DataStreamAccessWrapper(taskStream.DataStream, AccessType.SharedRead));
@@ -170,7 +170,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        protected IJobConfigRequirements RequireDataStreamForWrite(AbstractProxyDataStream dataStream, Usage usage)
+        protected IJobConfigRequirements RequireDataStreamForWrite(AbstractEntityProxyDataStream dataStream, Usage usage)
         {
             AddAccessWrapper(new JobConfigDataID(dataStream, usage),
                              new DataStreamAccessWrapper(dataStream, AccessType.SharedWrite));
@@ -296,13 +296,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return dependsOn;
         }
 
-        internal ProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
-            where TInstance : unmanaged, IProxyInstance
+        internal EntityProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
+            where TInstance : unmanaged, IEntityProxyInstance
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(ProxyDataStream<TInstance>), usage);
+            JobConfigDataID id = new JobConfigDataID(typeof(EntityProxyDataStream<TInstance>), usage);
             Debug_EnsureWrapperExists(id);
             DataStreamAccessWrapper dataStreamAccessWrapper = (DataStreamAccessWrapper)m_AccessWrappers[id];
-            return (ProxyDataStream<TInstance>)dataStreamAccessWrapper.DataStream;
+            return (EntityProxyDataStream<TInstance>)dataStreamAccessWrapper.DataStream;
         }
 
         internal CancelRequestsDataStream GetCancelRequestsDataStream(Usage usage)

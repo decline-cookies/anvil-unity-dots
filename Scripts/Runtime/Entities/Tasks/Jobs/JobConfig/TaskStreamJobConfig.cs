@@ -1,7 +1,7 @@
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskStreamJobConfig<TInstance> : AbstractJobConfig
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         public TaskStreamJobConfig(TaskFlowGraph taskFlowGraph,
                                    AbstractTaskSystem taskSystem,

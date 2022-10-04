@@ -6,10 +6,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// Specific <see cref="AbstractJobData"/> for use when triggering a job based on
     /// a <see cref="TaskStream{TInstance}"/>
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> in
+    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in
     /// the <see cref="TaskStream{TInstance}"/></typeparam>
     public class TaskStreamJobData<TInstance> : AbstractJobData
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly TaskStreamJobConfig<TInstance> m_JobConfig;
 

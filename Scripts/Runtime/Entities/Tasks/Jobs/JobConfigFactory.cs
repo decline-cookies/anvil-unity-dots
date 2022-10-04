@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                   CancelRequestsDataStream cancelRequestsDataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             UpdateJobConfig<TInstance> jobConfig = new UpdateJobConfig<TInstance>(taskFlowGraph,
                                                                                   taskSystem,
@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                   CancellableTaskStream<TInstance> taskStream,
                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskFlowGraph,
                                                                                   taskSystem,
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           TaskStream<TInstance> taskStream,
                                                                                           JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             TaskStreamJobConfig<TInstance> jobConfig = new TaskStreamJobConfig<TInstance>(taskFlowGraph,
                                                                                           taskSystem,

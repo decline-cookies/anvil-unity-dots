@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        public void RegisterDataStream<TResolveTarget>(TResolveTarget resolveTarget, AbstractProxyDataStream dataStream, byte context)
+        public void RegisterDataStream<TResolveTarget>(TResolveTarget resolveTarget, AbstractEntityProxyDataStream dataStream, byte context)
             where TResolveTarget : Enum
         {
             Debug_EnsureDataStreamTypeMatches(dataStream.Type);

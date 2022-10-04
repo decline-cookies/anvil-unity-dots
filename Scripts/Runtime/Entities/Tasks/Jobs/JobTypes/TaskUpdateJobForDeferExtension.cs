@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                          UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo,
                                                                          JobHandle dependsOn = default)
             where TJob : struct, ITaskUpdateJobForDefer<TInstance>
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             void* atomicSafetyHandlePtr = null;
 
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal struct WrapperJobStruct<TJob, TInstance>
             where TJob : struct, ITaskUpdateJobForDefer<TInstance>
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
 
@@ -86,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         private struct WrapperJobProducer<TJob, TInstance>
             where TJob : struct, ITaskUpdateJobForDefer<TInstance>
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             // ReSharper disable once StaticMemberInGenericType
             internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob, TInstance>),

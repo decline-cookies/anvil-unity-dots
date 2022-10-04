@@ -6,9 +6,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// <summary>
     /// Specific scheduling information for a <see cref="TaskStreamJobConfig{TInstance}"/>
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> data</typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
     public class TaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo
-        where TInstance : unmanaged, IProxyInstance
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly TaskStreamJobData<TInstance> m_JobData;
         private readonly JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> m_ScheduleJobFunction;
@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
 
         internal TaskStreamScheduleInfo(TaskStreamJobData<TInstance> jobData,
-                                        ProxyDataStream<TInstance> dataStream,
+                                        EntityProxyDataStream<TInstance> dataStream,
                                         BatchStrategy batchStrategy,
                                         JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction) : base(scheduleJobFunction.Method)
         {
@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
 
             BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? ProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK
+                ? EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK
                 : 1;
         }
 

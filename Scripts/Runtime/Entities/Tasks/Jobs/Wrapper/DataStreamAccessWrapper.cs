@@ -5,9 +5,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStreamAccessWrapper : AbstractAccessWrapper
     {
-        public AbstractProxyDataStream DataStream { get; }
+        public AbstractEntityProxyDataStream DataStream { get; }
 
-        public DataStreamAccessWrapper(AbstractProxyDataStream dataStream, AccessType accessType) : base(accessType)
+        public DataStreamAccessWrapper(AbstractEntityProxyDataStream dataStream, AccessType accessType) : base(accessType)
         {
             DataStream = dataStream;
         }

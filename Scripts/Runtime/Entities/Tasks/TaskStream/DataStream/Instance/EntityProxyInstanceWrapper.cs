@@ -5,10 +5,10 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal readonly struct ProxyInstanceWrapper<TInstance> : IEquatable<ProxyInstanceWrapper<TInstance>>
-        where TInstance : unmanaged, IProxyInstance
+    internal readonly struct EntityProxyInstanceWrapper<TInstance> : IEquatable<EntityProxyInstanceWrapper<TInstance>>
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        public static bool operator ==(ProxyInstanceWrapper<TInstance> lhs, ProxyInstanceWrapper<TInstance> rhs)
+        public static bool operator ==(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {
             //Note that we are not checking if the Payload is equal because the wrapper is only for origin and lookup
             //checks. 
@@ -16,28 +16,28 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return lhs.InstanceID == rhs.InstanceID;
         }
 
-        public static bool operator !=(ProxyInstanceWrapper<TInstance> lhs, ProxyInstanceWrapper<TInstance> rhs)
+        public static bool operator !=(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {
             return !(lhs == rhs);
         }
 
-        public readonly ProxyInstanceID InstanceID;
+        public readonly EntityProxyInstanceID InstanceID;
         public readonly TInstance Payload;
 
-        public ProxyInstanceWrapper(Entity entity, byte context, ref TInstance payload)
+        public EntityProxyInstanceWrapper(Entity entity, byte context, ref TInstance payload)
         {
-            InstanceID = new ProxyInstanceID(entity, context);
+            InstanceID = new EntityProxyInstanceID(entity, context);
             Payload = payload;
         }
 
-        public bool Equals(ProxyInstanceWrapper<TInstance> other)
+        public bool Equals(EntityProxyInstanceWrapper<TInstance> other)
         {
             return this == other;
         }
 
         public override bool Equals(object compare)
         {
-            return compare is ProxyInstanceWrapper<TInstance> id && Equals(id);
+            return compare is EntityProxyInstanceWrapper<TInstance> id && Equals(id);
         }
 
         public override int GetHashCode()
@@ -57,18 +57,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return InstanceID.ToFixedString();
         }
 
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
 
         [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
-        private static void Debug_EnsurePayloadsAreTheSame(ProxyInstanceWrapper<TInstance> lhs, ProxyInstanceWrapper<TInstance> rhs)
+        private static void Debug_EnsurePayloadsAreTheSame(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {
             if (lhs.InstanceID == rhs.InstanceID
              && !lhs.Payload.Equals(rhs.Payload))
             {
-                throw new InvalidOperationException($"Equality check for {typeof(ProxyInstanceWrapper<TInstance>)} where the ID's are the same but the Payloads are different. This should never happen!");
+                throw new InvalidOperationException($"Equality check for {typeof(EntityProxyInstanceWrapper<TInstance>)} where the ID's are the same but the Payloads are different. This should never happen!");
             }
         }
     }

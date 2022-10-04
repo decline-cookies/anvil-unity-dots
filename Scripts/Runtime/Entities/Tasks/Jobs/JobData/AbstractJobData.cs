@@ -51,12 +51,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Gets a <see cref="DataStreamWriter{TInstance}"/> job-safe struct to use for writing new instances to a
         /// data stream.
         /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> to write.</typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> to write.</typeparam>
         /// <returns>The <see cref="DataStreamWriter{TInstance}"/></returns>
         public DataStreamWriter<TInstance> GetDataStreamWriter<TInstance>()
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
-            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Write);
+            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Write);
             DataStreamWriter<TInstance> writer = dataStream.CreateDataStreamWriter(m_Context);
             return writer;
         }
@@ -64,12 +64,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Gets a <see cref="GetDataStreamReader{TInstance}"/> job-safe struct to use for reading from a data stream.
         /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IProxyInstance"/> to read.</typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> to read.</typeparam>
         /// <returns>The <see cref="DataStreamReader{TInstance}"/></returns>
         public DataStreamReader<TInstance> GetDataStreamReader<TInstance>()
-            where TInstance : unmanaged, IProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
-            ProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Read);
+            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Read);
             DataStreamReader<TInstance> reader = dataStream.CreateDataStreamReader();
             return reader;
         }

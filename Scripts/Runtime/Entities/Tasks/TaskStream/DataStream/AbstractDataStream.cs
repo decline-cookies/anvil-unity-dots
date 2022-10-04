@@ -4,8 +4,7 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    //TODO: Think on this name some more. Is is actually an AbstractDataStreamProxy? https://github.com/decline-cookies/anvil-unity-dots/pull/59#discussion_r977766979
-    public abstract class AbstractDataStream : AbstractAnvilBase
+    internal abstract class AbstractDataStream : AbstractAnvilBase
     {
         public Type Type { get; }
 
@@ -17,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Type = GetType();
             
-            //TODO: Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            //TODO: #112 (c-sharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
             m_TypeString = Type.IsGenericType
                 ? $"{Type.Name[..^2]}<{Type.GenericTypeArguments[0].Name}>"
                 : Type.Name;
