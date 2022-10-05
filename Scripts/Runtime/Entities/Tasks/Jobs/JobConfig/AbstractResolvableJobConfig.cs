@@ -25,26 +25,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
-        
-        /// <inheritdoc cref="IResolvableJobConfigRequirements.RequireResolveTarget{TResolveTarget}"/>
-        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
-            where TResolveTarget : Enum
-        {
-            ResolveTargetUtil.Debug_EnsureEnumValidity(resolveTarget);
 
+        /// <inheritdoc cref="IResolvableJobConfigRequirements.RequireResolveTarget{TResolveTargetType}"/>
+        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
+        {
             //Any data streams that have registered for this resolve target type either on the system or related task drivers will be needed.
             //When the updater runs, it doesn't know yet which resolve target a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
-            TaskFlowGraph.PopulateJobResolveTargetMappingForTarget(resolveTarget, m_JobResolveTargetMapping, TaskSystem);
-
+            TaskFlowGraph.PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(m_JobResolveTargetMapping, TaskSystem);
+            
             if (m_JobResolveTargetMapping.Mapping.Count == 0)
             {
                 return this;
             }
-
-            List<ResolveTargetData> resolveTargetData = m_JobResolveTargetMapping.GetResolveTargetData(resolveTarget);
-            AddAccessWrapper(new JobConfigDataID(m_JobResolveTargetMapping.DataStreamType, Usage.Resolve),
-                             DataStreamAsResolveTargetAccessWrapper.Create(resolveTarget, resolveTargetData));
+            
+            List<ResolveTargetData> resolveTargetData = m_JobResolveTargetMapping.GetResolveTargetData<TResolveTargetType>();
+            AddAccessWrapper(new JobConfigDataID(typeof(EntityProxyDataStream<TResolveTargetType>), Usage.Resolve),
+                             DataStreamAsResolveTargetAccessWrapper.Create<TResolveTargetType>(resolveTargetData));
 
             return this;
         }

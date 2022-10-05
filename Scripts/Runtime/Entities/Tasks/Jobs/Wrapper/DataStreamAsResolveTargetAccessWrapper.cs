@@ -8,10 +8,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStreamAsResolveTargetAccessWrapper : AbstractAccessWrapper
     {
-        public static DataStreamAsResolveTargetAccessWrapper Create<TResolveTarget>(TResolveTarget resolveTarget, List<ResolveTargetData> resolveTargetData)
-            where TResolveTarget : Enum
+        public static DataStreamAsResolveTargetAccessWrapper Create<TResolveTarget>(List<ResolveTargetData> resolveTargetData)
+            where TResolveTarget : unmanaged, IEntityProxyInstance
         {
-            ResolveTargetUtil.Debug_EnsureEnumValidity(resolveTarget);
             return new DataStreamAsResolveTargetAccessWrapper(resolveTargetData);
         }
 

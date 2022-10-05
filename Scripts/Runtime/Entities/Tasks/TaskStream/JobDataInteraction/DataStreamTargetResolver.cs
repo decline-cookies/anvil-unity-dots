@@ -12,13 +12,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     [BurstCompatible]
     internal struct DataStreamTargetResolver
     {
-        [ReadOnly] private UnsafeParallelHashMap<byte, DataStreamResolver> m_ResolversByTarget;
+        [ReadOnly] private UnsafeParallelHashMap<uint, DataStreamResolver> m_ResolversByTarget;
 
         internal DataStreamTargetResolver(JobResolveTargetMapping jobResolveTargetMapping)
         {
             int numChannels = jobResolveTargetMapping.Mapping.Count;
-            m_ResolversByTarget = new UnsafeParallelHashMap<byte, DataStreamResolver>(numChannels, Allocator.Persistent);
-            foreach (KeyValuePair<byte, Dictionary<byte, ResolveTargetData>> entry in jobResolveTargetMapping.Mapping)
+            m_ResolversByTarget = new UnsafeParallelHashMap<uint, DataStreamResolver>(numChannels, Allocator.Persistent);
+            foreach (KeyValuePair<uint, Dictionary<byte, ResolveTargetData>> entry in jobResolveTargetMapping.Mapping)
             {
                 m_ResolversByTarget.Add(entry.Key, new DataStreamResolver(entry.Value));
             }
@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 return;
             }
 
-            foreach (KeyValue<byte, DataStreamResolver> entry in m_ResolversByTarget)
+            foreach (KeyValue<uint, DataStreamResolver> entry in m_ResolversByTarget)
             {
                 entry.Value.Dispose();
             }
@@ -39,16 +39,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_ResolversByTarget.Dispose();
         }
 
-        internal void Resolve<TResolveTarget, TResolvedInstance>(TResolveTarget resolveTarget,
-                                                                 byte context,
-                                                                 int laneIndex,
-                                                                 ref TResolvedInstance resolvedInstance)
-            where TResolveTarget : Enum
-            where TResolvedInstance : unmanaged, IEntityProxyInstance
+        internal void Resolve<TResolveTargetType>(byte context,
+                                                  int laneIndex,
+                                                  ref TResolveTargetType resolvedInstance)
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
-            byte key = UnsafeUtility.As<TResolveTarget, byte>(ref resolveTarget);
-            Debug_EnsureContainsResolveTarget(key);
-            DataStreamResolver resolver = m_ResolversByTarget[key];
+            uint id = ResolveTargetUtil.GetResolveTargetID<TResolveTargetType>();
+            Debug_EnsureContainsResolveTarget(id);
+            DataStreamResolver resolver = m_ResolversByTarget[id];
             resolver.Resolve(context,
                              laneIndex,
                              ref resolvedInstance);
@@ -59,11 +57,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureContainsResolveTarget(byte resolveTargetKey)
+        private void Debug_EnsureContainsResolveTarget(uint resolveTargetID)
         {
-            if (!m_ResolversByTarget.ContainsKey(resolveTargetKey))
+            if (!m_ResolversByTarget.ContainsKey(resolveTargetID))
             {
-                throw new InvalidOperationException($"Trying to get Resolve Target with key of {resolveTargetKey} but no target exists! Did this job require the right Resolve Target?");
+                throw new InvalidOperationException($"Trying to get Resolve Target with key of {resolveTargetID} but no target exists! Did this job require the right Resolve Target?");
             }
         }
     }

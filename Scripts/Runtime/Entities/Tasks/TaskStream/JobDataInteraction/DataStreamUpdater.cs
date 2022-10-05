@@ -87,8 +87,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureCanContinue(ref instance);
             m_ContinueLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                           m_CurrentContext,
-                                                                           ref instance));
+                                                                                 m_CurrentContext,
+                                                                                 ref instance));
         }
 
         internal void Resolve()
@@ -96,16 +96,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureCanResolve();
         }
 
-        internal void Resolve<TResolveTarget, TResolvedInstance>(TResolveTarget resolveTarget,
-                                                                 ref TResolvedInstance resolvedInstance)
-            where TResolveTarget : Enum
-            where TResolvedInstance : unmanaged, IEntityProxyInstance
+        internal void Resolve<TResolveTargetType>(ref TResolveTargetType resolvedInstance)
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureCanResolve();
             //TODO: #69 - Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
             //TODO: manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
-            m_DataStreamTargetResolver.Resolve(resolveTarget,
-                                               m_CurrentContext,
+            m_DataStreamTargetResolver.Resolve(m_CurrentContext,
                                                m_LaneIndex,
                                                ref resolvedInstance);
         }
@@ -212,12 +209,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
             }
-            
+
             if (m_State != UpdaterState.Modifying)
             {
                 throw new InvalidOperationException($"Caught unhandled state {m_State}");
             }
-            
+
             m_State = UpdaterState.Ready;
 #endif
         }
@@ -241,7 +238,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 throw new InvalidOperationException($"Caught unhandled state {m_State}");
             }
-            
+
             m_State = UpdaterState.Ready;
 #endif
         }
