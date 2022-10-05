@@ -101,6 +101,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void PopulateWithResolveTargetDataStreams<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
+            //TODO: #78 - Optimization, this could be pretty slow since we're only searching for one type but have to check all possible nodes.
+            //TODO: It would be better to already have the nodes categorized by type or even better, by resolveTarget and type so it's faster to build.
             Type resolveTargetType = typeof(TResolveTargetType);
             foreach (DataStreamNode node in m_NodesByDataStream.Values)
             {

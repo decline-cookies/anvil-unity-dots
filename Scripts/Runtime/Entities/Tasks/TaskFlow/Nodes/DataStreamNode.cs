@@ -25,7 +25,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DataStream = dataStream;
             TaskStream = taskStream;
             IsResolveTarget = isResolveTarget;
-
+            
+            //TODO: As part of #66, #68 and/or #71 - This is a bit stinky. We know it's always going to work but the refactor in those Issues will make this a bit more robust.
             EntityProxyInstanceType = dataStream.Type.GenericTypeArguments[0];
         }
 
