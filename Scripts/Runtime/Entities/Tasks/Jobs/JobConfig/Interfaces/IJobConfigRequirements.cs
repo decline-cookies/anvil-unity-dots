@@ -86,5 +86,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to allow for cancelling</param>
         /// <returns>Reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver);
+
+        public IJobConfigRequirements RequireCDFEForRead<T>()
+            where T : struct, IComponentData;
+
+        public IJobConfigRequirements RequireCDFEForUpdate<T>()
+            where T : struct, IComponentData;
     }
 }

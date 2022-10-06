@@ -118,5 +118,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetIComponentDataNativeArrayFromQuery<T>(AbstractJobConfig.Usage.Read);
         }
+        
+        //*************************************************************************************************************
+        // CDFE
+        //*************************************************************************************************************
+
+        public CDFEReader<T> GetCDFEReader<T>()
+            where T : struct, IComponentData
+        {
+            return m_JobConfig.GetCDFEReader<T>();
+        }
+
+        public CDFEUpdater<T> GetCDFEUpdater<T>()
+            where T : struct, IComponentData
+        {
+            return m_JobConfig.GetCDFEUpdater<T>();
+        }
     }
 }
