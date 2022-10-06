@@ -86,10 +86,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to allow for cancelling</param>
         /// <returns>Reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver);
-
+        
+        /// <summary>
+        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
+        /// <returns>Reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireCDFEForRead<T>()
             where T : struct, IComponentData;
 
+        /// <summary>
+        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-write context.
+        /// Note that it can also be read at the same time.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
+        /// <returns>Reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireCDFEForUpdate<T>()
             where T : struct, IComponentData;
     }

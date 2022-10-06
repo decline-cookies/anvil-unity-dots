@@ -235,6 +235,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
         //*************************************************************************************************************
 
+        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForRead{T}"/>
         public IJobConfigRequirements RequireCDFEForRead<T>()
             where T : struct, IComponentData
         {
@@ -244,7 +245,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForUpdate{T}"/>
         public IJobConfigRequirements RequireCDFEForUpdate<T>()
             where T : struct, IComponentData
         {
@@ -386,7 +388,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
             return cdfeAccessWrapper.CreateCDFEReader();
         }
-        
+
         internal CDFEUpdater<T> GetCDFEUpdater<T>()
             where T : struct, IComponentData
         {
