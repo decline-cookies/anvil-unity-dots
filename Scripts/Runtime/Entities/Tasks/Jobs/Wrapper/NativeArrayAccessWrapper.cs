@@ -1,38 +1,17 @@
 using Anvil.Unity.DOTS.Jobs;
-using System;
-using System.Diagnostics;
-using System.Reflection;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal unsafe class NativeArrayAccessWrapper : AbstractAccessWrapper
+    internal unsafe class NativeArrayAccessWrapper<T> : AbstractAccessWrapper
+        where T : struct
     {
-        private static readonly FieldInfo NATIVE_ARRAY_ALLOCATOR = typeof(NativeArray<>).GetField("m_AllocatorLabel", BindingFlags.Instance | BindingFlags.NonPublic);
+        public NativeArray<T> NativeArray { get; }
 
-        public static NativeArrayAccessWrapper Create<T>(NativeArray<T> array)
-            where T : struct
+        public NativeArrayAccessWrapper(NativeArray<T> nativeArray) : base(AccessType.SharedRead)
         {
-            return new NativeArrayAccessWrapper(typeof(T),
-                                                NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(array),
-                                                array.Length,
-                                                //TODO: There's probably a way to create a delegate here but I'm not sure
-                                                (Allocator)NATIVE_ARRAY_ALLOCATOR.GetValue(array));
-        }
-
-        private readonly Type m_Type;
-        private readonly void* m_NativeArrayPtr;
-        private readonly int m_Length;
-        private readonly Allocator m_Allocator;
-
-        private NativeArrayAccessWrapper(Type type, void* nativeArrayPtr, int length, Allocator allocator) : base(AccessType.SharedRead)
-        {
-            m_Type = type;
-            m_NativeArrayPtr = nativeArrayPtr;
-            m_Length = length;
-            m_Allocator = allocator;
+            NativeArray = nativeArray;
         }
 
 
@@ -45,28 +24,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public sealed override void Release(JobHandle releaseAccessDependency)
         {
             //Does nothing - We don't know what the access could be here, up to the author to manage
-        }
-
-        public NativeArray<T> ResolveNativeArray<T>()
-            where T : struct
-        {
-            Debug_EnsureSameType(typeof(T));
-            return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_NativeArrayPtr,
-                                                                                m_Length,
-                                                                                m_Allocator);
-        }
-
-        //*************************************************************************************************************
-        // SAFETY
-        //*************************************************************************************************************
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureSameType(Type type)
-        {
-            if (m_Type != type)
-            {
-                throw new InvalidOperationException($"Trying to resolve to NativeArray of type {type} but {m_Type} was stored!");
-            }
         }
     }
 }

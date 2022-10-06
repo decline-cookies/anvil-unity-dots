@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Type = GetType();
             
-            //TODO: #112 (c-sharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
             m_TypeString = Type.IsGenericType
                 ? $"{Type.Name[..^2]}<{Type.GenericTypeArguments[0].Name}>"
                 : Type.Name;

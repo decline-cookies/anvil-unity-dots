@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public NativeArray<Entity> NativeArray
         {
-            get => m_EntityQueryNativeArray.NativeArray;
+            get => m_EntityQueryNativeArray.Results;
         }
 
 

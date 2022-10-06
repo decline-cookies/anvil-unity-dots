@@ -13,11 +13,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate m_ScheduleJobFunction;
         
         /// <summary>
-        /// The number of instances to process per batch.
-        /// </summary>
-        public int BatchSize { get; }
-        
-        /// <summary>
         /// The total number of instances to process.
         /// </summary>
         public int Length
@@ -28,15 +23,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal EntityQueryScheduleInfo(EntityQueryJobData jobData,
                                          EntityQueryNativeArray entityQueryNativeArray,
                                          BatchStrategy batchStrategy,
-                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction) : base(scheduleJobFunction.Method)
+                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction) 
+            : base(scheduleJobFunction.Method,
+                   batchStrategy,
+                   ChunkUtil.MaxElementsPerChunk<Entity>())
         {
             m_JobData = jobData;
             m_EntityQueryNativeArray = entityQueryNativeArray;
             m_ScheduleJobFunction = scheduleJobFunction;
-
-            BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? ChunkUtil.MaxElementsPerChunk<Entity>()
-                : 1;
         }
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)

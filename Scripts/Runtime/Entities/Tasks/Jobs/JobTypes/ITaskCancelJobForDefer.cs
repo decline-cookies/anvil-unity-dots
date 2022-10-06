@@ -21,7 +21,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         void InitForThread(int nativeThreadIndex);
 
         /// <summary>
-        /// Implement this method to cancel the passed instance.
+        /// This method is called for each instance that was requested to be cancelled, allowing for the cancel work to
+        /// occur.
         /// The <see cref="DataStreamCancellationUpdater{TInstance}"/> can be used to continue working on cancelling
         /// for this same instance next frame or resolve to cancel completed state.
         /// </summary>

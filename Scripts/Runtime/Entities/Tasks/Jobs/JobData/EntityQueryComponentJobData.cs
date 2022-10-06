@@ -3,7 +3,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Specific <see cref="AbstractJobData"/> for use when triggering the job based on an <see cref="EntityQuery"/>
+    /// Triggering specific <see cref="AbstractJobData"/> for use when triggering the job based on an <see cref="EntityQuery"/>
     /// that requires <see cref="IComponentData"/>.
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/></typeparam>

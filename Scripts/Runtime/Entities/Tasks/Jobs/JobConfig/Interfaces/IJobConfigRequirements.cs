@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="taskStream">The <see cref="TaskStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="taskStream">The <see cref="TaskStream{TInstance}"/> to read from.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
@@ -42,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Use of a <see cref="NativeArray{T}"/> like this is generally used for one time population jobs in very
         /// controlled circumstances.
         /// </remarks>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
             where T : struct;
         
@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Please ensure you create all <see cref="EntityQuery"/>s for use with the Task system via
         /// <see cref="ComponentSystemBase.GetEntityQuery"/>.
         /// </remarks>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery);
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Please ensure you create all <see cref="EntityQuery"/>s for use with the Task system via
         /// <see cref="ComponentSystemBase.GetEntityQuery"/>.
         /// </remarks>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData;
         
@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Specifies an <see cref="AbstractTaskDriver"/> that can have instances of data cancelled.
         /// </summary>
         /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to allow for cancelling</param>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver);
     }
 }

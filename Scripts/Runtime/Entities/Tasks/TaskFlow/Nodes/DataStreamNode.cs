@@ -28,6 +28,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
+            //TODO: #71 - This is wonky. We should be disposing the TaskStream but we only own the DataStream here.
+            //TODO: The ownership should be with the TaskSystem/TaskDriver. 
             DataStream.Dispose();
             m_ResolveTargetLookup.Clear();
 

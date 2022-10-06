@@ -8,13 +8,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class BulkJobScheduler<T> : AbstractAnvilBase
     {
-        private readonly List<T> m_Data;
+        private readonly T[] m_Data;
         private NativeArray<JobHandle> m_Dependencies;
 
-        public BulkJobScheduler(List<T> data)
+        public BulkJobScheduler(T[] data)
         {
             m_Data = data;
-            m_Dependencies = new NativeArray<JobHandle>(data.Count, Allocator.Persistent);
+            m_Dependencies = new NativeArray<JobHandle>(data.Length, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()

@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,12 +28,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
-            foreach (JobNode node in m_JobsByConfig.Values)
-            {
-                node.Dispose();
-            }
-            m_JobsByConfig.Clear();
-            
+            m_JobsByConfig.DisposeAllValuesAndClear();
+
             base.DisposeSelf();
         }
 
@@ -57,12 +54,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return node;
         }
 
-        public void PopulateWithJobConfigs(List<AbstractJobConfig> jobConfigs)
+        public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)
         {
-            foreach (AbstractJobConfig jobConfig in m_JobsByConfig.Keys)
-            {
-                jobConfigs.Add(jobConfig);
-            }
+            jobConfigs.AddRange(m_JobsByConfig.Keys);
         }
 
 

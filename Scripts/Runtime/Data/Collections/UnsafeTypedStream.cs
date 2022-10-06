@@ -424,7 +424,7 @@ namespace Anvil.Unity.DOTS.Data
         public LaneWriter AsLaneWriter(int laneIndex)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            //TODO: Convert to exceptions
+            //TODO: #16 - Convert to exceptions
             Assert.IsTrue(IsCreated);
             Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif
@@ -545,7 +545,7 @@ namespace Anvil.Unity.DOTS.Data
             public LaneWriter AsLaneWriter(int laneIndex)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                //TODO: Convert to exceptions
+                //TODO: #16 - Convert to exceptions
                 Assert.IsTrue(IsCreated);
                 Assert.IsTrue(laneIndex < m_BufferInfo->LaneCount && laneIndex >= 0);
 #endif

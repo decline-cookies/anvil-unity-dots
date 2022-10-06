@@ -100,6 +100,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 //Ensure the System's field is set to the task stream
                 systemField.SetValue(instance, taskStream);
 
+                //TODO: Rework this a bit in #68, #71 or #63. A bit weird to pass in the TaskStream and then also the DataStream explicitly when it could be pulled of. 
+                //TODO: Needs to jive with the cancelled version as well.
                 //Create the node
                 DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetDataStream());
 
@@ -179,9 +181,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
 
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
-            lookup.PopulateWithDataStreams(dataStreams);
+            lookup.AddDataStreamsTo(dataStreams);
 
-            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams);
+            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
         }
 
         public BulkJobScheduler<AbstractEntityProxyDataStream> CreateDataStreamBulkJobSchedulerFor<TTaskDriver>(AbstractTaskSystem taskSystem, List<TTaskDriver> taskDrivers)
@@ -192,10 +194,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
                 NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-                lookup.PopulateWithDataStreams(dataStreams);
+                lookup.AddDataStreamsTo(dataStreams);
             }
 
-            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams);
+            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
         }
 
         public void PopulateJobResolveTargetMappingForTarget<TResolveTarget>(TResolveTarget resolveTarget, JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskSystem taskSystem)
@@ -203,14 +205,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             //Get the Resolve Channels that exist on the system
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
-            lookup.PopulateWithResolveTargetDataStreams(jobResolveTargetMapping, resolveTarget);
+            lookup.AddResolveTargetDataStreamsTo(jobResolveTargetMapping, resolveTarget);
 
             //Get any Resolve Channels that exist on TaskDriver's owned by the system
             List<AbstractTaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
             foreach (AbstractTaskDriver ownedTaskDriver in ownedTaskDrivers)
             {
                 lookup = GetOrCreateNodeLookup(taskSystem, ownedTaskDriver);
-                lookup.PopulateWithResolveTargetDataStreams(jobResolveTargetMapping, resolveTarget);
+                lookup.AddResolveTargetDataStreamsTo(jobResolveTargetMapping, resolveTarget);
             }
         }
 
@@ -226,7 +228,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 propagators.Add(propagator);
             }
 
-            return new BulkJobScheduler<TaskDriverCancellationPropagator>(propagators);
+            return new BulkJobScheduler<TaskDriverCancellationPropagator>(propagators.ToArray());
         }
 
         //*************************************************************************************************************
@@ -268,11 +270,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
 
             JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, null);
-            lookup.PopulateWithJobConfigs(jobConfigs);
+            lookup.AddJobConfigsTo(jobConfigs);
 
             foreach (KeyValuePair<TaskFlowRoute, List<AbstractJobConfig>> entry in jobConfigs)
             {
-                bulkSchedulers.Add(entry.Key, new BulkJobScheduler<AbstractJobConfig>(entry.Value));
+                bulkSchedulers.Add(entry.Key, new BulkJobScheduler<AbstractJobConfig>(entry.Value.ToArray()));
             }
 
             return bulkSchedulers;
@@ -287,12 +289,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
                 JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);
-                lookup.PopulateWithJobConfigs(jobConfigs);
+                lookup.AddJobConfigsTo(jobConfigs);
             }
 
             foreach (KeyValuePair<TaskFlowRoute, List<AbstractJobConfig>> entry in jobConfigs)
             {
-                bulkSchedulers.Add(entry.Key, new BulkJobScheduler<AbstractJobConfig>(entry.Value));
+                bulkSchedulers.Add(entry.Key, new BulkJobScheduler<AbstractJobConfig>(entry.Value.ToArray()));
             }
 
             return bulkSchedulers;

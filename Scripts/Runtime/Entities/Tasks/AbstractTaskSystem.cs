@@ -135,9 +135,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                          entityQuery,
                                                                                          scheduleJobFunction,
                                                                                          batchStrategy);
-            RegisterJob(taskDriver,
-                        jobConfig,
-                        TaskFlowRoute.Populate);
+            RegisterJob(taskDriver, jobConfig, TaskFlowRoute.Populate);
 
             return jobConfig;
         }
@@ -154,9 +152,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                   taskStream,
                                                                                                   scheduleJobFunction,
                                                                                                   batchStrategy);
-            RegisterJob(taskDriver,
-                        jobConfig,
-                        TaskFlowRoute.Populate);
+            RegisterJob(taskDriver, jobConfig, TaskFlowRoute.Populate);
 
             return jobConfig;
         }
@@ -183,9 +179,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
 
-            RegisterJob(null,
-                        jobConfig,
-                        TaskFlowRoute.Cancel);
+            RegisterJob(null, jobConfig, TaskFlowRoute.Cancel);
 
             return jobConfig;
         }
@@ -202,9 +196,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           m_CancelRequestsDataStream,
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
-            RegisterJob(null,
-                        jobConfig,
-                        TaskFlowRoute.Update);
+            RegisterJob(null, jobConfig, TaskFlowRoute.Update);
 
             return jobConfig;
         }
@@ -252,13 +244,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                      TaskFlowRoute.Cancel,
                                      m_SystemJobConfigBulkJobSchedulerLookup);
 
-            // //Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
+            // Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
             dependsOn = m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
                                                                     AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             //TODO: #72 - Allow for other phases as needed, try to make as parallel as possible
 
-            // //Have drivers to do their own generic work if necessary
+            // Have drivers to do their own generic work if necessary
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
                                      m_DriverJobConfigBulkJobSchedulerLookup);

@@ -54,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return routeNode;
         }
 
-        public void PopulateWithJobConfigs(Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs)
+        public void AddJobConfigsTo(Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs)
         {
             foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
             {
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     jobConfigs.Add(route, jobConfigList);
                 }
                 JobRouteNode routeNode = GetOrCreateRouteNode(route);
-                routeNode.PopulateWithJobConfigs(jobConfigList);
+                routeNode.AddJobConfigsTo(jobConfigList);
             }
         }
     }

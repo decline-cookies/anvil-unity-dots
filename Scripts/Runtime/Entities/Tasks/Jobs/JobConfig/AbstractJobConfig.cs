@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             IsEnabled = true;
             Type type = GetType();
 
-            //TODO: #112 (c-sharp-core) Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
             m_TypeString = type.IsGenericType
                 ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
                 : type.Name;
@@ -118,7 +118,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{m_TypeString} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionDebugInfo ?? "NOT YET SET"} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
+            return $"{m_TypeString} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
         }
 
         //*************************************************************************************************************
@@ -186,7 +186,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where T : struct
         {
             AddAccessWrapper(new JobConfigDataID(typeof(NativeArray<T>), Usage.Read),
-                             NativeArrayAccessWrapper.Create(array));
+                             new NativeArrayAccessWrapper<T>(array));
             return this;
         }
 
@@ -328,8 +328,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), usage);
             Debug_EnsureWrapperExists(id);
-            NativeArrayAccessWrapper nativeArrayAccessWrapper = (NativeArrayAccessWrapper)m_AccessWrappers[id];
-            return nativeArrayAccessWrapper.ResolveNativeArray<T>();
+            NativeArrayAccessWrapper<T> nativeArrayAccessWrapper = (NativeArrayAccessWrapper<T>)m_AccessWrappers[id];
+            return nativeArrayAccessWrapper.NativeArray;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery(Usage usage)

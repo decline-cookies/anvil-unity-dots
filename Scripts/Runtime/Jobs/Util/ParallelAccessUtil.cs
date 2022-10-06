@@ -97,7 +97,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// Our goal is to have a tightly packed collection so in the example of an 8 core machine with
         /// <see cref="JobsUtility.JobWorkerMaximumCount"/> equal to 15, we would have the following mapping.
         ///
-        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, X, X2
+        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, main, profiler
         /// index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15, 16
         ///
         /// We have a tightly packed collection with index 0 through 16 for a total of 17 buckets.
@@ -155,7 +155,7 @@ namespace Anvil.Unity.DOTS.Jobs
             s_ThreadIndicesSeen.Clear();
         }
     
-        //TODO: This is actually never getting called when in Burst. BurstDiscard removes when in Burst. Fix.
+        //TODO: #84 - This is actually never getting called when in Burst. BurstDiscard removes when in Burst. Fix.
         [BurstDiscard]
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)
         {

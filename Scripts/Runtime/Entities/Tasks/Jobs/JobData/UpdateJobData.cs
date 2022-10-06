@@ -3,7 +3,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Specific <see cref="AbstractJobData"/> for use when updating instances of data in a data stream.
+    /// Updating specific <see cref="AbstractJobData"/> for use when updating instances of data in a data stream.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
     public class UpdateJobData<TInstance> : AbstractJobData

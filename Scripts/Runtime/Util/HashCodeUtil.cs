@@ -1,7 +1,16 @@
 namespace Anvil.Unity.DOTS.Util
 {
+    /// <summary>
+    /// Helper class for generating hashcodes that are Burst compatible.
+    /// </summary>
     public static class HashCodeUtil
     {
+        /// <summary>
+        /// Returns a HashCode that combines two initial hash codes.
+        /// </summary>
+        /// <param name="h1">The first hash code</param>
+        /// <param name="h2">The second hash code</param>
+        /// <returns></returns>
         public static int GetHashCode(int h1, int h2)
         {
             //Taken from ValueTuple.cs GetHashCode. 

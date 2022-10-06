@@ -3,7 +3,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Data System (no update) for managing the world's <see cref="TaskFlowGraph"/>
+    /// System to govern ownership of a <see cref="TaskFlowGraph"/> unique to a world.
     /// </summary>
     //TODO: #65 Safer way to handle this. Discussion with Mike.
     [UpdateInGroup(typeof(PresentationSystemGroup), OrderLast = true)]

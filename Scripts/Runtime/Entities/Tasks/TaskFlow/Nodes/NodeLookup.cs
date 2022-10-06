@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public void PopulateWithDataStreams(List<AbstractEntityProxyDataStream> dataStreams)
+        public void AddDataStreamsTo(List<AbstractEntityProxyDataStream> dataStreams)
         {
             foreach (AbstractEntityProxyDataStream dataStream in m_NodesByDataStream.Keys)
             {
@@ -97,7 +97,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public void PopulateWithResolveTargetDataStreams<TResolveTarget>(JobResolveTargetMapping jobResolveTargetMapping, TResolveTarget resolveTarget)
+        public void AddResolveTargetDataStreamsTo<TResolveTarget>(JobResolveTargetMapping jobResolveTargetMapping, TResolveTarget resolveTarget)
             where TResolveTarget : Enum
         {
             foreach (DataStreamNode node in m_NodesByDataStream.Values)

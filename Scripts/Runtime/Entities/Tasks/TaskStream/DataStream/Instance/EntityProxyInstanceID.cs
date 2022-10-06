@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             FixedString64Bytes fs = new FixedString64Bytes();
             fs.Append(m_Entity.ToFixedString());
-            fs.Append((FixedString32Bytes)" - Context: ");
+            fs.Append(" - Context: ");
             fs.Append(Context);
             return fs;
         }

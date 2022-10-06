@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using Unity.Jobs;
 
@@ -9,13 +10,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     public abstract class AbstractScheduleInfo
     {
-        internal abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
+        private const string UNKNOWN_DECLARING_TYPE = "unknown";
+        
+        /// <summary>
+        /// The number of instances to process per batch.
+        /// </summary>
+        public int BatchSize { get; }
+        
+        internal string ScheduleJobFunctionInfo { get; }
 
-        internal string ScheduleJobFunctionDebugInfo { get; }
-
-        protected AbstractScheduleInfo(MemberInfo scheduleJobFunctionMethodInfo)
+        protected AbstractScheduleInfo(MemberInfo scheduleJobFunctionMethodInfo, BatchStrategy batchStrategy, int maxElementsPerChunk)
         {
-            ScheduleJobFunctionDebugInfo = $"{scheduleJobFunctionMethodInfo.DeclaringType?.Name}.{scheduleJobFunctionMethodInfo.Name}";
+            ScheduleJobFunctionInfo = $"{scheduleJobFunctionMethodInfo.DeclaringType?.Name ?? UNKNOWN_DECLARING_TYPE}.{scheduleJobFunctionMethodInfo.Name}";
+            BatchSize = ResolveBatchSize(batchStrategy, maxElementsPerChunk);
         }
+
+        private int ResolveBatchSize(BatchStrategy batchStrategy, int maxElementsPerChunk)
+        {
+            return batchStrategy switch
+            {
+                BatchStrategy.MaximizeChunk   => maxElementsPerChunk,
+                BatchStrategy.MaximizeThreads => 1,
+                _                             => throw new InvalidOperationException($"Tried to resolve batch size for {nameof(BatchStrategy)}.{batchStrategy} but no code path satisfies!")
+            };
+        }
+        
+        internal abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
+        
     }
 }

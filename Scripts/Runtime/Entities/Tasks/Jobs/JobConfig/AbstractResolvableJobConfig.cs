@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             List<ResolveTargetData> resolveTargetData = m_JobResolveTargetMapping.GetResolveTargetData(resolveTarget);
             AddAccessWrapper(new JobConfigDataID(m_JobResolveTargetMapping.DataStreamType, Usage.Resolve),
-                             DataStreamAsResolveTargetAccessWrapper.Create(resolveTarget, resolveTargetData));
+                             DataStreamAsResolveTargetAccessWrapper.Create(resolveTarget, resolveTargetData.ToArray()));
 
             return this;
         }

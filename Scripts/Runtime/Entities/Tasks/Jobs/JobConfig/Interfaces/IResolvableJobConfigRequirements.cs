@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <param name="resolveTarget">The identifier for the target <see cref="TaskStream{TInstance}"/>s</param>
         /// <typeparam name="TResolveTarget">The type of identifier</typeparam>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
             where TResolveTarget : Enum;
     }

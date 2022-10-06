@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public NativeArray<T> NativeArray
         {
-            get => m_EntityQueryNativeArray.NativeArray;
+            get => m_EntityQueryNativeArray.Results;
         }
 
         public EntityQueryComponentAccessWrapper(EntityQueryComponentNativeArray<T> entityQueryNativeArray) : base(AccessType.SharedRead)

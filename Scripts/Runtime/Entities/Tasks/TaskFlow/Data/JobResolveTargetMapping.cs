@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class JobResolveTargetMapping
     {
-        //Target > Context > Data
+        //Target -> Context -> Data
         //For a given Target, we get a lookup keyed by Context's, which contain the actual data to map to.
         internal readonly Dictionary<byte, Dictionary<byte, ResolveTargetData>> Mapping;
 

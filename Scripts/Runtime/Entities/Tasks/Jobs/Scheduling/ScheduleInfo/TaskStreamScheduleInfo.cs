@@ -14,11 +14,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> m_ScheduleJobFunction;
 
         /// <summary>
-        /// The number of instances to process per batch.
-        /// </summary>
-        public int BatchSize { get; }
-
-        /// <summary>
         /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
         /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
@@ -26,16 +21,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal TaskStreamScheduleInfo(TaskStreamJobData<TInstance> jobData,
                                         EntityProxyDataStream<TInstance> dataStream,
                                         BatchStrategy batchStrategy,
-                                        JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction) : base(scheduleJobFunction.Method)
+                                        JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction)
+            : base(scheduleJobFunction.Method,
+                   batchStrategy,
+                   EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;
 
             DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
-
-            BatchSize = batchStrategy == BatchStrategy.MaximizeChunk
-                ? EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK
-                : 1;
         }
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)

@@ -21,7 +21,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         void InitForThread(int nativeThreadIndex);
 
         /// <summary>
-        /// Implement this method to update the passed instance.
+        /// This method is called for each instance that is to be updated, allowing for the update work to
+        /// occur.
         /// The <see cref="DataStreamUpdater{TInstance}"/> can be used to continue working on updating
         /// for this same instance next frame or resolve to a completed state.
         /// </summary>

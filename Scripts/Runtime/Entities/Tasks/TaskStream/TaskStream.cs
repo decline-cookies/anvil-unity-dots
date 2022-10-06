@@ -19,6 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal TaskStream()
         {
+            //TODO: #71 - This is weird with no dispose but #71 will fix it.
             DataStream = new EntityProxyDataStream<TInstance>();
         }
 

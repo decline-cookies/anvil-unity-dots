@@ -8,18 +8,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Whether the Job is enabled or not.
         /// A job that is not enabled will not be scheduled or run but will still exist as part of the
-        /// <see cref="AbstractTaskSystem"/> or <see cref="AbstractTaskDriver"/> that it is a part of.
+        /// <see cref="AbstractTaskSystem"/> or <see cref="AbstractTaskDriver"/> that it is associated with.
         /// </summary>
         public bool IsEnabled { get; set; }
         
         /// <summary>
-        /// Configuration helper that will run this job only once.
+        /// A configuration helper that will run this job only once.
         /// After being run, it will set <see cref="IsEnabled"/> to false.
         /// </summary>
         /// <remarks>
-        /// This is useful for initial setup jobs.
+        /// This is useful for the initial setup jobs.
         /// </remarks>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RunOnce();
     }
 }
