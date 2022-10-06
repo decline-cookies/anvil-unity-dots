@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using System;
 using System.Collections.Generic;
 
@@ -16,12 +17,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
-            foreach (JobRouteNode node in m_JobRouteNodes.Values)
-            {
-                node.Dispose();
-            }
-            m_JobRouteNodes.Clear();
-            
+            m_JobRouteNodes.DisposeAllValuesAndClear();
+
             base.DisposeSelf();
         }
 

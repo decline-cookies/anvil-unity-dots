@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,20 +24,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
-            foreach (DataStreamNode node in m_NodesByDataStream.Values)
-            {
-                node.Dispose();
-            }
-
-            foreach (CancelRequestsNode cancelRequestsNode in m_NodesByCancelRequests.Values)
-            {
-                cancelRequestsNode.Dispose();
-            }
+            m_NodesByDataStream.DisposeAllValuesAndClear();
+            m_NodesByCancelRequests.DisposeAllValuesAndClear();
             
             m_CancellationPropagator?.Dispose();
-
-            m_NodesByDataStream.Clear();
-            m_NodesByCancelRequests.Clear();
 
             base.DisposeSelf();
         }

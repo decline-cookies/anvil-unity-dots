@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -107,11 +108,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 m_AccessWrapperDependencies.Dispose();
             }
-
-            foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
-            {
-                wrapper.Dispose();
-            }
+            
+            m_AccessWrappers.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
         }

@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -67,12 +68,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void DisposeSelf()
         {
             //TODO: #71 - Let the Task Graph handle disposing this for us
-            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
-            {
-                subTaskDriver.Dispose();
-            }
-            m_SubTaskDrivers.Clear();
-            
+            m_SubTaskDrivers.DisposeAllAndTryClear();
+
             //CancelRequestsDataStream is disposed by the TaskFlowGraph
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
             
