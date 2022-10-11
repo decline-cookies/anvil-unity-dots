@@ -123,6 +123,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CDFE
         //*************************************************************************************************************
         
+        //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <summary>
         /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from in a job.
         /// </summary>

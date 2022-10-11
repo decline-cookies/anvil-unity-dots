@@ -232,7 +232,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
         //*************************************************************************************************************
-
+        
+        //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForRead{T}"/>
         public IJobConfigRequirements RequireCDFEForRead<T>()
             where T : struct, IComponentData
