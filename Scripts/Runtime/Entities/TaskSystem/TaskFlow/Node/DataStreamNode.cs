@@ -1,29 +1,33 @@
 using System;
-using System.Collections.Generic;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStreamNode : AbstractNode
     {
-        private readonly Dictionary<Type, byte> m_ResolveTargetLookup;
         private readonly NodeLookup m_Lookup;
 
         public AbstractEntityProxyDataStream DataStream { get; }
         public AbstractTaskStream TaskStream { get; }
+
+        public bool IsResolveTarget { get; }
+        
+        public Type EntityProxyInstanceType { get; }
 
         public DataStreamNode(NodeLookup lookup,
                               AbstractEntityProxyDataStream dataStream,
                               TaskFlowGraph taskFlowGraph,
                               AbstractTaskSystem taskSystem,
                               AbstractTaskDriver taskDriver,
-                              AbstractTaskStream taskStream) : base(taskFlowGraph, taskSystem, taskDriver)
+                              AbstractTaskStream taskStream,
+                              bool isResolveTarget) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_Lookup = lookup;
             DataStream = dataStream;
             TaskStream = taskStream;
-
-            m_ResolveTargetLookup = new Dictionary<Type, byte>();
+            IsResolveTarget = isResolveTarget;
+            
+            //TODO: As part of #66, #68 and/or #71 - This is a bit stinky. We know it's always going to work but the refactor in those Issues will make this a bit more robust.
+            EntityProxyInstanceType = dataStream.Type.GenericTypeArguments[0];
         }
 
         protected override void DisposeSelf()
@@ -31,7 +35,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //TODO: #71 - This is wonky. We should be disposing the TaskStream but we only own the DataStream here.
             //TODO: The ownership should be with the TaskSystem/TaskDriver. 
             DataStream.Dispose();
-            m_ResolveTargetLookup.Clear();
 
             base.DisposeSelf();
         }
@@ -39,27 +42,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public override string ToString()
         {
             return $"{DataStream} as part of {TaskStream} located in {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
-        }
-
-        public void RegisterAsResolveTarget(ResolveTargetForAttribute resolveTargetAttribute)
-        {
-            byte value = (byte)resolveTargetAttribute.ResolveTarget;
-
-            m_ResolveTargetLookup.Add(resolveTargetAttribute.ResolveTargetEnumType, value);
-        }
-
-        public bool IsResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
-            where TResolveTarget : Enum
-        {
-            Type type = typeof(TResolveTarget);
-            if (!m_ResolveTargetLookup.TryGetValue(type, out byte value))
-            {
-                return false;
-            }
-            
-            ResolveTargetUtil.Debug_EnsureEnumValidity(resolveTarget);
-            byte storedResolveTarget = UnsafeUtility.As<TResolveTarget, byte>(ref resolveTarget);
-            return value == storedResolveTarget;
         }
     }
 }

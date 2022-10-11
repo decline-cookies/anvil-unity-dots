@@ -1,5 +1,3 @@
-using System;
-
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
@@ -13,10 +11,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <see cref="TaskStream{TInstance}"/>s on the governing <see cref="AbstractTaskDriver"/> and
         /// <see cref="AbstractTaskSystem"/> will be required for writing in a shared-write context.
         /// </summary>
-        /// <param name="resolveTarget">The identifier for the target <see cref="TaskStream{TInstance}"/>s</param>
-        /// <typeparam name="TResolveTarget">The type of identifier</typeparam>
+        /// <typeparam name="TResolveTargetType">The type of <see cref="IEntityProxyInstance"/> that will be resolved.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTarget>(TResolveTarget resolveTarget)
-            where TResolveTarget : Enum;
+        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
+            where TResolveTargetType : unmanaged, IEntityProxyInstance;
     }
 }

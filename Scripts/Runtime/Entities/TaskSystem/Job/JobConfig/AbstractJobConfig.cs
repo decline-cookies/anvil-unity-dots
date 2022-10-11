@@ -23,21 +23,25 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             /// Represents an Exclusive Write lock on the underlying data.
             /// </summary>
             Update,
+
             /// <summary>
             /// The data is being written to.
             /// Represents a Shared Write lock on the underlying data.
             /// </summary>
             Write,
+
             /// <summary>
             /// The data is being read from.
             /// Represents a Shared Read lock on the underlying data.
             /// </summary>
             Read,
+
             /// <summary>
             /// The special id data is being written to so specific instances can be cancelled.
             /// Represents a Shared Write lock on the underlying data.
             /// </summary>
             WritePendingCancel,
+
             /// <summary>
             /// The data is being Cancelled. It will either continue to be processed again the next frame or be
             /// resolved into a resolve target <see cref="TaskStream{TInstance}"/>
@@ -45,6 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             /// Similar to <see cref="Update"/> but operates only on instances that have been cancelled.
             /// </summary>
             Cancelling,
+
             /// <summary>
             /// The data is being written to a resolve target <see cref="TaskStream{TInstance}"/>.
             /// Represents a Shared Write lock on the underlying data.
@@ -63,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private AbstractScheduleInfo m_ScheduleInfo;
         private bool m_ShouldDisableAfterNextRun;
         private bool m_IsHardened;
-        
+
         /// <inheritdoc cref="IJobConfig.IsEnabled"/>
         public bool IsEnabled
         {
@@ -122,7 +127,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - COMMON
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IJobConfig.RunOnce"/>
         public IJobConfig RunOnce()
         {
@@ -140,14 +145,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForWrite{TInstance}"/>
         public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return RequireDataStreamForWrite(taskStream.DataStream, Usage.Write);
         }
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForRead{TInstance}"/>
         public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -157,7 +162,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
@@ -178,7 +183,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - NATIVE ARRAY
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireNativeArrayForRead{T}"/>
         public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
             where T : struct
@@ -191,13 +196,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireEntityNativeArrayFromQueryForRead"/>
         public IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeArray(entityQuery));
         }
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireIComponentDataNativeArrayFromQueryForRead{T}"/>
         public IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData
@@ -225,6 +230,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForRead{T}"/>
+        public IJobConfigRequirements RequireCDFEForRead<T>()
+            where T : struct, IComponentData
+        {
+            CDFEAccessWrapper<T> wrapper = new CDFEAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
+            AddAccessWrapper(new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Read),
+                             wrapper);
+
+            return this;
+        }
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForUpdate{T}"/>
+        public IJobConfigRequirements RequireCDFEForUpdate<T>()
+            where T : struct, IComponentData
+        {
+            CDFEAccessWrapper<T> wrapper = new CDFEAccessWrapper<T>(AccessType.SharedWrite, TaskSystem);
+            AddAccessWrapper(new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Update),
+                             wrapper);
+
+            return this;
+        }
+
+        //*************************************************************************************************************
         // HARDEN
         //*************************************************************************************************************
 
@@ -232,10 +263,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             //During Hardening we can optimize by pre-allocating native arrays for dependency combining and convert
             //dictionary iterations into lists. We also allow for sub classes to do their own optimizing if needed.
-            
+
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            
+
             foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 m_SchedulingAccessWrappers.Add(wrapper);
@@ -260,7 +291,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //will read from or write to and combine them into one to actually schedule the job with Unity's job 
             //system. The resulting handle from that job is then fed back to each piece of data to allow Unity's
             //dependency system to know when it's safe to use the data again.
-            
+
             Debug_EnsureScheduleInfoExists();
 
             if (!IsEnabled)
@@ -347,6 +378,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return entityQueryAccessWrapper.NativeArray;
         }
 
+        internal CDFEReader<T> GetCDFEReader<T>()
+            where T : struct, IComponentData
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Read);
+            Debug_EnsureWrapperExists(id);
+            CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
+            return cdfeAccessWrapper.CreateCDFEReader();
+        }
+
+        internal CDFEUpdater<T> GetCDFEUpdater<T>()
+            where T : struct, IComponentData
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Update);
+            Debug_EnsureWrapperExists(id);
+            CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
+            return cdfeAccessWrapper.CreateCDFEUpdater();
+        }
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -359,7 +408,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"{this} is not hardened yet!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {

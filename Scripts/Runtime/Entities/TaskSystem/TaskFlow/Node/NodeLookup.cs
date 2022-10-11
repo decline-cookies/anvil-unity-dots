@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.DisposeSelf();
         }
 
-        public DataStreamNode CreateDataStreamNode(AbstractTaskStream taskStream, AbstractEntityProxyDataStream dataStream)
+        public DataStreamNode CreateDataStreamNode(AbstractTaskStream taskStream, AbstractEntityProxyDataStream dataStream, bool isResolveTarget)
         {
             Debug_EnsureNoDuplicateDataStreamNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
@@ -40,7 +40,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                      TaskGraph,
                                                      TaskSystem,
                                                      TaskDriver,
-                                                     taskStream);
+                                                     taskStream,
+                                                     isResolveTarget);
             m_NodesByDataStream.Add(dataStream, node);
             return node;
         }
@@ -88,17 +89,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public void AddResolveTargetDataStreamsTo<TResolveTarget>(JobResolveTargetMapping jobResolveTargetMapping, TResolveTarget resolveTarget)
-            where TResolveTarget : Enum
+        public void AddResolveTargetDataStreamsTo<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping)
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
+            //TODO: #78 - Optimization, this could be pretty slow since we're only searching for one type but have to check all possible nodes.
+            //TODO: It would be better to already have the nodes categorized by type or even better, by resolveTarget and type so it's faster to build.
+            Type resolveTargetType = typeof(TResolveTargetType);
             foreach (DataStreamNode node in m_NodesByDataStream.Values)
             {
-                if (!node.IsResolveTarget(resolveTarget))
+                if (!node.IsResolveTarget || resolveTargetType != node.EntityProxyInstanceType)
                 {
                     continue;
                 }
 
-                jobResolveTargetMapping.RegisterDataStream(resolveTarget, node.DataStream, Context);
+                jobResolveTargetMapping.RegisterDataStream((EntityProxyDataStream<TResolveTargetType>)node.DataStream, Context);
             }
         }
 

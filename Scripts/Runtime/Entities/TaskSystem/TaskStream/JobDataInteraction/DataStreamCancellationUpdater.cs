@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
         [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
         [ReadOnly] private DataStreamTargetResolver m_DataStreamTargetResolver;
-        
+
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
         private int m_LaneIndex;
         private byte m_CurrentContext;
@@ -30,15 +30,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
             m_DataStreamTargetResolver = dataStreamTargetResolver;
-            
+
             m_ContinueLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
             m_CurrentContext = default;
-            
+
             Debug_InitializeUpdaterState();
         }
-        
+
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
         /// </summary>
@@ -54,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
         }
-        
+
         /// <summary>
         /// Signals that this instance should be processed to cancel again next frame.
         /// </summary>
@@ -63,35 +63,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Continue(ref instance);
         }
-        
+
         /// <inheritdoc cref="Continue(TInstance)"/>
         public void Continue(ref TInstance instance)
         {
             Debug_EnsureCanContinue(ref instance);
             m_ContinueLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                           m_CurrentContext,
-                                                                           ref instance));
+                                                                                 m_CurrentContext,
+                                                                                 ref instance));
         }
-        
+
         internal void Resolve()
         {
             Debug_EnsureCanResolve();
         }
-        
-        internal void Resolve<TResolveTarget, TResolvedInstance>(TResolveTarget resolveTarget,
-                                                                 ref TResolvedInstance resolvedInstance)
-            where TResolveTarget : Enum
-            where TResolvedInstance : unmanaged, IEntityProxyInstance
+
+        internal void Resolve<TResolveTargetType>(ref TResolveTargetType resolvedInstance)
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureCanResolve();
             //TODO: #69 - Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
             //TODO: manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
-            m_DataStreamTargetResolver.Resolve(resolveTarget,
-                                               m_CurrentContext,
+            m_DataStreamTargetResolver.Resolve(m_CurrentContext,
                                                m_LaneIndex,
                                                ref resolvedInstance);
         }
-        
+
         internal TInstance this[int index]
         {
             get
@@ -102,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 return instanceWrapper.Payload;
             }
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -183,7 +180,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 throw new InvalidOperationException($"Caught unhandled state {m_State}");
             }
-            
+
             m_State = UpdaterState.Ready;
 #endif
         }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -95,7 +96,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
 
                 //Get the data type 
-                AbstractTaskStream taskStream = TaskStreamFactory.Create(systemField.FieldType, systemField.FieldType.GenericTypeArguments[0]);
+                Type entityProxyInstanceType = systemField.FieldType.GenericTypeArguments[0];
+                AbstractTaskStream taskStream = TaskStreamFactory.Create(systemField.FieldType, entityProxyInstanceType);
 
                 //Ensure the System's field is set to the task stream
                 systemField.SetValue(instance, taskStream);
@@ -103,18 +105,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 //TODO: Rework this a bit in #68, #71 or #63. A bit weird to pass in the TaskStream and then also the DataStream explicitly when it could be pulled of. 
                 //TODO: Needs to jive with the cancelled version as well.
                 //Create the node
-                DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetDataStream());
+                DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream,
+                                                                            taskStream.GetDataStream(),
+                                                                            systemField.GetCustomAttribute<ResolveTargetAttribute>() != null);
 
-                //Update the node for any resolve targets
-                IEnumerable<ResolveTargetForAttribute> resolveTargetAttributes = systemField.GetCustomAttributes<ResolveTargetForAttribute>();
-                foreach (ResolveTargetForAttribute resolveTargetAttribute in resolveTargetAttributes)
-                {
-                    dataStreamNode.RegisterAsResolveTarget(resolveTargetAttribute);
-                }
 
                 if (taskStream.IsCancellable)
                 {
-                    DataStreamNode pendingCancelDataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream());
+                    DataStreamNode pendingCancelDataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream(), false);
                     //No Resolve targets for this
                 }
             }
@@ -200,19 +198,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
         }
 
-        public void PopulateJobResolveTargetMappingForTarget<TResolveTarget>(TResolveTarget resolveTarget, JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskSystem taskSystem)
-            where TResolveTarget : Enum
+        public void PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskSystem taskSystem)
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             //Get the Resolve Channels that exist on the system
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
-            lookup.AddResolveTargetDataStreamsTo(jobResolveTargetMapping, resolveTarget);
+            lookup.AddResolveTargetDataStreamsTo<TResolveTargetType>(jobResolveTargetMapping);
 
             //Get any Resolve Channels that exist on TaskDriver's owned by the system
             List<AbstractTaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
             foreach (AbstractTaskDriver ownedTaskDriver in ownedTaskDrivers)
             {
                 lookup = GetOrCreateNodeLookup(taskSystem, ownedTaskDriver);
-                lookup.AddResolveTargetDataStreamsTo(jobResolveTargetMapping, resolveTarget);
+                lookup.AddResolveTargetDataStreamsTo<TResolveTargetType>(jobResolveTargetMapping);
             }
         }
 
@@ -319,7 +317,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobNodeLookup.Harden();
             }
-            
+
             //TODO: #66 - Build Relationships
             //Iterate through all nodes registered to the graph to try and develop relationships. 
             //We'll end up getting islands of relationships between all the data so you can't necessarily have 
