@@ -78,7 +78,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (id == IDProvider.UNSET_ID)
             {
-                throw new InvalidOperationException($"Trying to get id for {default(TResolveTargetType)} but it was never registered!");
+                throw new InvalidOperationException($"Trying to get id for {default(TResolveTargetType)} but it was never registered! Did you call {nameof(IResolvableJobConfigRequirements.RequireResolveTarget)} for your job?");
             }
         }
     }
