@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// As code changes through development, an older save file might have a different ID for the same type.
         /// This mapping can be used to stitch them properly together. 
         /// </summary>
-        /// TODO: Implement serialization
+        /// TODO: #83 - Implement serialization
         internal static readonly Dictionary<Type, uint> SERIALIZATION_MAPPING = new Dictionary<Type, uint>();
 
         private static IDProvider s_IDProvider;
