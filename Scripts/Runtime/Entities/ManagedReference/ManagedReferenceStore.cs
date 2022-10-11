@@ -27,7 +27,8 @@ namespace Anvil.Unity.DOTS.Entities
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         private static void Init()
         {
-            s_IDProvider = new IDProvider(uint.MaxValue - 1_000_000);
+            s_IDProvider?.Dispose();
+            s_IDProvider = new IDProvider();
             s_IDToInstance.Clear();
             s_InstanceToID.Clear();
         }
