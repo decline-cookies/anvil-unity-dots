@@ -113,7 +113,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 
                 cancellationUpdater.InitForThread(wrapperData.NativeThreadIndex);
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
-
+                
+                //TODO: Low Priority - #85 - Add some job safety checks
+                
                 while (true)
                 {
                     if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))

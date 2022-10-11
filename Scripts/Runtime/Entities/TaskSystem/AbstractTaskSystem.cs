@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
-        private readonly ByteIDProvider m_TaskDriverIDProvider;
+        private readonly ByteIDProvider m_TaskDriverContextProvider;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
@@ -38,10 +38,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractTaskSystem()
         {
-            m_TaskDriverIDProvider = new ByteIDProvider();
+            m_TaskDriverContextProvider = new ByteIDProvider();
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
-            Context = m_TaskDriverIDProvider.GetNextID();
+            Context = m_TaskDriverContextProvider.GetNextID();
             
             //TODO: #71 - Let the TaskFlowGraph handle creating this for us.
             m_CancelRequestsDataStream = new CancelRequestsDataStream();
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DisposeJobConfigBulkJobSchedulerLookup(m_SystemJobConfigBulkJobSchedulerLookup);
             DisposeJobConfigBulkJobSchedulerLookup(m_DriverJobConfigBulkJobSchedulerLookup);
 
-            m_TaskDriverIDProvider.Dispose();
+            m_TaskDriverContextProvider.Dispose();
 
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
             m_TaskDrivers.Clear();
@@ -121,7 +121,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
             m_TaskDrivers.Add(taskDriver);
 
-            return m_TaskDriverIDProvider.GetNextID();
+            return m_TaskDriverContextProvider.GetNextID();
         }
 
         internal IJobConfigRequirements ConfigureJobTriggeredBy(AbstractTaskDriver taskDriver,
