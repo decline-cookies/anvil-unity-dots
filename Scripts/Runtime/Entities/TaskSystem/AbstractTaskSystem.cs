@@ -16,7 +16,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly ByteIDProvider m_TaskDriverContextProvider;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
@@ -27,6 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private BulkJobScheduler<TaskDriverCancellationPropagator> m_TaskDriversCancellationBulkJobScheduler;
 
+        private TaskFlowGraph m_TaskFlowGraph;
         private bool m_IsHardened;
         
         /// <summary>
@@ -38,24 +38,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractTaskSystem()
         {
+            Logger.Debug("Task System Constructor");
             m_TaskDriverContextProvider = new ByteIDProvider();
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
             Context = m_TaskDriverContextProvider.GetNextID();
             
+            TaskStreamFactory.CreateTaskStreams(this);
+            
             //TODO: #71 - Let the TaskFlowGraph handle creating this for us.
             m_CancelRequestsDataStream = new CancelRequestsDataStream();
+        }
 
-            //TODO: #65 - Need to look at having this happen in OnCreate instead. The World is only set there. 
-            World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
-            m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            m_TaskFlowGraph.CreateTaskStreams(this);
+        protected override void OnCreate()
+        {
+            Logger.Debug("Task System OnCreate");
+            base.OnCreate();
+            
+            m_TaskFlowGraph = World.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
+            //TODO: Register all TaskStreams
             m_TaskFlowGraph.RegisterCancelRequestsDataStream(m_CancelRequestsDataStream, this, null);
+        }
+
+        protected override void OnStartRunning()
+        {
+            Logger.Debug("Task System OnStartRunning");
+            base.OnStartRunning();
         }
 
         protected override void OnDestroy()
         {
             //We only want to dispose the data streams that we own, so only the system ones
+            //TODO: Remove disposal here
             m_TaskFlowGraph.DisposeFor(this);
 
             //Clean up all the native arrays
@@ -206,6 +220,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         protected override void OnUpdate()
         {
+            Logger.OneTime().Debug("Task System OnUpdate");
             //TODO: #64 - World ordering will fix this
             if (!m_TaskFlowGraph.IsHardened)
             {

@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskFlowGraph
     {
-        private static readonly Type ABSTRACT_TASK_STREAM_TYPE = typeof(AbstractTaskStream);
+        
 
         private readonly Dictionary<AbstractTaskSystem, NodeLookup> m_DataNodesByTaskSystem;
         private readonly Dictionary<AbstractTaskDriver, NodeLookup> m_DataNodesByTaskDriver;
@@ -57,74 +57,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // DATA STREAMS
         //*************************************************************************************************************
 
-        public void CreateTaskStreams(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver = null)
-        {
-            Debug_EnsureNotHardened();
-            RegisterTaskDriverToTaskSystem(taskSystem, taskDriver);
-
-            Type type;
-            object instance;
-            if (taskDriver == null)
-            {
-                type = taskSystem.GetType();
-                instance = taskSystem;
-            }
-            else
-            {
-                type = taskDriver.GetType();
-                instance = taskDriver;
-            }
-
-            //Get all the fields
-            FieldInfo[] systemFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (FieldInfo systemField in systemFields)
-            {
-                if (!ABSTRACT_TASK_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
-                {
-                    continue;
-                }
-
-                IgnoreTaskStreamAttribute ignoreTaskStreamAttribute = systemField.GetCustomAttribute<IgnoreTaskStreamAttribute>();
-                if (ignoreTaskStreamAttribute != null)
-                {
-                    continue;
-                }
-
-                Debug_CheckFieldIsReadOnly(systemField);
-                Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
-
-                NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-
-                //Get the data type 
-                Type entityProxyInstanceType = systemField.FieldType.GenericTypeArguments[0];
-                AbstractTaskStream taskStream = TaskStreamFactory.Create(systemField.FieldType, entityProxyInstanceType);
-
-                //Ensure the System's field is set to the task stream
-                systemField.SetValue(instance, taskStream);
-
-                //TODO: Rework this a bit in #68, #71 or #63. A bit weird to pass in the TaskStream and then also the DataStream explicitly when it could be pulled of. 
-                //TODO: Needs to jive with the cancelled version as well.
-                //Create the node
-                DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream,
-                                                                            taskStream.GetDataStream(),
-                                                                            systemField.GetCustomAttribute<ResolveTargetAttribute>() != null);
-
-
-                if (taskStream.IsCancellable)
-                {
-                    DataStreamNode pendingCancelDataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream(), false);
-                    //No Resolve targets for this
-                }
-            }
-        }
+        
 
         public void RegisterCancelRequestsDataStream(CancelRequestsDataStream cancelRequestsDataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             CancelRequestsNode cancelRequestsNode = lookup.CreateCancelRequestsNode(cancelRequestsDataStream);
         }
-
-        private void RegisterTaskDriverToTaskSystem(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        //TODO: Register the TaskStream
+        //NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
+        // //TODO: Rework this a bit in #68, #71 or #63. A bit weird to pass in the TaskStream and then also the DataStream explicitly when it could be pulled of. 
+        // //TODO: Needs to jive with the cancelled version as well.
+        // //Create the node
+        // DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream,
+        //                                                             taskStream.GetDataStream(),
+        //                                                             systemField.GetCustomAttribute<ResolveTargetAttribute>() != null);
+        //
+        //
+        //     if (taskStream.IsCancellable)
+        // {
+        //     DataStreamNode pendingCancelDataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream(), false);
+        //     //No Resolve targets for this
+        // }
+        //TODO: Register relationship
+        public void RegisterTaskDriverToTaskSystem(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             if (taskDriver == null)
             {

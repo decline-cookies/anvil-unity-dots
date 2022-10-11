@@ -21,6 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskSystem>())
         {
+            Logger.Debug("Task Driver Constructor");
         }
     }
     
@@ -58,10 +59,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             
             //TODO: #71 - Let the TaskFlowGraph create this for us.
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
+            
+            TaskStreamFactory.CreateTaskStreams(this);
+            
             CancelRequestsDataStream = new CancelRequestsDataStream();
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            m_TaskFlowGraph.CreateTaskStreams(TaskSystem, this);
+            //TODO: Register task streams
             m_TaskFlowGraph.RegisterCancelRequestsDataStream(CancelRequestsDataStream, TaskSystem, this);
         }
 
@@ -69,7 +73,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             //TODO: #71 - Let the Task Graph handle disposing this for us
             m_SubTaskDrivers.DisposeAllAndTryClear();
-
+            
+            //TODO: Remove this dispose for
             //CancelRequestsDataStream is disposed by the TaskFlowGraph
             m_TaskFlowGraph.DisposeFor(TaskSystem, this);
             
