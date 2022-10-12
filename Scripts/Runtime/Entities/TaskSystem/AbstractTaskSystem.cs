@@ -61,8 +61,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void OnCreate()
         {
             base.OnCreate();
+            //Initialize the TaskFlowGraph based on our World
+            InitTaskFlowGraph(World);
+        }
 
-            m_TaskFlowGraph = World.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
+        private void InitTaskFlowGraph(World world)
+        {
+            //We could get called multiple times 
+            if (m_TaskFlowGraph != null)
+            {
+                return;
+            }
+            
+            m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.RegisterTaskSystem(this);
         }
 
@@ -132,6 +143,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureNotHardened(taskDriver);
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
             TaskDrivers.Add(taskDriver);
+
+            //Init the task flow graph based on our World since we may have been constructed
+            //before this system hit it's OnCreate. If we're already initialized, this is a no-op.
+            InitTaskFlowGraph(taskDriver.World);
 
             return m_TaskDriverContextProvider.GetNextID();
         }

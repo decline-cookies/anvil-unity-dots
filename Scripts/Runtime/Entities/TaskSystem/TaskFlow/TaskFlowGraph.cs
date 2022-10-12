@@ -7,6 +7,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskFlowGraph
     {
+        private static readonly TaskFlowRoute[] TASK_FLOW_ROUTE_VALUES = (TaskFlowRoute[])Enum.GetValues(typeof(TaskFlowRoute));
+        
         private readonly HashSet<AbstractTaskSystem> m_TaskSystems;
         private readonly Dictionary<AbstractTaskSystem, NodeLookup> m_DataNodesByTaskSystem;
         private readonly Dictionary<AbstractTaskDriver, NodeLookup> m_DataNodesByTaskDriver;
@@ -180,10 +182,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor(AbstractTaskSystem taskSystem)
         {
             Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> bulkSchedulers = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
-            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = CreateJobConfigsByRoute();
 
             JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, null);
-            lookup.AddJobConfigsTo(jobConfigs);
+            foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
+            {
+                lookup.AddJobConfigsTo(route, jobConfigs[route]);
+            }
 
             foreach (KeyValuePair<TaskFlowRoute, List<AbstractJobConfig>> entry in jobConfigs)
             {
@@ -197,12 +202,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TTaskDriver : AbstractTaskDriver
         {
             Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> bulkSchedulers = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
-            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = CreateJobConfigsByRoute();
 
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
                 JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);
-                lookup.AddJobConfigsTo(jobConfigs);
+                foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
+                {
+                    lookup.AddJobConfigsTo(route, jobConfigs[route]);
+                }
             }
 
             foreach (KeyValuePair<TaskFlowRoute, List<AbstractJobConfig>> entry in jobConfigs)
@@ -211,6 +219,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             return bulkSchedulers;
+        }
+
+        private Dictionary<TaskFlowRoute, List<AbstractJobConfig>> CreateJobConfigsByRoute()
+        {
+            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
+            {
+                List<AbstractJobConfig> jobConfigList = new List<AbstractJobConfig>();
+                jobConfigs.Add(route, jobConfigList);
+            }
+            return jobConfigs;
         }
 
 

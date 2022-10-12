@@ -53,6 +53,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Reference to the associated <see cref="AbstractTaskSystem"/>
         /// </summary>
         public AbstractTaskSystem TaskSystem { get; }
+        
+        /// <summary>
+        /// Reference to the associated <see cref="World"/>
+        /// </summary>
+        public World World { get; }
 
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
         internal List<AbstractTaskStream> TaskStreams { get; }
@@ -60,6 +65,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
         {
+            World = world;
+            
             //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
             m_TypeString = GetType().Name;
             TaskSystem = abstractTaskSystem;
@@ -120,6 +127,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return cancelRequestsDataStreams;
         }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION
+        //*************************************************************************************************************
 
         internal void AddToJobConfigs(AbstractJobConfig jobConfig)
         {
