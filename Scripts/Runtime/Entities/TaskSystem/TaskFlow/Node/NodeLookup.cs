@@ -1,4 +1,3 @@
-using Anvil.CSharp.Collections;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +8,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly Dictionary<AbstractEntityProxyDataStream, DataStreamNode> m_NodesByDataStream;
         private readonly Dictionary<CancelRequestsDataStream, CancelRequestsNode> m_NodesByCancelRequests;
-        private TaskDriverCancellationPropagator m_CancellationPropagator;
 
         public byte Context { get; }
 
@@ -22,17 +20,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Context = taskDriver?.Context ?? taskSystem.Context;
         }
 
-        protected override void DisposeSelf()
+        public void CreateDataStreamNodes(AbstractTaskStream taskStream)
         {
-            m_NodesByDataStream.DisposeAllValuesAndClear();
-            m_NodesByCancelRequests.DisposeAllValuesAndClear();
-            
-            m_CancellationPropagator?.Dispose();
-
-            base.DisposeSelf();
+            CreateDataStreamNode(taskStream, taskStream.GetDataStream());
+            if (taskStream.IsCancellable)
+            {
+                CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream());
+            }
         }
 
-        public DataStreamNode CreateDataStreamNode(AbstractTaskStream taskStream, AbstractEntityProxyDataStream dataStream, bool isResolveTarget)
+        private void CreateDataStreamNode(AbstractTaskStream taskStream, AbstractEntityProxyDataStream dataStream)
         {
             Debug_EnsureNoDuplicateDataStreamNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
@@ -40,13 +37,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                      TaskGraph,
                                                      TaskSystem,
                                                      TaskDriver,
-                                                     taskStream,
-                                                     isResolveTarget);
+                                                     taskStream);
             m_NodesByDataStream.Add(dataStream, node);
-            return node;
         }
 
-        public CancelRequestsNode CreateCancelRequestsNode(CancelRequestsDataStream cancelRequestsDataStream)
+        public void CreateCancelRequestsNode(CancelRequestsDataStream cancelRequestsDataStream)
         {
             Debug_EnsureNoDuplicateCancelRequestNodes(cancelRequestsDataStream);
             CancelRequestsNode node = new CancelRequestsNode(this,
@@ -55,16 +50,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                              TaskSystem,
                                                              TaskDriver);
             m_NodesByCancelRequests.Add(cancelRequestsDataStream, node);
-            return node;
-        }
-
-        public TaskDriverCancellationPropagator CreateCancellationPropagator()
-        {
-            m_CancellationPropagator = new TaskDriverCancellationPropagator(TaskDriver,
-                                                                            TaskDriver.CancelRequestsDataStream,
-                                                                            TaskSystem.GetCancelRequestsDataStream(),
-                                                                            TaskDriver.GetSubTaskDriverCancelRequests());
-            return m_CancellationPropagator;
         }
 
         public bool IsDataStreamRegistered(AbstractEntityProxyDataStream dataStream)

@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,
-                                                                                  CancellableTaskStream<TInstance> taskStream,
+                                                                                  TaskStream<TInstance> taskStream,
                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

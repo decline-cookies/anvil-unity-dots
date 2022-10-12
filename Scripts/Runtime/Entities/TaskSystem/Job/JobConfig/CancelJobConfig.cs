@@ -1,4 +1,6 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Diagnostics;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -8,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,
                                AbstractTaskDriver taskDriver,
-                               CancellableTaskStream<TInstance> taskStream)
+                               TaskStream<TInstance> taskStream)
             : base(taskFlowGraph,
                    taskSystem,
                    taskDriver)
@@ -20,10 +22,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireDataStreamForCancelling(CancellableTaskStream<TInstance> taskStream)
+        private void RequireDataStreamForCancelling(TaskStream<TInstance> taskStream)
         {
+            Debug_EnsureCancellable(taskStream);
             AddAccessWrapper(new JobConfigDataID(taskStream.PendingCancelDataStream, Usage.Cancelling),
                              new DataStreamAccessWrapper(taskStream.PendingCancelDataStream, AccessType.ExclusiveWrite));
+        }
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureCancellable(TaskStream<TInstance> taskStream)
+        {
+            if (!taskStream.IsCancellable)
+            {
+                throw new NotSupportedException($"Tried to configure a cancel job for {taskStream} but it is not cancellable! Did you set the {nameof(CancellableAttribute)}?");
+            }
         }
     }
 }

@@ -28,12 +28,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             RequireRequestCancelDataStreamForRead(cancelRequestsDataStream);
 
-            if (taskStream is not CancellableTaskStream<TInstance> cancellableTaskStream)
+            if (taskStream.IsCancellable)
             {
-                return;
+                RequireCancellableTaskStreamForWrite(taskStream);
             }
-            
-            RequireCancellableTaskStreamForWrite(cancellableTaskStream);
         }
         
         private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
@@ -42,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                              new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, byte.MaxValue));
         }
         
-        private void RequireCancellableTaskStreamForWrite(CancellableTaskStream<TInstance> cancellableTaskStream)
+        private void RequireCancellableTaskStreamForWrite(TaskStream<TInstance> cancellableTaskStream)
         {
             RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
         }

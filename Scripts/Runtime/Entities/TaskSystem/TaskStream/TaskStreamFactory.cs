@@ -50,10 +50,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 Debug_CheckFieldIsReadOnly(field);
                 Debug_CheckFieldTypeGenericTypeArguments(field.FieldType);
+
+                TaskStreamFlags flags = TaskStreamFlags.Default;
+
+                flags |= field.GetCustomAttribute<ResolveTargetAttribute>() != null
+                    ? TaskStreamFlags.IsResolveTarget
+                    : TaskStreamFlags.Default;
+
+                flags |= field.GetCustomAttribute<CancellableAttribute>() != null
+                    ? TaskStreamFlags.IsCancellable
+                    : TaskStreamFlags.Default;
                 
                 //Get the data type 
                 Type entityProxyInstanceType = field.FieldType.GenericTypeArguments[0];
-                AbstractTaskStream taskStream = Create(field.FieldType, entityProxyInstanceType);
+                AbstractTaskStream taskStream = Create(field.FieldType, 
+                                                       entityProxyInstanceType,
+                                                       flags);
                 
                 //Populate the incoming list so we can handle disposal nicely
                 taskStreams.Add(taskStream);
@@ -64,7 +76,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        private static AbstractTaskStream Create(Type taskStreamType, Type instanceType)
+        private static AbstractTaskStream Create(Type taskStreamType, Type instanceType, TaskStreamFlags flags)
         {
             Debug_CheckInstanceType(instanceType);
             if (!TYPED_GENERIC_METHODS.TryGetValue(taskStreamType, out MethodInfo typedGenericMethod))
@@ -73,13 +85,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 TYPED_GENERIC_METHODS.Add(taskStreamType, typedGenericMethod);
             }
 
-            return (AbstractTaskStream)typedGenericMethod.Invoke(null, null);
+            return (AbstractTaskStream)typedGenericMethod.Invoke(null, new object[]{flags});
         }
 
-        private static TTaskStream CreateTaskStream<TTaskStream>()
+        private static TTaskStream CreateTaskStream<TTaskStream>(TaskStreamFlags flags)
             where TTaskStream : AbstractTaskStream
         {
-            return (TTaskStream)Activator.CreateInstance(typeof(TTaskStream), true);
+            return (TTaskStream)Activator.CreateInstance(typeof(TTaskStream), 
+                                                         BindingFlags.Instance | BindingFlags.NonPublic, 
+                                                         null, 
+                                                         new object[]{flags}, 
+                                                         null, 
+                                                         null);
         }
         
         //*************************************************************************************************************

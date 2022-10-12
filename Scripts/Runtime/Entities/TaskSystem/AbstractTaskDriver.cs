@@ -1,6 +1,8 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -21,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskSystem>())
         {
-            Logger.Debug("Task Driver Constructor");
+            Logger.Debug($"{this} Constructor");
         }
     }
     
@@ -37,6 +39,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
+        private readonly string m_TypeString;
+        
+        private bool m_IsHardened;
         
         /// <summary>
         /// The context associated with this TaskDriver. Will be unique to the corresponding
@@ -48,40 +53,64 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Reference to the associated <see cref="AbstractTaskSystem"/>
         /// </summary>
         public AbstractTaskSystem TaskSystem { get; }
-        
+
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
+        internal List<AbstractTaskStream> TaskStreams { get; }
+        internal List<AbstractJobConfig> JobConfigs { get; }
+        internal TaskDriverCancellationPropagator CancellationPropagator { get; private set; }
 
         protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
         {
+            m_TypeString = GetType().Name;
             TaskSystem = abstractTaskSystem;
-            
             Context = TaskSystem.RegisterTaskDriver(this);
             
-            //TODO: #71 - Let the TaskFlowGraph create this for us.
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
+            TaskStreams = new List<AbstractTaskStream>();
+            JobConfigs = new List<AbstractJobConfig>();
             
-            TaskStreamFactory.CreateTaskStreams(this);
-            
+            TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            //TODO: Register task streams
-            m_TaskFlowGraph.RegisterCancelRequestsDataStream(CancelRequestsDataStream, TaskSystem, this);
+            m_TaskFlowGraph.RegisterTaskDriver(this);
         }
 
         protected override void DisposeSelf()
         {
-            //TODO: #71 - Let the Task Graph handle disposing this for us
+            //We own our sub task drivers so dispose them
             m_SubTaskDrivers.DisposeAllAndTryClear();
-            
-            //TODO: Remove this dispose for
-            //CancelRequestsDataStream is disposed by the TaskFlowGraph
-            m_TaskFlowGraph.DisposeFor(TaskSystem, this);
-            
+            //Dispose all the data we own
+            TaskStreams.DisposeAllAndTryClear();
+            JobConfigs.DisposeAllAndTryClear();
+            CancelRequestsDataStream.Dispose();
+            CancellationPropagator?.Dispose();
+
             base.DisposeSelf();
         }
 
-        internal List<CancelRequestsDataStream> GetSubTaskDriverCancelRequests()
+        public override string ToString()
+        {
+            return m_TypeString;
+        }
+
+        internal void Harden()
+        {
+            Debug_EnsureNotHardened();
+            m_IsHardened = true;
+            
+            foreach (AbstractJobConfig jobConfig in JobConfigs)
+            {
+                jobConfig.Harden();
+            }
+
+            CancellationPropagator = new TaskDriverCancellationPropagator(this,
+                                                                          CancelRequestsDataStream,
+                                                                          TaskSystem.CancelRequestsDataStream,
+                                                                          GetSubTaskDriverCancelRequests());
+        }
+
+        private List<CancelRequestsDataStream> GetSubTaskDriverCancelRequests()
         {
             List<CancelRequestsDataStream> cancelRequestsDataStreams = new List<CancelRequestsDataStream>();
             foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
@@ -115,5 +144,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         //TODO: #73 - Implement other job types
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNotHardened()
+        {
+            if (m_IsHardened)
+            {
+                throw new InvalidOperationException($"Trying to Harden {this} but we already are!");
+            }
+        }
     }
 }

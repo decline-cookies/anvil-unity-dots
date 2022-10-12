@@ -18,25 +18,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                               TaskFlowGraph taskFlowGraph,
                               AbstractTaskSystem taskSystem,
                               AbstractTaskDriver taskDriver,
-                              AbstractTaskStream taskStream,
-                              bool isResolveTarget) : base(taskFlowGraph, taskSystem, taskDriver)
+                              AbstractTaskStream taskStream) : base(taskFlowGraph, taskSystem, taskDriver)
         {
             m_Lookup = lookup;
             DataStream = dataStream;
             TaskStream = taskStream;
-            IsResolveTarget = isResolveTarget;
+            IsResolveTarget = taskStream.IsDataStreamAResolveTarget && taskStream.GetDataStream() == dataStream;
             
             //TODO: As part of #66, #68 and/or #71 - This is a bit stinky. We know it's always going to work but the refactor in those Issues will make this a bit more robust.
             EntityProxyInstanceType = dataStream.Type.GenericTypeArguments[0];
-        }
-
-        protected override void DisposeSelf()
-        {
-            //TODO: #71 - This is wonky. We should be disposing the TaskStream but we only own the DataStream here.
-            //TODO: The ownership should be with the TaskSystem/TaskDriver. 
-            DataStream.Dispose();
-
-            base.DisposeSelf();
         }
 
         public override string ToString()

@@ -7,8 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     //TODO: !!!!!!!
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
-    [UpdateBefore(typeof(BeginInitializationEntityCommandBufferSystem))]
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     public partial class TaskFlowSystem : AbstractAnvilSystemBase
     {
         internal TaskFlowGraph TaskFlowGraph
@@ -32,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Logger.Debug("Task Flow System OnStartRunning");
             base.OnStartRunning();
-            
+
             //TODO: #68 - Probably a better way to do this via a factory type. https://github.com/decline-cookies/anvil-unity-dots/pull/59#discussion_r977823711
             TaskFlowGraph.Harden();
             Enabled = false;

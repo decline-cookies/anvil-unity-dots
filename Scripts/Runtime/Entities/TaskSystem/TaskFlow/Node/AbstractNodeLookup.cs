@@ -1,15 +1,13 @@
-using Anvil.CSharp.Core;
-
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract class AbstractNodeLookup : AbstractAnvilBase
+    internal abstract class AbstractNodeLookup
+
     {
-        
         public TaskFlowGraph TaskGraph
         {
             get;
         }
-        
+
         public AbstractTaskSystem TaskSystem
         {
             get;
