@@ -27,8 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal EntityProxyDataStream() : base()
         {
             m_Pending = new UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
-            m_IterationTarget = new DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
-                                                                                         Allocator.TempJob);
+            m_IterationTarget = new DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -118,7 +117,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 m_Iteration.Clear();
 
-                NativeArray<EntityProxyInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
+                NativeArray<EntityProxyInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count(), NativeArrayOptions.UninitializedMemory);
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
             }
