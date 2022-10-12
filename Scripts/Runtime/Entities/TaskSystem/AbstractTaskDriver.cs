@@ -23,7 +23,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskSystem>())
         {
-            Logger.Debug($"{this} Constructor");
         }
     }
     
@@ -39,6 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
+        private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly string m_TypeString;
         
         private bool m_IsHardened;
@@ -56,18 +56,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
         internal List<AbstractTaskStream> TaskStreams { get; }
-        internal List<AbstractJobConfig> JobConfigs { get; }
         internal TaskDriverCancellationPropagator CancellationPropagator { get; private set; }
 
         protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
         {
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
             m_TypeString = GetType().Name;
             TaskSystem = abstractTaskSystem;
             Context = TaskSystem.RegisterTaskDriver(this);
             
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskStreams = new List<AbstractTaskStream>();
-            JobConfigs = new List<AbstractJobConfig>();
+            m_JobConfigs = new List<AbstractJobConfig>();
             
             TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_SubTaskDrivers.DisposeAllAndTryClear();
             //Dispose all the data we own
             TaskStreams.DisposeAllAndTryClear();
-            JobConfigs.DisposeAllAndTryClear();
+            m_JobConfigs.DisposeAllAndTryClear();
             CancelRequestsDataStream.Dispose();
             CancellationPropagator?.Dispose();
 
@@ -99,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureNotHardened();
             m_IsHardened = true;
             
-            foreach (AbstractJobConfig jobConfig in JobConfigs)
+            foreach (AbstractJobConfig jobConfig in m_JobConfigs)
             {
                 jobConfig.Harden();
             }
@@ -119,6 +119,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             return cancelRequestsDataStreams;
+        }
+
+        internal void AddToJobConfigs(AbstractJobConfig jobConfig)
+        {
+            m_JobConfigs.Add(jobConfig);
         }
         
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,

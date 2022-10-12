@@ -218,6 +218,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // FINALIZE
         //*************************************************************************************************************
 
+        public void ConfigureTaskSystemJobs()
+        {
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
+            {
+                taskSystem.ConfigureSystemJobs();
+            }
+        }
+        
         public void Harden()
         {
             Debug_EnsureNotHardened();

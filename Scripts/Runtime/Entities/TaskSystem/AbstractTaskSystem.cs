@@ -16,6 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
         private readonly ByteIDProvider m_TaskDriverContextProvider;
+        private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly string m_TypeString;
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
@@ -39,18 +40,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
         internal List<AbstractTaskStream> TaskStreams { get; }
         internal List<AbstractTaskDriver> TaskDrivers { get; }
-        internal List<AbstractJobConfig> JobConfigs { get; }
+
 
         protected AbstractTaskSystem()
         {
             //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
             m_TypeString = GetType().Name;
 
-            Logger.Debug($"{this} Constructor");
             m_TaskDriverContextProvider = new ByteIDProvider();
             TaskStreams = new List<AbstractTaskStream>();
             TaskDrivers = new List<AbstractTaskDriver>();
-            JobConfigs = new List<AbstractJobConfig>();
+            m_JobConfigs = new List<AbstractJobConfig>();
 
             Context = m_TaskDriverContextProvider.GetNextID();
 
@@ -60,17 +60,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void OnCreate()
         {
-            Logger.Debug($"{this} OnCreate");
             base.OnCreate();
 
             m_TaskFlowGraph = World.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.RegisterTaskSystem(this);
-        }
-
-        protected override void OnStartRunning()
-        {
-            Logger.Debug($"{this} OnStartRunning");
-            base.OnStartRunning();
         }
 
         protected override void OnDestroy()
@@ -89,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //Dispose all the data we own
             TaskStreams.DisposeAllAndTryClear();
-            JobConfigs.DisposeAllAndTryClear();
+            m_JobConfigs.DisposeAllAndTryClear();
             CancelRequestsDataStream.Dispose();
 
             base.OnDestroy();
@@ -103,9 +96,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal void Harden()
         {
             Debug_EnsureNotHardened();
-            
-            ConfigureJobs();
-            
             m_IsHardened = true;
 
             foreach (AbstractTaskDriver taskDriver in TaskDrivers)
@@ -113,7 +103,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 taskDriver.Harden();
             }
 
-            foreach (AbstractJobConfig jobConfig in JobConfigs)
+            foreach (AbstractJobConfig jobConfig in m_JobConfigs)
             {
                 jobConfig.Harden();
             }
@@ -130,6 +120,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION
         //*************************************************************************************************************
+        internal void ConfigureSystemJobs()
+        {
+            ConfigureJobs();
+        }
 
         protected abstract void ConfigureJobs();
 
@@ -183,11 +177,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskFlowGraph.RegisterJobConfig(jobConfig, route);
             if (taskDriver != null)
             {
-                taskDriver.JobConfigs.Add(jobConfig);
+                taskDriver.AddToJobConfigs(jobConfig);
             }
             else
             {
-                JobConfigs.Add(jobConfig);
+                m_JobConfigs.Add(jobConfig);
             }
         }
 
@@ -231,7 +225,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         protected override void OnUpdate()
         {
-            Logger.OneTime().Debug($"{this} OnUpdate");
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
