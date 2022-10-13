@@ -78,6 +78,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             
             TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
+
+            TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers, world);
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             m_TaskFlowGraph.RegisterTaskDriver(this);
