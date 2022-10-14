@@ -26,22 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobsByConfig = new Dictionary<AbstractJobConfig, JobNode>();
         }
 
-        protected override void DisposeSelf()
-        {
-            m_JobsByConfig.DisposeAllValuesAndClear();
-
-            base.DisposeSelf();
-        }
-
-        public void Harden()
-        {
-            foreach (JobNode node in m_JobsByConfig.Values)
-            {
-                node.Harden();
-            }
-        }
-
-        public JobNode CreateNode(AbstractJobConfig jobConfig)
+        public void CreateNode(AbstractJobConfig jobConfig)
         {
             Debug_EnsureNoDuplicateNodes(jobConfig);
             JobNode node = new JobNode(this,
@@ -51,7 +36,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                        TaskSystem,
                                        TaskDriver);
             m_JobsByConfig.Add(jobConfig, node);
-            return node;
         }
 
         public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)

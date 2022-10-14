@@ -16,12 +16,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelRequestsDataStream = cancelRequestsDataStream;
         }
 
-        protected override void DisposeSelf()
-        {
-            CancelRequestsDataStream.Dispose();
-            base.DisposeSelf();
-        }
-
         public override string ToString()
         {
             return $"{CancelRequestsDataStream} located in {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";

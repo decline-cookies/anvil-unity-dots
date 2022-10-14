@@ -2,17 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskFlowGraph
     {
-        private static readonly Type ABSTRACT_TASK_STREAM_TYPE = typeof(AbstractTaskStream);
-
+        private static readonly TaskFlowRoute[] TASK_FLOW_ROUTE_VALUES = (TaskFlowRoute[])Enum.GetValues(typeof(TaskFlowRoute));
+        
+        private readonly HashSet<AbstractTaskSystem> m_TaskSystems;
         private readonly Dictionary<AbstractTaskSystem, NodeLookup> m_DataNodesByTaskSystem;
         private readonly Dictionary<AbstractTaskDriver, NodeLookup> m_DataNodesByTaskDriver;
-        private readonly Dictionary<AbstractTaskSystem, List<AbstractTaskDriver>> m_TaskDriversByTaskSystem;
         private readonly Dictionary<AbstractTaskSystem, JobNodeLookup> m_JobNodesByTaskSystem;
         private readonly Dictionary<AbstractTaskDriver, JobNodeLookup> m_JobNodesByTaskDriver;
 
@@ -24,126 +23,47 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public TaskFlowGraph()
         {
+            m_TaskSystems = new HashSet<AbstractTaskSystem>();
             m_DataNodesByTaskSystem = new Dictionary<AbstractTaskSystem, NodeLookup>();
             m_DataNodesByTaskDriver = new Dictionary<AbstractTaskDriver, NodeLookup>();
             m_JobNodesByTaskSystem = new Dictionary<AbstractTaskSystem, JobNodeLookup>();
             m_JobNodesByTaskDriver = new Dictionary<AbstractTaskDriver, JobNodeLookup>();
-            m_TaskDriversByTaskSystem = new Dictionary<AbstractTaskSystem, List<AbstractTaskDriver>>();
         }
-
-        public void DisposeFor(AbstractTaskSystem taskSystem)
+        
+        //*************************************************************************************************************
+        // REGISTRATION
+        //*************************************************************************************************************
+        
+        public void RegisterTaskSystem(AbstractTaskSystem taskSystem)
         {
-            NodeLookup nodeLookup = GetOrCreateNodeLookup(taskSystem, null);
-            nodeLookup.Dispose();
-
-            JobNodeLookup jobNodeLookup = GetOrCreateJobNodeLookup(taskSystem, null);
-            jobNodeLookup.Dispose();
-
-            List<AbstractTaskDriver> taskDrivers = GetTaskDrivers(taskSystem);
-            taskDrivers.Clear();
+            m_TaskSystems.Add(taskSystem);
+            RegisterCancelRequestsDataStream(taskSystem.CancelRequestsDataStream, taskSystem, null);
+            RegisterTaskStreams(taskSystem.TaskStreams, taskSystem, null);
         }
 
-        public void DisposeFor(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
-            NodeLookup nodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            nodeLookup.Dispose();
-
-            JobNodeLookup jobNodeLookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);
-            jobNodeLookup.Dispose();
+            RegisterCancelRequestsDataStream(taskDriver.CancelRequestsDataStream, taskDriver.TaskSystem, taskDriver);
+            RegisterTaskStreams(taskDriver.TaskStreams, taskDriver.TaskSystem, taskDriver);
         }
-
 
         //*************************************************************************************************************
         // DATA STREAMS
         //*************************************************************************************************************
 
-        public void CreateTaskStreams(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver = null)
-        {
-            Debug_EnsureNotHardened();
-            RegisterTaskDriverToTaskSystem(taskSystem, taskDriver);
-
-            Type type;
-            object instance;
-            if (taskDriver == null)
-            {
-                type = taskSystem.GetType();
-                instance = taskSystem;
-            }
-            else
-            {
-                type = taskDriver.GetType();
-                instance = taskDriver;
-            }
-
-            //Get all the fields
-            FieldInfo[] systemFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            foreach (FieldInfo systemField in systemFields)
-            {
-                if (!ABSTRACT_TASK_STREAM_TYPE.IsAssignableFrom(systemField.FieldType))
-                {
-                    continue;
-                }
-
-                IgnoreTaskStreamAttribute ignoreTaskStreamAttribute = systemField.GetCustomAttribute<IgnoreTaskStreamAttribute>();
-                if (ignoreTaskStreamAttribute != null)
-                {
-                    continue;
-                }
-
-                Debug_CheckFieldIsReadOnly(systemField);
-                Debug_CheckFieldTypeGenericTypeArguments(systemField.FieldType);
-
-                NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-
-                //Get the data type 
-                Type entityProxyInstanceType = systemField.FieldType.GenericTypeArguments[0];
-                AbstractTaskStream taskStream = TaskStreamFactory.Create(systemField.FieldType, entityProxyInstanceType);
-
-                //Ensure the System's field is set to the task stream
-                systemField.SetValue(instance, taskStream);
-
-                //TODO: Rework this a bit in #68, #71 or #63. A bit weird to pass in the TaskStream and then also the DataStream explicitly when it could be pulled of. 
-                //TODO: Needs to jive with the cancelled version as well.
-                //Create the node
-                DataStreamNode dataStreamNode = lookup.CreateDataStreamNode(taskStream,
-                                                                            taskStream.GetDataStream(),
-                                                                            systemField.GetCustomAttribute<ResolveTargetAttribute>() != null);
-
-
-                if (taskStream.IsCancellable)
-                {
-                    DataStreamNode pendingCancelDataStreamNode = lookup.CreateDataStreamNode(taskStream, taskStream.GetPendingCancelDataStream(), false);
-                    //No Resolve targets for this
-                }
-            }
-        }
-
-        public void RegisterCancelRequestsDataStream(CancelRequestsDataStream cancelRequestsDataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterCancelRequestsDataStream(CancelRequestsDataStream cancelRequestsDataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            CancelRequestsNode cancelRequestsNode = lookup.CreateCancelRequestsNode(cancelRequestsDataStream);
+            lookup.CreateCancelRequestsNode(cancelRequestsDataStream);
         }
 
-        private void RegisterTaskDriverToTaskSystem(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterTaskStreams(List<AbstractTaskStream> taskStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
-            if (taskDriver == null)
+            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
+            foreach (AbstractTaskStream taskStream in taskStreams)
             {
-                return;
+                lookup.CreateDataStreamNodes(taskStream);
             }
-
-            List<AbstractTaskDriver> taskDrivers = GetTaskDrivers(taskSystem);
-            taskDrivers.Add(taskDriver);
-        }
-
-        private List<AbstractTaskDriver> GetTaskDrivers(AbstractTaskSystem taskSystem)
-        {
-            if (!m_TaskDriversByTaskSystem.TryGetValue(taskSystem, out List<AbstractTaskDriver> taskDrivers))
-            {
-                taskDrivers = new List<AbstractTaskDriver>();
-                m_TaskDriversByTaskSystem.Add(taskSystem, taskDrivers);
-            }
-
-            return taskDrivers;
         }
 
         public bool IsDataStreamRegistered(AbstractEntityProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
@@ -206,8 +126,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             lookup.AddResolveTargetDataStreamsTo<TResolveTargetType>(jobResolveTargetMapping);
 
             //Get any Resolve Channels that exist on TaskDriver's owned by the system
-            List<AbstractTaskDriver> ownedTaskDrivers = GetTaskDrivers(taskSystem);
-            foreach (AbstractTaskDriver ownedTaskDriver in ownedTaskDrivers)
+            foreach (AbstractTaskDriver ownedTaskDriver in taskSystem.TaskDrivers)
             {
                 lookup = GetOrCreateNodeLookup(taskSystem, ownedTaskDriver);
                 lookup.AddResolveTargetDataStreamsTo<TResolveTargetType>(jobResolveTargetMapping);
@@ -221,8 +140,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //For each task driver that exists, generate a propagator for it
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
-                NodeLookup lookup = GetOrCreateNodeLookup(taskDriver.TaskSystem, taskDriver);
-                TaskDriverCancellationPropagator propagator = lookup.CreateCancellationPropagator();
+                TaskDriverCancellationPropagator propagator = taskDriver.CancellationPropagator;
                 propagators.Add(propagator);
             }
 
@@ -237,8 +155,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                       TaskFlowRoute route)
         {
             JobNodeLookup lookup = GetOrCreateJobNodeLookup(jobConfig.TaskSystem, jobConfig.TaskDriver);
-
-            JobNode jobNode = lookup.CreateJobNode(route, jobConfig);
+            lookup.CreateJobNode(route, jobConfig);
         }
 
         private JobNodeLookup GetOrCreateJobNodeLookup(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
@@ -265,10 +182,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> CreateJobConfigBulkJobSchedulerLookupFor(AbstractTaskSystem taskSystem)
         {
             Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> bulkSchedulers = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
-            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = CreateJobConfigsByRoute();
 
             JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, null);
-            lookup.AddJobConfigsTo(jobConfigs);
+            foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
+            {
+                lookup.AddJobConfigsTo(route, jobConfigs[route]);
+            }
 
             foreach (KeyValuePair<TaskFlowRoute, List<AbstractJobConfig>> entry in jobConfigs)
             {
@@ -282,12 +202,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TTaskDriver : AbstractTaskDriver
         {
             Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> bulkSchedulers = new Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>>();
-            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = CreateJobConfigsByRoute();
 
             foreach (TTaskDriver taskDriver in taskDrivers)
             {
                 JobNodeLookup lookup = GetOrCreateJobNodeLookup(taskSystem, taskDriver);
-                lookup.AddJobConfigsTo(jobConfigs);
+                foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
+                {
+                    lookup.AddJobConfigsTo(route, jobConfigs[route]);
+                }
             }
 
             foreach (KeyValuePair<TaskFlowRoute, List<AbstractJobConfig>> entry in jobConfigs)
@@ -298,24 +221,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return bulkSchedulers;
         }
 
+        private Dictionary<TaskFlowRoute, List<AbstractJobConfig>> CreateJobConfigsByRoute()
+        {
+            Dictionary<TaskFlowRoute, List<AbstractJobConfig>> jobConfigs = new Dictionary<TaskFlowRoute, List<AbstractJobConfig>>();
+            foreach (TaskFlowRoute route in TASK_FLOW_ROUTE_VALUES)
+            {
+                List<AbstractJobConfig> jobConfigList = new List<AbstractJobConfig>();
+                jobConfigs.Add(route, jobConfigList);
+            }
+            return jobConfigs;
+        }
+
 
         //*************************************************************************************************************
         // FINALIZE
         //*************************************************************************************************************
 
+        public void ConfigureTaskSystemJobs()
+        {
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
+            {
+                taskSystem.ConfigureSystemJobs();
+            }
+        }
+        
         public void Harden()
         {
             Debug_EnsureNotHardened();
             IsHardened = true;
 
-            foreach (JobNodeLookup jobNodeLookup in m_JobNodesByTaskSystem.Values)
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                jobNodeLookup.Harden();
-            }
-
-            foreach (JobNodeLookup jobNodeLookup in m_JobNodesByTaskDriver.Values)
-            {
-                jobNodeLookup.Harden();
+                taskSystem.Harden();
             }
 
             //TODO: #66 - Build Relationships

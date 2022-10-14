@@ -1,4 +1,6 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Diagnostics;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -28,12 +30,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             RequireRequestCancelDataStreamForRead(cancelRequestsDataStream);
 
-            if (taskStream is not CancellableTaskStream<TInstance> cancellableTaskStream)
+            if (taskStream.IsCancellable)
             {
-                return;
+                RequireCancellableTaskStreamForWrite(taskStream);
             }
-            
-            RequireCancellableTaskStreamForWrite(cancellableTaskStream);
         }
         
         private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
@@ -42,9 +42,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                              new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, byte.MaxValue));
         }
         
-        private void RequireCancellableTaskStreamForWrite(CancellableTaskStream<TInstance> cancellableTaskStream)
+        private void RequireCancellableTaskStreamForWrite(TaskStream<TInstance> cancellableTaskStream)
         {
+            Debug_EnsureIsCancellable(cancellableTaskStream);
             RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
+        }
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureIsCancellable(TaskStream<TInstance> cancellableTaskStream)
+        {
+            if (!cancellableTaskStream.IsCancellable || cancellableTaskStream.PendingCancelDataStream == null)
+            {
+                throw new InvalidOperationException($"{this} is trying register {cancellableTaskStream} as a cancellable task stream but it can't be cancelled!");
+            }
         }
     }
 }

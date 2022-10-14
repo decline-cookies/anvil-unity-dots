@@ -25,16 +25,5 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Route = route;
             JobConfig = jobConfig;
         }
-
-        protected override void DisposeSelf()
-        {
-            JobConfig.Dispose();
-            base.DisposeSelf();
-        }
-
-        public void Harden()
-        {
-            JobConfig.Harden();
-        }
     }
 }

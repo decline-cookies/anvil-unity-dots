@@ -1,6 +1,8 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -19,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => (TTaskSystem)base.TaskSystem;
         }
         
-        protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskSystem>())
+        protected AbstractTaskDriver(World world) : base(world, typeof(TTaskSystem))
         {
         }
     }
@@ -36,6 +38,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
+        private readonly List<AbstractJobConfig> m_JobConfigs;
+
+        private bool m_IsHardened;
         
         /// <summary>
         /// The context associated with this TaskDriver. Will be unique to the corresponding
@@ -48,35 +53,74 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         public AbstractTaskSystem TaskSystem { get; }
         
-        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
+        /// <summary>
+        /// Reference to the associated <see cref="World"/>
+        /// </summary>
+        public World World { get; }
 
-        protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
+        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
+        internal List<AbstractTaskStream> TaskStreams { get; }
+        internal TaskDriverCancellationPropagator CancellationPropagator { get; private set; }
+
+        protected AbstractTaskDriver(World world, Type systemType)
         {
-            TaskSystem = abstractTaskSystem;
+            //We can't just pull this off the System because we might have triggered it's creation via
+            //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
+            World = world;
             
+            TaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
             Context = TaskSystem.RegisterTaskDriver(this);
             
-            //TODO: #71 - Let the TaskFlowGraph create this for us.
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
+            TaskStreams = new List<AbstractTaskStream>();
+            m_JobConfigs = new List<AbstractJobConfig>();
+            
+            TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
+
+            TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers);
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            m_TaskFlowGraph.CreateTaskStreams(TaskSystem, this);
-            m_TaskFlowGraph.RegisterCancelRequestsDataStream(CancelRequestsDataStream, TaskSystem, this);
+            //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
+            m_TaskFlowGraph.RegisterTaskDriver(this);
         }
 
         protected override void DisposeSelf()
         {
-            //TODO: #71 - Let the Task Graph handle disposing this for us
+            //We own our sub task drivers so dispose them
             m_SubTaskDrivers.DisposeAllAndTryClear();
+            //Dispose all the data we own
+            TaskStreams.DisposeAllAndTryClear();
+            m_JobConfigs.DisposeAllAndTryClear();
+            CancelRequestsDataStream.Dispose();
+            CancellationPropagator?.Dispose();
 
-            //CancelRequestsDataStream is disposed by the TaskFlowGraph
-            m_TaskFlowGraph.DisposeFor(TaskSystem, this);
-            
             base.DisposeSelf();
         }
 
-        internal List<CancelRequestsDataStream> GetSubTaskDriverCancelRequests()
+        public override string ToString()
+        {
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            return GetType().Name;
+        }
+
+        internal void Harden()
+        {
+            Debug_EnsureNotHardened();
+            m_IsHardened = true;
+            
+            foreach (AbstractJobConfig jobConfig in m_JobConfigs)
+            {
+                jobConfig.Harden();
+            }
+
+            CancellationPropagator = new TaskDriverCancellationPropagator(this,
+                                                                          CancelRequestsDataStream,
+                                                                          TaskSystem.CancelRequestsDataStream,
+                                                                          GetSubTaskDriverCancelRequests());
+        }
+
+        private List<CancelRequestsDataStream> GetSubTaskDriverCancelRequests()
         {
             List<CancelRequestsDataStream> cancelRequestsDataStreams = new List<CancelRequestsDataStream>();
             foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
@@ -85,6 +129,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             return cancelRequestsDataStreams;
+        }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION
+        //*************************************************************************************************************
+
+        internal void AddToJobConfigs(AbstractJobConfig jobConfig)
+        {
+            m_JobConfigs.Add(jobConfig);
         }
         
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,
@@ -110,5 +163,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         //TODO: #73 - Implement other job types
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNotHardened()
+        {
+            if (m_IsHardened)
+            {
+                throw new InvalidOperationException($"Trying to Harden {this} but we already are!");
+            }
+        }
     }
 }

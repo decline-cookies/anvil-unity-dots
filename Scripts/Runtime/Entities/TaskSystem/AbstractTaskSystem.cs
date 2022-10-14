@@ -1,3 +1,4 @@
+using Anvil.CSharp.Collections;
 using Anvil.CSharp.Data;
 using System;
 using System.Collections.Generic;
@@ -15,9 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
         private readonly ByteIDProvider m_TaskDriverContextProvider;
-        private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly TaskFlowGraph m_TaskFlowGraph;
-        private readonly CancelRequestsDataStream m_CancelRequestsDataStream;
+        private readonly List<AbstractJobConfig> m_JobConfigs;
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
@@ -27,8 +26,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private BulkJobScheduler<TaskDriverCancellationPropagator> m_TaskDriversCancellationBulkJobScheduler;
 
+        private TaskFlowGraph m_TaskFlowGraph;
         private bool m_IsHardened;
-        
+
         /// <summary>
         /// The context of this <see cref="AbstractTaskSystem"/>.
         /// This will always be the first ID given by a <see cref="ByteIDProvider"/> and is used to differentiate
@@ -36,90 +36,115 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         public byte Context { get; }
 
+        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
+        internal List<AbstractTaskStream> TaskStreams { get; }
+        internal List<AbstractTaskDriver> TaskDrivers { get; }
+
+
         protected AbstractTaskSystem()
         {
             m_TaskDriverContextProvider = new ByteIDProvider();
-            m_TaskDrivers = new List<AbstractTaskDriver>();
+            TaskStreams = new List<AbstractTaskStream>();
+            TaskDrivers = new List<AbstractTaskDriver>();
+            m_JobConfigs = new List<AbstractJobConfig>();
 
             Context = m_TaskDriverContextProvider.GetNextID();
-            
-            //TODO: #71 - Let the TaskFlowGraph handle creating this for us.
-            m_CancelRequestsDataStream = new CancelRequestsDataStream();
 
-            //TODO: #65 - Need to look at having this happen in OnCreate instead. The World is only set there. 
-            World currentWorld = World ?? World.DefaultGameObjectInjectionWorld;
-            m_TaskFlowGraph = currentWorld.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
-            m_TaskFlowGraph.CreateTaskStreams(this);
-            m_TaskFlowGraph.RegisterCancelRequestsDataStream(m_CancelRequestsDataStream, this, null);
+            TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
+            CancelRequestsDataStream = new CancelRequestsDataStream();
+        }
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            //Initialize the TaskFlowGraph based on our World
+            InitTaskFlowGraph(World);
+        }
+
+        private void InitTaskFlowGraph(World world)
+        {
+            //We could get called multiple times 
+            if (m_TaskFlowGraph != null)
+            {
+                return;
+            }
+            
+            m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
+            //TODO: Investigate if we can just have a Register method with overloads for each type: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995025025
+            m_TaskFlowGraph.RegisterTaskSystem(this);
         }
 
         protected override void OnDestroy()
         {
-            //We only want to dispose the data streams that we own, so only the system ones
-            m_TaskFlowGraph.DisposeFor(this);
-
-            //Clean up all the native arrays
+            //Clean up all the cached native arrays hidden in the schedulers
             m_SystemDataStreamBulkJobScheduler?.Dispose();
             m_DriverDataStreamBulkJobScheduler?.Dispose();
             m_TaskDriversCancellationBulkJobScheduler?.Dispose();
-            DisposeJobConfigBulkJobSchedulerLookup(m_SystemJobConfigBulkJobSchedulerLookup);
-            DisposeJobConfigBulkJobSchedulerLookup(m_DriverJobConfigBulkJobSchedulerLookup);
+            m_SystemJobConfigBulkJobSchedulerLookup?.DisposeAllValuesAndClear();
+            m_DriverJobConfigBulkJobSchedulerLookup?.DisposeAllValuesAndClear();
 
             m_TaskDriverContextProvider.Dispose();
 
             //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
-            m_TaskDrivers.Clear();
+            TaskDrivers.Clear();
+
+            //Dispose all the data we own
+            TaskStreams.DisposeAllAndTryClear();
+            m_JobConfigs.DisposeAllAndTryClear();
+            CancelRequestsDataStream.Dispose();
 
             base.OnDestroy();
         }
 
-        private void DisposeJobConfigBulkJobSchedulerLookup(Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> lookup)
+        public override string ToString()
         {
-            if (lookup == null)
-            {
-                return;
-            }
-
-            foreach (BulkJobScheduler<AbstractJobConfig> scheduler in lookup.Values)
-            {
-                scheduler.Dispose();
-            }
-
-            lookup.Clear();
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            return GetType().Name;
         }
 
-        internal CancelRequestsDataStream GetCancelRequestsDataStream()
+        internal void Harden()
         {
-            return m_CancelRequestsDataStream;
-        }
-
-        private void Harden()
-        {
-            if (m_IsHardened)
-            {
-                return;
-            }
-
+            Debug_EnsureNotHardened();
             m_IsHardened = true;
 
+            foreach (AbstractTaskDriver taskDriver in TaskDrivers)
+            {
+                taskDriver.Harden();
+            }
+
+            foreach (AbstractJobConfig jobConfig in m_JobConfigs)
+            {
+                jobConfig.Harden();
+            }
+
             m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
-            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, m_TaskDrivers);
+            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, TaskDrivers);
 
             m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
-            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, m_TaskDrivers);
+            m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, TaskDrivers);
 
-            m_TaskDriversCancellationBulkJobScheduler = m_TaskFlowGraph.CreateTaskDriversCancellationBulkJobSchedulerFor(m_TaskDrivers);
+            m_TaskDriversCancellationBulkJobScheduler = m_TaskFlowGraph.CreateTaskDriversCancellationBulkJobSchedulerFor(TaskDrivers);
         }
 
         //*************************************************************************************************************
         // CONFIGURATION
         //*************************************************************************************************************
+        internal void ConfigureSystemJobs()
+        {
+            ConfigureJobs();
+        }
+
+        protected abstract void ConfigureJobs();
 
         internal byte RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             Debug_EnsureNotHardened(taskDriver);
             Debug_EnsureTaskDriverSystemRelationship(taskDriver);
-            m_TaskDrivers.Add(taskDriver);
+            TaskDrivers.Add(taskDriver);
+
+            //Init the task flow graph based on our World since we may have been constructed
+            //before this system hit it's OnCreate. If we're already initialized, this is a no-op.
+            InitTaskFlowGraph(taskDriver.World);
 
             return m_TaskDriverContextProvider.GetNextID();
         }
@@ -161,13 +186,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                  AbstractJobConfig jobConfig,
                                  TaskFlowRoute route)
         {
-            //TODO: #71 - Should TaskFlowGraph actually create?
             Debug_EnsureNotHardened(route, taskDriver);
             m_TaskFlowGraph.RegisterJobConfig(jobConfig, route);
+            if (taskDriver != null)
+            {
+                taskDriver.AddToJobConfigs(jobConfig);
+            }
+            else
+            {
+                m_JobConfigs.Add(jobConfig);
+            }
         }
 
 
-        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(CancellableTaskStream<TInstance> taskStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(TaskStream<TInstance> taskStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -193,7 +225,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           this,
                                                                                           null,
                                                                                           taskStream,
-                                                                                          m_CancelRequestsDataStream,
+                                                                                          CancelRequestsDataStream,
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
             RegisterJob(null, jobConfig, TaskFlowRoute.Update);
@@ -206,13 +238,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         protected override void OnUpdate()
         {
-            //TODO: #64 - World ordering will fix this
-            if (!m_TaskFlowGraph.IsHardened)
-            {
-                return;
-            }
-
-            Harden();
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
@@ -230,7 +255,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //Consolidate system data so that it can be operated on. (Was populated on previous step)
             //The system data and the system's cancel requests can be consolidated in parallel
-            dependsOn = JobHandle.CombineDependencies(m_CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
+            dependsOn = JobHandle.CombineDependencies(CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
                                                       m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
                                                                                                   AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION));
 
@@ -281,7 +306,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"{taskDriver} is part of system {taskDriver.TaskSystem} but it should be {this}!");
             }
 
-            if (m_TaskDrivers.Contains(taskDriver))
+            if (TaskDrivers.Contains(taskDriver))
             {
                 throw new InvalidOperationException($"Trying to add {taskDriver} to {this}'s list of Task Drivers but it is already there!");
             }
@@ -292,7 +317,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to create a {route} job on {TaskDebugUtil.GetLocationName(this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to create a {route} job on {TaskDebugUtil.GetLocationName(this, taskDriver)} but the create phase for systems is complete! Please ensure that you configure your jobs in the {nameof(ConfigureJobs)}");
             }
         }
 
@@ -302,6 +327,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {taskDriver.GetType()}'s are created in {nameof(OnCreate)} or earlier.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNotHardened()
+        {
+            if (m_IsHardened)
+            {
+                throw new InvalidOperationException($"Trying to Harden {this} but we already are!");
             }
         }
     }
