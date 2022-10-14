@@ -5,8 +5,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static string GetLocationName(AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             return (taskDriver == null)
-                ? $"{taskSystem.GetType().Name}"
-                : $"{taskDriver.GetType().Name} as part of the {taskSystem.GetType().Name} system";
+                ? $"{taskSystem}"
+                : $"{taskDriver} as part of the {taskSystem} system";
         }
     }
 }

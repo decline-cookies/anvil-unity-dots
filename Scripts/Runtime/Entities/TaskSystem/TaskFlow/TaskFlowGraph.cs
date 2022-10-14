@@ -328,7 +328,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //             _                                  => throw new ArgumentOutOfRangeException($"Tried to generate issue string for {path} but no code path satisfies!")
             //         };
             //         
-            //         throw new InvalidOperationException($"{node.DataStream.GetType()} located on {node.ToLocationString()}, does not have any job for {path}. {issue}");
+            //         throw new InvalidOperationException($"{node.DataStream} located on {node.ToLocationString()}, does not have any job for {path}. {issue}");
             //     }
             // }
         }

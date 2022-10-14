@@ -1,3 +1,4 @@
+using Anvil.CSharp.Reflection;
 using System;
 using System.Diagnostics;
 
@@ -48,12 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            Type type = GetType();
-
-            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
-            return type.IsGenericType
-                ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
-                : type.Name;
+            return GetType().GetReadableName();
         }
 
         internal sealed override AbstractEntityProxyDataStream GetDataStream()
