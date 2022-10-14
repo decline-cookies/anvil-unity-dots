@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -143,7 +144,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static NativeArrayJobConfig<T> CreateNativeArrayJobConfig<T>(TaskFlowGraph taskFlowGraph,
                                                                             AbstractTaskSystem taskSystem,
                                                                             AbstractTaskDriver taskDriver,
-                                                                            NativeArray<T> nativeArray,
+                                                                            AccessControlledValue<NativeArray<T>> nativeArray,
                                                                             JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction,
                                                                             BatchStrategy batchStrategy)
             where T : struct
@@ -158,7 +159,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                       taskDriver?.Context ?? taskSystem.Context);
 
             NativeArrayScheduleInfo<T> scheduleInfo = new NativeArrayScheduleInfo<T>(jobData,
-                                                                                     nativeArray,
                                                                                      batchStrategy,
                                                                                      scheduleJobFunction);
             

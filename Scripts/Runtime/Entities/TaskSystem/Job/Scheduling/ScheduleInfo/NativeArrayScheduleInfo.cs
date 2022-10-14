@@ -11,8 +11,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct
     {
         private readonly NativeArrayJobData<T> m_JobData;
-        private readonly NativeArray<T> m_Array;
         private readonly JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> m_ScheduleJobFunction;
+        
+        private NativeArray<T> m_Array;
 
         /// <summary>
         /// The total number of instances to process.
@@ -23,7 +24,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal NativeArrayScheduleInfo(NativeArrayJobData<T> jobData,
-                                         NativeArray<T> array,
                                          BatchStrategy batchStrategy,
                                          JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
@@ -31,12 +31,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                    ChunkUtil.MaxElementsPerChunk<T>())
         {
             m_JobData = jobData;
-            m_Array = array;
             m_ScheduleJobFunction = scheduleJobFunction;
         }
 
         internal override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
+            m_Array = m_JobData.GetDataForReading<NativeArray<T>>();
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
     }
