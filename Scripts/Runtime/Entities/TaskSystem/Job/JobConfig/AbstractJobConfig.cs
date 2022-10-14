@@ -280,7 +280,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
 
-        public IJobConfigRequirements RequireDynamicBufferForRead<T>()
+        public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
@@ -290,11 +290,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        public IJobConfigRequirements RequireDynamicBufferForWrite<T>()
+        public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, TaskSystem);
-            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Write),
+            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.ExclusiveWrite),
                              wrapper);
 
             return this;
@@ -441,6 +441,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureWrapperExists(id);
             CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
             return cdfeAccessWrapper.CreateCDFEUpdater();
+        }
+
+        internal DBFEForRead<T> GetDBFEForRead<T>()
+            where T : struct, IBufferElementData
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Read);
+            Debug_EnsureWrapperExists(id);
+            DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = (DynamicBufferAccessWrapper<T>)m_AccessWrappers[id];
+            return dynamicBufferAccessWrapper.CreateDynamicBufferReader();
+        }
+        
+        internal DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
+            where T : struct, IBufferElementData
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.ExclusiveWrite);
+            Debug_EnsureWrapperExists(id);
+            DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = (DynamicBufferAccessWrapper<T>)m_AccessWrappers[id];
+            return dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
         }
 
         //*************************************************************************************************************

@@ -8,7 +8,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct, IBufferElementData
     {
         private readonly SystemBase m_System;
-        private readonly DynamicBufferSharedWriteHandle m_DynamicBufferSharedWriteHandle;
 
         internal class DynamicBufferType
         {
@@ -17,22 +16,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DynamicBufferAccessWrapper(AccessType accessType, SystemBase system) : base(accessType)
         {
             m_System = system;
-            m_DynamicBufferSharedWriteHandle = m_System.GetDynamicBufferSharedWriteHandle<T>();
         }
 
-        public DynamicBufferReader<T> CreateDynamicBufferReader()
+        public DBFEForRead<T> CreateDynamicBufferReader()
         {
-            return new DynamicBufferReader<T>(m_System);
+            return new DBFEForRead<T>(m_System);
         }
 
-        public DynamicBufferWriter<T> CreateDynamicBufferWriter()
+        public DBFEForExclusiveWrite<T> CreateDynamicBufferExclusiveWriter()
         {
-            return new DynamicBufferWriter<T>(m_System);
-        }
-
-        public DynamicBufferSharedWriter<T> CreateDynamicBufferSharedWriter()
-        {
-            return new DynamicBufferSharedWriter<T>(m_System);
+            return new DBFEForExclusiveWrite<T>(m_System);
         }
 
         public override JobHandle Acquire()

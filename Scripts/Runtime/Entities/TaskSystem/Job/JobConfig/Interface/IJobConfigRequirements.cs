@@ -127,5 +127,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireCDFEForWrite<T>()
             where T : struct, IComponentData;
+
+        //TODO: Docs
+        public IJobConfigRequirements RequireDBFEForRead<T>()
+            where T : struct, IBufferElementData;
+        
+        //TODO: Docs
+        public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
+            where T : struct, IBufferElementData;
     }
 }

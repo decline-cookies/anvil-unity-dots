@@ -4,14 +4,14 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
-    public struct DynamicBufferWriter<T>
+    public readonly struct DBFEForRead<T>
         where T : struct, IBufferElementData
     {
-        [WriteOnly] private BufferFromEntity<T> m_BFE;
+        [ReadOnly] private readonly BufferFromEntity<T> m_BFE;
 
-        internal DynamicBufferWriter(SystemBase system)
+        internal DBFEForRead(SystemBase system)
         {
-            m_BFE = system.GetBufferFromEntity<T>(false);
+            m_BFE = system.GetBufferFromEntity<T>(true);
         }
 
         public DynamicBuffer<T> this[Entity entity]

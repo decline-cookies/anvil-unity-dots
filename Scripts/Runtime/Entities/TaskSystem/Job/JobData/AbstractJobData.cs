@@ -161,11 +161,31 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from and write to in a job.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>The <see cref="GetCDFEUpdater{T}"/></returns>
-        public CDFEWriter<T> GetCDFEUpdater<T>()
+        /// <returns>The <see cref="GetCDFEWriter{T}"/></returns>
+        public CDFEWriter<T> GetCDFEWriter<T>()
             where T : struct, IComponentData
         {
             return m_JobConfig.GetCDFEWriter<T>();
         }
+        
+        //*************************************************************************************************************
+        // DYNAMIC BUFFER
+        //*************************************************************************************************************
+        
+        //TODO: Docs
+        public DBFEForRead<T> GetDBFEForRead<T>()
+            where T : struct, IBufferElementData
+        {
+            return m_JobConfig.GetDBFEForRead<T>();
+        }
+        
+        //TODO: Docs
+        public DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
+            where T : struct, IBufferElementData
+        {
+            return m_JobConfig.GetDBFEForExclusiveWrite<T>();
+        }
+        
+        
     }
 }
