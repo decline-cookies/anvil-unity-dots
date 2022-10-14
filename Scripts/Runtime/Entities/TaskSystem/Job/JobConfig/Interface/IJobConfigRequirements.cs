@@ -128,11 +128,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireCDFEForWrite<T>()
             where T : struct, IComponentData;
 
-        //TODO: Docs
+        /// <summary>
+        /// Specifies a <see cref="BufferFromEntity{T}"/> to be read from in a shared-read context.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE</typeparam>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData;
         
-        //TODO: Docs
+        /// <summary>
+        /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in an exclusive-write context.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE</typeparam>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData;
     }

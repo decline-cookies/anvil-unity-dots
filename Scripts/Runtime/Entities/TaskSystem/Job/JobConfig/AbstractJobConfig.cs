@@ -279,7 +279,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDBFEForRead{T}"/>
         public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
@@ -289,7 +290,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDBFEForExclusiveWrite{T}"/>
         public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
@@ -299,8 +301,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-
-        //TODO: SharedWriteVersions
 
         //*************************************************************************************************************
         // HARDEN
