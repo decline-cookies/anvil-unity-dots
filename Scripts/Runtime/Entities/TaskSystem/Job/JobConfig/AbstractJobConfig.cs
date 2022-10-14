@@ -255,6 +255,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - DynamicBuffer
+        //*************************************************************************************************************
+
+        public IJobConfigRequirements RequireDynamicBufferForRead<T>()
+            where T : struct, IBufferElementData
+        {
+            DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
+            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Read),
+                             wrapper);
+
+            return this;
+        }
+
+        public IJobConfigRequirements RequireDynamicBufferForWrite<T>()
+            where T : struct, IBufferElementData
+        {
+            DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, TaskSystem);
+            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Write),
+                             wrapper);
+
+            return this;
+        }
+
+        //TODO: SharedWriteVersions
 
         //*************************************************************************************************************
         // HARDEN
