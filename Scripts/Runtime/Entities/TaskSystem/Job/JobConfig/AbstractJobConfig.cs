@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Reflection;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
@@ -86,13 +87,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                     AbstractTaskDriver taskDriver)
         {
             IsEnabled = true;
-            Type type = GetType();
-
-            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractProxyDataStream as well
-            m_TypeString = type.IsGenericType
-                ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
-                : type.Name;
-
             TaskFlowGraph = taskFlowGraph;
             TaskSystem = taskSystem;
             TaskDriver = taskDriver;
@@ -121,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{m_TypeString} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
+            return $"{GetType().GetReadableName()} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
         }
 
         //*************************************************************************************************************
