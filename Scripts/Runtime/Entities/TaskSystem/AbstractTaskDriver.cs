@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => (TTaskSystem)base.TaskSystem;
         }
         
-        protected AbstractTaskDriver(World world) : base(world, world.GetOrCreateSystem<TTaskSystem>())
+        protected AbstractTaskDriver(World world) : base(world, typeof(TTaskSystem))
         {
         }
     }
@@ -62,13 +62,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal List<AbstractTaskStream> TaskStreams { get; }
         internal TaskDriverCancellationPropagator CancellationPropagator { get; private set; }
 
-        protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
+        protected AbstractTaskDriver(World world, Type systemType)
         {
             //We can't just pull this off the System because we might have triggered it's creation via
             //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
             
-            TaskSystem = abstractTaskSystem;
+            TaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
             Context = TaskSystem.RegisterTaskDriver(this);
             
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
