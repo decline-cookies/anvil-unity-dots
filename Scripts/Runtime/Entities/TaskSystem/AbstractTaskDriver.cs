@@ -39,8 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly List<AbstractJobConfig> m_JobConfigs;
-        private readonly string m_TypeString;
-        
+
         private bool m_IsHardened;
         
         /// <summary>
@@ -65,10 +64,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractTaskDriver(World world, AbstractTaskSystem abstractTaskSystem)
         {
+            //We can't just pull this off the System because we might have triggered it's creation via
+            //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
             
-            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
-            m_TypeString = GetType().Name;
             TaskSystem = abstractTaskSystem;
             Context = TaskSystem.RegisterTaskDriver(this);
             
@@ -80,6 +79,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelRequestsDataStream = new CancelRequestsDataStream();
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
+            //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
             m_TaskFlowGraph.RegisterTaskDriver(this);
         }
 
@@ -98,7 +98,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return m_TypeString;
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            return GetType().Name;
         }
 
         internal void Harden()

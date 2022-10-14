@@ -1,4 +1,3 @@
-using Anvil.CSharp.Core;
 using System;
 using System.Diagnostics;
 
@@ -13,8 +12,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public class TaskStream<TInstance> : AbstractTaskStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        private readonly string m_TypeString;
-        
         internal EntityProxyDataStream<TInstance> DataStream { get; }
         internal EntityProxyDataStream<TInstance> PendingCancelDataStream { get; }
         internal TaskStreamFlags Flags { get; }
@@ -29,18 +26,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             get => (Flags & TaskStreamFlags.IsResolveTarget) != 0;
         }
-        
+
         internal TaskStream(TaskStreamFlags flags)
         {
             Flags = flags;
 
-            Type type = GetType();
-
-            //TODO: Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
-            m_TypeString = type.IsGenericType
-                ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
-                : type.Name;
-            
             DataStream = new EntityProxyDataStream<TInstance>();
 
             if (IsCancellable)
@@ -55,10 +45,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             PendingCancelDataStream?.Dispose();
             base.DisposeSelf();
         }
-        
+
         public override string ToString()
         {
-            return m_TypeString;
+            Type type = GetType();
+
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            return type.IsGenericType
+                ? $"{type.Name[..^2]}<{type.GenericTypeArguments[0].Name}>"
+                : type.Name;
         }
 
         internal sealed override AbstractEntityProxyDataStream GetDataStream()
@@ -71,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureCancellable();
             return PendingCancelDataStream;
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -84,13 +79,5 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new NotSupportedException($"Tried to get Pending Cancel Data Stream on {this} but it doesn't exists. Check {IsCancellable} first!");
             }
         }
-    }
-    
-    public abstract class AbstractTaskStream : AbstractAnvilBase
-    {
-        internal abstract bool IsCancellable { get; }
-        internal abstract bool IsDataStreamAResolveTarget { get; }
-        internal abstract AbstractEntityProxyDataStream GetDataStream();
-        internal abstract AbstractEntityProxyDataStream GetPendingCancelDataStream();
     }
 }

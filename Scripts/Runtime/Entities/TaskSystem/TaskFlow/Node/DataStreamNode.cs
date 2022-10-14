@@ -23,6 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_Lookup = lookup;
             DataStream = dataStream;
             TaskStream = taskStream;
+            //TODO: As part of #66, #67 and/or #68 this is not ideal.
             IsResolveTarget = taskStream.IsDataStreamAResolveTarget && taskStream.GetDataStream() == dataStream;
             
             //TODO: As part of #66 and/or #68 - This is a bit stinky. We know it's always going to work but the refactor in those Issues will make this a bit more robust.

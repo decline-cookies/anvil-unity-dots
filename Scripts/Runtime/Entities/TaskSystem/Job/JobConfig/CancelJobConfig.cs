@@ -36,9 +36,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureCancellable(TaskStream<TInstance> taskStream)
         {
-            if (!taskStream.IsCancellable)
+            if (!taskStream.IsCancellable || taskStream.PendingCancelDataStream == null)
             {
-                throw new NotSupportedException($"Tried to configure a cancel job for {taskStream} but it is not cancellable! Did you set the {nameof(CancellableAttribute)}?");
+                throw new NotSupportedException($"{this} Tried to configure a cancel job for {taskStream} but it is not cancellable! Did you set the {nameof(CancellableAttribute)}?");
             }
         }
     }

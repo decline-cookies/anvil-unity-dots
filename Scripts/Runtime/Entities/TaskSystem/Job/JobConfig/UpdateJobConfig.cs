@@ -1,4 +1,6 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Diagnostics;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -42,7 +44,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         private void RequireCancellableTaskStreamForWrite(TaskStream<TInstance> cancellableTaskStream)
         {
+            Debug_EnsureIsCancellable(cancellableTaskStream);
             RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
+        }
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureIsCancellable(TaskStream<TInstance> cancellableTaskStream)
+        {
+            if (!cancellableTaskStream.IsCancellable || cancellableTaskStream.PendingCancelDataStream == null)
+            {
+                throw new InvalidOperationException($"{this} is trying register {cancellableTaskStream} as a cancellable task stream but it can't be cancelled!");
+            }
         }
     }
 }

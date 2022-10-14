@@ -17,7 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly ByteIDProvider m_TaskDriverContextProvider;
         private readonly List<AbstractJobConfig> m_JobConfigs;
-        private readonly string m_TypeString;
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
@@ -44,9 +43,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractTaskSystem()
         {
-            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
-            m_TypeString = GetType().Name;
-
             m_TaskDriverContextProvider = new ByteIDProvider();
             TaskStreams = new List<AbstractTaskStream>();
             TaskDrivers = new List<AbstractTaskDriver>();
@@ -74,6 +70,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
+            //TODO: Investigate if we can just have a Register method with overloads for each type: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995025025
             m_TaskFlowGraph.RegisterTaskSystem(this);
         }
 
@@ -101,7 +98,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return m_TypeString;
+            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
+            return GetType().Name;
         }
 
         internal void Harden()
