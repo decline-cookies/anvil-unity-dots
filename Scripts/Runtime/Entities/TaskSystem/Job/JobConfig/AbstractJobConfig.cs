@@ -184,12 +184,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - NATIVE ARRAY
         //*************************************************************************************************************
 
+        //TODO: Redo docs
         /// <inheritdoc cref="IJobConfigRequirements.RequireNativeArrayForRead{T}"/>
-        public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
-            where T : struct
+        public IJobConfigRequirements RequireNativeCollectionForRead<TCollection>(AccessControlledValue<TCollection> collection)
+            where TCollection : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(NativeArray<T>), Usage.Read),
-                             new NativeArrayAccessWrapper<T>(array));
+            AddAccessWrapper(new JobConfigDataID(typeof(TCollection), Usage.Read),
+                             new NativeCollectionAccessWrapper<TCollection>(collection, AccessType.SharedRead));
             return this;
         }
 
@@ -255,6 +256,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - DynamicBuffer
+        //*************************************************************************************************************
+
+        public IJobConfigRequirements RequireDynamicBufferForRead<T>()
+            where T : struct, IBufferElementData
+        {
+            DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
+            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Read),
+                             wrapper);
+            
+            return this;
+        }
+
+        public IJobConfigRequirements RequireDynamicBufferForWrite<T>()
+            where T : struct, IBufferElementData
+        {
+            DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, TaskSystem);
+            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Write),
+                             wrapper);
+
+            return this;
+        }
+        
+        //TODO: SharedWriteVersions
 
         //*************************************************************************************************************
         // HARDEN
@@ -353,13 +380,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        internal NativeArray<T> GetNativeArray<T>(Usage usage)
-            where T : struct
+        internal TCollection GetNativeCollection<TCollection>(Usage usage)
+            where TCollection : struct
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), usage);
+            JobConfigDataID id = new JobConfigDataID(typeof(TCollection), usage);
             Debug_EnsureWrapperExists(id);
-            NativeArrayAccessWrapper<T> nativeArrayAccessWrapper = (NativeArrayAccessWrapper<T>)m_AccessWrappers[id];
-            return nativeArrayAccessWrapper.NativeArray;
+            NativeCollectionAccessWrapper<TCollection> nativeCollectionAccessWrapper = (NativeCollectionAccessWrapper<TCollection>)m_AccessWrappers[id];
+            return nativeCollectionAccessWrapper.Collection;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery(Usage usage)

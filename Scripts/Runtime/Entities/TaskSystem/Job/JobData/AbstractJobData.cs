@@ -84,15 +84,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // NATIVE ARRAY
         //*************************************************************************************************************
         
+        //TODO: Docs
         /// <summary>
         /// Gets a <see cref="NativeArray{T}"/> to read from in a job.
         /// </summary>
         /// <typeparam name="T">The type of struct in the array.</typeparam>
         /// <returns>The <see cref="NativeArray{T}"/></returns>
-        public NativeArray<T> GetNativeArrayReadOnly<T>()
-            where T : struct
+        public TCollection GetNativeCollectionReadOnly<TCollection>()
+            where TCollection : struct
         {
-            return m_JobConfig.GetNativeArray<T>(AbstractJobConfig.Usage.Read);
+            return m_JobConfig.GetNativeCollection<TCollection>(AbstractJobConfig.Usage.Read);
         }
 
         //*************************************************************************************************************

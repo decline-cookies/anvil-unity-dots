@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -28,7 +29,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IEntityProxyInstance;
-        
+
+        //TODO: Redo docs
         /// <summary>
         /// Specifies a <see cref="NativeArray{T}"/> to be read from in a shared-read context.
         /// </summary>
@@ -43,8 +45,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// controlled circumstances.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
-            where T : struct;
+        public IJobConfigRequirements RequireNativeCollectionForRead<TCollection>(AccessControlledValue<TCollection> collection)
+            where TCollection : struct;
         
         /// <summary>
         /// Specifies an <see cref="EntityQuery"/> to be transformed into a <see cref="NativeArray{Entity}"/> and read
