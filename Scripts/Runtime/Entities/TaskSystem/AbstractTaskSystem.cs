@@ -326,7 +326,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {taskDriver.GetType().GetReadableName()}'s are created in {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {taskDriver}'s are created in {nameof(OnCreate)} or earlier.");
             }
         }
 
