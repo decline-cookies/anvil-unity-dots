@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Data;
+using Anvil.CSharp.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -98,8 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
-            return GetType().Name;
+            return GetType().GetReadableName();
         }
 
         internal void Harden()
@@ -326,7 +326,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {taskDriver.GetType()}'s are created in {nameof(OnCreate)} or earlier.");
+                throw new InvalidOperationException($"Trying to register a {taskDriver} job but the create phase for systems is complete! Please ensure that all {taskDriver.GetType().GetReadableName()}'s are created in {nameof(OnCreate)} or earlier.");
             }
         }
 
