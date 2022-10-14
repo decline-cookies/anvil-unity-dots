@@ -6,27 +6,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class GenericDataAccessWrapper<TData> : AbstractAccessWrapper
         where TData : struct
     {
-        private readonly AccessControlledValue<TData> m_AccessControlledCollection;
-        private TData m_Collection;
+        private readonly AccessControlledValue<TData> m_AccessControlledData;
+        private TData m_Data;
         
-        public TData Collection
+        public TData Data
         {
-            get => m_Collection;
+            get => m_Data;
         }
 
-        public GenericDataAccessWrapper(AccessControlledValue<TData> collection, AccessType accessType) : base(accessType)
+        public GenericDataAccessWrapper(AccessControlledValue<TData> data, AccessType accessType) : base(accessType)
         {
-            m_AccessControlledCollection = collection;
+            m_AccessControlledData = data;
         }
         
         public sealed override JobHandle Acquire()
         {
-            return m_AccessControlledCollection.AcquireAsync(AccessType, out m_Collection);
+            return m_AccessControlledData.AcquireAsync(AccessType, out m_Data);
         }
 
         public sealed override void Release(JobHandle releaseAccessDependency)
         {
-            m_AccessControlledCollection.ReleaseAsync(releaseAccessDependency);
+            m_AccessControlledData.ReleaseAsync(releaseAccessDependency);
         }
     }
 }

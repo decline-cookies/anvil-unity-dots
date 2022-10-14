@@ -93,19 +93,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public TData GetDataForReading<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetNativeCollection<TData>(AbstractJobConfig.Usage.Read);
+            return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Read);
         }
         
         public TData GetDataForWriting<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetNativeCollection<TData>(AbstractJobConfig.Usage.Write);
+            return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Write);
         }
         
         public TData GetDataForUpdating<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetNativeCollection<TData>(AbstractJobConfig.Usage.Update);
+            return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Update);
         }
 
         //*************************************************************************************************************
@@ -153,10 +153,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
         /// <returns>The <see cref="GetCDFEUpdater{T}"/></returns>
-        public CDFEUpdater<T> GetCDFEUpdater<T>()
+        public CDFEWriter<T> GetCDFEUpdater<T>()
             where T : struct, IComponentData
         {
-            return m_JobConfig.GetCDFEUpdater<T>();
+            return m_JobConfig.GetCDFEWriter<T>();
         }
     }
 }

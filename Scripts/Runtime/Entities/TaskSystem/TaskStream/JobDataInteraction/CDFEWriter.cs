@@ -10,16 +10,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to update.</typeparam>
     [BurstCompatible]
-    public struct CDFEUpdater<T>
+    public struct CDFEWriter<T>
         where T : struct, IComponentData
     {
         [NativeDisableParallelForRestriction] private ComponentDataFromEntity<T> m_CDFE;
 
-        internal CDFEUpdater(SystemBase system)
+        internal CDFEWriter(SystemBase system)
         {
             m_CDFE = system.GetComponentDataFromEntity<T>(false);
         }
-        
+
         /// <summary>
         /// Gets/Sets the <typeparamref name="T"/> that corresponds to the passed <see cref="Entity"/>
         /// </summary>
