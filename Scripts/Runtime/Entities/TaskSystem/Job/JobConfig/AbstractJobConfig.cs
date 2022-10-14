@@ -186,27 +186,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         //TODO: Redo docs
         /// <inheritdoc cref="IJobConfigRequirements.RequireNativeArrayForRead{T}"/>
-        public IJobConfigRequirements RequireNativeCollectionForRead<TCollection>(AccessControlledValue<TCollection> collection)
-            where TCollection : struct
+        public IJobConfigRequirements RequireDataForRead<TData>(AccessControlledValue<TData> collection)
+            where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(TCollection), Usage.Read),
-                             new NativeCollectionAccessWrapper<TCollection>(collection, AccessType.SharedRead));
+            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Read),
+                             new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead));
             return this;
         }
 
-        public IJobConfigRequirements RequireNativeCollectionForWrite<TCollection>(AccessControlledValue<TCollection> collection)
-            where TCollection : struct
+        public IJobConfigRequirements RequireDataForWrite<TData>(AccessControlledValue<TData> collection)
+            where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(TCollection), Usage.Write),
-                             new NativeCollectionAccessWrapper<TCollection>(collection, AccessType.SharedWrite));
+            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Write),
+                             new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite));
             return this;
         }
 
-        public IJobConfigRequirements RequireNativeCollectionForUpdate<TCollection>(AccessControlledValue<TCollection> collection)
-            where TCollection : struct
+        public IJobConfigRequirements RequireDataForUpdate<TData>(AccessControlledValue<TData> collection)
+            where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(TCollection), Usage.Update),
-                             new NativeCollectionAccessWrapper<TCollection>(collection, AccessType.ExclusiveWrite));
+            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Update),
+                             new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite));
             return this;
         }
 
@@ -401,8 +401,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             JobConfigDataID id = new JobConfigDataID(typeof(TCollection), usage);
             Debug_EnsureWrapperExists(id);
-            NativeCollectionAccessWrapper<TCollection> nativeCollectionAccessWrapper = (NativeCollectionAccessWrapper<TCollection>)m_AccessWrappers[id];
-            return nativeCollectionAccessWrapper.Collection;
+            GenericDataAccessWrapper<TCollection> genericDataAccessWrapper = (GenericDataAccessWrapper<TCollection>)m_AccessWrappers[id];
+            return genericDataAccessWrapper.Collection;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery(Usage usage)

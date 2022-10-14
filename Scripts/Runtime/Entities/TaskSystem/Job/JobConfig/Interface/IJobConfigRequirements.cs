@@ -45,15 +45,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// controlled circumstances.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireNativeCollectionForRead<TCollection>(AccessControlledValue<TCollection> collection)
+        public IJobConfigRequirements RequireDataForRead<TCollection>(AccessControlledValue<TCollection> collection)
             where TCollection : struct;
         
         //TODO: DOCS
-        public IJobConfigRequirements RequireNativeCollectionForWrite<TCollection>(AccessControlledValue<TCollection> collection)
+        public IJobConfigRequirements RequireDataForWrite<TCollection>(AccessControlledValue<TCollection> collection)
             where TCollection : struct;
         
         //TODO: Docs
-        public IJobConfigRequirements RequireNativeCollectionForUpdate<TCollection>(AccessControlledValue<TCollection> collection)
+        public IJobConfigRequirements RequireDataForUpdate<TCollection>(AccessControlledValue<TCollection> collection)
             where TCollection : struct;
         
         /// <summary>

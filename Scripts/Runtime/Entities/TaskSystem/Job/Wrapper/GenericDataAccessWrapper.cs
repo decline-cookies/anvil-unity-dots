@@ -3,18 +3,18 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class NativeCollectionAccessWrapper<TCollection> : AbstractAccessWrapper
-        where TCollection : struct
+    internal class GenericDataAccessWrapper<TData> : AbstractAccessWrapper
+        where TData : struct
     {
-        private readonly AccessControlledValue<TCollection> m_AccessControlledCollection;
-        private TCollection m_Collection;
+        private readonly AccessControlledValue<TData> m_AccessControlledCollection;
+        private TData m_Collection;
         
-        public TCollection Collection
+        public TData Collection
         {
             get => m_Collection;
         }
 
-        public NativeCollectionAccessWrapper(AccessControlledValue<TCollection> collection, AccessType accessType) : base(accessType)
+        public GenericDataAccessWrapper(AccessControlledValue<TData> collection, AccessType accessType) : base(accessType)
         {
             m_AccessControlledCollection = collection;
         }

@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                    taskSystem,
                    taskDriver)
         {
-            RequireNativeCollectionForRead(nativeArray);
+            RequireDataForRead(nativeArray);
         }
     }
 }
