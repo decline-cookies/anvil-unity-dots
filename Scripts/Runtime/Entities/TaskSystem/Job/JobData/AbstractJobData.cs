@@ -84,28 +84,37 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // NATIVE ARRAY
         //*************************************************************************************************************
         
-        //TODO: Docs
         /// <summary>
-        /// Gets a <see cref="NativeArray{T}"/> to read from in a job.
+        /// Gets <typeparamref name="TData"/> for reading from in a shared-read context in a job.
         /// </summary>
-        /// <typeparam name="T">The type of struct in the array.</typeparam>
-        /// <returns>The <see cref="NativeArray{T}"/></returns>
+        /// <typeparam name="TData">The type of data to read from.</typeparam>
+        /// <returns>The <typeparamref name="TData"/> to read from.</returns>
         public TData GetDataForReading<TData>()
             where TData : struct
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Read);
         }
         
+        /// <summary>
+        /// Gets <typeparamref name="TData"/> for writing to in a shared-write context in a job.
+        /// </summary>
+        /// <typeparam name="TData">The type of data to write to.</typeparam>
+        /// <returns>The <typeparamref name="TData"/> to write to.</returns>
         public TData GetDataForWriting<TData>()
             where TData : struct
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Write);
         }
         
-        public TData GetDataForUpdating<TData>()
+        /// <summary>
+        /// Gets <typeparamref name="TData"/> for writing to in an exclusive-write context in a job.
+        /// </summary>
+        /// <typeparam name="TData">The type of data to write to.</typeparam>
+        /// <returns>The <typeparamref name="TData"/> to write to.</returns>
+        public TData GetDataForExclusiveWriting<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Update);
+            return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.ExclusiveWrite);
         }
 
         //*************************************************************************************************************
