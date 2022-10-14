@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TYPED_GENERIC_METHODS.Clear();
         }
         
-        public static void CreateSubTaskDrivers(AbstractTaskDriver taskDriver, List<AbstractTaskDriver> subTaskDrivers, World world)
+        public static void CreateSubTaskDrivers(AbstractTaskDriver taskDriver, List<AbstractTaskDriver> subTaskDrivers)
         {
             Type type = taskDriver.GetType();
             FieldInfo[] taskDriverFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 
                 Debug_CheckFieldIsReadOnly(field);
 
-                AbstractTaskDriver subTaskDriver = Create(field.FieldType, world);
+                AbstractTaskDriver subTaskDriver = Create(field.FieldType, taskDriver.World);
                 subTaskDrivers.Add(subTaskDriver);
 
                 Debug_EnsureFieldNotSet(field, taskDriver);

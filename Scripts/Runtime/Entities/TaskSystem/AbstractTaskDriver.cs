@@ -78,7 +78,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
 
-            TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers, world);
+            TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers);
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
