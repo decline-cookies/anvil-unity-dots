@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -100,8 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            //TODO: #112 (anvil-csharp-core) Extract to Anvil-CSharp Util method -Used in AbstractJobConfig as well
-            return GetType().Name;
+            return GetType().GetReadableName();
         }
 
         internal void Harden()
