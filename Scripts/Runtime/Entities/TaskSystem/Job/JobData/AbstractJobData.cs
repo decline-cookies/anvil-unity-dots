@@ -90,10 +90,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <typeparam name="T">The type of struct in the array.</typeparam>
         /// <returns>The <see cref="NativeArray{T}"/></returns>
-        public TCollection GetNativeCollectionReadOnly<TCollection>()
+        public TCollection GetNativeCollectionForReading<TCollection>()
             where TCollection : struct
         {
             return m_JobConfig.GetNativeCollection<TCollection>(AbstractJobConfig.Usage.Read);
+        }
+        
+        public TCollection GetNativeCollectionForWriting<TCollection>()
+            where TCollection : struct
+        {
+            return m_JobConfig.GetNativeCollection<TCollection>(AbstractJobConfig.Usage.Write);
+        }
+        
+        public TCollection GetNativeCollectionForUpdate<TCollection>()
+            where TCollection : struct
+        {
+            return m_JobConfig.GetNativeCollection<TCollection>(AbstractJobConfig.Usage.Update);
         }
 
         //*************************************************************************************************************

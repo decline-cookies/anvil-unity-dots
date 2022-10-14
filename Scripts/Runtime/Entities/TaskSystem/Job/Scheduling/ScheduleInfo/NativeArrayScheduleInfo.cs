@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
-            m_Array = m_JobData.GetNativeCollectionReadOnly<NativeArray<T>>();
+            m_Array = m_JobData.GetNativeCollectionForReading<NativeArray<T>>();
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
     }

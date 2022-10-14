@@ -113,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 m_AccessWrapperDependencies.Dispose();
             }
-            
+
             m_AccessWrappers.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
@@ -194,6 +194,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
+        public IJobConfigRequirements RequireNativeCollectionForWrite<TCollection>(AccessControlledValue<TCollection> collection)
+            where TCollection : struct
+        {
+            AddAccessWrapper(new JobConfigDataID(typeof(TCollection), Usage.Write),
+                             new NativeCollectionAccessWrapper<TCollection>(collection, AccessType.SharedWrite));
+            return this;
+        }
+
+        public IJobConfigRequirements RequireNativeCollectionForUpdate<TCollection>(AccessControlledValue<TCollection> collection)
+            where TCollection : struct
+        {
+            AddAccessWrapper(new JobConfigDataID(typeof(TCollection), Usage.Update),
+                             new NativeCollectionAccessWrapper<TCollection>(collection, AccessType.ExclusiveWrite));
+            return this;
+        }
+
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
@@ -233,7 +249,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
         //*************************************************************************************************************
-        
+
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForRead{T}"/>
         public IJobConfigRequirements RequireCDFEForRead<T>()
@@ -245,7 +261,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForUpdate{T}"/>
         public IJobConfigRequirements RequireCDFEForUpdate<T>()
             where T : struct, IComponentData
@@ -256,7 +272,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
+
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
@@ -267,7 +283,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
             AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Read),
                              wrapper);
-            
+
             return this;
         }
 
@@ -280,7 +296,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
+
         //TODO: SharedWriteVersions
 
         //*************************************************************************************************************

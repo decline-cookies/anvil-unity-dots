@@ -48,6 +48,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireNativeCollectionForRead<TCollection>(AccessControlledValue<TCollection> collection)
             where TCollection : struct;
         
+        //TODO: DOCS
+        public IJobConfigRequirements RequireNativeCollectionForWrite<TCollection>(AccessControlledValue<TCollection> collection)
+            where TCollection : struct;
+        
+        //TODO: Docs
+        public IJobConfigRequirements RequireNativeCollectionForUpdate<TCollection>(AccessControlledValue<TCollection> collection)
+            where TCollection : struct;
+        
         /// <summary>
         /// Specifies an <see cref="EntityQuery"/> to be transformed into a <see cref="NativeArray{Entity}"/> and read
         /// from in a shared-read context.

@@ -57,7 +57,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void OnCreate()
         {
             base.OnCreate();
-            Logger.Debug("Test");
             //Initialize the TaskFlowGraph based on our World
             InitTaskFlowGraph(World);
         }
