@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private Logger? m_Logger;
         /// <summary>
-        /// Returns a <see cref="Log.Logger"/> for this instance to emit log messages with.
+        /// Returns a <see cref="Logger"/> for this instance to emit log messages with.
         /// Lazy instantiated.
         /// </summary>
         protected Logger Logger

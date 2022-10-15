@@ -23,10 +23,10 @@ namespace Anvil.Unity.DOTS.Logging
     /// TODO: #95
     ///
     /// In the future, the goal of this type is to provide all the same information that
-    /// <see cref="Log.Logger" /> provides. That is not possible with Burst today but should be
+    /// <see cref="Logger" /> provides. That is not possible with Burst today but should be
     /// possible in the future without making any changes at the consuming end. At the moment, the
     /// contextual information is added when the message passes through <see cref="UnityLogListener"/>.
-    /// This information will appear in the output of all active <see cref="ILogHandler" /> implementations.
+    /// This information will appear in the output of all active <see cref="AbstractLogHandler" /> implementations.
     /// except for the Editor console (<see cref="UnityLogHandler"/>).
     /// This is a Burst limitation.
     /// </remarks>
@@ -45,11 +45,11 @@ namespace Anvil.Unity.DOTS.Logging
 
         /// <summary>
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from a
-        /// <see cref="Log.Logger" /> instance.
+        /// <see cref="Logger" /> instance.
         /// </summary>
-        /// <param name="logger">The <see cref="Log.Logger" /> to copy configuration from.</param>
+        /// <param name="logger">The <see cref="Logger" /> to copy configuration from.</param>
         /// <param name="appendToMessagePrefix">
-        /// A string to append to the <see cref="Log.Logger" />'s existing prefix.
+        /// A string to append to the <see cref="Logger" />'s existing prefix.
         /// </param>
         /// <exception cref="Exception">
         /// Thrown if there is an unknown error encountered when configuring the prefix string.
