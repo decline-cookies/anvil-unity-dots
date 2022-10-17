@@ -488,7 +488,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (!m_AccessWrappers.ContainsKey(id))
             {
-                throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type} data for {id.Usage} but it wasn't found. Did you call the right Require function?");
+                throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type.GetReadableName()} data for {id.Usage} but it wasn't found. Did you call the right Require function?");
             }
         }
 
@@ -498,7 +498,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Straight duplicate check
             if (m_AccessWrappers.ContainsKey(id))
             {
-                throw new InvalidOperationException($"{this} is trying to require {id.Type} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
+                throw new InvalidOperationException($"{this} is trying to require {id.Type.GetReadableName()} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
             }
         }
 
@@ -553,7 +553,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 JobConfigDataID checkID = new JobConfigDataID(id.Type, usage);
                 if (m_AccessWrappers.ContainsKey(checkID))
                 {
-                    throw new InvalidOperationException($"{this} is trying to require {id.Type} data for {id.Usage} but the same type is being used for {usage} which is not allowed!");
+                    throw new InvalidOperationException($"{this} is trying to require {id.Type.GetReadableName()} data for {id.Usage} but the same type is being used for {usage} which is not allowed!");
                 }
             }
         }
