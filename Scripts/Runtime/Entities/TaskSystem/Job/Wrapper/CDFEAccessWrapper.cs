@@ -23,9 +23,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new CDFEReader<T>(m_System);
         }
 
-        public CDFEUpdater<T> CreateCDFEUpdater()
+        public CDFEWriter<T> CreateCDFEUpdater()
         {
-            return new CDFEUpdater<T>(m_System);
+            return new CDFEWriter<T>(m_System);
         }
 
         public override JobHandle Acquire()

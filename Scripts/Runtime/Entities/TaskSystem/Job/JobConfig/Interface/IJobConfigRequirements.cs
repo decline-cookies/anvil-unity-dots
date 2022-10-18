@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -30,21 +31,45 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
-        /// Specifies a <see cref="NativeArray{T}"/> to be read from in a shared-read context.
+        /// Specifies a generic struct to be read from in a shared-read context.
         /// </summary>
-        /// <param name="array">The <see cref="NativeArray{T}"/> to read from.</param>
-        /// <typeparam name="T">The struct inside the <see cref="NativeArray{T}"/></typeparam>
+        /// <param name="data">An <see cref="AccessControlledValue{T}"/> of the data to be read</param>
+        /// <typeparam name="TData">The struct inside the <see cref="AccessControlledValue{T}"/></typeparam>
         /// <remarks>
-        /// WARNING
-        /// There is no guarantee that this NativeArray is in a state that it can be safely read from.
-        /// You must manage access yourself outside of the Task system and ensure it is free from race conditions.
-        /// In most cases it is better to use a <see cref="TaskStream{TInstance}"/> or <see cref="EntityQuery"/>.
-        /// Use of a <see cref="NativeArray{T}"/> like this is generally used for one time population jobs in very
-        /// controlled circumstances.
+        /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
+        /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
-            where T : struct;
+        public IJobConfigRequirements RequireDataForRead<TData>(AccessControlledValue<TData> data)
+            where TData : struct;
+        
+        /// <summary>
+        /// Specifies a generic struct to be written to in a shared-write context.
+        /// Sections of the struct will be written to by different threads at the same time.
+        /// </summary>
+        /// <param name="data">An <see cref="AccessControlledValue{T}"/> of the data to be written to.</param>
+        /// <typeparam name="TData">The struct inside the <see cref="AccessControlledValue{T}"/></typeparam>
+        /// <remarks>
+        /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
+        /// for use in your job.
+        /// </remarks>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
+        public IJobConfigRequirements RequireDataForWrite<TData>(AccessControlledValue<TData> data)
+            where TData : struct;
+        
+        /// <summary>
+        /// Specifies a generic struct to be written to in an exclusive-write context.
+        /// The entire struct will be written to by only one thread at a time.
+        /// </summary>
+        /// <param name="data">An <see cref="AccessControlledValue{T}"/> of the data to be written to.</param>
+        /// <typeparam name="TData">The struct inside the <see cref="AccessControlledValue{T}"/></typeparam>
+        /// <remarks>
+        /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
+        /// for use in your job.
+        /// </remarks>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
+        public IJobConfigRequirements RequireDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
+            where TData : struct;
         
         /// <summary>
         /// Specifies an <see cref="EntityQuery"/> to be transformed into a <see cref="NativeArray{Entity}"/> and read
@@ -91,17 +116,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireCDFEForRead<T>()
             where T : struct, IComponentData;
 
         /// <summary>
-        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-write context.
-        /// Note that it can also be read at the same time.
+        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in a shared-write context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>Reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireCDFEForUpdate<T>()
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
+        public IJobConfigRequirements RequireCDFEForWrite<T>()
             where T : struct, IComponentData;
     }
 }

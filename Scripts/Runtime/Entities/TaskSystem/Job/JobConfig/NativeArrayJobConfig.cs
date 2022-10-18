@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -8,12 +9,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public NativeArrayJobConfig(TaskFlowGraph taskFlowGraph,
                                     AbstractTaskSystem taskSystem,
                                     AbstractTaskDriver taskDriver,
-                                    NativeArray<T> nativeArray)
+                                    AccessControlledValue<NativeArray<T>> nativeArray)
             : base(taskFlowGraph,
                    taskSystem,
                    taskDriver)
         {
-            RequireNativeArrayForRead(nativeArray);
+            RequireDataForRead(nativeArray);
         }
     }
 }

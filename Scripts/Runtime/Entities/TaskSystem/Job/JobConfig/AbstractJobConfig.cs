@@ -19,11 +19,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal enum Usage
         {
             /// <summary>
+            /// The data is being written to exclusively.
+            /// Represents an Exclusive Write lock on the underlying data.
+            /// </summary>
+            ExclusiveWrite,
+
+            /// <summary>
             /// The data is being Updated. It will either continue to be processed again the next frame or be
             /// resolved into a resolve target <see cref="TaskStream{TInstance}"/>
             /// Represents an Exclusive Write lock on the underlying data.
             /// </summary>
-            Update,
+            //Duplicating this but making them the same so that the context of the code and docs makes sense but
+            //they mean the same thing
+            Update = ExclusiveWrite,
 
             /// <summary>
             /// The data is being written to.
@@ -107,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 m_AccessWrapperDependencies.Dispose();
             }
-            
+
             m_AccessWrappers.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
@@ -175,15 +183,33 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - NATIVE ARRAY
+        // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireNativeArrayForRead{T}"/>
-        public IJobConfigRequirements RequireNativeArrayForRead<T>(NativeArray<T> array)
-            where T : struct
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataForRead{TData}"/>
+        public IJobConfigRequirements RequireDataForRead<TData>(AccessControlledValue<TData> collection)
+            where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(NativeArray<T>), Usage.Read),
-                             new NativeArrayAccessWrapper<T>(array));
+            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Read),
+                             new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead));
+            return this;
+        }
+
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataForWrite{TData}"/>
+        public IJobConfigRequirements RequireDataForWrite<TData>(AccessControlledValue<TData> collection)
+            where TData : struct
+        {
+            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Write),
+                             new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite));
+            return this;
+        }
+        
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataForExclusiveWrite{TData}"/>
+        public IJobConfigRequirements RequireDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
+            where TData : struct
+        {
+            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.ExclusiveWrite),
+                             new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite));
             return this;
         }
 
@@ -226,7 +252,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
         //*************************************************************************************************************
-        
+
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForRead{T}"/>
         public IJobConfigRequirements RequireCDFEForRead<T>()
@@ -238,13 +264,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
-        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForUpdate{T}"/>
-        public IJobConfigRequirements RequireCDFEForUpdate<T>()
+
+        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForWrite{T}"/>
+        public IJobConfigRequirements RequireCDFEForWrite<T>()
             where T : struct, IComponentData
         {
             CDFEAccessWrapper<T> wrapper = new CDFEAccessWrapper<T>(AccessType.SharedWrite, TaskSystem);
-            AddAccessWrapper(new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Update),
+            AddAccessWrapper(new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Write),
                              wrapper);
 
             return this;
@@ -347,13 +373,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        internal NativeArray<T> GetNativeArray<T>(Usage usage)
-            where T : struct
+        internal TData GetData<TData>(Usage usage)
+            where TData : struct
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(NativeArray<T>), usage);
+            JobConfigDataID id = new JobConfigDataID(typeof(TData), usage);
             Debug_EnsureWrapperExists(id);
-            NativeArrayAccessWrapper<T> nativeArrayAccessWrapper = (NativeArrayAccessWrapper<T>)m_AccessWrappers[id];
-            return nativeArrayAccessWrapper.NativeArray;
+            GenericDataAccessWrapper<TData> genericDataAccessWrapper = (GenericDataAccessWrapper<TData>)m_AccessWrappers[id];
+            return genericDataAccessWrapper.Data;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery(Usage usage)
@@ -382,10 +408,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return cdfeAccessWrapper.CreateCDFEReader();
         }
 
-        internal CDFEUpdater<T> GetCDFEUpdater<T>()
+        internal CDFEWriter<T> GetCDFEWriter<T>()
             where T : struct, IComponentData
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Update);
+            JobConfigDataID id = new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Write);
             Debug_EnsureWrapperExists(id);
             CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
             return cdfeAccessWrapper.CreateCDFEUpdater();
