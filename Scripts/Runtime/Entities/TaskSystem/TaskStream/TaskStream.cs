@@ -4,13 +4,29 @@ using System.Diagnostics;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    public class DriverTaskStream<TInstance> : TaskStream<TInstance>
+        where TInstance : unmanaged, IEntityProxyInstance
+    {
+        internal DriverTaskStream(TaskStreamFlags flags) : base(flags)
+        {
+        }
+    }
+    
+    public class SystemTaskStream<TInstance> : TaskStream<TInstance>
+        where TInstance : unmanaged, IEntityProxyInstance
+    {
+        internal SystemTaskStream(TaskStreamFlags flags) : base(flags)
+        {
+        }
+    }
+
     /// <summary>
     /// Represents a stream of data for use in the task system via <see cref="AbstractTaskDriver"/> and/or
     /// <see cref="AbstractTaskSystem"/>.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in this stream</typeparam>
     // ReSharper disable once ClassNeverInstantiated.Global
-    public class TaskStream<TInstance> : AbstractTaskStream
+    public abstract class TaskStream<TInstance> : AbstractTaskStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
         internal EntityProxyDataStream<TInstance> DataStream { get; }

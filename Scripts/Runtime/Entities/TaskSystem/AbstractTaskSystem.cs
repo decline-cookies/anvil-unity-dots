@@ -199,7 +199,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(TaskStream<TInstance> taskStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(SystemTaskStream<TInstance> taskStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -216,7 +216,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return jobConfig;
         }
 
-        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(TaskStream<TInstance> taskStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(SystemTaskStream<TInstance> taskStream,
                                                                                    JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

@@ -140,7 +140,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobConfigs.Add(jobConfig);
         }
         
-        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(TaskStream<TInstance> taskStream,
+        //TODO: Should Task Drivers should have no jobs
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(DriverTaskStream<TInstance> taskStream,
                                                                          in JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -150,7 +151,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       scheduleJobFunction,
                                                       batchStrategy);
         }
-
+        
         public IJobConfigRequirements ConfigureJobTriggeredBy(EntityQuery entityQuery,
                                                               JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                               BatchStrategy batchStrategy)
