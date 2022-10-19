@@ -8,12 +8,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct, IComponentData
     {
         private readonly SystemBase m_System;
-        
-        internal class CDFEType
-        {
-        }
 
-        public CDFEAccessWrapper(AccessType accessType, SystemBase system) : base(accessType)
+        public CDFEAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
         {
             m_System = system;
         }

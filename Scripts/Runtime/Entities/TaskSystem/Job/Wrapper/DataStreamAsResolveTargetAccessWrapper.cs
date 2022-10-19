@@ -1,23 +1,17 @@
 using Anvil.Unity.DOTS.Jobs;
-using System;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class DataStreamAsResolveTargetAccessWrapper : AbstractAccessWrapper
+    internal class DataStreamAsResolveTargetAccessWrapper<TResolveTarget> : AbstractAccessWrapper
+        where TResolveTarget : unmanaged, IEntityProxyInstance
     {
-        public static DataStreamAsResolveTargetAccessWrapper Create<TResolveTarget>(ResolveTargetData[] resolveTargetData)
-            where TResolveTarget : unmanaged, IEntityProxyInstance
-        {
-            return new DataStreamAsResolveTargetAccessWrapper(resolveTargetData);
-        }
-
         private readonly ResolveTargetData[] m_ResolveTargetData;
         private NativeArray<JobHandle> m_Dependencies;
 
-        private DataStreamAsResolveTargetAccessWrapper(ResolveTargetData[] resolveTargetData) : base(AccessType.SharedWrite)
+        public DataStreamAsResolveTargetAccessWrapper(ResolveTargetData[] resolveTargetData, AbstractJobConfig.Usage usage) : base(AccessType.SharedWrite, usage)
+
         {
             m_ResolveTargetData = resolveTargetData;
             m_Dependencies = new NativeArray<JobHandle>(m_ResolveTargetData.Length, Allocator.Persistent);

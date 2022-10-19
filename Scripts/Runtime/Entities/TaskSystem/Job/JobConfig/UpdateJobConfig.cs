@@ -25,8 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private void RequireDataStreamForUpdate(TaskStream<TInstance> taskStream, CancelRequestsDataStream cancelRequestsDataStream)
         {
-            AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Update),
-                             new DataStreamAccessWrapper(taskStream.DataStream, AccessType.ExclusiveWrite));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(taskStream.DataStream, AccessType.ExclusiveWrite, Usage.Update));
 
             RequireRequestCancelDataStreamForRead(cancelRequestsDataStream);
 
@@ -38,8 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
         {
-            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Read),
-                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, byte.MaxValue));
+            AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, Usage.Read, byte.MaxValue));
         }
         
         private void RequireCancellableTaskStreamForWrite(TaskStream<TInstance> cancellableTaskStream)

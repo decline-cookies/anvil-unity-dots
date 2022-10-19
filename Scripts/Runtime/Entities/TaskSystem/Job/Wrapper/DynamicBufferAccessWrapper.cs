@@ -9,11 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly SystemBase m_System;
 
-        internal class DynamicBufferType
-        {
-        }
-
-        public DynamicBufferAccessWrapper(AccessType accessType, SystemBase system) : base(accessType)
+        public DynamicBufferAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
         {
             m_System = system;
         }
