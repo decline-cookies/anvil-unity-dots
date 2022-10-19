@@ -26,11 +26,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        
         // ReSharper disable once InconsistentNaming
         public Type Debug_WrapperType { get; private set; }
-#endif
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_SetWrapperType()
