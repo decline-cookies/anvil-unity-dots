@@ -25,8 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private void RequireDataStreamForCancelling(TaskStream<TInstance> taskStream)
         {
             Debug_EnsureCancellable(taskStream);
-            AddAccessWrapper(new JobConfigDataID(taskStream.PendingCancelDataStream, Usage.Cancelling),
-                             new DataStreamAccessWrapper(taskStream.PendingCancelDataStream, AccessType.ExclusiveWrite));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(taskStream.PendingCancelDataStream, AccessType.ExclusiveWrite, Usage.Cancelling));
         }
         
         //*************************************************************************************************************

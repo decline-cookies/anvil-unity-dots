@@ -4,24 +4,24 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class CDFEAccessWrapper<T> : AbstractAccessWrapper
-        where T : struct, IComponentData
+    internal class DynamicBufferAccessWrapper<T> : AbstractAccessWrapper
+        where T : struct, IBufferElementData
     {
         private readonly SystemBase m_System;
 
-        public CDFEAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
+        public DynamicBufferAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
         {
             m_System = system;
         }
 
-        public CDFEReader<T> CreateCDFEReader()
+        public DBFEForRead<T> CreateDynamicBufferReader()
         {
-            return new CDFEReader<T>(m_System);
+            return new DBFEForRead<T>(m_System);
         }
 
-        public CDFEWriter<T> CreateCDFEUpdater()
+        public DBFEForExclusiveWrite<T> CreateDynamicBufferExclusiveWriter()
         {
-            return new CDFEWriter<T>(m_System);
+            return new DBFEForExclusiveWrite<T>(m_System);
         }
 
         public override JobHandle Acquire()

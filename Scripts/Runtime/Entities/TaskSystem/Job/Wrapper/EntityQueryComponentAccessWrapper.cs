@@ -8,10 +8,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class EntityQueryComponentAccessWrapper<T> : AbstractAccessWrapper
         where T : struct, IComponentData
     {
-        internal class EntityQueryComponentType
-        {
-        }
-
         private readonly EntityQueryComponentNativeArray<T> m_EntityQueryNativeArray;
 
         public NativeArray<T> NativeArray
@@ -19,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => m_EntityQueryNativeArray.Results;
         }
 
-        public EntityQueryComponentAccessWrapper(EntityQueryComponentNativeArray<T> entityQueryNativeArray) : base(AccessType.SharedRead)
+        public EntityQueryComponentAccessWrapper(EntityQueryComponentNativeArray<T> entityQueryNativeArray, AbstractJobConfig.Usage usage) : base(AccessType.SharedRead, usage)
         {
             m_EntityQueryNativeArray = entityQueryNativeArray;
         }

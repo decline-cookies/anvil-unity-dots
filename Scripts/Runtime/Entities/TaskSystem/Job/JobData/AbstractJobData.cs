@@ -150,7 +150,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from in a job.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>The <see cref="GetCDFEReader{T}"/></returns>
+        /// <returns>The <see cref="CDFEReader{T}"/></returns>
         public CDFEReader<T> GetCDFEReader<T>()
             where T : struct, IComponentData
         {
@@ -161,11 +161,39 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from and write to in a job.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>The <see cref="GetCDFEUpdater{T}"/></returns>
-        public CDFEWriter<T> GetCDFEUpdater<T>()
+        /// <returns>The <see cref="CDFEWriter{T}"/></returns>
+        public CDFEWriter<T> GetCDFEWriter<T>()
             where T : struct, IComponentData
         {
             return m_JobConfig.GetCDFEWriter<T>();
         }
+        
+        //*************************************************************************************************************
+        // DYNAMIC BUFFER
+        //*************************************************************************************************************
+        
+        /// <summary>
+        /// Gets a <see cref="BufferFromEntity{T}"/> to read from in a job.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE</typeparam>
+        /// <returns>The <see cref="DBFEForRead{T}"/></returns>
+        public DBFEForRead<T> GetDBFEForRead<T>()
+            where T : struct, IBufferElementData
+        {
+            return m_JobConfig.GetDBFEForRead<T>();
+        }
+        
+        /// <summary>
+        /// Gets a <see cref="BufferFromEntity{T}"/> to read from and write to in a job.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE</typeparam>
+        /// <returns>The <see cref="DBFEForExclusiveWrite{T}"/></returns>
+        public DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
+            where T : struct, IBufferElementData
+        {
+            return m_JobConfig.GetDBFEForExclusiveWrite<T>();
+        }
+        
+        
     }
 }
