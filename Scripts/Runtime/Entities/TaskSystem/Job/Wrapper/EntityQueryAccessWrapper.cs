@@ -7,10 +7,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class EntityQueryAccessWrapper : AbstractAccessWrapper
     {
-        internal class EntityQueryType<TType>
-        {
-        }
-
         private readonly EntityQueryNativeArray m_EntityQueryNativeArray;
 
         public NativeArray<Entity> NativeArray
@@ -19,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        public EntityQueryAccessWrapper(EntityQueryNativeArray entityQueryNativeArray) : base(AccessType.SharedRead)
+        public EntityQueryAccessWrapper(EntityQueryNativeArray entityQueryNativeArray, AbstractJobConfig.Usage usage) : base(AccessType.SharedRead, usage)
         {
             m_EntityQueryNativeArray = entityQueryNativeArray;
         }

@@ -8,17 +8,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly AccessControlledValue<TData> m_AccessControlledData;
         private TData m_Data;
-        
+
         public TData Data
         {
             get => m_Data;
         }
 
-        public GenericDataAccessWrapper(AccessControlledValue<TData> data, AccessType accessType) : base(accessType)
+        public GenericDataAccessWrapper(AccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
             m_AccessControlledData = data;
         }
-        
+
         public sealed override JobHandle Acquire()
         {
             return m_AccessControlledData.AcquireAsync(AccessType, out m_Data);

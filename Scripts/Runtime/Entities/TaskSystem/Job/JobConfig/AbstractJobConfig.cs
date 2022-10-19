@@ -137,11 +137,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        protected void AddAccessWrapper(JobConfigDataID id, AbstractAccessWrapper accessWrapper)
+        protected void AddAccessWrapper(AbstractAccessWrapper accessWrapper)
         {
-            Debug_EnsureWrapperValidity(id);
-            Debug_EnsureWrapperUsage(id, accessWrapper);
-            m_AccessWrappers.Add(id, accessWrapper);
+            Debug_EnsureWrapperValidity(accessWrapper.ID);
+            Debug_EnsureWrapperUsage(accessWrapper);
+            m_AccessWrappers.Add(accessWrapper.ID, accessWrapper);
         }
 
         //*************************************************************************************************************
@@ -159,9 +159,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new JobConfigDataID(taskStream.DataStream, Usage.Read),
-                             new DataStreamAccessWrapper(taskStream.DataStream, AccessType.SharedRead));
-
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(taskStream.DataStream, AccessType.SharedRead, Usage.Read));
             return this;
         }
 
@@ -169,16 +167,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
             CancelRequestsDataStream cancelRequestsDataStream = taskDriver.CancelRequestsDataStream;
-            AddAccessWrapper(new JobConfigDataID(cancelRequestsDataStream, Usage.Write),
-                             new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, taskDriver.Context));
+            AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, Usage.Write, taskDriver.Context));
 
             return this;
         }
 
-        protected IJobConfigRequirements RequireDataStreamForWrite(AbstractEntityProxyDataStream dataStream, Usage usage)
+        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(EntityProxyDataStream<TInstance> dataStream, Usage usage)
+            where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new JobConfigDataID(dataStream, usage),
-                             new DataStreamAccessWrapper(dataStream, AccessType.SharedWrite));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage));
             return this;
         }
 
@@ -190,8 +187,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDataForRead<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Read),
-                             new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead, Usage.Read));
             return this;
         }
 
@@ -199,8 +195,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDataForWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.Write),
-                             new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Write));
             return this;
         }
         
@@ -208,8 +203,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new JobConfigDataID(typeof(TData), Usage.ExclusiveWrite),
-                             new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.ExclusiveWrite));
             return this;
         }
 
@@ -232,20 +226,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQueryNativeArray entityQueryNativeArray)
         {
-            EntityQueryAccessWrapper wrapper = new EntityQueryAccessWrapper(entityQueryNativeArray);
-            AddAccessWrapper(new JobConfigDataID(typeof(EntityQueryAccessWrapper.EntityQueryType<Entity>), Usage.Read),
-                             wrapper);
-
+            AddAccessWrapper(new EntityQueryAccessWrapper(entityQueryNativeArray, Usage.Read));
             return this;
         }
 
         protected IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
             where T : struct, IComponentData
         {
-            EntityQueryComponentAccessWrapper<T> wrapper = new EntityQueryComponentAccessWrapper<T>(entityQueryNativeArray);
-            AddAccessWrapper(new JobConfigDataID(typeof(EntityQueryComponentAccessWrapper<T>.EntityQueryComponentType), Usage.Read),
-                             wrapper);
-
+            AddAccessWrapper(new EntityQueryComponentAccessWrapper<T>(entityQueryNativeArray, Usage.Read));
             return this;
         }
 
@@ -258,10 +246,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireCDFEForRead<T>()
             where T : struct, IComponentData
         {
-            CDFEAccessWrapper<T> wrapper = new CDFEAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
-            AddAccessWrapper(new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Read),
-                             wrapper);
-
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Read, TaskSystem));
             return this;
         }
 
@@ -269,10 +254,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireCDFEForWrite<T>()
             where T : struct, IComponentData
         {
-            CDFEAccessWrapper<T> wrapper = new CDFEAccessWrapper<T>(AccessType.SharedWrite, TaskSystem);
-            AddAccessWrapper(new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Write),
-                             wrapper);
-
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Write, TaskSystem));
             return this;
         }
         
@@ -284,9 +266,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
-            DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, TaskSystem);
-            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Read),
-                             wrapper);
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Read, TaskSystem));
 
             return this;
         }
@@ -295,10 +275,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
-            DynamicBufferAccessWrapper<T> wrapper = new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, TaskSystem);
-            AddAccessWrapper(new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.ExclusiveWrite),
-                             wrapper);
-
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.ExclusiveWrite, TaskSystem));
             return this;
         }
 
@@ -372,28 +349,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return dependsOn;
         }
 
+        private TWrapper GetAccessWrapper<TWrapper>(Usage usage)
+            where TWrapper : AbstractAccessWrapper
+        {
+            JobConfigDataID id = new JobConfigDataID(typeof(TWrapper), usage);
+            Debug_EnsureWrapperExists(id);
+            return (TWrapper)m_AccessWrappers[id];
+        }
+
         internal EntityProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(EntityProxyDataStream<TInstance>), usage);
-            Debug_EnsureWrapperExists(id);
-            DataStreamAccessWrapper dataStreamAccessWrapper = (DataStreamAccessWrapper)m_AccessWrappers[id];
-            return (EntityProxyDataStream<TInstance>)dataStreamAccessWrapper.DataStream;
+            DataStreamAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamAccessWrapper<TInstance>>(usage);
+            return dataStreamAccessWrapper.DataStream;
         }
 
         internal CancelRequestsDataStream GetCancelRequestsDataStream(Usage usage)
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
-            Debug_EnsureWrapperExists(id);
-            CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
+            CancelRequestsAccessWrapper dataStreamAccessWrapper = GetAccessWrapper<CancelRequestsAccessWrapper>(usage);
             return dataStreamAccessWrapper.CancelRequestsDataStream;
         }
 
         internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestsDataStream dataStream, out byte context)
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(CancelRequestsDataStream), usage);
-            Debug_EnsureWrapperExists(id);
-            CancelRequestsAccessWrapper dataStreamAccessWrapper = (CancelRequestsAccessWrapper)m_AccessWrappers[id];
+            CancelRequestsAccessWrapper dataStreamAccessWrapper = GetAccessWrapper<CancelRequestsAccessWrapper>(usage);
             dataStream = dataStreamAccessWrapper.CancelRequestsDataStream;
             context = dataStreamAccessWrapper.Context;
         }
@@ -402,62 +381,48 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal TData GetData<TData>(Usage usage)
             where TData : struct
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(TData), usage);
-            Debug_EnsureWrapperExists(id);
-            GenericDataAccessWrapper<TData> genericDataAccessWrapper = (GenericDataAccessWrapper<TData>)m_AccessWrappers[id];
+            GenericDataAccessWrapper<TData> genericDataAccessWrapper = GetAccessWrapper<GenericDataAccessWrapper<TData>>(usage);
             return genericDataAccessWrapper.Data;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery(Usage usage)
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(EntityQueryAccessWrapper.EntityQueryType<Entity>), usage);
-            Debug_EnsureWrapperExists(id);
-            EntityQueryAccessWrapper entityQueryAccessWrapper = (EntityQueryAccessWrapper)m_AccessWrappers[id];
+            EntityQueryAccessWrapper entityQueryAccessWrapper = GetAccessWrapper<EntityQueryAccessWrapper>(usage);
             return entityQueryAccessWrapper.NativeArray;
         }
 
         internal NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>(Usage usage)
             where T : struct, IComponentData
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(EntityQueryComponentAccessWrapper<T>.EntityQueryComponentType), usage);
-            Debug_EnsureWrapperExists(id);
-            EntityQueryComponentAccessWrapper<T> entityQueryAccessWrapper = (EntityQueryComponentAccessWrapper<T>)m_AccessWrappers[id];
+            EntityQueryComponentAccessWrapper<T> entityQueryAccessWrapper = GetAccessWrapper<EntityQueryComponentAccessWrapper<T>>(usage);
             return entityQueryAccessWrapper.NativeArray;
         }
 
         internal CDFEReader<T> GetCDFEReader<T>()
             where T : struct, IComponentData
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Read);
-            Debug_EnsureWrapperExists(id);
-            CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
+            CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Read);
             return cdfeAccessWrapper.CreateCDFEReader();
         }
 
         internal CDFEWriter<T> GetCDFEWriter<T>()
             where T : struct, IComponentData
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(CDFEAccessWrapper<T>.CDFEType), Usage.Write);
-            Debug_EnsureWrapperExists(id);
-            CDFEAccessWrapper<T> cdfeAccessWrapper = (CDFEAccessWrapper<T>)m_AccessWrappers[id];
+            CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Write);
             return cdfeAccessWrapper.CreateCDFEUpdater();
         }
 
         internal DBFEForRead<T> GetDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.Read);
-            Debug_EnsureWrapperExists(id);
-            DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = (DynamicBufferAccessWrapper<T>)m_AccessWrappers[id];
+            DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Read);
             return dynamicBufferAccessWrapper.CreateDynamicBufferReader();
         }
         
         internal DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
-            JobConfigDataID id = new JobConfigDataID(typeof(DynamicBufferAccessWrapper<T>.DynamicBufferType), Usage.ExclusiveWrite);
-            Debug_EnsureWrapperExists(id);
-            DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = (DynamicBufferAccessWrapper<T>)m_AccessWrappers[id];
+            DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.ExclusiveWrite);
             return dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
         }
 
@@ -488,7 +453,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (!m_AccessWrappers.ContainsKey(id))
             {
-                throw new InvalidOperationException($"Job configured by {this} tried to access {id.Type.GetReadableName()} data for {id.Usage} but it wasn't found. Did you call the right Require function?");
+                throw new InvalidOperationException($"Job configured by {this} tried to access {id.AccessWrapperType.GetReadableName()} data for {id.Usage} but it wasn't found. Did you call the right Require function?");
             }
         }
 
@@ -498,43 +463,43 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Straight duplicate check
             if (m_AccessWrappers.ContainsKey(id))
             {
-                throw new InvalidOperationException($"{this} is trying to require {id.Type.GetReadableName()} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
+                throw new InvalidOperationException($"{this} is trying to require {id.AccessWrapperType.GetReadableName()} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
             }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperUsage(JobConfigDataID id, AbstractAccessWrapper wrapper)
+        private void Debug_EnsureWrapperUsage(AbstractAccessWrapper wrapper)
         {
-            if (wrapper is not DataStreamAccessWrapper)
+            if (wrapper.Debug_WrapperType != typeof(DataStreamAccessWrapper<>))
             {
                 return;
             }
 
             //Access checks
-            switch (id.Usage)
+            switch (wrapper.ID.Usage)
             {
                 case Usage.Update:
                     //While updating, the same type could be cancelling.
-                    Debug_EnsureWrapperUsageValid(id, Usage.WritePendingCancel);
+                    Debug_EnsureWrapperUsageValid(wrapper.ID, Usage.WritePendingCancel);
                     break;
                 case Usage.Write:
                     //Allowed to read while writing because we are writing to UnsafeTypedStream and reading from NativeArray
-                    Debug_EnsureWrapperUsageValid(id, Usage.Read);
+                    Debug_EnsureWrapperUsageValid(wrapper.ID, Usage.Read);
                     break;
                 case Usage.Read:
                     //Allowed to write while reading because we are writing to UnsafeTypedStream and reading from NativeArray
-                    Debug_EnsureWrapperUsageValid(id, Usage.Write);
+                    Debug_EnsureWrapperUsageValid(wrapper.ID, Usage.Write);
                     break;
                 case Usage.WritePendingCancel:
                     //We'll be updating when writing to cancel
-                    Debug_EnsureWrapperUsageValid(id, Usage.Update);
+                    Debug_EnsureWrapperUsageValid(wrapper.ID, Usage.Update);
                     break;
                 case Usage.Cancelling:
                     //When we're cancelling, we can read or write to others because we're operating on a different stream
-                    Debug_EnsureWrapperUsageValid(id, Usage.Read, Usage.Write);
+                    Debug_EnsureWrapperUsageValid(wrapper.ID, Usage.Read, Usage.Write);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException($"Trying to switch on {nameof(id.Usage)} but no code path satisfies for {id.Usage}!");
+                    throw new ArgumentOutOfRangeException($"Trying to switch on {nameof(wrapper.ID.Usage)} but no code path satisfies for {wrapper.ID.Usage}!");
             }
         }
 
@@ -550,10 +515,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     continue;
                 }
 
-                JobConfigDataID checkID = new JobConfigDataID(id.Type, usage);
+                JobConfigDataID checkID = new JobConfigDataID(id.AccessWrapperType, usage);
                 if (m_AccessWrappers.ContainsKey(checkID))
                 {
-                    throw new InvalidOperationException($"{this} is trying to require {id.Type.GetReadableName()} data for {id.Usage} but the same type is being used for {usage} which is not allowed!");
+                    throw new InvalidOperationException($"{this} is trying to require {id.AccessWrapperType.GetReadableName()} data for {id.Usage} but the same type is being used for {usage} which is not allowed!");
                 }
             }
         }

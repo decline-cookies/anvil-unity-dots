@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static bool operator ==(JobConfigDataID lhs, JobConfigDataID rhs)
         {
-            return lhs.Type == rhs.Type && lhs.Usage == rhs.Usage;
+            return lhs.AccessWrapperType == rhs.AccessWrapperType && lhs.Usage == rhs.Usage;
         }
 
         public static bool operator !=(JobConfigDataID lhs, JobConfigDataID rhs)
@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return !(lhs == rhs);
         }
         
-        public Type Type
+        public Type AccessWrapperType
         {
             get;
         }
@@ -25,13 +25,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get;
         }
 
-        public JobConfigDataID(AbstractDataStream dataStream, AbstractJobConfig.Usage usage) : this(dataStream.Type, usage)
+        public JobConfigDataID(Type accessWrapperType, AbstractJobConfig.Usage usage)
         {
-        }
-
-        public JobConfigDataID(Type type, AbstractJobConfig.Usage usage)
-        {
-            Type = type;
+            AccessWrapperType = accessWrapperType;
             Usage = usage;
         }
 
@@ -46,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode(Type.GetHashCode(), (int)Usage);
+            return HashCodeUtil.GetHashCode(AccessWrapperType.GetHashCode(), (int)Usage);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public byte Context { get; }
         
 
-        public CancelRequestsAccessWrapper(CancelRequestsDataStream cancelRequestsDataStream, AccessType accessType, byte context) : base(accessType)
+        public CancelRequestsAccessWrapper(CancelRequestsDataStream cancelRequestsDataStream, AccessType accessType, AbstractJobConfig.Usage usage, byte context) : base(accessType, usage)
         {
             CancelRequestsDataStream = cancelRequestsDataStream;
             Context = context;
