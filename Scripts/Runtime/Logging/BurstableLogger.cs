@@ -17,6 +17,11 @@ namespace Anvil.Unity.DOTS.Logging
     /// (usually <see cref="FixedString32Bytes" />)
     /// </typeparam>
     /// <remarks>
+    /// NOTE: Unlike <see cref="Logger"/> this logger is thread safe when burst compilation is enabled.
+    /// This is only possible because of the unique path that logs take through <see cref="UnityLogListener"/>
+    /// from a burst context.
+    /// TODO: #95
+    ///
     /// In the future, the goal of this type is to provide all the same information that
     /// <see cref="Log.Logger" /> provides. That is not possible with Burst today but should be
     /// possible in the future without making any changes at the consuming end. At the moment, the
