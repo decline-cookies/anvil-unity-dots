@@ -2,6 +2,7 @@ using Anvil.CSharp.Core;
 using Anvil.CSharp.Reflection;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using Anvil.CSharp.Logging;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
