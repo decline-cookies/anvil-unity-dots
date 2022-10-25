@@ -73,6 +73,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we can just have a Register method with overloads for each type: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995025025
             m_TaskFlowGraph.RegisterTaskSystem(this);
+            
+            //TODO: This isn't how we'll do things but hijacking for now
+            PropagateCancelSystem cancelSystem = world.GetExistingSystem<PropagateCancelSystem>();
+            cancelSystem.RegisterTaskSystem(this);
         }
 
         protected override void OnDestroy()
@@ -241,17 +245,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
+        internal JobHandle PropagateCancel(JobHandle dependsOn)
+        {
+            //TODO: We actually need to propagate the entire chain all the way through in one go at the beginning of Update
+            //All TaskDrivers consolidate their CancelRequestsDataStream which also writes into this system's CancelRequestsDataStream.
+            //At the same time, it will propagate the cancel request to any sub-task drivers
+            dependsOn = m_TaskDriversCancellationBulkJobScheduler.Schedule(dependsOn,
+                                                                           TaskDriverCancellationPropagator.CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION);
+
+            return dependsOn;
+        }
+
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
             //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
-
-            //All TaskDrivers consolidate their CancelRequestsDataStream which also writes into this system's CancelRequestsDataStream.
-            //At the same time, it will propagate the cancel request to any sub-task drivers
-            dependsOn = m_TaskDriversCancellationBulkJobScheduler.Schedule(dependsOn,
-                                                                           TaskDriverCancellationPropagator.CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION);
 
             //Consolidate system data so that it can be operated on. (Was populated on previous step)
             //The system data and the system's cancel requests can be consolidated in parallel

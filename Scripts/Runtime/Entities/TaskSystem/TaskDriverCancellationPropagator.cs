@@ -19,16 +19,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal static readonly BulkScheduleDelegate<TaskDriverCancellationPropagator> CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<TaskDriverCancellationPropagator>(nameof(ConsolidateAndPropagate), BindingFlags.Instance | BindingFlags.NonPublic);
     
         private readonly CancelRequestsDataStream m_TaskDriverCancelRequests;
-
-        private readonly CancelRequestsDataStream m_SystemCancelRequests;
-        private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_SystemPendingWriter;
         
-        private readonly List<CancelRequestsDataStream> m_SubTaskDriverCancelRequests;
-        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_SubTaskDriverPendingWriters;
-        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_SubTaskDriverPendingLaneWriters;
+        
+        private readonly List<CancelRequestsDataStream> m_CancelRequests;
+        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_CancelRequestsWriters;
+        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_CancelRequestsLaneWriters;
 
         private readonly int m_TaskDriverDependencyIndex;
-        private readonly int m_SystemDependencyIndex;
         private readonly int m_IncomingDependencyIndex;
         
         
@@ -36,31 +33,28 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public AbstractTaskDriver TaskDriver { get; }
 
-        public TaskDriverCancellationPropagator(AbstractTaskDriver taskDriver, 
-                                                CancelRequestsDataStream taskDriverCancelRequests, 
-                                                CancelRequestsDataStream systemCancelRequests, 
-                                                List<CancelRequestsDataStream> subTaskDriverCancelRequests)
+        public TaskDriverCancellationPropagator(AbstractTaskDriver taskDriver)
         {
             TaskDriver = taskDriver;
-            m_TaskDriverCancelRequests = taskDriverCancelRequests;
-
-            m_SystemCancelRequests = systemCancelRequests;
-            m_SystemPendingWriter = m_SystemCancelRequests.PendingRef.AsWriter();
+            m_TaskDriverCancelRequests = taskDriver.CancelRequestsDataStream;
             
-            m_SubTaskDriverCancelRequests = subTaskDriverCancelRequests;
-            m_SubTaskDriverPendingWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer>(m_SubTaskDriverCancelRequests.Count, Allocator.Persistent);
-            m_SubTaskDriverPendingLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(m_SubTaskDriverPendingWriters.Length, Allocator.Persistent);
-            for (int i = 0; i < m_SubTaskDriverPendingWriters.Length; ++i)
+            
+            m_CancelRequests = new List<CancelRequestsDataStream>();
+            m_CancelRequests.Add(taskDriver.TaskSystem.CancelRequestsDataStream);
+            taskDriver.AddCancelRequestsTo(m_CancelRequests);
+            
+            m_CancelRequestsWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer>(m_CancelRequests.Count, Allocator.Persistent);
+            m_CancelRequestsLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(m_CancelRequestsWriters.Length, Allocator.Persistent);
+            for (int i = 0; i < m_CancelRequestsWriters.Length; ++i)
             {
-                m_SubTaskDriverPendingWriters[i] = m_SubTaskDriverCancelRequests[i].PendingRef.AsWriter();
+                m_CancelRequestsWriters[i] = m_CancelRequests[i].PendingRef.AsWriter();
             }
 
-            int numSubDrivers = m_SubTaskDriverCancelRequests.Count;
+            int numSubDrivers = m_CancelRequests.Count;
             
-            m_Dependencies = new NativeArray<JobHandle>(numSubDrivers + 3, Allocator.Persistent);
-            m_SystemDependencyIndex = numSubDrivers;
-            m_TaskDriverDependencyIndex = numSubDrivers + 1;
-            m_IncomingDependencyIndex = numSubDrivers + 2;
+            m_Dependencies = new NativeArray<JobHandle>(numSubDrivers + 2, Allocator.Persistent);
+            m_TaskDriverDependencyIndex = numSubDrivers;
+            m_IncomingDependencyIndex = numSubDrivers + 1;
         }
 
         protected override void DisposeSelf()
@@ -70,41 +64,39 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_Dependencies.Dispose();
             }
 
-            if (m_SubTaskDriverPendingWriters.IsCreated)
+            if (m_CancelRequestsWriters.IsCreated)
             {
-                m_SubTaskDriverPendingWriters.Dispose();
+                m_CancelRequestsWriters.Dispose();
             }
 
-            if (m_SubTaskDriverPendingLaneWriters.IsCreated)
+            if (m_CancelRequestsLaneWriters.IsCreated)
             {
-                m_SubTaskDriverPendingLaneWriters.Dispose();
+                m_CancelRequestsLaneWriters.Dispose();
             }
             base.DisposeSelf();
         }
 
         private JobHandle ConsolidateAndPropagate(JobHandle dependsOn)
         {
-            for (int i = 0; i < m_SubTaskDriverCancelRequests.Count; ++i)
+            for (int i = 0; i < m_CancelRequests.Count; ++i)
             {
-                m_Dependencies[i] = m_SubTaskDriverCancelRequests[i].AccessController.AcquireAsync(AccessType.SharedWrite);
+                m_Dependencies[i] = m_CancelRequests[i].AccessController.AcquireAsync(AccessType.SharedWrite);
             }
-
-            m_Dependencies[m_SystemDependencyIndex] = m_SystemCancelRequests.AccessController.AcquireAsync(AccessType.SharedWrite);
+            
             m_Dependencies[m_TaskDriverDependencyIndex] = m_TaskDriverCancelRequests.AccessController.AcquireAsync(AccessType.SharedRead);
             m_Dependencies[m_IncomingDependencyIndex] = dependsOn;
             
-            ConsolidateAndPropagateCancelRequestsJob job = new ConsolidateAndPropagateCancelRequestsJob(ref m_TaskDriverCancelRequests.PendingRef,
+            ConsolidateAndPropagateCancelRequestsJob job = new ConsolidateAndPropagateCancelRequestsJob(ref m_TaskDriverCancelRequests.TriggerRef,
                                                                                                         ref m_TaskDriverCancelRequests.LookupRef,
-                                                                                                        m_SystemPendingWriter,
-                                                                                                        m_SubTaskDriverPendingWriters,
-                                                                                                        m_SubTaskDriverPendingLaneWriters);
+                                                                                                        m_CancelRequestsWriters,
+                                                                                                        m_CancelRequestsLaneWriters,
+                                                                                                        new FixedString64Bytes(TaskDriver.ToString()));
             dependsOn = job.Schedule(JobHandle.CombineDependencies(m_Dependencies));
 
-            foreach (CancelRequestsDataStream cancelStream in m_SubTaskDriverCancelRequests)
+            foreach (CancelRequestsDataStream cancelStream in m_CancelRequests)
             {
                 cancelStream.AccessController.ReleaseAsync(dependsOn);
             }
-            m_SystemCancelRequests.AccessController.ReleaseAsync(dependsOn);
             m_TaskDriverCancelRequests.AccessController.ReleaseAsync(dependsOn);
             
             return dependsOn;
@@ -119,55 +111,61 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
             
-            [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
+            [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_Trigger;
             private UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_Lookup;
-
-            private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_PendingSystemWriter;
+            
             private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_PendingSubTaskDriverWriters;
             private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_PendingSubTaskDriverLaneWriters;
 
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
+            
+            //TODO: REMOVE
+            private readonly FixedString64Bytes m_TaskDriverName;
 
-            public ConsolidateAndPropagateCancelRequestsJob(ref UnsafeTypedStream<EntityProxyInstanceID> pending,
+            public ConsolidateAndPropagateCancelRequestsJob(ref UnsafeTypedStream<EntityProxyInstanceID> trigger,
                                                             ref UnsafeParallelHashMap<EntityProxyInstanceID, byte> lookup,
-                                                            UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingSystemWriter,
                                                             NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> pendingSubTaskDriverWriters,
-                                                            NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> pendingSubTaskDriverLaneWriters)
+                                                            NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> pendingSubTaskDriverLaneWriters,
+                                                            FixedString64Bytes taskDriverName)
             {
-                m_Pending = pending;
+                m_Trigger = trigger;
                 m_Lookup = lookup;
-                m_PendingSystemWriter = pendingSystemWriter;
                 m_PendingSubTaskDriverWriters = pendingSubTaskDriverWriters;
                 m_PendingSubTaskDriverLaneWriters = pendingSubTaskDriverLaneWriters;
                 
                 m_NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
+                
+                m_TaskDriverName = taskDriverName;
             }
 
             public void Execute()
             {
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
                 
-                UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter pendingSystemLaneWriter = m_PendingSystemWriter.AsLaneWriter(laneIndex);
                 for (int i = 0; i < m_PendingSubTaskDriverWriters.Length; ++i)
                 {
                     m_PendingSubTaskDriverLaneWriters[i] = m_PendingSubTaskDriverWriters[i].AsLaneWriter(laneIndex);
                 }
 
                 m_Lookup.Clear();
+                
+                if (m_Trigger.Count() > 0)
+                {
+                    UnityEngine.Debug.Log($"Propagating Cancel for {m_TaskDriverName}");
+                }
 
-                foreach (EntityProxyInstanceID proxyInstanceID in m_Pending)
+                foreach (EntityProxyInstanceID proxyInstanceID in m_Trigger)
                 {
                     Debug_EnsureNoDuplicates(proxyInstanceID);
                     m_Lookup.TryAdd(proxyInstanceID, 1);
                     
-                    pendingSystemLaneWriter.Write(proxyInstanceID);
                     for (int i = 0; i < m_PendingSubTaskDriverLaneWriters.Length; ++i)
                     {
                         m_PendingSubTaskDriverLaneWriters[i].Write(proxyInstanceID);
                     }
                 }
 
-                m_Pending.Clear();
+                m_Trigger.Clear();
             }
             
             //*************************************************************************************************************

@@ -129,6 +129,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     {
                         if (!updater.TryGetInstanceIfNotRequestedToCancel(i, out TInstance instance))
                         {
+                            UnityEngine.Debug.Log($"Not updating {instance} due to being cancelled.");
                             continue;
                         }
                         jobData.Execute(ref instance, ref updater);

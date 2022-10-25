@@ -50,8 +50,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public FixedString64Bytes ToFixedString()
         {
             FixedString64Bytes fs = new FixedString64Bytes();
+            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
             fs.Append(m_Entity.ToFixedString());
-            fs.Append(" - Context: ");
+            fs.Append((FixedString32Bytes)" - Context: ");
             fs.Append(Context);
             return fs;
         }

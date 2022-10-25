@@ -13,11 +13,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
 
+        private UnsafeTypedStream<EntityProxyInstanceID> m_Trigger;
         private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
         private UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_Lookup;
 
         public CancelRequestsDataStream()
         {
+            m_Trigger = new UnsafeTypedStream<EntityProxyInstanceID>(Allocator.Persistent);
             m_Pending = new UnsafeTypedStream<EntityProxyInstanceID>(Allocator.Persistent);
             m_Lookup = new UnsafeParallelHashMap<EntityProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
@@ -25,6 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void DisposeSelf()
         {
             AccessController.Acquire(AccessType.Disposal);
+            m_Trigger.Dispose();
             m_Pending.Dispose();
             m_Lookup.Dispose();
 
@@ -50,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal CancelRequestsWriter CreateCancelRequestsWriter(byte context)
         {
-            return new CancelRequestsWriter(m_Pending.AsWriter(), context);
+            return new CancelRequestsWriter(m_Trigger.AsWriter(), context);
         }
 
         //*************************************************************************************************************
@@ -67,6 +70,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AccessController.ReleaseAsync(consolidateHandle);
 
             return consolidateHandle;
+        }
+        
+        internal ref UnsafeTypedStream<EntityProxyInstanceID> TriggerRef
+        {
+            get => ref m_Trigger;
         }
 
         internal ref UnsafeTypedStream<EntityProxyInstanceID> PendingRef
@@ -99,13 +107,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public void Execute()
             {
                 m_Lookup.Clear();
-
+                
                 foreach (EntityProxyInstanceID proxyInstanceID in m_Pending)
                 {
                     Debug_EnsureNoDuplicates(proxyInstanceID);
                     m_Lookup.TryAdd(proxyInstanceID, 1);
                 }
-
+                
                 m_Pending.Clear();
             }
             

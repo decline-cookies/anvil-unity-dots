@@ -1,3 +1,4 @@
+using Anvil.CSharp.Reflection;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
@@ -88,7 +89,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateJob consolidateJob = new ConsolidateJob(m_Pending,
-                                                               m_IterationTarget);
+                                                               m_IterationTarget,
+                                                               new FixedString64Bytes(typeof(TInstance).GetReadableName()));
             JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(dependsOn, exclusiveWriteHandle));
 
             AccessController.ReleaseAsync(consolidateHandle);
@@ -105,12 +107,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
             private DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
+            private readonly FixedString64Bytes m_TypeName;
 
             public ConsolidateJob(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> pending,
-                                  DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> iteration)
+                                  DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> iteration,
+                                  FixedString64Bytes typeName)
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
+                m_TypeName = typeName;
             }
 
             public void Execute()
@@ -120,6 +125,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 NativeArray<EntityProxyInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();
+
+                if (iterationArray.Length > 0)
+                {
+                    UnityEngine.Debug.Log($"Consolidate for {m_TypeName} complete with {iterationArray.Length}");
+                }
             }
         }
     }

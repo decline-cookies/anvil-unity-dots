@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Reference to the associated <typeparamref name="TTaskSystem"/>
         /// Hides the base reference to the abstract version.
         /// </summary>
-        public new TTaskSystem TaskSystem
+        protected new TTaskSystem TaskSystem
         {
             get => (TTaskSystem)base.TaskSystem;
         }
@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Reference to the associated <see cref="AbstractTaskSystem"/>
         /// </summary>
-        public AbstractTaskSystem TaskSystem { get; }
+        internal AbstractTaskSystem TaskSystem { get; }
         
         /// <summary>
         /// Reference to the associated <see cref="World"/>
@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return GetType().GetReadableName();
+            return $"{GetType().GetReadableName()}|{Context}";
         }
 
         internal void Harden()
@@ -114,23 +114,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 jobConfig.Harden();
             }
 
-            CancellationPropagator = new TaskDriverCancellationPropagator(this,
-                                                                          CancelRequestsDataStream,
-                                                                          TaskSystem.CancelRequestsDataStream,
-                                                                          GetSubTaskDriverCancelRequests());
+            CancellationPropagator = new TaskDriverCancellationPropagator(this);
         }
 
-        private List<CancelRequestsDataStream> GetSubTaskDriverCancelRequests()
+        internal void AddCancelRequestsTo(List<CancelRequestsDataStream> cancelRequests)
         {
-            List<CancelRequestsDataStream> cancelRequestsDataStreams = new List<CancelRequestsDataStream>();
             foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
             {
-                cancelRequestsDataStreams.Add(subTaskDriver.CancelRequestsDataStream);
+                cancelRequests.Add(subTaskDriver.CancelRequestsDataStream);
+                cancelRequests.Add(subTaskDriver.TaskSystem.CancelRequestsDataStream);
+                subTaskDriver.AddCancelRequestsTo(cancelRequests);
             }
-
-            return cancelRequestsDataStreams;
         }
-        
+
         //*************************************************************************************************************
         // CONFIGURATION
         //*************************************************************************************************************
