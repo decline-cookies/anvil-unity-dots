@@ -1,6 +1,7 @@
 using Anvil.CSharp.Reflection;
 using System;
 using System.Diagnostics;
+using Anvil.CSharp.Logging;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
