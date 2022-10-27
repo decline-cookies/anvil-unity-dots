@@ -38,13 +38,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_TaskSystems.Add(taskSystem);
             RegisterCancelRequestsDataStream(taskSystem.CancelRequestsDataStream, taskSystem, null);
-            RegisterTaskStreams(taskSystem.TaskStreams, taskSystem, null);
+            RegisterDataStreams(taskSystem.DataStreams, taskSystem, null);
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             RegisterCancelRequestsDataStream(taskDriver.CancelRequestsDataStream, taskDriver.TaskSystem, taskDriver);
-            RegisterTaskStreams(taskDriver.TaskStreams, taskDriver.TaskSystem, taskDriver);
+            RegisterDataStreams(taskDriver.DataStreams, taskDriver.TaskSystem, taskDriver);
         }
 
         //*************************************************************************************************************
@@ -57,12 +57,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             lookup.CreateCancelRequestsNode(cancelRequestsDataStream);
         }
 
-        private void RegisterTaskStreams(List<AbstractTaskStream> taskStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterDataStreams(List<AbstractEntityProxyDataStream> dataStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            foreach (AbstractTaskStream taskStream in taskStreams)
+            foreach (AbstractEntityProxyDataStream dataStream in dataStreams)
             {
-                lookup.CreateDataStreamNodes(taskStream);
+                lookup.CreateDataStreamNodes(dataStream);
             }
         }
 

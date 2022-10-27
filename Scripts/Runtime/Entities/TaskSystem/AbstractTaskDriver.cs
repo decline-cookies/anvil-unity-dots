@@ -60,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public World World { get; }
 
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
-        internal List<AbstractTaskStream> TaskStreams { get; }
+        internal List<AbstractEntityProxyDataStream> DataStreams { get; }
         internal TaskDriverCancellationPropagator CancellationPropagator { get; private set; }
 
         protected AbstractTaskDriver(World world, Type systemType)
@@ -73,12 +73,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Context = TaskSystem.RegisterTaskDriver(this);
             
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
-            TaskStreams = new List<AbstractTaskStream>();
+            DataStreams = new List<AbstractEntityProxyDataStream>();
             m_JobConfigs = new List<AbstractJobConfig>();
             
-            TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
-
+            DataStreamFactory.CreateDataStreams(this, DataStreams);
             TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers);
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
@@ -91,7 +90,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //We own our sub task drivers so dispose them
             m_SubTaskDrivers.DisposeAllAndTryClear();
             //Dispose all the data we own
-            TaskStreams.DisposeAllAndTryClear();
+            DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
             CancelRequestsDataStream.Dispose();
             CancellationPropagator?.Dispose();
@@ -137,7 +136,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
         
         //TODO: Should Task Drivers should have no jobs
-        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(DriverTaskStream<TInstance> taskStream,
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(EntityProxyDataStream<TInstance> taskStream,
                                                                          in JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

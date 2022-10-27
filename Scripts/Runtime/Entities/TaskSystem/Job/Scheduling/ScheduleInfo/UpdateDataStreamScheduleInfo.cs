@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// Specific scheduling information for a <see cref="UpdateJobConfig{TInstance}"/>
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
-    public class UpdateTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo
+    public class UpdateDataStreamScheduleInfo<TInstance> : AbstractScheduleInfo
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly UpdateJobData<TInstance> m_JobData;
@@ -20,14 +20,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal DataStreamUpdater<TInstance> Updater
         {
-            get
-            {
-                CancelRequestsReader cancelRequestsReader = m_JobData.GetCancelRequestsReader();
-                return m_JobData.GetDataStreamUpdater(cancelRequestsReader);
-            }
+            get => m_JobData.GetDataStreamUpdater();
         }
 
-        internal UpdateTaskStreamScheduleInfo(UpdateJobData<TInstance> jobData,
+        internal UpdateDataStreamScheduleInfo(UpdateJobData<TInstance> jobData,
                                               EntityProxyDataStream<TInstance> dataStream,
                                               BatchStrategy batchStrategy,
                                               JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction)

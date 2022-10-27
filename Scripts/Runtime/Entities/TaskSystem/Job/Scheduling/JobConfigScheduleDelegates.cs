@@ -11,12 +11,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         /// <summary>
         /// For scheduling a job triggered by a <see cref="TaskStream{TInstance}"/> from
-        /// a <see cref="TaskStreamJobConfig{TInstance}"/>
+        /// a <see cref="DataStreamJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleTaskStreamJobDelegate<TInstance>(JobHandle jobHandle,
-                                                                           TaskStreamJobData<TInstance> jobData,
-                                                                           TaskStreamScheduleInfo<TInstance> scheduleInfo)
+                                                                           DataStreamJobData<TInstance> jobData,
+                                                                           DataStreamScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(JobHandle jobHandle,
                                                                        UpdateJobData<TInstance> jobData,
-                                                                       UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo)
+                                                                       UpdateDataStreamScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle,
                                                                        CancelJobData<TInstance> jobData,
-                                                                       CancelTaskStreamScheduleInfo<TInstance> scheduleInfo)
+                                                                       CancelDataStreamScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
     }
 }

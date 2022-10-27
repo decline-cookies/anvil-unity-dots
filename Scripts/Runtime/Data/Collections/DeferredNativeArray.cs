@@ -314,6 +314,12 @@ namespace Anvil.Unity.DOTS.Data
             return jobHandle;
         }
 
+        public unsafe void ResetLengthTo(int newLength)
+        {
+            Debug.Assert(m_BufferInfo != null);
+            m_BufferInfo->Length = newLength;
+        }
+
         /// <summary>
         /// Creates the actual array for when you know the length.
         /// Usually inside a job.

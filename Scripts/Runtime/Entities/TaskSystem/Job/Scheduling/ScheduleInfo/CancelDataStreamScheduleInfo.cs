@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// Specific scheduling information for a <see cref="CancelJobConfig{TInstance}"/>
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
-    public class CancelTaskStreamScheduleInfo<TInstance> : AbstractScheduleInfo
+    public class CancelDataStreamScheduleInfo<TInstance> : AbstractScheduleInfo
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly CancelJobData<TInstance> m_JobData;
@@ -24,8 +24,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => m_JobData.GetDataStreamCancellationUpdater();
         }
 
-        internal CancelTaskStreamScheduleInfo(CancelJobData<TInstance> jobData,
-                                              EntityProxyDataStream<TInstance> dataStream,
+        internal CancelDataStreamScheduleInfo(CancelJobData<TInstance> jobData,
+                                              PendingCancelEntityProxyDataStream<TInstance> pendingCancelDataStream,
                                               BatchStrategy batchStrategy,
                                               JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;
 
-            DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
+            DeferredNativeArrayScheduleInfo = pendingCancelDataStream.ScheduleInfo;
         }
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)

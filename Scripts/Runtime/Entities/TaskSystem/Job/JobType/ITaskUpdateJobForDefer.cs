@@ -28,6 +28,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <param name="instance">The <see cref="IEntityProxyInstance"/> to update.</param>
         /// <param name="updater">A helper struct to continue or resolve</param>
-        void Execute(ref TInstance instance, ref DataStreamUpdater<TInstance> updater);
+        void Execute(TInstance instance, ref DataStreamUpdater<TInstance> updater);
     }
 }

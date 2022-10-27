@@ -74,6 +74,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return reader;
         }
         
+        //TODO: Is this still necessary?
         internal CancelRequestsReader GetCancelRequestsReader()
         {
             CancelRequestsDataStream cancelRequestsDataStream = m_JobConfig.GetCancelRequestsDataStream(AbstractJobConfig.Usage.Read);
@@ -89,7 +90,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <typeparam name="TData">The type of data to read from.</typeparam>
         /// <returns>The <typeparamref name="TData"/> to read from.</returns>
-        public TData GetDataForReading<TData>()
+        public TData GetGenericDataForReading<TData>()
             where TData : struct
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Read);
@@ -100,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <typeparam name="TData">The type of data to write to.</typeparam>
         /// <returns>The <typeparamref name="TData"/> to write to.</returns>
-        public TData GetDataForWriting<TData>()
+        public TData GetGenericDataForWriting<TData>()
             where TData : struct
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Write);
@@ -111,7 +112,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         /// <typeparam name="TData">The type of data to write to.</typeparam>
         /// <returns>The <typeparamref name="TData"/> to write to.</returns>
-        public TData GetDataForExclusiveWriting<TData>()
+        public TData GetGenericDataForExclusiveWriting<TData>()
             where TData : struct
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.ExclusiveWrite);

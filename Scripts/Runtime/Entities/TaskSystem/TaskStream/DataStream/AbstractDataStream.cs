@@ -5,7 +5,7 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract class AbstractDataStream : AbstractAnvilBase
+    public abstract class AbstractDataStream : AbstractAnvilBase
     {
         public Type Type { get; }
 

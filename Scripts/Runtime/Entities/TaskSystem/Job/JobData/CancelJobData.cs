@@ -22,8 +22,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
         {
-            EntityProxyDataStream<TInstance> dataStream = m_CancelJobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
-            DataStreamCancellationUpdater<TInstance> cancellationUpdater = dataStream.CreateDataStreamCancellationUpdater(m_CancelJobConfig.GetDataStreamChannelResolver());
+            PendingCancelEntityProxyDataStream<TInstance> pendingCancelEntityProxyDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
+            DataStreamTargetResolver dataStreamTargetResolver = m_CancelJobConfig.GetDataStreamTargetResolver();
+            DataStreamCancellationUpdater<TInstance> cancellationUpdater = pendingCancelEntityProxyDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver);
             return cancellationUpdater;
         }
     }

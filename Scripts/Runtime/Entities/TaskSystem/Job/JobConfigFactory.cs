@@ -15,8 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,
-                                                                                  TaskStream<TInstance> taskStream,
-                                                                                  CancelRequestsDataStream cancelRequestsDataStream,
+                                                                                  EntityProxyDataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -24,15 +23,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             UpdateJobConfig<TInstance> jobConfig = new UpdateJobConfig<TInstance>(taskFlowGraph,
                                                                                   taskSystem,
                                                                                   taskDriver,
-                                                                                  taskStream,
-                                                                                  cancelRequestsDataStream);
+                                                                                  dataStream);
 
             UpdateJobData<TInstance> jobData = new UpdateJobData<TInstance>(jobConfig,
                                                                             taskSystem.World,
                                                                             taskDriver?.Context ?? taskSystem.Context);
 
-            UpdateTaskStreamScheduleInfo<TInstance> scheduleInfo = new UpdateTaskStreamScheduleInfo<TInstance>(jobData,
-                                                                                                               taskStream.DataStream,
+            UpdateDataStreamScheduleInfo<TInstance> scheduleInfo = new UpdateDataStreamScheduleInfo<TInstance>(jobData,
+                                                                                                               dataStream,
                                                                                                                batchStrategy,
                                                                                                                scheduleJobFunction);
 
@@ -42,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,
-                                                                                  TaskStream<TInstance> taskStream,
+                                                                                  EntityProxyDataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -50,38 +48,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskFlowGraph,
                                                                                   taskSystem,
                                                                                   taskDriver,
-                                                                                  taskStream);
+                                                                                  dataStream.PendingCancelDataStream);
 
             CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig,
                                                                             taskSystem.World,
                                                                             taskDriver?.Context ?? taskSystem.Context);
 
-            CancelTaskStreamScheduleInfo<TInstance> scheduleInfo = new CancelTaskStreamScheduleInfo<TInstance>(jobData,
-                                                                                                               taskStream.PendingCancelDataStream,
+            CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
+                                                                                                               dataStream.PendingCancelDataStream,
                                                                                                                batchStrategy,
                                                                                                                scheduleJobFunction);
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
-        public static TaskStreamJobConfig<TInstance> CreateTaskStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
+        public static DataStreamJobConfig<TInstance> CreateTaskStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                           AbstractTaskSystem taskSystem,
                                                                                           AbstractTaskDriver taskDriver,
-                                                                                          TaskStream<TInstance> taskStream,
+                                                                                          EntityProxyDataStream<TInstance> dataStream,
                                                                                           JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            TaskStreamJobConfig<TInstance> jobConfig = new TaskStreamJobConfig<TInstance>(taskFlowGraph,
+            DataStreamJobConfig<TInstance> jobConfig = new DataStreamJobConfig<TInstance>(taskFlowGraph,
                                                                                           taskSystem,
                                                                                           taskDriver,
-                                                                                          taskStream);
+                                                                                          dataStream);
 
-            TaskStreamJobData<TInstance> jobData = new TaskStreamJobData<TInstance>(jobConfig,
+            DataStreamJobData<TInstance> jobData = new DataStreamJobData<TInstance>(jobConfig,
                                                                                     taskSystem.World,
                                                                                     taskDriver?.Context ?? taskSystem.Context);
 
-            TaskStreamScheduleInfo<TInstance> scheduleInfo = new TaskStreamScheduleInfo<TInstance>(jobData,
-                                                                                                   taskStream.DataStream,
+            DataStreamScheduleInfo<TInstance> scheduleInfo = new DataStreamScheduleInfo<TInstance>(jobData,
+                                                                                                   dataStream,
                                                                                                    batchStrategy,
                                                                                                    scheduleJobFunction);
 

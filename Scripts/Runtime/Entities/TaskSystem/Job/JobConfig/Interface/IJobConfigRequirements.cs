@@ -13,21 +13,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Specifies a <see cref="TaskStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
-        /// <param name="taskStream">The <see cref="TaskStream{TInstance}"/> to write to.</param>
+        /// <param name="dataStream">The <see cref="TaskStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(EntityProxyDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
         /// Specifies a <see cref="TaskStream{TInstance}"/> to be read from in a shared-read context.
         /// </summary>
-        /// <param name="taskStream">The <see cref="TaskStream{TInstance}"/> to read from.</param>
+        /// <param name="dataStream">The <see cref="TaskStream{TInstance}"/> to read from.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(EntityProxyDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataForRead<TData>(AccessControlledValue<TData> data)
+        public IJobConfigRequirements RequireGenericDataForRead<TData>(AccessControlledValue<TData> data)
             where TData : struct;
         
         /// <summary>
@@ -54,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataForWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfigRequirements RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
         
         /// <summary>
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfigRequirements RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
         
         /// <summary>

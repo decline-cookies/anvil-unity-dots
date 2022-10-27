@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
-                                                                         CancelTaskStreamScheduleInfo<TInstance> scheduleInfo,
+                                                                         CancelDataStreamScheduleInfo<TInstance> scheduleInfo,
                                                                          JobHandle dependsOn = default)
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
@@ -73,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
             public WrapperJobStruct(ref TJob jobData,
-                                    ref CancelTaskStreamScheduleInfo<TInstance> scheduleInfo)
+                                    ref CancelDataStreamScheduleInfo<TInstance> scheduleInfo)
             {
                 JobData = jobData;
                 CancellationUpdater = scheduleInfo.CancellationUpdater;

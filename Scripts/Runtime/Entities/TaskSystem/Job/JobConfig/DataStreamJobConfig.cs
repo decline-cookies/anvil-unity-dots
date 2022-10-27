@@ -1,17 +1,17 @@
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class TaskStreamJobConfig<TInstance> : AbstractJobConfig
+    internal class DataStreamJobConfig<TInstance> : AbstractJobConfig
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        public TaskStreamJobConfig(TaskFlowGraph taskFlowGraph,
+        public DataStreamJobConfig(TaskFlowGraph taskFlowGraph,
                                    AbstractTaskSystem taskSystem,
                                    AbstractTaskDriver taskDriver,
-                                   TaskStream<TInstance> taskStream)
+                                   EntityProxyDataStream<TInstance> dataStream)
             : base(taskFlowGraph,
                    taskSystem,
                    taskDriver)
         {
-            RequireTaskStreamForRead(taskStream);
+            RequireDataStreamForRead(dataStream);
         }
     }
 }

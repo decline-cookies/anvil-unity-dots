@@ -8,12 +8,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in
     /// the <see cref="TaskStream{TInstance}"/></typeparam>
-    public class TaskStreamJobData<TInstance> : AbstractJobData
+    public class DataStreamJobData<TInstance> : AbstractJobData
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        private readonly TaskStreamJobConfig<TInstance> m_JobConfig;
+        private readonly DataStreamJobConfig<TInstance> m_JobConfig;
 
-        internal TaskStreamJobData(TaskStreamJobConfig<TInstance> jobConfig, World world, byte context) : base(world, context, jobConfig)
+        internal DataStreamJobData(DataStreamJobConfig<TInstance> jobConfig, World world, byte context) : base(world, context, jobConfig)
         {
             m_JobConfig = jobConfig;
         }

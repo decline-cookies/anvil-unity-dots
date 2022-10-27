@@ -17,31 +17,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_ContinueWriter;
-        [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingCancelWriter;
         [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
-        [ReadOnly] private readonly bool m_HasCancelPath;
-        [ReadOnly] private CancelRequestsReader m_CancelRequestsReader;
         [ReadOnly] private DataStreamTargetResolver m_DataStreamTargetResolver;
 
 
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
-        private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingCancelLaneWriter;
         private int m_LaneIndex;
         private byte m_CurrentContext;
 
         internal DataStreamUpdater(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer continueWriter,
                                    NativeArray<EntityProxyInstanceWrapper<TInstance>> iteration,
-                                   CancelRequestsReader cancelRequestsReader,
-                                   UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingCancelWriter,
                                    DataStreamTargetResolver dataStreamTargetResolver) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
-            m_CancelRequestsReader = cancelRequestsReader;
-            m_PendingCancelWriter = pendingCancelWriter;
             m_DataStreamTargetResolver = dataStreamTargetResolver;
-
-            m_HasCancelPath = m_PendingCancelWriter.IsCreated;
 
             m_ContinueLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -65,11 +55,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_ContinueLaneWriter = m_ContinueWriter.AsLaneWriter(m_LaneIndex);
-
-            if (m_HasCancelPath)
-            {
-                m_PendingCancelLaneWriter = m_PendingCancelWriter.AsLaneWriter(m_LaneIndex);
-            }
         }
 
 
@@ -106,31 +91,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                m_LaneIndex,
                                                ref resolvedInstance);
         }
-
-        private void WriteToPendingCancel(ref EntityProxyInstanceWrapper<TInstance> wrapper)
+        
+        internal TInstance this[int index]
         {
-            Debug_EnsureCanWriteToPendingCancel();
-            //If no cancel path, this instance of data will cease to exist and cancelling is the same as deleting.
-            if (m_HasCancelPath)
+            get
             {
-                m_PendingCancelLaneWriter.Write(ref wrapper);
+                Debug_EnsureCanUpdate();
+                EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
+                m_CurrentContext = instanceWrapper.InstanceID.Context;
+                return instanceWrapper.Payload;
             }
-        }
-
-        internal bool TryGetInstanceIfNotRequestedToCancel(int index, out TInstance instance)
-        {
-            Debug_EnsureCanUpdate();
-            EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Iteration[index];
-            m_CurrentContext = instanceWrapper.InstanceID.Context;
-            instance = instanceWrapper.Payload;
-
-            if (m_CancelRequestsReader.ShouldCancel(instanceWrapper.InstanceID))
-            {
-                WriteToPendingCancel(ref instanceWrapper);
-                return false;
-            }
-
-            return true;
         }
 
 
@@ -208,30 +178,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (m_State == UpdaterState.Ready)
             {
                 throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
-            }
-
-            if (m_State != UpdaterState.Modifying)
-            {
-                throw new InvalidOperationException($"Caught unhandled state {m_State}");
-            }
-
-            m_State = UpdaterState.Ready;
-#endif
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureCanWriteToPendingCancel()
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (m_State == UpdaterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to cancel an element.");
-            }
-
-            if (m_State == UpdaterState.Ready)
-            {
-                throw new InvalidOperationException($"Attempting to call {nameof(WriteToPendingCancel)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Something went very wrong. Investigate!");
             }
 
             if (m_State != UpdaterState.Modifying)

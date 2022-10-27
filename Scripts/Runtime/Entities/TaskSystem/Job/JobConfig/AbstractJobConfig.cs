@@ -148,18 +148,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForWrite{TInstance}"/>
-        public IJobConfigRequirements RequireTaskStreamForWrite<TInstance>(TaskStream<TInstance> taskStream)
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}"/>
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(EntityProxyDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return RequireDataStreamForWrite(taskStream.DataStream, Usage.Write);
+            return RequireDataStreamForWrite(dataStream, Usage.Write);
         }
 
-        /// <inheritdoc cref="IJobConfigRequirements.RequireTaskStreamForRead{TInstance}"/>
-        public IJobConfigRequirements RequireTaskStreamForRead<TInstance>(TaskStream<TInstance> taskStream)
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(EntityProxyDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(taskStream.DataStream, AccessType.SharedRead, Usage.Read));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedRead, Usage.Read));
             return this;
         }
 
@@ -183,24 +183,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
         
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataForRead{TData}"/>
-        public IJobConfigRequirements RequireDataForRead<TData>(AccessControlledValue<TData> collection)
+        /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForRead{TData}"/>
+        public IJobConfigRequirements RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead, Usage.Read));
             return this;
         }
 
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataForWrite{TData}"/>
-        public IJobConfigRequirements RequireDataForWrite<TData>(AccessControlledValue<TData> collection)
+        /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForWrite{TData}"/>
+        public IJobConfigRequirements RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Write));
             return this;
         }
         
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataForExclusiveWrite{TData}"/>
-        public IJobConfigRequirements RequireDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
+        /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForExclusiveWrite{TData}"/>
+        public IJobConfigRequirements RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.ExclusiveWrite));
@@ -355,6 +355,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             JobConfigDataID id = new JobConfigDataID(typeof(TWrapper), usage);
             Debug_EnsureWrapperExists(id);
             return (TWrapper)m_AccessWrappers[id];
+        }
+
+        internal PendingCancelEntityProxyDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            PendingCancelDataStreamAccessWrapper<TInstance> pendingCancelDataStreamAccessWrapper = GetAccessWrapper<PendingCancelDataStreamAccessWrapper<TInstance>>(usage);
+            return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
         }
 
         internal EntityProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)

@@ -151,7 +151,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 
                 if (m_Trigger.Count() > 0)
                 {
-                    UnityEngine.Debug.Log($"Propagating Cancel for {m_TaskDriverName}");
+                    // UnityEngine.Debug.Log($"Propagating Cancel for {m_TaskDriverName}");
                 }
 
                 foreach (EntityProxyInstanceID proxyInstanceID in m_Trigger)

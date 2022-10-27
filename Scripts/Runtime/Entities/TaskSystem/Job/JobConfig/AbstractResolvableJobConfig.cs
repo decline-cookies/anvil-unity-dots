@@ -63,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// resolve to the right <see cref="EntityProxyDataStream{TInstance}"/> based on context and id. 
         /// </summary>
         /// <returns>The <see cref="DataStreamTargetResolver"/> for this job config</returns>
-        public DataStreamTargetResolver GetDataStreamChannelResolver()
+        public DataStreamTargetResolver GetDataStreamTargetResolver()
         {
             return m_DataStreamTargetResolver;
         }

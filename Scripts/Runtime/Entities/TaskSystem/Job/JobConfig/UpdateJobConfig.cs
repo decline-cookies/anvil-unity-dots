@@ -10,53 +10,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,
                                AbstractTaskDriver taskDriver,
-                               TaskStream<TInstance> taskStream,
-                               CancelRequestsDataStream cancelRequestsDataStream) 
+                               EntityProxyDataStream<TInstance> dataStream) 
             : base(taskFlowGraph, 
                    taskSystem, 
                    taskDriver)
         {
-            RequireDataStreamForUpdate(taskStream, cancelRequestsDataStream);
+            RequireDataStreamForUpdate(dataStream);
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireDataStreamForUpdate(TaskStream<TInstance> taskStream, CancelRequestsDataStream cancelRequestsDataStream)
+        private void RequireDataStreamForUpdate(EntityProxyDataStream<TInstance> dataStream)
         {
-            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(taskStream.DataStream, AccessType.ExclusiveWrite, Usage.Update));
-
-            RequireRequestCancelDataStreamForRead(cancelRequestsDataStream);
-
-            if (taskStream.IsCancellable)
-            {
-                RequireCancellableTaskStreamForWrite(taskStream);
-            }
-        }
-        
-        private void RequireRequestCancelDataStreamForRead(CancelRequestsDataStream cancelRequestsDataStream)
-        {
-            AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedRead, Usage.Read, byte.MaxValue));
-        }
-        
-        private void RequireCancellableTaskStreamForWrite(TaskStream<TInstance> cancellableTaskStream)
-        {
-            Debug_EnsureIsCancellable(cancellableTaskStream);
-            RequireDataStreamForWrite(cancellableTaskStream.PendingCancelDataStream, Usage.WritePendingCancel);
-        }
-        
-        //*************************************************************************************************************
-        // SAFETY
-        //*************************************************************************************************************
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureIsCancellable(TaskStream<TInstance> cancellableTaskStream)
-        {
-            if (!cancellableTaskStream.IsCancellable || cancellableTaskStream.PendingCancelDataStream == null)
-            {
-                throw new InvalidOperationException($"{this} is trying register {cancellableTaskStream} as a cancellable task stream but it can't be cancelled!");
-            }
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.ExclusiveWrite, Usage.Update));
         }
     }
 }

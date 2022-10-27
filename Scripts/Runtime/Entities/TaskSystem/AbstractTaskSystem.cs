@@ -38,21 +38,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public byte Context { get; }
 
         internal CancelRequestsDataStream CancelRequestsDataStream { get; }
-        internal List<AbstractTaskStream> TaskStreams { get; }
+        internal List<AbstractEntityProxyDataStream> DataStreams { get; }
         internal List<AbstractTaskDriver> TaskDrivers { get; }
 
 
         protected AbstractTaskSystem()
         {
             m_TaskDriverContextProvider = new ByteIDProvider();
-            TaskStreams = new List<AbstractTaskStream>();
+            DataStreams = new List<AbstractEntityProxyDataStream>();
             TaskDrivers = new List<AbstractTaskDriver>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
             Context = m_TaskDriverContextProvider.GetNextID();
 
-            TaskStreamFactory.CreateTaskStreams(this, TaskStreams);
             CancelRequestsDataStream = new CancelRequestsDataStream();
+            DataStreamFactory.CreateDataStreams(this, DataStreams);
         }
 
         protected override void OnCreate()
@@ -75,7 +75,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskFlowGraph.RegisterTaskSystem(this);
             
             //TODO: This isn't how we'll do things but hijacking for now
-            PropagateCancelSystem cancelSystem = world.GetExistingSystem<PropagateCancelSystem>();
+            TaskAdminSystem cancelSystem = world.GetExistingSystem<TaskAdminSystem>();
             cancelSystem.RegisterTaskSystem(this);
         }
 
@@ -94,7 +94,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskDrivers.Clear();
 
             //Dispose all the data we own
-            TaskStreams.DisposeAllAndTryClear();
+            DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
             CancelRequestsDataStream.Dispose();
 
@@ -170,12 +170,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(AbstractTaskDriver taskDriver,
-                                                                           TaskStream<TInstance> taskStream,
+                                                                           EntityProxyDataStream<TInstance> taskStream,
                                                                            JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            TaskStreamJobConfig<TInstance> jobConfig = JobConfigFactory.CreateTaskStreamJobConfig(m_TaskFlowGraph,
+            DataStreamJobConfig<TInstance> jobConfig = JobConfigFactory.CreateTaskStreamJobConfig(m_TaskFlowGraph,
                                                                                                   this,
                                                                                                   taskDriver,
                                                                                                   taskStream,
@@ -203,7 +203,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(SystemTaskStream<TInstance> taskStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(EntityProxyDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -211,7 +211,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelJobConfig<TInstance> jobConfig = JobConfigFactory.CreateCancelJobConfig(m_TaskFlowGraph,
                                                                                           this,
                                                                                           null,
-                                                                                          taskStream,
+                                                                                          dataStream,
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
 
@@ -220,7 +220,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return jobConfig;
         }
 
-        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(SystemTaskStream<TInstance> taskStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(EntityProxyDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -228,8 +228,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             UpdateJobConfig<TInstance> jobConfig = JobConfigFactory.CreateUpdateJobConfig(m_TaskFlowGraph,
                                                                                           this,
                                                                                           null,
-                                                                                          taskStream,
-                                                                                          CancelRequestsDataStream,
+                                                                                          dataStream,
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
             RegisterJob(null, jobConfig, TaskFlowRoute.Update);
@@ -256,19 +255,26 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return dependsOn;
         }
 
+        internal JobHandle Consolidate(JobHandle dependsOn)
+        {
+            //Consolidate system data so that it can be operated on. (Was populated on previous step)
+            //The system data and the system's cancel requests can be consolidated in parallel
+            dependsOn = JobHandle.CombineDependencies(CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
+                                                      m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
+                                                                                                  AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION),
+                                                      m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
+                                                                                                  AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION));
+            // Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
+            return dependsOn;
+        }
+
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
             //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
-
-            //Consolidate system data so that it can be operated on. (Was populated on previous step)
-            //The system data and the system's cancel requests can be consolidated in parallel
-            dependsOn = JobHandle.CombineDependencies(CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
-                                                      m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
-                                                                                                  AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION));
-
+            
             //Schedule the Update Jobs to run on System Data, we are guaranteed to have up to date Cancel Requests
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
@@ -278,11 +284,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Cancel,
                                      m_SystemJobConfigBulkJobSchedulerLookup);
-
-            // Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
-            dependsOn = m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
-                                                                    AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
-
+            
             //TODO: #72 - Allow for other phases as needed, try to make as parallel as possible
 
             // Have drivers to do their own generic work if necessary

@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     //TODO: #63 - Expand support to Properties
     [AttributeUsage(AttributeTargets.Field)]
-    public class IgnoreTaskStreamAttribute : Attribute
+    public class IgnoreDataStreamAttribute : Attribute
     {
     }
 }

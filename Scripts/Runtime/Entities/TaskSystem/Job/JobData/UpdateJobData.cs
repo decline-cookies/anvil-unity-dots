@@ -20,13 +20,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // DATA STREAMS
         //*************************************************************************************************************
 
-        internal DataStreamUpdater<TInstance> GetDataStreamUpdater(CancelRequestsReader cancelRequestsReader)
+        internal DataStreamUpdater<TInstance> GetDataStreamUpdater()
         {
             EntityProxyDataStream<TInstance> dataStream = m_UpdateJobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Update);
-            EntityProxyDataStream<TInstance> pendingCancelDataStream = m_UpdateJobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.WritePendingCancel);
-            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(cancelRequestsReader,
-                                                                                      pendingCancelDataStream,
-                                                                                      m_UpdateJobConfig.GetDataStreamChannelResolver());
+            DataStreamTargetResolver dataStreamTargetResolver = m_UpdateJobConfig.GetDataStreamTargetResolver();
+            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(dataStreamTargetResolver);
             return updater;
         }
     }
