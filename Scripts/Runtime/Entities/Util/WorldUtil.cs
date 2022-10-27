@@ -193,10 +193,6 @@ namespace Anvil.Unity.DOTS.Entities
 #endif
                 SortAllGroupsInWorld(world);
             }
-            catch (Exception e)
-            {
-                throw e;
-            }
             finally
             {
                 Log.SuppressLogging = false;

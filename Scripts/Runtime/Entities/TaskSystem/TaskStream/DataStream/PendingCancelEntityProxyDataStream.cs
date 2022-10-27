@@ -1,3 +1,4 @@
+using Anvil.CSharp.Logging;
 using Anvil.CSharp.Reflection;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;

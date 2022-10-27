@@ -4,6 +4,7 @@ using Anvil.CSharp.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Anvil.CSharp.Logging;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -64,12 +65,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private void InitTaskFlowGraph(World world)
         {
-            //We could get called multiple times 
+            //We could get called multiple times
             if (m_TaskFlowGraph != null)
             {
                 return;
             }
-            
+
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we can just have a Register method with overloads for each type: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995025025
             m_TaskFlowGraph.RegisterTaskSystem(this);
@@ -90,7 +91,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             m_TaskDriverContextProvider.Dispose();
 
-            //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so. 
+            //Note: We don't dispose TaskDrivers here because their parent or direct reference will do so.
             TaskDrivers.Clear();
 
             //Dispose all the data we own
