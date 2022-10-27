@@ -17,6 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         //TODO: Hide this stuff when collections checks are disabled
         private static readonly ProfilerMarker TYPED_MARKER = new ProfilerMarker(ProfilerCategory.Scripts, typeof(ConsolidateJob).GetReadableName(), MarkerFlags.Script);
+        private static readonly FixedString64Bytes TYPED_NAME = new FixedString64Bytes(typeof(TInstance).GetReadableName());
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.
@@ -34,6 +35,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => m_IterationTarget.ScheduleInfo;
+        }
+
+        internal override AbstractEntityProxyDataStream GetPendingCancelDataStream()
+        {
+            return PendingCancelDataStream;
         }
 
         internal EntityProxyDataStream(CancelRequestsDataStream cancelRequestsDataStream) : base()
@@ -107,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                m_IterationTarget,
                                                                PendingCancelDataStream.PendingWriter,
                                                                m_CancelRequestsDataStream.LookupRef,
-                                                               new FixedString64Bytes(typeof(TInstance).GetReadableName()),
+                                                               TYPED_NAME,
                                                                TYPED_MARKER);
             JobHandle consolidateHandle = consolidateJob.Schedule(JobHandle.CombineDependencies(m_ConsolidationDependencies));
 

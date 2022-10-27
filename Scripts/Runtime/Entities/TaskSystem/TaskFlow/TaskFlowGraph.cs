@@ -94,29 +94,65 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return lookup;
         }
 
-        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateDataStreamBulkJobSchedulerFor(AbstractTaskSystem taskSystem)
+        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateWorldDataStreamBulkJobScheduler()
         {
             List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
 
-            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, null);
-            lookup.AddDataStreamsTo(dataStreams);
-
-            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
-        }
-
-        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateDataStreamBulkJobSchedulerFor<TTaskDriver>(AbstractTaskSystem taskSystem, List<TTaskDriver> taskDrivers)
-            where TTaskDriver : AbstractTaskDriver
-        {
-            List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
-
-            foreach (TTaskDriver taskDriver in taskDrivers)
+            //TODO: Can make this nicer
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-                lookup.AddDataStreamsTo(dataStreams);
+                dataStreams.AddRange(taskSystem.DataStreams);
+
+                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
+                {
+                    dataStreams.AddRange(taskDriver.DataStreams);
+                }
             }
 
             return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
         }
+
+        public BulkJobScheduler<CancelRequestsDataStream> CreateWorldCancelRequestsDataStreamBulkJobScheduler()
+        {
+            List<CancelRequestsDataStream> cancelRequests = new List<CancelRequestsDataStream>();
+            //TODO: Can make this nicer
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
+            {
+                cancelRequests.Add(taskSystem.CancelRequestsDataStream);
+
+                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
+                {
+                    cancelRequests.Add(taskDriver.CancelRequestsDataStream);
+                }
+            }
+
+            return new BulkJobScheduler<CancelRequestsDataStream>(cancelRequests.ToArray());
+        }
+
+        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateWorldPendingCancelBulkJobScheduler()
+        {
+            List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
+
+            //TODO: Can make this nicer - also make sure we don't make a mistake with the pending Cancel data streams
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
+            {
+                foreach (AbstractEntityProxyDataStream dataStream in taskSystem.DataStreams)
+                {
+                    dataStreams.Add(dataStream.GetPendingCancelDataStream());
+                }
+
+                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
+                {
+                    foreach (AbstractEntityProxyDataStream dataStream in taskDriver.DataStreams)
+                    {
+                        dataStreams.Add(dataStream.GetPendingCancelDataStream());
+                    }
+                }
+            }
+
+            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
+        }
+        
 
         public void PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskSystem taskSystem)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
@@ -133,15 +169,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        public BulkJobScheduler<TaskDriverCancellationPropagator> CreateTaskDriversCancellationBulkJobSchedulerFor<TTaskDriver>(List<TTaskDriver> taskDrivers)
-            where TTaskDriver : AbstractTaskDriver
+        public BulkJobScheduler<TaskDriverCancellationPropagator> CreateWorldTaskDriversCancellationBulkJobScheduler()
         {
+            //TODO: Make this nicer
             List<TaskDriverCancellationPropagator> propagators = new List<TaskDriverCancellationPropagator>();
             //For each task driver that exists, generate a propagator for it
-            foreach (TTaskDriver taskDriver in taskDrivers)
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                TaskDriverCancellationPropagator propagator = taskDriver.CancellationPropagator;
-                propagators.Add(propagator);
+                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
+                {
+                    TaskDriverCancellationPropagator propagator = taskDriver.CancellationPropagator;
+                    propagators.Add(propagator);
+                }
             }
 
             return new BulkJobScheduler<TaskDriverCancellationPropagator>(propagators.ToArray());

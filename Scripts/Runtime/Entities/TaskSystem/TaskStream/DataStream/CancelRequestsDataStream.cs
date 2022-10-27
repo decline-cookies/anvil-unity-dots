@@ -2,6 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -11,6 +12,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelRequestsDataStream : AbstractDataStream
     {
+        internal static readonly BulkScheduleDelegate<CancelRequestsDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<CancelRequestsDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
+        
         private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
 
         private UnsafeTypedStream<EntityProxyInstanceID> m_Trigger;
@@ -60,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONSOLIDATION
         //*************************************************************************************************************
 
-        public JobHandle ConsolidateForFrame(JobHandle dependsOn)
+        private JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             JobHandle exclusiveWriteHandle = AccessController.AcquireAsync(AccessType.ExclusiveWrite);
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(m_Pending,

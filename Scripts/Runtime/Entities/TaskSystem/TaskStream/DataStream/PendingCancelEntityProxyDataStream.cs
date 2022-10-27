@@ -29,6 +29,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => m_IterationTarget.ScheduleInfo;
         }
 
+        internal override AbstractEntityProxyDataStream GetPendingCancelDataStream()
+        {
+            throw new System.NotImplementedException("never call this");
+        }
+
         internal PendingCancelEntityProxyDataStream() : base()
         {
             m_Pending = new UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent);

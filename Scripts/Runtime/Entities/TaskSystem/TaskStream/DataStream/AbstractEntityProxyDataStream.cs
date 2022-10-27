@@ -11,5 +11,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
         internal abstract unsafe void* GetWriterPointer();
+
+        //TODO: We need to make this better
+        internal abstract AbstractEntityProxyDataStream GetPendingCancelDataStream();
     }
 }

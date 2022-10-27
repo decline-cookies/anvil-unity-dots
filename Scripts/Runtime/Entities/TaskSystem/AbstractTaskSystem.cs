@@ -23,11 +23,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
 
-        private BulkJobScheduler<AbstractEntityProxyDataStream> m_SystemDataStreamBulkJobScheduler;
-        private BulkJobScheduler<AbstractEntityProxyDataStream> m_DriverDataStreamBulkJobScheduler;
-
-        private BulkJobScheduler<TaskDriverCancellationPropagator> m_TaskDriversCancellationBulkJobScheduler;
-
         private TaskFlowGraph m_TaskFlowGraph;
         private bool m_IsHardened;
 
@@ -74,18 +69,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we can just have a Register method with overloads for each type: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995025025
             m_TaskFlowGraph.RegisterTaskSystem(this);
-            
-            //TODO: This isn't how we'll do things but hijacking for now
-            TaskAdminSystem cancelSystem = world.GetExistingSystem<TaskAdminSystem>();
-            cancelSystem.RegisterTaskSystem(this);
         }
 
         protected override void OnDestroy()
         {
             //Clean up all the cached native arrays hidden in the schedulers
-            m_SystemDataStreamBulkJobScheduler?.Dispose();
-            m_DriverDataStreamBulkJobScheduler?.Dispose();
-            m_TaskDriversCancellationBulkJobScheduler?.Dispose();
             m_SystemJobConfigBulkJobSchedulerLookup?.DisposeAllValuesAndClear();
             m_DriverJobConfigBulkJobSchedulerLookup?.DisposeAllValuesAndClear();
 
@@ -122,13 +110,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 jobConfig.Harden();
             }
 
-            m_SystemDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this);
-            m_DriverDataStreamBulkJobScheduler = m_TaskFlowGraph.CreateDataStreamBulkJobSchedulerFor(this, TaskDrivers);
-
             m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
             m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, TaskDrivers);
-
-            m_TaskDriversCancellationBulkJobScheduler = m_TaskFlowGraph.CreateTaskDriversCancellationBulkJobSchedulerFor(TaskDrivers);
         }
 
         //*************************************************************************************************************
@@ -245,32 +228,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Dependency = UpdateTaskDriverSystem(Dependency);
         }
 
-        internal JobHandle PropagateCancel(JobHandle dependsOn)
-        {
-            //TODO: We actually need to propagate the entire chain all the way through in one go at the beginning of Update
-            //All TaskDrivers consolidate their CancelRequestsDataStream which also writes into this system's CancelRequestsDataStream.
-            //At the same time, it will propagate the cancel request to any sub-task drivers
-            dependsOn = m_TaskDriversCancellationBulkJobScheduler.Schedule(dependsOn,
-                                                                           TaskDriverCancellationPropagator.CONSOLIDATE_AND_PROPAGATE_SCHEDULE_FUNCTION);
-
-            return dependsOn;
-        }
-
-        internal JobHandle Consolidate(JobHandle dependsOn)
-        {
-            //Consolidate system data so that it can be operated on. (Was populated on previous step)
-            //The system data and the system's cancel requests can be consolidated in parallel
-            dependsOn = JobHandle.CombineDependencies(CancelRequestsDataStream.ConsolidateForFrame(dependsOn),
-                                                      m_SystemDataStreamBulkJobScheduler.Schedule(dependsOn,
-                                                                                                  AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION),
-                                                      m_DriverDataStreamBulkJobScheduler.Schedule(dependsOn,
-                                                                                                  AbstractEntityProxyDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION));
-            // Have drivers consolidate their data (Generic TaskSystem Update -> TaskDriver results)
-            return dependsOn;
-        }
-
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
+            //TODO: I think all jobs call all be run in parallel because they don't conflict...
             //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,

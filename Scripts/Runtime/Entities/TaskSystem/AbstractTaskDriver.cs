@@ -119,10 +119,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal void AddCancelRequestsTo(List<CancelRequestsDataStream> cancelRequests)
         {
+            cancelRequests.Add(CancelRequestsDataStream);
+            cancelRequests.Add(TaskSystem.CancelRequestsDataStream);
             foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
             {
-                cancelRequests.Add(subTaskDriver.CancelRequestsDataStream);
-                cancelRequests.Add(subTaskDriver.TaskSystem.CancelRequestsDataStream);
                 subTaskDriver.AddCancelRequestsTo(cancelRequests);
             }
         }
