@@ -22,12 +22,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             get => (TTaskSystem)base.TaskSystem;
         }
-        
+
         protected AbstractTaskDriver(World world) : base(world, typeof(TTaskSystem))
         {
         }
     }
-    
+
     /// <summary>
     /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
     /// The goal of a TaskDriver is to convert specific data into general data that the corresponding
@@ -43,18 +43,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly List<AbstractJobConfig> m_JobConfigs;
 
         private bool m_IsHardened;
-        
+
         /// <summary>
         /// The context associated with this TaskDriver. Will be unique to the corresponding
         /// <see cref="AbstractTaskSystem"/> and any other TaskDrivers of the same type.
         /// </summary>
         public byte Context { get; }
-        
+
         /// <summary>
         /// Reference to the associated <see cref="AbstractTaskSystem"/>
         /// </summary>
         internal AbstractTaskSystem TaskSystem { get; }
-        
+
         /// <summary>
         /// Reference to the associated <see cref="World"/>
         /// </summary>
@@ -69,18 +69,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //We can't just pull this off the System because we might have triggered it's creation via
             //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
-            
+
             TaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
             Context = TaskSystem.RegisterTaskDriver(this);
-            
+
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             DataStreams = new List<AbstractEntityProxyDataStream>();
             m_JobConfigs = new List<AbstractJobConfig>();
-            
+
             CancelRequestsDataStream = new CancelRequestsDataStream();
             DataStreamFactory.CreateDataStreams(this, DataStreams);
             TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers);
-            
+
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
             m_TaskFlowGraph.RegisterTaskDriver(this);
@@ -108,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            
+
             foreach (AbstractJobConfig jobConfig in m_JobConfigs)
             {
                 jobConfig.Harden();
@@ -135,19 +135,31 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_JobConfigs.Add(jobConfig);
         }
-        
+
         //TODO: Should Task Drivers should have no jobs
-        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(EntityProxyDataStream<TInstance> taskStream,
-                                                                         in JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(EntityProxyDataStream<TInstance> dataStream,
+                                                                         in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskSystem.ConfigureJobTriggeredBy(this,
-                                                      taskStream,
+                                                      dataStream,
                                                       scheduleJobFunction,
                                                       batchStrategy);
         }
-        
+
+        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(EntityProxyDataStream<TInstance> dataStream,
+                                                                                 in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                 BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return TaskSystem.ConfigureCancelJobFor(this,
+                                                    dataStream,
+                                                    scheduleJobFunction,
+                                                    batchStrategy);
+        }
+
+
         public IJobConfigRequirements ConfigureJobTriggeredBy(EntityQuery entityQuery,
                                                               JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                               BatchStrategy batchStrategy)
@@ -160,11 +172,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         //TODO: #73 - Implement other job types
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {

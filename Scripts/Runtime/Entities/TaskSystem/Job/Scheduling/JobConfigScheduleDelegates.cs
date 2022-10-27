@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// a <see cref="DataStreamJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
-        public delegate JobHandle ScheduleTaskStreamJobDelegate<TInstance>(JobHandle jobHandle,
+        public delegate JobHandle ScheduleDataStreamJobDelegate<TInstance>(JobHandle jobHandle,
                                                                            DataStreamJobData<TInstance> jobData,
                                                                            DataStreamScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly DataStreamJobData<TInstance> m_JobData;
-        private readonly JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> m_ScheduleJobFunction;
+        private readonly JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> m_ScheduleJobFunction;
 
         /// <summary>
         /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal DataStreamScheduleInfo(DataStreamJobData<TInstance> jobData,
                                         EntityProxyDataStream<TInstance> dataStream,
                                         BatchStrategy batchStrategy,
-                                        JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction)
+                                        JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
                    batchStrategy,
                    EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)

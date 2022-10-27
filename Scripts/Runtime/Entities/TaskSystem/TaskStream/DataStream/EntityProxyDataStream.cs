@@ -8,6 +8,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -173,6 +174,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 {
                     if (m_CancelRequestsForID.ContainsKey(instance.InstanceID))
                     {
+                        // Debug.Log($"Cancelling Instance with ID {instance.InstanceID} for {m_TypeName}");
                         pendingCancelledLaneWriter.Write(instance);
                     }
                     else

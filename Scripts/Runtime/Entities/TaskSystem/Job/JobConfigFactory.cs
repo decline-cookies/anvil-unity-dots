@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           AbstractTaskSystem taskSystem,
                                                                                           AbstractTaskDriver taskDriver,
                                                                                           EntityProxyDataStream<TInstance> dataStream,
-                                                                                          JobConfigScheduleDelegates.ScheduleTaskStreamJobDelegate<TInstance> scheduleJobFunction,
+                                                                                          JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
