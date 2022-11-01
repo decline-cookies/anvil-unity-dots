@@ -60,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         /// <summary>
         /// Returns the job-safe struct of <see cref="DataStreamTargetResolver"/> so that jobs can
-        /// resolve to the right <see cref="EntityProxyDataStream{TInstance}"/> based on context and id. 
+        /// resolve to the right <see cref="DataStream{TInstance}"/> based on context and id. 
         /// </summary>
         /// <returns>The <see cref="DataStreamTargetResolver"/> for this job config</returns>
         public DataStreamTargetResolver GetDataStreamTargetResolver()

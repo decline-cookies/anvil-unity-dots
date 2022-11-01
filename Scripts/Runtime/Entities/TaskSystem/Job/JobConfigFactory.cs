@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,
-                                                                                  EntityProxyDataStream<TInstance> dataStream,
+                                                                                  DataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,
-                                                                                  EntityProxyDataStream<TInstance> dataStream,
+                                                                                  CancellableDataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -48,14 +48,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskFlowGraph,
                                                                                   taskSystem,
                                                                                   taskDriver,
-                                                                                  dataStream.PendingCancelDataStream);
+                                                                                  dataStream.CancelPendingDataStream);
 
             CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig,
                                                                             taskSystem.World,
                                                                             taskDriver?.Context ?? taskSystem.Context);
 
             CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
-                                                                                                               dataStream.PendingCancelDataStream,
+                                                                                                               dataStream.CancelPendingDataStream,
                                                                                                                batchStrategy,
                                                                                                                scheduleJobFunction);
             return FinalizeJobConfig(jobConfig, scheduleInfo);
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public static DataStreamJobConfig<TInstance> CreateTaskStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                           AbstractTaskSystem taskSystem,
                                                                                           AbstractTaskDriver taskDriver,
-                                                                                          EntityProxyDataStream<TInstance> dataStream,
+                                                                                          DataStream<TInstance> dataStream,
                                                                                           JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

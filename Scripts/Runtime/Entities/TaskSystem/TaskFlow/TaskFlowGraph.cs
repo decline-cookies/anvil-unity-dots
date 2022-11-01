@@ -37,13 +37,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void RegisterTaskSystem(AbstractTaskSystem taskSystem)
         {
             m_TaskSystems.Add(taskSystem);
-            RegisterCancelRequestsDataStream(taskSystem.CancelRequestsDataStream, taskSystem, null);
+            RegisterCancelRequestsDataStream(taskSystem.CancelFlow.RequestDataStream, taskSystem, null);
             RegisterDataStreams(taskSystem.DataStreams, taskSystem, null);
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
-            RegisterCancelRequestsDataStream(taskDriver.CancelRequestsDataStream, taskDriver.TaskSystem, taskDriver);
+            RegisterCancelRequestsDataStream(taskDriver.CancelFlow.RequestDataStream, taskDriver.TaskSystem, taskDriver);
             RegisterDataStreams(taskDriver.DataStreams, taskDriver.TaskSystem, taskDriver);
         }
 
@@ -51,22 +51,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // DATA STREAMS
         //*************************************************************************************************************
 
-        private void RegisterCancelRequestsDataStream(CancelRequestsDataStream cancelRequestsDataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterCancelRequestsDataStream(CancelRequestDataStream cancelRequestDataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            lookup.CreateCancelRequestsNode(cancelRequestsDataStream);
+            lookup.CreateCancelRequestsNode(cancelRequestDataStream);
         }
 
-        private void RegisterDataStreams(List<AbstractEntityProxyDataStream> dataStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterDataStreams(List<AbstractDataStream> dataStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            foreach (AbstractEntityProxyDataStream dataStream in dataStreams)
+            foreach (AbstractDataStream dataStream in dataStreams)
             {
                 lookup.CreateDataStreamNodes(dataStream);
             }
         }
 
-        public bool IsDataStreamRegistered(AbstractEntityProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public bool IsDataStreamRegistered(AbstractDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup systemNodeLookup = GetOrCreateNodeLookup(taskSystem, null);
             NodeLookup driverNodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
@@ -94,9 +94,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return lookup;
         }
 
-        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateWorldDataStreamBulkJobScheduler()
+        public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldDataStreamBulkJobScheduler()
         {
-            List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
+            List<AbstractConsolidatableDataStream> dataStreams = new List<AbstractConsolidatableDataStream>();
 
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
@@ -109,48 +109,48 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
             }
 
-            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
+            return new BulkJobScheduler<AbstractConsolidatableDataStream>(dataStreams.ToArray());
         }
 
-        public BulkJobScheduler<CancelRequestsDataStream> CreateWorldCancelRequestsDataStreamBulkJobScheduler()
+        public BulkJobScheduler<CancelRequestDataStream> CreateWorldCancelRequestsDataStreamBulkJobScheduler()
         {
-            List<CancelRequestsDataStream> cancelRequests = new List<CancelRequestsDataStream>();
+            List<CancelRequestDataStream> cancelRequests = new List<CancelRequestDataStream>();
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                cancelRequests.Add(taskSystem.CancelRequestsDataStream);
+                cancelRequests.Add(taskSystem.CancelFlow.RequestDataStream);
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    cancelRequests.Add(taskDriver.CancelRequestsDataStream);
+                    cancelRequests.Add(taskDriver.CancelFlow.RequestDataStream);
                 }
             }
 
-            return new BulkJobScheduler<CancelRequestsDataStream>(cancelRequests.ToArray());
+            return new BulkJobScheduler<CancelRequestDataStream>(cancelRequests.ToArray());
         }
 
-        public BulkJobScheduler<AbstractEntityProxyDataStream> CreateWorldPendingCancelBulkJobScheduler()
+        public BulkJobScheduler<AbstractDataStream> CreateWorldPendingCancelBulkJobScheduler()
         {
-            List<AbstractEntityProxyDataStream> dataStreams = new List<AbstractEntityProxyDataStream>();
+            List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
 
             //TODO: Can make this nicer - also make sure we don't make a mistake with the pending Cancel data streams
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                foreach (AbstractEntityProxyDataStream dataStream in taskSystem.DataStreams)
+                foreach (AbstractDataStream dataStream in taskSystem.DataStreams)
                 {
-                    dataStreams.Add(dataStream.GetPendingCancelDataStream());
+                    dataStreams.Add(dataStream.GetCancelPendingDataStream());
                 }
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    foreach (AbstractEntityProxyDataStream dataStream in taskDriver.DataStreams)
+                    foreach (AbstractDataStream dataStream in taskDriver.DataStreams)
                     {
-                        dataStreams.Add(dataStream.GetPendingCancelDataStream());
+                        dataStreams.Add(dataStream.GetCancelPendingDataStream());
                     }
                 }
             }
 
-            return new BulkJobScheduler<AbstractEntityProxyDataStream>(dataStreams.ToArray());
+            return new BulkJobScheduler<AbstractDataStream>(dataStreams.ToArray());
         }
         
 
@@ -167,23 +167,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 lookup = GetOrCreateNodeLookup(taskSystem, ownedTaskDriver);
                 lookup.AddResolveTargetDataStreamsTo<TResolveTargetType>(jobResolveTargetMapping);
             }
-        }
-
-        public BulkJobScheduler<TaskDriverCancellationPropagator> CreateWorldTaskDriversCancellationBulkJobScheduler()
-        {
-            //TODO: Make this nicer
-            List<TaskDriverCancellationPropagator> propagators = new List<TaskDriverCancellationPropagator>();
-            //For each task driver that exists, generate a propagator for it
-            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
-            {
-                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
-                {
-                    TaskDriverCancellationPropagator propagator = taskDriver.CancellationPropagator;
-                    propagators.Add(propagator);
-                }
-            }
-
-            return new BulkJobScheduler<TaskDriverCancellationPropagator>(propagators.ToArray());
         }
 
         //*************************************************************************************************************
@@ -310,7 +293,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // UTILITY
         //*************************************************************************************************************
 
-        public string GetDebugString(AbstractEntityProxyDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public string GetDebugString(AbstractDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             return lookup[dataStream].ToString();
@@ -343,7 +326,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (fieldType.GenericTypeArguments.Length != 1)
             {
-                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(EntityProxyDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
+                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(DataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
             }
         }
 

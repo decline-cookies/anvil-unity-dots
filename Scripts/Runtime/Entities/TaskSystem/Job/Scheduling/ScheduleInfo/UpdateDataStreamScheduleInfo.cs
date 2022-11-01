@@ -24,12 +24,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal UpdateDataStreamScheduleInfo(UpdateJobData<TInstance> jobData,
-                                              EntityProxyDataStream<TInstance> dataStream,
+                                              DataStream<TInstance> dataStream,
                                               BatchStrategy batchStrategy,
                                               JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
                    batchStrategy,
-                   EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
+                   DataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;

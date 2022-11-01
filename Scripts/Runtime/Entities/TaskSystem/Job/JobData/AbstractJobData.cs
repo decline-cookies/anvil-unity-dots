@@ -42,7 +42,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>The <see cref="CancelRequestsWriter"/></returns>
         public CancelRequestsWriter GetCancelRequestsWriter()
         {
-            m_JobConfig.GetCancelRequestsDataStreamWithContext(AbstractJobConfig.Usage.Write, out CancelRequestsDataStream cancelRequestsDataStream, out byte context);
+            //TODO: Rework this to get the CancelFlow Requests Writer
+            m_JobConfig.GetCancelRequestsDataStreamWithContext(AbstractJobConfig.Usage.Write, out CancelRequestDataStream cancelRequestsDataStream, out byte context);
             //We want the context of who we're writing to, NOT our own context
             return cancelRequestsDataStream.CreateCancelRequestsWriter(context);
         }
@@ -56,7 +57,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamWriter<TInstance> GetDataStreamWriter<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Write);
+            DataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Write);
             DataStreamWriter<TInstance> writer = dataStream.CreateDataStreamWriter(m_Context);
             return writer;
         }
@@ -69,16 +70,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamReader<TInstance> GetDataStreamReader<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Read);
+            DataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Read);
             DataStreamReader<TInstance> reader = dataStream.CreateDataStreamReader();
             return reader;
-        }
-        
-        //TODO: Is this still necessary?
-        internal CancelRequestsReader GetCancelRequestsReader()
-        {
-            CancelRequestsDataStream cancelRequestsDataStream = m_JobConfig.GetCancelRequestsDataStream(AbstractJobConfig.Usage.Read);
-            return cancelRequestsDataStream.CreateCancelRequestsReader();
         }
 
         //*************************************************************************************************************

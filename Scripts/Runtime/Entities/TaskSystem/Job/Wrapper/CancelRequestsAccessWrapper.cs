@@ -6,25 +6,25 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     //TODO: Does this need to exist?
     internal class CancelRequestsAccessWrapper : AbstractAccessWrapper
     {
-        public CancelRequestsDataStream CancelRequestsDataStream { get; }
+        public CancelRequestDataStream CancelRequestDataStream { get; }
         
         public byte Context { get; }
         
 
-        public CancelRequestsAccessWrapper(CancelRequestsDataStream cancelRequestsDataStream, AccessType accessType, AbstractJobConfig.Usage usage, byte context) : base(accessType, usage)
+        public CancelRequestsAccessWrapper(CancelRequestDataStream cancelRequestDataStream, AccessType accessType, AbstractJobConfig.Usage usage, byte context) : base(accessType, usage)
         {
-            CancelRequestsDataStream = cancelRequestsDataStream;
+            CancelRequestDataStream = cancelRequestDataStream;
             Context = context;
         }
 
         public sealed override JobHandle Acquire()
         {
-            return CancelRequestsDataStream.AccessController.AcquireAsync(AccessType);
+            return CancelRequestDataStream.AccessController.AcquireAsync(AccessType);
         }
 
         public sealed override void Release(JobHandle releaseAccessDependency)
         {
-            CancelRequestsDataStream.AccessController.ReleaseAsync(releaseAccessDependency);
+            CancelRequestDataStream.AccessController.ReleaseAsync(releaseAccessDependency);
         }
     }
 }

@@ -150,14 +150,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(EntityProxyDataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return RequireDataStreamForWrite(dataStream, Usage.Write);
         }
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(EntityProxyDataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(DataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedRead, Usage.Read));
@@ -167,13 +167,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
-            CancelRequestsDataStream cancelRequestsDataStream = taskDriver.CancelRequestsDataStream;
-            AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestsDataStream, AccessType.SharedWrite, Usage.Write, taskDriver.Context));
+            //TODO: Rework this for CancelFlow to get access to all requests
+            CancelRequestDataStream cancelRequestDataStream = taskDriver.CancelRequestDataStream;
+            AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestDataStream, AccessType.SharedWrite, Usage.Write, taskDriver.Context));
 
             return this;
         }
 
-        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(EntityProxyDataStream<TInstance> dataStream, Usage usage)
+        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream, Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage));
@@ -358,30 +359,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return (TWrapper)m_AccessWrappers[id];
         }
 
-        internal PendingCancelEntityProxyDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
+        internal CancelPendingDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             PendingCancelDataStreamAccessWrapper<TInstance> pendingCancelDataStreamAccessWrapper = GetAccessWrapper<PendingCancelDataStreamAccessWrapper<TInstance>>(usage);
-            return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
+            return pendingCancelDataStreamAccessWrapper.CancelPendingDataStream;
         }
 
-        internal EntityProxyDataStream<TInstance> GetDataStream<TInstance>(Usage usage)
+        internal DataStream<TInstance> GetDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStreamAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamAccessWrapper<TInstance>>(usage);
             return dataStreamAccessWrapper.DataStream;
         }
 
-        internal CancelRequestsDataStream GetCancelRequestsDataStream(Usage usage)
+        internal CancelRequestDataStream GetCancelRequestsDataStream(Usage usage)
         {
             CancelRequestsAccessWrapper dataStreamAccessWrapper = GetAccessWrapper<CancelRequestsAccessWrapper>(usage);
-            return dataStreamAccessWrapper.CancelRequestsDataStream;
+            return dataStreamAccessWrapper.CancelRequestDataStream;
         }
 
-        internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestsDataStream dataStream, out byte context)
+        internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestDataStream dataStream, out byte context)
         {
             CancelRequestsAccessWrapper dataStreamAccessWrapper = GetAccessWrapper<CancelRequestsAccessWrapper>(usage);
-            dataStream = dataStreamAccessWrapper.CancelRequestsDataStream;
+            dataStream = dataStreamAccessWrapper.CancelRequestDataStream;
             context = dataStreamAccessWrapper.Context;
         }
 

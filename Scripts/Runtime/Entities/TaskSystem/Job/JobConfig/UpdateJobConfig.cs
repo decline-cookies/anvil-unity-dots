@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,
                                AbstractTaskDriver taskDriver,
-                               EntityProxyDataStream<TInstance> dataStream) 
+                               DataStream<TInstance> dataStream) 
             : base(taskFlowGraph, 
                    taskSystem, 
                    taskDriver)
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireDataStreamForUpdate(EntityProxyDataStream<TInstance> dataStream)
+        private void RequireDataStreamForUpdate(DataStream<TInstance> dataStream)
         {
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.ExclusiveWrite, Usage.Update));
         }

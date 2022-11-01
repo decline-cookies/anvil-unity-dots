@@ -3,6 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Diagnostics;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -19,17 +20,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
         [ReadOnly] private DataStreamTargetResolver m_DataStreamTargetResolver;
 
+        private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CancelProgressLookup;
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_ContinueLaneWriter;
         private int m_LaneIndex;
         private byte m_CurrentContext;
 
         internal DataStreamCancellationUpdater(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer continueWriter,
                                                NativeArray<EntityProxyInstanceWrapper<TInstance>> iteration,
-                                               DataStreamTargetResolver dataStreamTargetResolver) : this()
+                                               DataStreamTargetResolver dataStreamTargetResolver,
+                                               UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup) : this()
         {
             m_ContinueWriter = continueWriter;
             m_Iteration = iteration;
             m_DataStreamTargetResolver = dataStreamTargetResolver;
+            m_CancelProgressLookup = cancelProgressLookup;
 
             m_ContinueLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -71,6 +75,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_ContinueLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
                                                                                  m_CurrentContext,
                                                                                  ref instance));
+            
+            //TODO: Debug_Ensure id is present
+            //Hold open the progress so we can keep processing
+            EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Entity, m_CurrentContext);
+            m_CancelProgressLookup[id] = true;
         }
 
         internal void Resolve()

@@ -1,32 +1,55 @@
-using Anvil.CSharp.Core;
-using Anvil.CSharp.Reflection;
-using Anvil.Unity.DOTS.Jobs;
-using System;
-using Anvil.CSharp.Logging;
+using Anvil.Unity.DOTS.Data;
+using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    public abstract class AbstractDataStream : AbstractAnvilBase
+    public abstract class AbstractDataStream<TInstance> : AbstractDataStream
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        public Type Type { get; }
+        internal UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> Pending { get; }
+        internal DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> Live { get; }
 
-        internal AccessController AccessController { get; }
-
-        protected AbstractDataStream()
+        internal sealed override unsafe void* PendingWriterPointer
         {
-            Type = GetType();
-            AccessController = new AccessController();
+            get;
         }
 
-        protected override void DisposeSelf()
+        internal DeferredNativeArrayScheduleInfo ScheduleInfo
         {
-            AccessController.Dispose();
-            base.DisposeSelf();
+            get => Live.ScheduleInfo;
+        }
+        
+        protected unsafe AbstractDataStream(bool isCancellable) : base(isCancellable)
+        {
+            Pending = new UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
+            Live = new DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
+                                                                                  Allocator.TempJob);
+
+            PendingWriterPointer = Pending.AsWriter().GetBufferPointer();
         }
 
-        public override string ToString()
+        protected override void DisposeDataStream()
         {
-            return Type.GetReadableName();
+            Pending.Dispose();
+            Live.Dispose();
+            base.DisposeDataStream();
         }
+    }
+
+    public abstract class AbstractDataStream : AbstractConsolidatableDataStream
+    {
+        internal bool IsCancellable { get; }
+        
+        //TODO: Probably a nicer way to handle this without abstract
+        internal abstract unsafe void* PendingWriterPointer { get; }
+        
+        
+        protected AbstractDataStream(bool isCancellable)
+        {
+            IsCancellable = isCancellable;
+        }
+        
+        //TODO: Probably a nicer way to handle this without abstract
+        internal abstract AbstractDataStream GetCancelPendingDataStream();
     }
 }

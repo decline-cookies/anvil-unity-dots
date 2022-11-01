@@ -6,9 +6,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class DataStreamAccessWrapper<T> : AbstractAccessWrapper
         where T : unmanaged, IEntityProxyInstance
     {
-        public EntityProxyDataStream<T> DataStream { get; }
+        public DataStream<T> DataStream { get; }
 
-        public DataStreamAccessWrapper(EntityProxyDataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public DataStreamAccessWrapper(DataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
             DataStream = dataStream;
         }

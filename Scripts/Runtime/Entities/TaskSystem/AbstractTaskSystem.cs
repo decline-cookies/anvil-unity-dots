@@ -19,6 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly ByteIDProvider m_TaskDriverContextProvider;
         private readonly List<AbstractJobConfig> m_JobConfigs;
+        
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
@@ -32,22 +33,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// between instances running in the generic system job(s) versus more specific Task Drivers.
         /// </summary>
         public byte Context { get; }
-
-        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
-        internal List<AbstractEntityProxyDataStream> DataStreams { get; }
+        
+        internal List<AbstractDataStream> DataStreams { get; }
         internal List<AbstractTaskDriver> TaskDrivers { get; }
+        
+        internal SystemCancelFlow CancelFlow { get; }
 
 
         protected AbstractTaskSystem()
         {
             m_TaskDriverContextProvider = new ByteIDProvider();
-            DataStreams = new List<AbstractEntityProxyDataStream>();
+            DataStreams = new List<AbstractDataStream>();
             TaskDrivers = new List<AbstractTaskDriver>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
             Context = m_TaskDriverContextProvider.GetNextID();
 
-            CancelRequestsDataStream = new CancelRequestsDataStream();
+            CancelFlow = new SystemCancelFlow(this);
             DataStreamFactory.CreateDataStreams(this, DataStreams);
         }
 
@@ -85,7 +87,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Dispose all the data we own
             DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelRequestsDataStream.Dispose();
+            CancelFlow.Dispose();
 
             base.OnDestroy();
         }
@@ -154,7 +156,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(AbstractTaskDriver taskDriver,
-                                                                           EntityProxyDataStream<TInstance> dataStream,
+                                                                           DataStream<TInstance> dataStream,
                                                                            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -171,7 +173,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
         
         internal IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(AbstractTaskDriver taskDriver,
-                                                                                   EntityProxyDataStream<TInstance> dataStream,
+                                                                                   DataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -206,7 +208,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(EntityProxyDataStream<TInstance> dataStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(DataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -223,7 +225,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return jobConfig;
         }
 
-        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(EntityProxyDataStream<TInstance> dataStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(DataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

@@ -313,7 +313,8 @@ namespace Anvil.Unity.DOTS.Data
             JobHandle jobHandle = clearJob.Schedule(inputDeps);
             return jobHandle;
         }
-
+        
+        //TODO: Come up with a better name for this and/or think about how this should be used. Use an UnsafeList for example
         public unsafe void ResetLengthTo(int newLength)
         {
             Debug.Assert(m_BufferInfo != null);

@@ -9,21 +9,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,
                                AbstractTaskDriver taskDriver,
-                               PendingCancelEntityProxyDataStream<TInstance> pendingCancelDataStream)
+                               CancelPendingDataStream<TInstance> cancelPendingDataStream)
             : base(taskFlowGraph,
                    taskSystem,
                    taskDriver)
         {
-            RequireDataStreamForCancelling(pendingCancelDataStream);
+            RequireDataStreamForCancelling(cancelPendingDataStream);
+            //TODO: need to make sure we get the corresponding progress lookup
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireDataStreamForCancelling(PendingCancelEntityProxyDataStream<TInstance> pendingCancelDataStream)
+        private void RequireDataStreamForCancelling(CancelPendingDataStream<TInstance> cancelPendingDataStream)
         {
-            AddAccessWrapper(new PendingCancelDataStreamAccessWrapper<TInstance>(pendingCancelDataStream, AccessType.ExclusiveWrite, Usage.Cancelling));
+            AddAccessWrapper(new PendingCancelDataStreamAccessWrapper<TInstance>(cancelPendingDataStream, AccessType.ExclusiveWrite, Usage.Cancelling));
         }
     }
 }

@@ -1,7 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
-using Anvil.CSharp.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,8 +15,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         /// <summary>
         /// Reference to the associated <typeparamref name="TTaskSystem"/>
-        /// Hides the base reference to the abstract version.
         /// </summary>
+        /// <remarks>
+        /// Hides the base reference to the abstract version. This is so that from the outside, a developer
+        /// doesn't try and select a DataStream to configure a job on.
+        /// </remarks>
+        /// TODO: Should add a Safety check on Job scheduling that we're allowed to write
         protected new TTaskSystem TaskSystem
         {
             get => (TTaskSystem)base.TaskSystem;
@@ -38,7 +41,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     //TODO: #74 - Add support for Sub-Task Drivers properly when building an example nested TaskDriver.
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
-        private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly List<AbstractJobConfig> m_JobConfigs;
 
@@ -59,10 +61,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Reference to the associated <see cref="World"/>
         /// </summary>
         public World World { get; }
-
-        internal CancelRequestsDataStream CancelRequestsDataStream { get; }
-        internal List<AbstractEntityProxyDataStream> DataStreams { get; }
-        internal TaskDriverCancellationPropagator CancellationPropagator { get; private set; }
+        
+        internal List<AbstractDataStream> DataStreams { get; }
+        
+        internal List<AbstractTaskDriver> SubTaskDrivers { get; }
+        
+        internal TaskDriverCancelFlow CancelFlow { get; }
 
         protected AbstractTaskDriver(World world, Type systemType)
         {
@@ -73,13 +77,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
             Context = TaskSystem.RegisterTaskDriver(this);
 
-            m_SubTaskDrivers = new List<AbstractTaskDriver>();
-            DataStreams = new List<AbstractEntityProxyDataStream>();
+            SubTaskDrivers = new List<AbstractTaskDriver>();
+            DataStreams = new List<AbstractDataStream>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
-            CancelRequestsDataStream = new CancelRequestsDataStream();
+            CancelFlow = new TaskDriverCancelFlow(this);
+            
             DataStreamFactory.CreateDataStreams(this, DataStreams);
-            TaskDriverFactory.CreateSubTaskDrivers(this, m_SubTaskDrivers);
+            TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
+            
+            //TODO: You should be able to require a TaskDriver to Cancel which will give you the Trigger writer to say you want to cancel.
+            //TODO: That special piece of data will get run through to propagate immediately down to everyone in the chain
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
@@ -89,12 +97,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void DisposeSelf()
         {
             //We own our sub task drivers so dispose them
-            m_SubTaskDrivers.DisposeAllAndTryClear();
+            SubTaskDrivers.DisposeAllAndTryClear();
             //Dispose all the data we own
             DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelRequestsDataStream.Dispose();
-            CancellationPropagator?.Dispose();
+            CancelFlow.Dispose();
 
             base.DisposeSelf();
         }
@@ -113,18 +120,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobConfig.Harden();
             }
-
-            CancellationPropagator = new TaskDriverCancellationPropagator(this);
-        }
-
-        internal void AddCancelRequestsTo(List<CancelRequestsDataStream> cancelRequests)
-        {
-            cancelRequests.Add(CancelRequestsDataStream);
-            cancelRequests.Add(TaskSystem.CancelRequestsDataStream);
-            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
-            {
-                subTaskDriver.AddCancelRequestsTo(cancelRequests);
-            }
         }
 
         //*************************************************************************************************************
@@ -137,7 +132,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         //TODO: Should Task Drivers should have no jobs
-        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(EntityProxyDataStream<TInstance> dataStream,
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(DataStream<TInstance> dataStream,
                                                                          in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -148,7 +143,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(EntityProxyDataStream<TInstance> dataStream,
+        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(DataStream<TInstance> dataStream,
                                                                                  in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                  BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

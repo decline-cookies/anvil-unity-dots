@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamJobConfig(TaskFlowGraph taskFlowGraph,
                                    AbstractTaskSystem taskSystem,
                                    AbstractTaskDriver taskDriver,
-                                   EntityProxyDataStream<TInstance> dataStream)
+                                   DataStream<TInstance> dataStream)
             : base(taskFlowGraph,
                    taskSystem,
                    taskDriver)
