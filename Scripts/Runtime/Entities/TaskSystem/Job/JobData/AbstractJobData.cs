@@ -1,3 +1,4 @@
+using System;
 using Unity.Collections;
 using Unity.Core;
 using Unity.Entities;
@@ -42,10 +43,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>The <see cref="CancelRequestsWriter"/></returns>
         public CancelRequestsWriter GetCancelRequestsWriter()
         {
-            //TODO: Rework this to get the CancelFlow Requests Writer
-            m_JobConfig.GetCancelRequestsDataStreamWithContext(AbstractJobConfig.Usage.Write, out CancelRequestDataStream cancelRequestsDataStream, out byte context);
-            //We want the context of who we're writing to, NOT our own context
-            return cancelRequestsDataStream.CreateCancelRequestsWriter(context);
+            throw new NotImplementedException();
+            // //TODO: Rework this to get the CancelFlow Requests Writer
+            // m_JobConfig.GetCancelRequestsDataStreamWithContext(AbstractJobConfig.Usage.Write, out CancelRequestDataStream cancelRequestsDataStream, out byte context);
+            // //We want the context of who we're writing to, NOT our own context
+            // return cancelRequestsDataStream.CreateCancelRequestsWriter(context);
         }
         
         /// <summary>

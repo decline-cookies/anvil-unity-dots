@@ -111,6 +111,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobConfig.Harden();
             }
+            
+            CancelFlow.Harden();
 
             m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
             m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, TaskDrivers);
@@ -173,7 +175,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
         
         internal IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(AbstractTaskDriver taskDriver,
-                                                                                   DataStream<TInstance> dataStream,
+                                                                                   CancellableDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -208,7 +210,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(DataStream<TInstance> dataStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(CancellableDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

@@ -11,9 +11,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskSystem = taskSystem;
         }
 
-        protected override void AddRequestDataTo(List<CancelRequestDataStream> cancelRequests,
-                                                 List<byte> contexts)
+        internal override void BuildRelationshipData(AbstractCancelFlow parentCancelFlow,
+                                                     List<CancelRequestDataStream> cancelRequests,
+                                                     List<byte> contexts)
         {
+            //Assign our parent
+            ParentCancelFlow = parentCancelFlow;
             //Add ourself
             cancelRequests.Add(RequestDataStream);
             //Add the previous context which will represent the TaskDriver that writes to us

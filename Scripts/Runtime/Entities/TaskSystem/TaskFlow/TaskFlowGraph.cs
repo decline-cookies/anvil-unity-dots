@@ -129,7 +129,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new BulkJobScheduler<CancelRequestDataStream>(cancelRequests.ToArray());
         }
 
-        public BulkJobScheduler<AbstractDataStream> CreateWorldPendingCancelBulkJobScheduler()
+        public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldPendingCancelBulkJobScheduler()
         {
             List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
 
@@ -150,7 +150,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
             }
 
-            return new BulkJobScheduler<AbstractDataStream>(dataStreams.ToArray());
+            return new BulkJobScheduler<AbstractConsolidatableDataStream>(dataStreams.ToArray());
         }
         
 

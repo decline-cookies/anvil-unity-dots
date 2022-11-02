@@ -26,7 +26,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal CancelRequestDataStream TaskDriverCancelRequests { get; }
 
-        internal DataStream(CancelRequestDataStream taskDriverCancelRequests, bool isCancellable = false) : base(isCancellable)
+        //We need this constructor for Reflection to create this instance the same way it creates the Cancellable Instance
+        // ReSharper disable once RedundantOverload.Global
+        // ReSharper disable once IntroduceOptionalParameters.Global
+        internal DataStream(CancelRequestDataStream taskDriverCancelRequests) : this(taskDriverCancelRequests, false)
+        {
+        }
+        
+        internal DataStream(CancelRequestDataStream taskDriverCancelRequests, bool isCancellable) : base(isCancellable)
         {
             //We don't own the m_CancelRequestsDataStream so we don't dispose it.
             TaskDriverCancelRequests = taskDriverCancelRequests;

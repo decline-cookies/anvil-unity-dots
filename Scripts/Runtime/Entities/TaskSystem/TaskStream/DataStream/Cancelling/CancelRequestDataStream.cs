@@ -12,14 +12,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class CancelRequestDataStream : AbstractEntityInstanceIDDataStream
     {
         private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
-
+        
+        private readonly AbstractCancelFlow m_CancelFlow;
         internal UnsafeParallelHashMap<EntityProxyInstanceID, byte> Lookup { get; }
 
-        private readonly CancelProgressDataStream m_ProgressDataStream;
-
-        public CancelRequestDataStream(CancelProgressDataStream progressDataStream)
+        public CancelRequestDataStream(AbstractCancelFlow cancelFlow)
         {
-            m_ProgressDataStream = progressDataStream;
+            m_CancelFlow = cancelFlow;
             Lookup = new UnsafeParallelHashMap<EntityProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
@@ -44,14 +43,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             dependsOn = JobHandle.CombineDependencies(dependsOn,
                                                       AccessController.AcquireAsync(AccessType.ExclusiveWrite),
-                                                      m_ProgressDataStream.AccessController.AcquireAsync(AccessType.ExclusiveWrite));
+                                                      m_CancelFlow.AcquireProgressLookup(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup));
 
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
                                                                                                          Lookup,
-                                                                                                         m_ProgressDataStream.Progress);
+                                                                                                         progressLookup);
             dependsOn = consolidateCancelRequestsJob.Schedule(dependsOn);
 
-            m_ProgressDataStream.AccessController.ReleaseAsync(dependsOn);
+            m_CancelFlow.ReleaseProgressLookup(dependsOn);
             AccessController.ReleaseAsync(dependsOn);
             return dependsOn;
         }
@@ -83,9 +82,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 {
                     Debug_EnsureNoDuplicates(proxyInstanceID);
                     m_Lookup.TryAdd(proxyInstanceID, 1);
-                    //We have something that wants to cancel and we assume that it will cancel immediately. 
-                    //A CancelJob will hold it open to allow for multi frame cancellation
-                    m_ProgressLookup.TryAdd(proxyInstanceID, false);
+                    //We have something that wants to cancel, so we assume that it will get processed this frame.
+                    //If nothing processes it, it will auto-complete the next frame. 
+                    m_ProgressLookup.TryAdd(proxyInstanceID, true);
                 }
 
                 m_Pending.Clear();

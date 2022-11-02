@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static bool operator ==(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
         {
-            return lhs.m_Entity == rhs.m_Entity && lhs.Context == rhs.Context;
+            return lhs.Entity == rhs.Entity && lhs.Context == rhs.Context;
         }
 
         public static bool operator !=(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
@@ -17,12 +17,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return !(lhs == rhs);
         }
 
-        private readonly Entity m_Entity;
+        public readonly Entity Entity;
         public readonly byte Context;
 
         public EntityProxyInstanceID(Entity entity, byte context)
         {
-            m_Entity = entity;
+            Entity = entity;
             Context = context;
         }
 
@@ -38,12 +38,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode(Context, m_Entity.Index);
+            return HashCodeUtil.GetHashCode(Context, Entity.Index);
         }
 
         public override string ToString()
         {
-            return $"{m_Entity.ToString()} - Context: {Context}";
+            return $"{Entity.ToString()} - Context: {Context}";
         }
 
         [BurstCompatible]
@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             FixedString64Bytes fs = new FixedString64Bytes();
             // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-            fs.Append(m_Entity.ToFixedString());
+            fs.Append(Entity.ToFixedString());
             fs.Append((FixedString32Bytes)" - Context: ");
             fs.Append(Context);
             return fs;

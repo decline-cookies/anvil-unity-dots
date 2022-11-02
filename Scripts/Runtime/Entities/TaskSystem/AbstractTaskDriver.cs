@@ -120,6 +120,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobConfig.Harden();
             }
+            
+            CancelFlow.Harden();
         }
 
         //*************************************************************************************************************
@@ -143,7 +145,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(DataStream<TInstance> dataStream,
+        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(CancellableDataStream<TInstance> dataStream,
                                                                                  in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                  BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

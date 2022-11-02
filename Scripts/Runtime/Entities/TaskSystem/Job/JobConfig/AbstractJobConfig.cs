@@ -168,8 +168,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
             //TODO: Rework this for CancelFlow to get access to all requests
-            CancelRequestDataStream cancelRequestDataStream = taskDriver.CancelRequestDataStream;
-            AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestDataStream, AccessType.SharedWrite, Usage.Write, taskDriver.Context));
+            throw new NotImplementedException();
+            // CancelRequestDataStream cancelRequestDataStream = taskDriver.CancelRequestDataStream;
+            // AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestDataStream, AccessType.SharedWrite, Usage.Write, taskDriver.Context));
 
             return this;
         }

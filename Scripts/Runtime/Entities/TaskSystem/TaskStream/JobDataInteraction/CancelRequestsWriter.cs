@@ -3,7 +3,6 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Diagnostics;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks

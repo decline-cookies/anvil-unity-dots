@@ -1,3 +1,4 @@
+using System;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -22,10 +23,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
         {
-            CancelPendingDataStream<TInstance> cancelPendingDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
-            DataStreamTargetResolver dataStreamTargetResolver = m_CancelJobConfig.GetDataStreamTargetResolver();
-            DataStreamCancellationUpdater<TInstance> cancellationUpdater = cancelPendingDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver);
-            return cancellationUpdater;
+            throw new NotImplementedException();
+            // CancelPendingDataStream<TInstance> cancelPendingDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
+            // DataStreamTargetResolver dataStreamTargetResolver = m_CancelJobConfig.GetDataStreamTargetResolver();
+            // DataStreamCancellationUpdater<TInstance> cancellationUpdater = cancelPendingDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver);
+            // return cancellationUpdater;
         }
     }
 }

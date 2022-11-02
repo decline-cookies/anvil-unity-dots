@@ -123,7 +123,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                         liveIndex++;
                     }
                 }
-
+                
                 m_Iteration.ResetLengthTo(liveIndex);
 
                 m_Pending.Clear();
