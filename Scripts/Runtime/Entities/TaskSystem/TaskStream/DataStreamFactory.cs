@@ -23,18 +23,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public static void CreateDataStreams(AbstractTaskSystem taskSystem, List<AbstractDataStream> taskSystemTaskStreams)
         {
-            CreateDataStreams(taskSystem.GetType(), taskSystem, taskSystemTaskStreams, taskSystem.CancelData.RequestDataStream);
+            CreateDataStreams(taskSystem.GetType(), taskSystem, taskSystemTaskStreams, taskSystem.CancelData.RequestDataStream, taskSystem, null);
         }
 
         public static void CreateDataStreams(AbstractTaskDriver taskDriver, List<AbstractDataStream> taskDriverTaskStreams)
         {
-            CreateDataStreams(taskDriver.GetType(), taskDriver, taskDriverTaskStreams, taskDriver.CancelData.RequestDataStream);
+            CreateDataStreams(taskDriver.GetType(), taskDriver, taskDriverTaskStreams, taskDriver.CancelData.RequestDataStream, taskDriver.TaskSystem, taskDriver);
         }
-        
-        private static void CreateDataStreams(Type type, object instance, List<AbstractDataStream> taskStreams, CancelRequestDataStream cancelRequestDataStream)
+
+        private static void CreateDataStreams(Type type,
+                                              object instance,
+                                              List<AbstractDataStream> taskStreams,
+                                              CancelRequestDataStream cancelRequestDataStream,
+                                              AbstractTaskSystem taskSystem,
+                                              AbstractTaskDriver taskDriver)
         {
             Debug_EnsureCancelRequestsNotNull(cancelRequestDataStream);
-            
+
             //Get all the fields
             FieldInfo[] systemFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             foreach (FieldInfo field in systemFields)
@@ -49,18 +54,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 {
                     continue;
                 }
-                
+
                 //TODO: Find and replace all TaskStream to DataStream
-                
+
                 Debug_CheckFieldIsReadOnly(field);
                 Debug_CheckFieldTypeGenericTypeArguments(field.FieldType);
-                
+
                 //Get the data type 
                 Type entityProxyInstanceType = field.FieldType.GenericTypeArguments[0];
-                AbstractDataStream dataStream = Create(field.FieldType, 
-                                                         entityProxyInstanceType,
-                                                         cancelRequestDataStream);
-                
+                AbstractDataStream dataStream = Create(field.FieldType,
+                                                       entityProxyInstanceType,
+                                                       cancelRequestDataStream,
+                                                       taskSystem,
+                                                       taskDriver);
+
                 //Populate the incoming list so we can handle disposal nicely
                 taskStreams.Add(dataStream);
 
@@ -70,7 +77,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        private static AbstractDataStream Create(Type taskStreamType, Type instanceType, CancelRequestDataStream cancelRequestDataStream)
+        private static AbstractDataStream Create(Type taskStreamType,
+                                                 Type instanceType,
+                                                 CancelRequestDataStream cancelRequestDataStream,
+                                                 AbstractTaskSystem taskSystem,
+                                                 AbstractTaskDriver taskDriver)
         {
             Debug_CheckInstanceType(instanceType);
             if (!TYPED_GENERIC_METHODS.TryGetValue(taskStreamType, out MethodInfo typedGenericMethod))
@@ -79,24 +90,31 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 TYPED_GENERIC_METHODS.Add(taskStreamType, typedGenericMethod);
             }
 
-            return (AbstractDataStream)typedGenericMethod.Invoke(null, new object[]{cancelRequestDataStream});
+            return (AbstractDataStream)typedGenericMethod.Invoke(null,
+                                                                 new object[]
+                                                                 {
+                                                                     new object[]
+                                                                     {
+                                                                         cancelRequestDataStream, taskDriver, taskSystem
+                                                                     }
+                                                                 });
         }
 
-        private static TTaskStream CreateDataStream<TTaskStream>(CancelRequestDataStream cancelRequestDataStream)
+        private static TTaskStream CreateDataStream<TTaskStream>(object[] constructorParams)
             where TTaskStream : AbstractDataStream
         {
-            return (TTaskStream)Activator.CreateInstance(typeof(TTaskStream), 
-                                                         BindingFlags.Instance | BindingFlags.NonPublic, 
-                                                         null, 
-                                                         new object[]{cancelRequestDataStream}, 
-                                                         null, 
+            return (TTaskStream)Activator.CreateInstance(typeof(TTaskStream),
+                                                         BindingFlags.Instance | BindingFlags.NonPublic,
+                                                         null,
+                                                         constructorParams,
+                                                         null,
                                                          null);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_CheckInstanceType(Type proxyInstanceType)
         {
@@ -110,7 +128,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"Type {proxyInstanceType} is not unmanaged!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_CheckFieldIsReadOnly(FieldInfo fieldInfo)
         {
@@ -128,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(DataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsureFieldNotSet(FieldInfo fieldInfo, object instance)
         {
@@ -137,7 +155,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"Field with name {fieldInfo.Name} on {fieldInfo.ReflectedType} is already set! Did you call {nameof(CreateDataStreams)} more than once?");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsureCancelRequestsNotNull(CancelRequestDataStream cancelRequestDataStream)
         {

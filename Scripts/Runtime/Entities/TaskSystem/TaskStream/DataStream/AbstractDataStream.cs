@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => Live.ScheduleInfo;
         }
         
-        protected unsafe AbstractDataStream(bool isCancellable) : base(isCancellable)
+        protected unsafe AbstractDataStream(bool isCancellable, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(isCancellable, taskDriver, taskSystem)
         {
             Pending = new UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent);
             Live = new DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent,
@@ -43,8 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //TODO: Probably a nicer way to handle this without abstract
         internal abstract unsafe void* PendingWriterPointer { get; }
         
-        
-        protected AbstractDataStream(bool isCancellable)
+        protected AbstractDataStream(bool isCancellable, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
             IsCancellable = isCancellable;
         }

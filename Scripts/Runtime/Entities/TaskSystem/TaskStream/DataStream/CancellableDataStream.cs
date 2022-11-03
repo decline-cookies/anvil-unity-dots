@@ -1,4 +1,3 @@
-using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
@@ -6,24 +5,20 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Profiling;
-using Unity.Profiling.LowLevel;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public class CancellableDataStream<TInstance> : DataStream<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        //TODO: Hide this stuff when collections checks are disabled
-        private static readonly ProfilerMarker TYPED_MARKER = new ProfilerMarker(ProfilerCategory.Scripts, typeof(ConsolidateCancellableDataStreamJob).GetReadableName(), MarkerFlags.Script);
-        private static readonly FixedString64Bytes TYPED_NAME = new FixedString64Bytes(typeof(TInstance).GetReadableName());
-
         internal CancelPendingDataStream<TInstance> CancelPendingDataStream { get; }
 
         private NativeArray<JobHandle> m_ConsolidationDependencies;
-
-        internal CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests) : base(taskDriverCancelRequests, true)
+        
+        internal CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriverCancelRequests, true, taskDriver, taskSystem)
         {
-            CancelPendingDataStream = new CancelPendingDataStream<TInstance>();
+            CancelPendingDataStream = new CancelPendingDataStream<TInstance>(taskDriver, taskSystem);
             m_ConsolidationDependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
         }
 
@@ -53,8 +48,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          Live,
                                                                                                          CancelPendingDataStream.Pending.AsWriter(),
                                                                                                          TaskDriverCancelRequests.Lookup,
-                                                                                                         TYPED_NAME,
-                                                                                                         TYPED_MARKER);
+                                                                                                         Debug_DebugString,
+                                                                                                         Debug_ProfilerMarker);
             dependsOn = consolidateJob.Schedule(JobHandle.CombineDependencies(m_ConsolidationDependencies));
 
             AccessController.ReleaseAsync(dependsOn);
@@ -79,29 +74,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
             [WriteOnly] private DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
             [WriteOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingCancelledWriter;
-            private readonly FixedString64Bytes m_TypeName;
-            private ProfilerMarker m_Marker;
+            
+            private readonly FixedString128Bytes m_DebugString;
+            private readonly ProfilerMarker m_ProfilerMarker;
 
             public ConsolidateCancellableDataStreamJob(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> pending,
                                                        DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> iteration,
                                                        UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingCancelledWriter,
                                                        UnsafeParallelHashMap<EntityProxyInstanceID, byte> cancelRequests,
-                                                       FixedString64Bytes typeName,
-                                                       ProfilerMarker marker) : this()
+                                                       FixedString128Bytes debugString,
+                                                       ProfilerMarker profilerMarker) : this()
             {
                 m_Pending = pending;
                 m_Iteration = iteration;
                 m_PendingCancelledWriter = pendingCancelledWriter;
                 m_CancelRequestsForID = cancelRequests;
-                m_TypeName = typeName;
-                m_Marker = marker;
+                m_DebugString = debugString;
+                m_ProfilerMarker = profilerMarker;
 
                 m_NativeThreadIndex = UNSET_THREAD_INDEX;
             }
 
             public void Execute()
             {
-                m_Marker.Begin();
+                m_ProfilerMarker.Begin();
                 m_Iteration.Clear();
 
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter pendingCancelledLaneWriter = m_PendingCancelledWriter.AsLaneWriter(ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex));
@@ -114,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 {
                     if (m_CancelRequestsForID.ContainsKey(instance.InstanceID))
                     {
-                        // Debug.Log($"Cancelling Instance with ID {instance.InstanceID} for {m_TypeName}");
+                        Debug.Log($"Cancelling Instance with ID {instance.InstanceID} for {m_DebugString}");
                         pendingCancelledLaneWriter.Write(instance);
                     }
                     else
@@ -128,7 +124,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 m_Pending.Clear();
 
-                m_Marker.End();
+                m_ProfilerMarker.End();
             }
         }
     }

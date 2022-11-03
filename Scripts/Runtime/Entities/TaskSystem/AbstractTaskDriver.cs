@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DataStreams = new List<AbstractDataStream>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
-            CancelData = new CancelData();
+            CancelData = new CancelData(this);
 
             DataStreamFactory.CreateDataStreams(this, DataStreams);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);

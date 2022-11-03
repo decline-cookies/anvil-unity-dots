@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         internal UnsafeTypedStream<EntityProxyInstanceID> Pending { get; }
 
-        protected AbstractEntityInstanceIDDataStream()
+        protected AbstractEntityInstanceIDDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
             Pending = new UnsafeTypedStream<EntityProxyInstanceID>(Allocator.Persistent);
         }

@@ -47,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             Context = m_TaskDriverContextProvider.GetNextID();
 
-            CancelData = new CancelData();
+            CancelData = new CancelData(this);
             DataStreamFactory.CreateDataStreams(this, DataStreams);
         }
 

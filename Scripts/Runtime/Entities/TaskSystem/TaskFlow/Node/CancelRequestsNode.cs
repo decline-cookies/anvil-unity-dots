@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{CancelRequestDataStream} located in {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
+            return $"{CancelRequestDataStream}";
         }
     }
 }

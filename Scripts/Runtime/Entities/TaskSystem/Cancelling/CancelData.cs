@@ -11,17 +11,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelRequestDataStream RequestDataStream { get; }
         public CancelCompleteDataStream CompleteDataStream { get; }
         private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_ProgressLookup;
+        
+        public CancelData(AbstractTaskSystem taskSystem) : this(null, taskSystem)
+        {
+        }
 
-        public CancelData()
+        public CancelData(AbstractTaskDriver taskDriver) : this(taskDriver, taskDriver.TaskSystem)
+        {
+        }
+        
+        private CancelData(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem)
         {
             m_ProgressLookup = new AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>>(new UnsafeParallelHashMap<EntityProxyInstanceID, bool>(ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>(),
                                                                                                                                                                     Allocator.Persistent));
-            CompleteDataStream = new CancelCompleteDataStream();
-            RequestDataStream = new CancelRequestDataStream(this);
+            CompleteDataStream = new CancelCompleteDataStream(taskDriver, taskSystem);
+            RequestDataStream = new CancelRequestDataStream(this, taskDriver, taskSystem);
         }
 
         protected override void DisposeSelf()
         {
+            //TODO: Should this get baked into AccessControlledValue's Dispose method?
+            m_ProgressLookup.Acquire(AccessType.Disposal);
             m_ProgressLookup.Dispose();
             RequestDataStream.Dispose();
             CompleteDataStream.Dispose();

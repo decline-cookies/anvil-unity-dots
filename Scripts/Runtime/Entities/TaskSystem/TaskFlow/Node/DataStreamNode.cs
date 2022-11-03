@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{DataStream} located in {TaskDebugUtil.GetLocationName(TaskSystem, TaskDriver)}";
+            return $"{DataStream}";
         }
     }
 }
