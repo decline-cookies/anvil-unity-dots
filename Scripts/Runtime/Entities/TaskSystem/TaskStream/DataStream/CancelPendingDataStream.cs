@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 if (iterationArray.Length > 0)
                 {
-                    Debug.Log($"{m_DebugString} - Length {iterationArray.Length}");
+                    Debug.Log($"{m_DebugString} - Count {iterationArray.Length}");
                 }
                 
                 m_ProfilerMarker.End();

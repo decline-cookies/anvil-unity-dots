@@ -121,6 +121,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
                 
                 m_Iteration.ResetLengthTo(liveIndex);
+                
+                Debug.Log($"{m_DebugString} - Count: {liveIndex}");
 
                 m_Pending.Clear();
 

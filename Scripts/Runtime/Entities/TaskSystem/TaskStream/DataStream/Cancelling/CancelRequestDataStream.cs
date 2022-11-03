@@ -102,7 +102,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 if (!m_Lookup.IsEmpty)
                 {
-                    Debug.Log($"{m_DebugString} - Length {m_Lookup.Count()}");
+                    Debug.Log($"{m_DebugString} - Count {m_Lookup.Count()}");
                 }
 
                 m_Pending.Clear();

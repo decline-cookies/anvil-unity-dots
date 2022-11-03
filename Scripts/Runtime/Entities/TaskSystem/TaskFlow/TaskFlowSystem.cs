@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -68,7 +69,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void OnUpdate()
         {
             JobHandle dependsOn = Dependency;
-            
+
+            Debug.Log("Kicking off Consolidation for Task Flow System");
+
             //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
             //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
             //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
@@ -89,6 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
             // the CancelCompletes. We'll consolidate those so that 
+            //TODO: Consolidate the CancelCompletes
 
 
             Dependency = dependsOn;
