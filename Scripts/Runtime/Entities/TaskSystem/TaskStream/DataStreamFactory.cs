@@ -23,12 +23,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public static void CreateDataStreams(AbstractTaskSystem taskSystem, List<AbstractDataStream> taskSystemTaskStreams)
         {
-            CreateDataStreams(taskSystem.GetType(), taskSystem, taskSystemTaskStreams, taskSystem.CancelFlow.RequestDataStream);
+            CreateDataStreams(taskSystem.GetType(), taskSystem, taskSystemTaskStreams, taskSystem.CancelData.RequestDataStream);
         }
 
         public static void CreateDataStreams(AbstractTaskDriver taskDriver, List<AbstractDataStream> taskDriverTaskStreams)
         {
-            CreateDataStreams(taskDriver.GetType(), taskDriver, taskDriverTaskStreams, taskDriver.CancelFlow.RequestDataStream);
+            CreateDataStreams(taskDriver.GetType(), taskDriver, taskDriverTaskStreams, taskDriver.CancelData.RequestDataStream);
         }
         
         private static void CreateDataStreams(Type type, object instance, List<AbstractDataStream> taskStreams, CancelRequestDataStream cancelRequestDataStream)

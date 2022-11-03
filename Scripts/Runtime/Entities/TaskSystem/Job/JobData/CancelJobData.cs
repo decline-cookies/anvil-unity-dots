@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -23,11 +24,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
         {
-            throw new NotImplementedException();
-            // CancelPendingDataStream<TInstance> cancelPendingDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
-            // DataStreamTargetResolver dataStreamTargetResolver = m_CancelJobConfig.GetDataStreamTargetResolver();
-            // DataStreamCancellationUpdater<TInstance> cancellationUpdater = cancelPendingDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver);
-            // return cancellationUpdater;
+            CancelPendingDataStream<TInstance> cancelPendingDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
+            DataStreamTargetResolver dataStreamTargetResolver = m_CancelJobConfig.GetDataStreamTargetResolver();
+            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup = m_CancelJobConfig.GetCancelProgressLookup(AbstractJobConfig.Usage.Cancelling);
+            DataStreamCancellationUpdater<TInstance> cancellationUpdater = cancelPendingDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver, cancelProgressLookup);
+            return cancellationUpdater;
         }
     }
 }

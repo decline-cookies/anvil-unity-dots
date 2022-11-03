@@ -43,6 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly List<AbstractJobConfig> m_JobConfigs;
+        private AbstractTaskDriver m_Parent;
 
         private bool m_IsHardened;
 
@@ -66,7 +67,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
         
-        internal TaskDriverCancelFlow CancelFlow { get; }
+        internal TaskDriverCancelFlow CancelFlow { get; private set; }
+        internal CancelData CancelData { get; }
+        
+        internal AbstractTaskDriver Parent
+        {
+            get => m_Parent;
+        }
 
         protected AbstractTaskDriver(World world, Type systemType)
         {
@@ -81,8 +88,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DataStreams = new List<AbstractDataStream>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
-            CancelFlow = new TaskDriverCancelFlow(this);
-            
+            CancelData = new CancelData();
+
             DataStreamFactory.CreateDataStreams(this, DataStreams);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
             
@@ -101,7 +108,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Dispose all the data we own
             DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelFlow.Dispose();
+            CancelData.Dispose();
+            CancelFlow?.Dispose();
 
             base.DisposeSelf();
         }
@@ -109,6 +117,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}|{Context}";
+        }
+
+        internal void SetParentTaskDriverFromCreation(AbstractTaskDriver parentTaskDriver)
+        {
+            m_Parent = parentTaskDriver;
+        }
+
+        internal void CreateCancelFlow()
+        {
+            CancelFlow = new TaskDriverCancelFlow(this);
         }
 
         internal void Harden()
@@ -120,8 +138,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobConfig.Harden();
             }
-            
-            CancelFlow.Harden();
         }
 
         //*************************************************************************************************************

@@ -1,7 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
-using Anvil.CSharp.Reflection;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -167,11 +167,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
-            //TODO: Rework this for CancelFlow to get access to all requests
-            throw new NotImplementedException();
-            // CancelRequestDataStream cancelRequestDataStream = taskDriver.CancelRequestDataStream;
-            // AddAccessWrapper(new CancelRequestsAccessWrapper(cancelRequestDataStream, AccessType.SharedWrite, Usage.Write, taskDriver.Context));
-
+            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.CancelFlow, AccessType.SharedWrite, Usage.Write));
             return this;
         }
 
@@ -360,6 +356,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return (TWrapper)m_AccessWrappers[id];
         }
 
+        internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup(Usage usage)
+        {
+            CancelDataAccessWrapper cancelDataAccessWrapper = GetAccessWrapper<CancelDataAccessWrapper>(usage);
+            return cancelDataAccessWrapper.ProgressLookup;
+        }
+
         internal CancelPendingDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -374,20 +376,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return dataStreamAccessWrapper.DataStream;
         }
 
-        internal CancelRequestDataStream GetCancelRequestsDataStream(Usage usage)
+        internal TaskDriverCancelFlow GetCancelFlow(Usage usage)
         {
-            CancelRequestsAccessWrapper dataStreamAccessWrapper = GetAccessWrapper<CancelRequestsAccessWrapper>(usage);
-            return dataStreamAccessWrapper.CancelRequestDataStream;
+            CancelFlowAccessWrapper cancelFlowAccessWrapper = GetAccessWrapper<CancelFlowAccessWrapper>(usage);
+            return cancelFlowAccessWrapper.CancelFlow;
         }
-
-        internal void GetCancelRequestsDataStreamWithContext(Usage usage, out CancelRequestDataStream dataStream, out byte context)
-        {
-            CancelRequestsAccessWrapper dataStreamAccessWrapper = GetAccessWrapper<CancelRequestsAccessWrapper>(usage);
-            dataStream = dataStreamAccessWrapper.CancelRequestDataStream;
-            context = dataStreamAccessWrapper.Context;
-        }
-
-
+        
         internal TData GetData<TData>(Usage usage)
             where TData : struct
         {

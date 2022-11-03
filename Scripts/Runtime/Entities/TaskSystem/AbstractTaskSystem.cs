@@ -1,10 +1,9 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Data;
-using Anvil.CSharp.Reflection;
+using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Anvil.CSharp.Logging;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -20,7 +19,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly ByteIDProvider m_TaskDriverContextProvider;
         private readonly List<AbstractJobConfig> m_JobConfigs;
         
-
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
 
@@ -36,8 +34,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal List<AbstractDataStream> DataStreams { get; }
         internal List<AbstractTaskDriver> TaskDrivers { get; }
-        
-        internal SystemCancelFlow CancelFlow { get; }
+
+        internal CancelData CancelData { get; }
 
 
         protected AbstractTaskSystem()
@@ -49,7 +47,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             Context = m_TaskDriverContextProvider.GetNextID();
 
-            CancelFlow = new SystemCancelFlow(this);
+            CancelData = new CancelData();
             DataStreamFactory.CreateDataStreams(this, DataStreams);
         }
 
@@ -87,7 +85,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Dispose all the data we own
             DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelFlow.Dispose();
+            CancelData.Dispose();
 
             base.OnDestroy();
         }
@@ -111,8 +109,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobConfig.Harden();
             }
-            
-            CancelFlow.Harden();
 
             m_SystemJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this);
             m_DriverJobConfigBulkJobSchedulerLookup = m_TaskFlowGraph.CreateJobConfigBulkJobSchedulerLookupFor(this, TaskDrivers);

@@ -13,12 +13,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
         
-        private readonly AbstractCancelFlow m_CancelFlow;
+        private readonly CancelData m_CancelData;
         internal UnsafeParallelHashMap<EntityProxyInstanceID, byte> Lookup { get; }
 
-        public CancelRequestDataStream(AbstractCancelFlow cancelFlow)
+        public CancelRequestDataStream(CancelData cancelData)
         {
-            m_CancelFlow = cancelFlow;
+            m_CancelData = cancelData;
             Lookup = new UnsafeParallelHashMap<EntityProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
         }
 
@@ -43,14 +43,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             dependsOn = JobHandle.CombineDependencies(dependsOn,
                                                       AccessController.AcquireAsync(AccessType.ExclusiveWrite),
-                                                      m_CancelFlow.AcquireProgressLookup(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup));
+                                                      m_CancelData.AcquireProgressLookup(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup));
 
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
                                                                                                          Lookup,
                                                                                                          progressLookup);
             dependsOn = consolidateCancelRequestsJob.Schedule(dependsOn);
 
-            m_CancelFlow.ReleaseProgressLookup(dependsOn);
+            m_CancelData.ReleaseProgressLookup(dependsOn);
             AccessController.ReleaseAsync(dependsOn);
             return dependsOn;
         }

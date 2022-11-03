@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -17,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         private BulkJobScheduler<CancelRequestDataStream> m_WorldCancelRequestsBulkJobScheduler;
-        private BulkJobScheduler<AbstractCancelFlow> m_WorldCancelProgressBulkJobScheduler;
+        private BulkJobScheduler<TaskDriverCancelFlow> m_WorldCancelProgressBulkJobScheduler;
 
         private BulkJobScheduler<AbstractConsolidatableDataStream> m_WorldDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractConsolidatableDataStream> m_WorldPendingCancelBulkJobScheduler;
@@ -61,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private void Harden()
         {
             m_WorldCancelRequestsBulkJobScheduler = TaskFlowGraph.CreateWorldCancelRequestsDataStreamBulkJobScheduler();
-
+            m_WorldCancelProgressBulkJobScheduler = TaskFlowGraph.CreateWorldCancelFlowBulkJobScheduler();
             m_WorldDataStreamBulkJobScheduler = TaskFlowGraph.CreateWorldDataStreamBulkJobScheduler();
             m_WorldPendingCancelBulkJobScheduler = TaskFlowGraph.CreateWorldPendingCancelBulkJobScheduler();
         }
@@ -69,24 +68,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void OnUpdate()
         {
             JobHandle dependsOn = Dependency;
-
-
-            // //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
-            // //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
-            // //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
-            // dependsOn = m_WorldCancelRequestsBulkJobScheduler.Schedule(dependsOn,
-            //                                                            AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
-            //
-            // //Next we check if any cancel progress was updated
-            // // dependsOn = m_WorldCancelProgressBulkJobScheduler
-            //
-            // // Consolidate All EntityProxyDataStreams (this will check the lookups and write to PendingCancel)
-            // dependsOn = m_WorldDataStreamBulkJobScheduler.Schedule(dependsOn,
-            //                                                        AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
-            //
-            // // Consolidate all PendingCancelDataStreams (Cancel jobs can run now)
-            // dependsOn = m_WorldPendingCancelBulkJobScheduler.Schedule(dependsOn,
-            //                                                           AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+            
+            //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
+            //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
+            //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
+            dependsOn = m_WorldCancelRequestsBulkJobScheduler.Schedule(dependsOn,
+                                                                       AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+            
+            //Next we check if any cancel progress was updated
+            dependsOn = m_WorldCancelProgressBulkJobScheduler.Schedule(dependsOn,
+                                                                       TaskDriverCancelFlow.SCHEDULE_FUNCTION);
+            
+            // Consolidate All EntityProxyDataStreams (this will check the lookups and write to PendingCancel)
+            dependsOn = m_WorldDataStreamBulkJobScheduler.Schedule(dependsOn,
+                                                                   AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+            
+            // Consolidate all PendingCancelDataStreams (Cancel jobs can run now)
+            dependsOn = m_WorldPendingCancelBulkJobScheduler.Schedule(dependsOn,
+                                                                      AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
             // the CancelCompletes. We'll consolidate those so that 

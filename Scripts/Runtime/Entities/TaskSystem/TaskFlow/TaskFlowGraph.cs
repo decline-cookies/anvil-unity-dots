@@ -10,6 +10,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private static readonly TaskFlowRoute[] TASK_FLOW_ROUTE_VALUES = (TaskFlowRoute[])Enum.GetValues(typeof(TaskFlowRoute));
         
         private readonly HashSet<AbstractTaskSystem> m_TaskSystems;
+        private readonly HashSet<AbstractTaskDriver> m_TaskDrivers;
+        private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
         private readonly Dictionary<AbstractTaskSystem, NodeLookup> m_DataNodesByTaskSystem;
         private readonly Dictionary<AbstractTaskDriver, NodeLookup> m_DataNodesByTaskDriver;
         private readonly Dictionary<AbstractTaskSystem, JobNodeLookup> m_JobNodesByTaskSystem;
@@ -24,6 +26,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public TaskFlowGraph()
         {
             m_TaskSystems = new HashSet<AbstractTaskSystem>();
+            m_TaskDrivers = new HashSet<AbstractTaskDriver>();
+            m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
             m_DataNodesByTaskSystem = new Dictionary<AbstractTaskSystem, NodeLookup>();
             m_DataNodesByTaskDriver = new Dictionary<AbstractTaskDriver, NodeLookup>();
             m_JobNodesByTaskSystem = new Dictionary<AbstractTaskSystem, JobNodeLookup>();
@@ -37,13 +41,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void RegisterTaskSystem(AbstractTaskSystem taskSystem)
         {
             m_TaskSystems.Add(taskSystem);
-            RegisterCancelRequestsDataStream(taskSystem.CancelFlow.RequestDataStream, taskSystem, null);
+            RegisterCancelRequestsDataStream(taskSystem.CancelData.RequestDataStream, taskSystem, null);
             RegisterDataStreams(taskSystem.DataStreams, taskSystem, null);
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
-            RegisterCancelRequestsDataStream(taskDriver.CancelFlow.RequestDataStream, taskDriver.TaskSystem, taskDriver);
+            m_TaskDrivers.Add(taskDriver);
+            RegisterCancelRequestsDataStream(taskDriver.CancelData.RequestDataStream, taskDriver.TaskSystem, taskDriver);
             RegisterDataStreams(taskDriver.DataStreams, taskDriver.TaskSystem, taskDriver);
         }
 
@@ -118,11 +123,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                cancelRequests.Add(taskSystem.CancelFlow.RequestDataStream);
+                cancelRequests.Add(taskSystem.CancelData.RequestDataStream);
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    cancelRequests.Add(taskDriver.CancelFlow.RequestDataStream);
+                    cancelRequests.Add(taskDriver.CancelData.RequestDataStream);
                 }
             }
 
@@ -138,21 +143,39 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 foreach (AbstractDataStream dataStream in taskSystem.DataStreams)
                 {
-                    dataStreams.Add(dataStream.GetCancelPendingDataStream());
+                    //TODO: Gross, can we avoid this check?
+                    if (dataStream.IsCancellable)
+                    {
+                        dataStreams.Add(dataStream.GetCancelPendingDataStream());
+                    }
                 }
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
                     foreach (AbstractDataStream dataStream in taskDriver.DataStreams)
                     {
-                        dataStreams.Add(dataStream.GetCancelPendingDataStream());
+                        if (dataStream.IsCancellable)
+                        {
+                            dataStreams.Add(dataStream.GetCancelPendingDataStream());
+                        }
                     }
                 }
             }
-
+            //TODO: This might be solvable with interfaces
             return new BulkJobScheduler<AbstractConsolidatableDataStream>(dataStreams.ToArray());
         }
-        
+
+        public BulkJobScheduler<TaskDriverCancelFlow> CreateWorldCancelFlowBulkJobScheduler()
+        {
+            List<TaskDriverCancelFlow> topLevelCancelFlows = new List<TaskDriverCancelFlow>();
+            foreach (AbstractTaskDriver taskDriver in m_TopLevelTaskDrivers)
+            {
+                topLevelCancelFlows.Add(taskDriver.CancelFlow);
+            }
+
+            return new BulkJobScheduler<TaskDriverCancelFlow>(topLevelCancelFlows.ToArray());
+        }
+
 
         public void PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskSystem taskSystem)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
@@ -275,6 +298,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
                 taskSystem.Harden();
+            }
+
+            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
+            {
+                if (taskDriver.Parent == null)
+                {
+                    m_TopLevelTaskDrivers.Add(taskDriver);
+                    taskDriver.CreateCancelFlow();
+                    taskDriver.CancelFlow.BuildScheduling();
+                }
             }
 
             //TODO: #66 - Build Relationships

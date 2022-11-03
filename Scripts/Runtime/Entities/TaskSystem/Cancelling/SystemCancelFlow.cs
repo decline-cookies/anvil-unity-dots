@@ -6,21 +6,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly AbstractTaskSystem m_TaskSystem;
 
-        public SystemCancelFlow(AbstractTaskSystem taskSystem)
+        public SystemCancelFlow(AbstractTaskSystem taskSystem, TaskDriverCancelFlow parent) : base(taskSystem.CancelData, parent)
         {
             m_TaskSystem = taskSystem;
         }
 
-        internal override void BuildRelationshipData(AbstractCancelFlow parentCancelFlow,
-                                                     List<CancelRequestDataStream> cancelRequests,
-                                                     List<byte> contexts)
+        internal void BuildRelationshipData(List<AbstractCancelFlow> cancelFlows,
+                                            List<CancelRequestDataStream> cancelRequests,
+                                            List<byte> contexts)
         {
-            //Assign our parent
-            ParentCancelFlow = parentCancelFlow;
+            cancelFlows.Add(this);
             //Add ourself
-            cancelRequests.Add(RequestDataStream);
+            cancelRequests.Add(CancelData.RequestDataStream);
             //Add the previous context which will represent the TaskDriver that writes to us
-            contexts.Add(contexts[^1]);
+            contexts.Add(Parent.TaskDriverContext);
         }
     }
 }

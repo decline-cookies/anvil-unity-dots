@@ -55,7 +55,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public void Execute()
             {
                 m_Iteration.Clear();
-
+                
                 NativeArray<EntityProxyInstanceID> iterationArray = m_Iteration.DeferredCreate(m_Pending.Count());
                 m_Pending.CopyTo(ref iterationArray);
                 m_Pending.Clear();

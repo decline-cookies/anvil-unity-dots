@@ -34,6 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 Debug_CheckFieldIsReadOnly(field);
 
                 AbstractTaskDriver subTaskDriver = Create(field.FieldType, taskDriver.World);
+                subTaskDriver.SetParentTaskDriverFromCreation(taskDriver);
                 subTaskDrivers.Add(subTaskDriver);
 
                 Debug_EnsureFieldNotSet(field, taskDriver);

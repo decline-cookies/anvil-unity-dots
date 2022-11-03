@@ -1,32 +1,181 @@
+using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using Unity.Collections;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskDriverCancelFlow : AbstractCancelFlow
     {
-        private readonly AbstractTaskDriver m_TaskDriver;
+        internal static readonly BulkScheduleDelegate<TaskDriverCancelFlow> SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<TaskDriverCancelFlow>(nameof(Schedule), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        public TaskDriverCancelFlow(AbstractTaskDriver taskDriver)
+        private readonly AbstractTaskDriver m_TaskDriver;
+        private readonly SystemCancelFlow m_SystemCancelFlow;
+        private readonly Dictionary<int, List<AbstractCancelFlow>> m_CancelFlowHierarchy;
+        private BulkJobScheduler<AbstractCancelFlow>[] m_OrderedBulkJobSchedulers;
+
+
+        //Request data
+        private readonly List<CancelRequestDataStream> m_CancelRequestDataStreams;
+        private NativeArray<byte> m_RequestContexts;
+        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_RequestWriters;
+        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_RequestLaneWriters;
+        private NativeArray<JobHandle> m_CancelRequestAcquisitionJobHandles;
+
+        public byte TaskDriverContext
         {
-            m_TaskDriver = taskDriver;
+            get => m_TaskDriver.Context;
         }
 
-        internal override void BuildRelationshipData(AbstractCancelFlow parentCancelFlow,
-                                                     List<CancelRequestDataStream> cancelRequests,
-                                                     List<byte> contexts)
+        public TaskDriverCancelFlow(AbstractTaskDriver taskDriver) : base(taskDriver.CancelData, taskDriver.Parent?.CancelFlow)
         {
-            //Assign our parent
-            ParentCancelFlow = parentCancelFlow;
+            m_TaskDriver = taskDriver;
+            m_SystemCancelFlow = new SystemCancelFlow(m_TaskDriver.TaskSystem, this);
+            m_CancelFlowHierarchy = new Dictionary<int, List<AbstractCancelFlow>>();
+            m_CancelRequestDataStreams = new List<CancelRequestDataStream>();
+            BuildRequestData();
+        }
+
+        protected override void DisposeSelf()
+        {
+            m_SystemCancelFlow.Dispose();
+            base.DisposeSelf();
+        }
+
+        internal CancelRequestsWriter CreateCancelRequestsWriter()
+        {
+            return new CancelRequestsWriter(m_RequestWriters,
+                                            m_RequestLaneWriters,
+                                            m_RequestContexts);
+        }
+
+        private void BuildRequestData()
+        {
+            List<byte> cancelContexts = new List<byte>();
+            List<AbstractCancelFlow> cancelFlows = new List<AbstractCancelFlow>();
+            BuildRequestData(cancelFlows, m_CancelRequestDataStreams, cancelContexts);
+
+            m_RequestWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
+            m_RequestLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
+            m_RequestContexts = new NativeArray<byte>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
+
+            for (int i = 0; i < m_RequestWriters.Length; ++i)
+            {
+                m_RequestWriters[i] = m_CancelRequestDataStreams[i].Pending.AsWriter();
+                m_RequestContexts[i] = cancelContexts[i];
+            }
+
+            m_CancelRequestAcquisitionJobHandles = new NativeArray<JobHandle>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
+        }
+
+        private void BuildRequestData(List<AbstractCancelFlow> cancelFlows,
+                                      List<CancelRequestDataStream> cancelRequests,
+                                      List<byte> contexts)
+        {
+            cancelFlows.Add(this);
             //Add ourself
-            cancelRequests.Add(RequestDataStream);
+            cancelRequests.Add(CancelData.RequestDataStream);
             //Add our TaskDriver's context
-            contexts.Add(m_TaskDriver.Context);
-            //Add our governing system
-            m_TaskDriver.TaskSystem.CancelFlow.BuildRelationshipData(parentCancelFlow, cancelRequests, contexts);
+            contexts.Add(TaskDriverContext);
+
             //For all subtask drivers, recursively add
             foreach (AbstractTaskDriver taskDriver in m_TaskDriver.SubTaskDrivers)
             {
-                taskDriver.CancelFlow.BuildRelationshipData(parentCancelFlow, cancelRequests, contexts);
+                taskDriver.CreateCancelFlow();
+                taskDriver.CancelFlow.BuildRequestData(cancelFlows, cancelRequests, contexts);
+            }
+
+            //Add our governing system
+            m_SystemCancelFlow.BuildRelationshipData(cancelFlows, cancelRequests, contexts);
+        }
+
+        public void BuildScheduling()
+        {
+            //Build up the hierarchy of when things should be scheduled so that the bottom most get a chance first
+            //This will ensure the order of jobs executed to allow for possible 1 frame bubble up of completes
+            BuildSchedulingHierarchy(m_TaskDriver, 0);
+
+            int maxDepth = m_CancelFlowHierarchy.Count - 1;
+
+            List<BulkJobScheduler<AbstractCancelFlow>> orderedBulkJobSchedulers = new List<BulkJobScheduler<AbstractCancelFlow>>();
+
+            for (int depth = maxDepth; depth >= 0; --depth)
+            {
+                List<AbstractCancelFlow> cancelFlowsAtDepth = m_CancelFlowHierarchy[depth];
+                BulkJobScheduler<AbstractCancelFlow> bulkJobScheduler = new BulkJobScheduler<AbstractCancelFlow>(cancelFlowsAtDepth.ToArray());
+                orderedBulkJobSchedulers.Add(bulkJobScheduler);
+            }
+
+            m_OrderedBulkJobSchedulers = orderedBulkJobSchedulers.ToArray();
+        }
+
+        private void BuildSchedulingHierarchy(AbstractTaskDriver taskDriver, int depth)
+        {
+            List<AbstractCancelFlow> cancelFlows = GetOrCreateAtDepth(depth);
+            List<AbstractCancelFlow> cancelFlowsOneDeeper = GetOrCreateAtDepth(depth + 1);
+
+            //Add our own Cancel Flow
+            cancelFlows.Add(taskDriver.CancelFlow);
+            //Add the System's Cancel Flow to the next depth
+            cancelFlowsOneDeeper.Add(taskDriver.CancelFlow.m_SystemCancelFlow);
+
+            //Drill down into the children
+            foreach (AbstractTaskDriver subTaskDriver in taskDriver.SubTaskDrivers)
+            {
+                BuildSchedulingHierarchy(subTaskDriver, depth + 1);
+            }
+        }
+
+        private List<AbstractCancelFlow> GetOrCreateAtDepth(int depth)
+        {
+            if (!m_CancelFlowHierarchy.TryGetValue(depth, out List<AbstractCancelFlow> cancelFlows))
+            {
+                cancelFlows = new List<AbstractCancelFlow>();
+                m_CancelFlowHierarchy.Add(depth, cancelFlows);
+            }
+
+            return cancelFlows;
+        }
+
+
+        private JobHandle Schedule(JobHandle dependsOn)
+        {
+            int len = m_OrderedBulkJobSchedulers.Length;
+            if (len == 0)
+            {
+                return dependsOn;
+            }
+
+            for (int i = 0; i < len; ++i)
+            {
+                dependsOn = ScheduleBulkSchedulers(m_OrderedBulkJobSchedulers[i], dependsOn);
+            }
+
+            return dependsOn;
+        }
+
+        private JobHandle ScheduleBulkSchedulers(BulkJobScheduler<AbstractCancelFlow> bulkJobScheduler, JobHandle dependsOn)
+        {
+            return bulkJobScheduler.Schedule(dependsOn, CHECK_PROGRESS_SCHEDULE_FUNCTION);
+        }
+
+        public JobHandle AcquireAsync(AccessType accessType)
+        {
+            for (int i = 0; i < m_CancelRequestDataStreams.Count; ++i)
+            {
+                m_CancelRequestAcquisitionJobHandles[i] = m_CancelRequestDataStreams[i].AccessController.AcquireAsync(accessType);
+            }
+            return JobHandle.CombineDependencies(m_CancelRequestAcquisitionJobHandles);
+        }
+
+        public void ReleaseAsync(JobHandle releaseAccessDependency)
+        {
+            foreach (CancelRequestDataStream cancelRequestDataStream in m_CancelRequestDataStreams)
+            {
+                cancelRequestDataStream.AccessController.ReleaseAsync(releaseAccessDependency);
             }
         }
     }

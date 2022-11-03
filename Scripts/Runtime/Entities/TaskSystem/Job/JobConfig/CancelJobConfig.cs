@@ -15,13 +15,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                    taskDriver)
         {
             RequireDataStreamForCancelling(cancelPendingDataStream);
-            //TODO: need to make sure we get the corresponding progress lookup
+            RequireCancelDataForCancelProgress(taskDriver != null ? taskDriver.CancelData : taskSystem.CancelData);
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
+        private void RequireCancelDataForCancelProgress(CancelData cancelData)
+        {
+            AddAccessWrapper(new CancelDataAccessWrapper(cancelData, AccessType.ExclusiveWrite, Usage.Cancelling));
+        }
+        
         private void RequireDataStreamForCancelling(CancelPendingDataStream<TInstance> cancelPendingDataStream)
         {
             AddAccessWrapper(new PendingCancelDataStreamAccessWrapper<TInstance>(cancelPendingDataStream, AccessType.ExclusiveWrite, Usage.Cancelling));

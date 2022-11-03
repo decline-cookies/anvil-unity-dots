@@ -43,11 +43,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>The <see cref="CancelRequestsWriter"/></returns>
         public CancelRequestsWriter GetCancelRequestsWriter()
         {
-            throw new NotImplementedException();
-            // //TODO: Rework this to get the CancelFlow Requests Writer
-            // m_JobConfig.GetCancelRequestsDataStreamWithContext(AbstractJobConfig.Usage.Write, out CancelRequestDataStream cancelRequestsDataStream, out byte context);
-            // //We want the context of who we're writing to, NOT our own context
-            // return cancelRequestsDataStream.CreateCancelRequestsWriter(context);
+            TaskDriverCancelFlow cancelFlow = m_JobConfig.GetCancelFlow(AbstractJobConfig.Usage.Write);
+            return cancelFlow.CreateCancelRequestsWriter();
         }
         
         /// <summary>
