@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Entities;
+using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -186,6 +187,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       entityQuery,
                                                       scheduleJobFunction,
                                                       batchStrategy);
+        }
+
+        public IJobConfigRequirements ConfigureJobWhenCancelComplete(AbstractTaskDriver taskDriver,
+                                                                     in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                                     BatchStrategy batchStrategy)
+        {
+            return TaskSystem.ConfigureJobWhenCancelComplete(this,
+                                                             taskDriver.CancelData.CompleteDataStream,
+                                                             scheduleJobFunction,
+                                                             batchStrategy);
         }
 
 

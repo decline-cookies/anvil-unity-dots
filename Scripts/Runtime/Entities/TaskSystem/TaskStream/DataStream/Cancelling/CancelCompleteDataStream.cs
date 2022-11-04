@@ -10,9 +10,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelCompleteDataStream : AbstractEntityInstanceIDDataStream
     {
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
+
         //Deliberately NOT getters because that messes up what the Safety Handle points to. 
         //TODO: Elaborate
         internal DeferredNativeArray<EntityProxyInstanceID> Live;
+        
+        internal DeferredNativeArrayScheduleInfo ScheduleInfo
+        {
+            get => Live.ScheduleInfo;
+        }
 
         internal CancelCompleteDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
@@ -40,6 +47,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AccessController.ReleaseAsync(dependsOn);
 
             return dependsOn;
+        }
+
+        internal CancelCompleteReader CreateCancelCompleteReader()
+        {
+            return new CancelCompleteReader(Live.AsDeferredJobArray());
         }
 
         //*************************************************************************************************************

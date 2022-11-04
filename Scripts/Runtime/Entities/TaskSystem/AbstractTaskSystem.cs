@@ -187,6 +187,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return jobConfig;
         }
+
+        internal IJobConfigRequirements ConfigureJobWhenCancelComplete(AbstractTaskDriver taskDriver,
+                                                                       CancelCompleteDataStream cancelCompleteDataStream,
+                                                                       JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                                       BatchStrategy batchStrategy)
+        {
+            CancelCompleteJobConfig jobConfig = JobConfigFactory.CreateCancelCompleteJobConfig(m_TaskFlowGraph,
+                                                                                               this,
+                                                                                               taskDriver,
+                                                                                               cancelCompleteDataStream,
+                                                                                               scheduleJobFunction,
+                                                                                               batchStrategy);
+            RegisterJob(taskDriver, jobConfig, TaskFlowRoute.Populate);
+
+            return jobConfig;
+        }
         
 
         private void RegisterJob(AbstractTaskDriver taskDriver,

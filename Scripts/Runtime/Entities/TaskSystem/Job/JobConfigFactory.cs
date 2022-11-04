@@ -12,6 +12,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     internal static class JobConfigFactory
     {
+        public static CancelCompleteJobConfig CreateCancelCompleteJobConfig(TaskFlowGraph taskFlowGraph,
+                                                                            AbstractTaskSystem taskSystem,
+                                                                            AbstractTaskDriver taskDriver,
+                                                                            CancelCompleteDataStream cancelCompleteDataStream,
+                                                                            JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                                            BatchStrategy batchStrategy)
+        {
+            CancelCompleteJobConfig jobConfig = new CancelCompleteJobConfig(taskFlowGraph,
+                                                                            taskSystem,
+                                                                            taskDriver,
+                                                                            cancelCompleteDataStream);
+
+            CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig,
+                                                                      taskSystem.World,
+                                                                      taskDriver?.Context ?? taskSystem.Context);
+
+            CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData, 
+                                                                                     cancelCompleteDataStream, 
+                                                                                     batchStrategy, 
+                                                                                     scheduleJobFunction);
+
+            return FinalizeJobConfig(jobConfig, scheduleInfo);
+        }
+        
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,

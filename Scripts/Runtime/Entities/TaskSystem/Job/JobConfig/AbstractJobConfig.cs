@@ -177,6 +177,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage));
             return this;
         }
+        
+        public IJobConfigRequirements RequireCancelCompleteDataStreamForRead(CancelCompleteDataStream cancelCompleteDataStream)
+        {
+            AddAccessWrapper(new CancelCompleteDataStreamAccessWrapper(cancelCompleteDataStream, AccessType.SharedRead, Usage.Read));
+            return this;
+        }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
@@ -354,6 +360,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             JobConfigDataID id = new JobConfigDataID(typeof(TWrapper), usage);
             Debug_EnsureWrapperExists(id);
             return (TWrapper)m_AccessWrappers[id];
+        }
+
+        internal CancelCompleteDataStream GetCancelCompleteDataStream(Usage usage)
+        {
+            CancelCompleteDataStreamAccessWrapper cancelCompleteDataStreamAccessWrapper = GetAccessWrapper<CancelCompleteDataStreamAccessWrapper>(usage);
+            return cancelCompleteDataStreamAccessWrapper.CancelCompleteDataStream;
         }
 
         internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup(Usage usage)

@@ -9,6 +9,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     public static class JobConfigScheduleDelegates
     {
+        public delegate JobHandle ScheduleCancelCompleteJobDelegate(JobHandle jobHandle,
+                                                                    CancelCompleteJobData jobData,
+                                                                    CancelCompleteScheduleInfo scheduleInfo);
+        
         /// <summary>
         /// For scheduling a job triggered by a <see cref="TaskStream{TInstance}"/> from
         /// a <see cref="DataStreamJobConfig{TInstance}"/>
