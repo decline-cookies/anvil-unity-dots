@@ -1,9 +1,5 @@
-using Anvil.Unity.DOTS.Data;
-using Anvil.Unity.DOTS.Jobs;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -24,6 +20,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private BulkJobScheduler<AbstractConsolidatableDataStream> m_WorldDataStreamBulkJobScheduler;
         private BulkJobScheduler<AbstractConsolidatableDataStream> m_WorldPendingCancelBulkJobScheduler;
+        private BulkJobScheduler<AbstractConsolidatableDataStream> m_WorldCancelCompleteBulkJobScheduler;
 
         private bool m_HasInitialized;
 
@@ -39,6 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_WorldCancelProgressBulkJobScheduler?.Dispose();
             m_WorldDataStreamBulkJobScheduler?.Dispose();
             m_WorldPendingCancelBulkJobScheduler?.Dispose();
+            m_WorldCancelCompleteBulkJobScheduler?.Dispose();
 
             base.OnDestroy();
         }
@@ -67,6 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_WorldCancelProgressBulkJobScheduler = TaskFlowGraph.CreateWorldCancelFlowBulkJobScheduler();
             m_WorldDataStreamBulkJobScheduler = TaskFlowGraph.CreateWorldDataStreamBulkJobScheduler();
             m_WorldPendingCancelBulkJobScheduler = TaskFlowGraph.CreateWorldPendingCancelBulkJobScheduler();
+            m_WorldCancelCompleteBulkJobScheduler = TaskFlowGraph.CreateWorldCancelCompleteBulkJobScheduler();
         }
 
         protected override void OnUpdate()
@@ -92,8 +91,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                       AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
-            // the CancelCompletes. We'll consolidate those so that 
-            //TODO: Consolidate the CancelCompletes
+            // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain
+            dependsOn = m_WorldCancelCompleteBulkJobScheduler.Schedule(dependsOn,
+                                                                       AbstractConsolidatableDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
 
             Dependency = dependsOn;

@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private NativeArray<JobHandle> m_Dependencies;
 
         protected CancelData CancelData { get; }
-        protected TaskDriverCancelFlow Parent { get; }
+        protected TaskDriverCancelFlow Parent { get; set; }
         
         //TODO: Hide this stuff when collections checks are disabled
         protected ProfilerMarker Debug_ProfilerMarker { get; }
@@ -49,12 +49,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
         {
-            //TODO: THIS MIGHT NOT FULLY WORK
-            if (Parent == null)
-            {
-                return dependsOn;
-            }
-            
             UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup = default;
 
             m_Dependencies[0] = dependsOn;
@@ -96,7 +90,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
             [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_CompleteWriter;
             [ReadOnly] private readonly byte m_Context;
-            
+
+            private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_CompleteLaneWriter;
+
             private readonly FixedString128Bytes m_DebugString;
             private readonly ProfilerMarker m_ProfilerMarker;
 
@@ -123,8 +119,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_ProfilerMarker.Begin();
                 
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
-                UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter completeLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
+                m_CompleteLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
 
+                if (m_ParentProgressLookup.IsCreated)
+                {
+                    CheckCancelProgressWithParent();
+                }
+                else
+                {
+                    CheckCancelProgress();
+                }
+
+                m_ProfilerMarker.End();
+            }
+
+            private void CheckCancelProgressWithParent()
+            {
                 //Go through all entries in the parent lookup. 
                 //If we are a System, our parent must be a TaskDriver.
                 //Therefore we could have have entries from multiple TaskDrivers but we only want to process 
@@ -136,32 +146,50 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     ref bool isParentProcessing = ref entry.Value;
                     EntityProxyInstanceID id = new EntityProxyInstanceID(parentID.Entity, m_Context);
 
-                    //If we're still processing...
-                    if (m_ProgressLookup[id] == true)
+                    bool isStillProcessing = m_ProgressLookup[id];
+                    HandleProgress(isStillProcessing, ref id);
+                    if (isParentProcessing)
                     {
-                        Debug.Log($"Still processing for {id.ToFixedString()} on {m_DebugString} - Holding open parent");
-                        //Flip us back to not processing. A CancelJob will switch this if we still need to process
-                        m_ProgressLookup[id] = false;
                         //Hold open the parent, the parent shouldn't collapse until nothing is holding it open
                         isParentProcessing = true;
                     }
-                    //If we're not processing then:
-                    // - All Cancel Jobs are complete 
-                    // OR
-                    // - There never were any Cancel Jobs to begin with
-                    // OR
-                    // - There wasn't any data for this id that was requested to cancel.
-                    else
-                    {
-                        Debug.Log($"No longer processing for {id.ToFixedString()} on {m_DebugString} - Completing");
-                        //Remove ourselves from the Progress Lookup
-                        m_ProgressLookup.Remove(id);
-                        //Write ourselves to the Complete.
-                        completeLaneWriter.Write(id);
-                    }
                 }
-                
-                m_ProfilerMarker.End();
+            }
+
+            private void CheckCancelProgress()
+            {
+                //We don't have a parent so we must be the top level TaskDriver.
+                //We need to loop through ourselves instead.
+                foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ProgressLookup)
+                {
+                    EntityProxyInstanceID id = entry.Key;
+                    HandleProgress(entry.Value, ref id);
+                }
+            }
+
+            private void HandleProgress(bool isStillProcessing, ref EntityProxyInstanceID id)
+            {
+                //If we're still processing...
+                if (isStillProcessing)
+                {
+                    Debug.Log($"Still processing for {id.ToFixedString()} on {m_DebugString} - Holding open");
+                    //Flip us back to not processing. A CancelJob will switch this if we still need to process
+                    m_ProgressLookup[id] = false;
+                }
+                //If we're not processing then:
+                // - All Cancel Jobs are complete 
+                // OR
+                // - There never were any Cancel Jobs to begin with
+                // OR
+                // - There wasn't any data for this id that was requested to cancel.
+                else
+                {
+                    Debug.Log($"No longer processing for {id.ToFixedString()} on {m_DebugString} - Completing");
+                    //Remove ourselves from the Progress Lookup
+                    m_ProgressLookup.Remove(id);
+                    //Write ourselves to the Complete.
+                    m_CompleteLaneWriter.Write(id);
+                }
             }
         }
     }

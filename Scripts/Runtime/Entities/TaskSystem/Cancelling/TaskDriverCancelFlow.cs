@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Collections;
@@ -98,6 +99,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_CancelRequestAcquisitionJobHandles = new NativeArray<JobHandle>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
         }
 
+        private void AssignParent(TaskDriverCancelFlow parent)
+        {
+            if (Parent != null && Parent != parent)
+            {
+                throw new InvalidOperationException();
+            }
+            Parent = parent;
+        }
+
         private void BuildRequestData(List<AbstractCancelFlow> cancelFlows,
                                       List<CancelRequestDataStream> cancelRequests,
                                       List<byte> contexts)
@@ -112,6 +122,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (AbstractTaskDriver taskDriver in m_TaskDriver.SubTaskDrivers)
             {
                 taskDriver.CreateCancelFlow();
+                taskDriver.CancelFlow.AssignParent(this);
                 taskDriver.CancelFlow.BuildRequestData(cancelFlows, cancelRequests, contexts);
             }
 

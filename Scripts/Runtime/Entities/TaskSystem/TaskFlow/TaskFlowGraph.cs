@@ -134,6 +134,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new BulkJobScheduler<CancelRequestDataStream>(cancelRequests.ToArray());
         }
 
+        public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldCancelCompleteBulkJobScheduler()
+        {
+            List<CancelCompleteDataStream> cancelCompletes = new List<CancelCompleteDataStream>();
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
+            {
+                cancelCompletes.Add(taskSystem.CancelData.CompleteDataStream);
+                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
+                {
+                    cancelCompletes.Add(taskDriver.CancelData.CompleteDataStream);
+                }
+            }
+
+            return new BulkJobScheduler<AbstractConsolidatableDataStream>(cancelCompletes.ToArray());
+        }
+
         public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldPendingCancelBulkJobScheduler()
         {
             List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
