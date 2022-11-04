@@ -139,7 +139,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     //If we're still processing...
                     if (m_ProgressLookup[id] == true)
                     {
-                        Debug.Log($"Still processing for {id} on {m_DebugString} - Holding open parent");
+                        Debug.Log($"Still processing for {id.ToFixedString()} on {m_DebugString} - Holding open parent");
                         //Flip us back to not processing. A CancelJob will switch this if we still need to process
                         m_ProgressLookup[id] = false;
                         //Hold open the parent, the parent shouldn't collapse until nothing is holding it open
@@ -153,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     // - There wasn't any data for this id that was requested to cancel.
                     else
                     {
-                        Debug.Log($"No longer processing for {id} on {m_DebugString} - Completing");
+                        Debug.Log($"No longer processing for {id.ToFixedString()} on {m_DebugString} - Completing");
                         //Remove ourselves from the Progress Lookup
                         m_ProgressLookup.Remove(id);
                         //Write ourselves to the Complete.

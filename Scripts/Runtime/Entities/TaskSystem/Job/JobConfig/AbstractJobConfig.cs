@@ -167,7 +167,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
-            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.CancelFlow, AccessType.SharedWrite, Usage.Write));
+            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver, AccessType.SharedWrite, Usage.Write));
             return this;
         }
 

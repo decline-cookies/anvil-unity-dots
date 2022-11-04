@@ -5,11 +5,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelFlowAccessWrapper : AbstractAccessWrapper
     {
-        public TaskDriverCancelFlow CancelFlow { get; }
-
-        public CancelFlowAccessWrapper(TaskDriverCancelFlow cancelFlow, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        //TODO: This is gross but it's because the TaskDriver may not yet have its CancelFlow created when the job is 
+        //TODO: scheduled. But by the time the job executes it will be.
+        public TaskDriverCancelFlow CancelFlow
         {
-            CancelFlow = cancelFlow;
+            get => m_TaskDriver.CancelFlow;
+        }
+
+        private readonly AbstractTaskDriver m_TaskDriver;
+
+        public CancelFlowAccessWrapper(AbstractTaskDriver taskDriver, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        {
+            m_TaskDriver = taskDriver;
         }
 
         public sealed override JobHandle Acquire()

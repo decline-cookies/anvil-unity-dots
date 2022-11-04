@@ -14,11 +14,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public struct CancelRequestsWriter
     {
         private const int UNSET_LANE_INDEX = -1;
-
+        
         [ReadOnly] private readonly NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_CancelRequestWriters;
         [ReadOnly] private readonly NativeArray<byte> m_Contexts;
 
-        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_CancelRequestLaneWriters;
+        [NativeDisableParallelForRestriction] private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_CancelRequestLaneWriters;
         private int m_LaneIndex;
 
         internal CancelRequestsWriter(NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> writers,

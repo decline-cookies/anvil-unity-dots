@@ -110,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 {
                     if (m_CancelRequestsForID.ContainsKey(instance.InstanceID))
                     {
-                        Debug.Log($"Cancelling Instance with ID {instance.InstanceID} for {m_DebugString}");
+                        Debug.Log($"Cancelling Instance with ID {instance.InstanceID.ToFixedString()} for {m_DebugString}");
                         pendingCancelledLaneWriter.Write(instance);
                     }
                     else
