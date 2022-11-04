@@ -5,7 +5,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     public abstract class AbstractEntityInstanceIDDataStream : AbstractConsolidatableDataStream
     {
-        internal UnsafeTypedStream<EntityProxyInstanceID> Pending { get; }
+        //Deliberately NOT getters because that messes up what the Safety Handle points to. 
+        //TODO: Elaborate
+        internal UnsafeTypedStream<EntityProxyInstanceID> Pending;
 
         protected AbstractEntityInstanceIDDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {

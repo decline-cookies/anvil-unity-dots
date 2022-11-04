@@ -123,9 +123,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_Parent = parentTaskDriver;
         }
-
+        
+        //TODO: This function needs to be better
         internal void CreateCancelFlow()
         {
+            if (CancelFlow != null)
+            {
+                return;
+            }
             CancelFlow = new TaskDriverCancelFlow(this);
         }
 

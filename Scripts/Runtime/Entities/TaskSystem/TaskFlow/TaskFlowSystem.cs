@@ -1,3 +1,6 @@
+using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
@@ -69,8 +72,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void OnUpdate()
         {
             JobHandle dependsOn = Dependency;
-
-            Debug.Log("Kicking off Consolidation for Task Flow System");
 
             //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
             //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to

@@ -16,7 +16,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
         
         private readonly CancelData m_CancelData;
-        internal UnsafeParallelHashMap<EntityProxyInstanceID, byte> Lookup { get; }
+        //Deliberately NOT getters because that messes up what the Safety Handle points to. 
+        //TODO: Elaborate
+        internal UnsafeParallelHashMap<EntityProxyInstanceID, byte> Lookup;
         
         public CancelRequestDataStream(CancelData cancelData, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {

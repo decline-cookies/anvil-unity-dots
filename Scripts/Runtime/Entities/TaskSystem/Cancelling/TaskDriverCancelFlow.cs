@@ -40,6 +40,34 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
+            if (m_RequestContexts.IsCreated)
+            {
+                m_RequestContexts.Dispose();
+            }
+
+            if (m_RequestWriters.IsCreated)
+            {
+                m_RequestWriters.Dispose();
+            }
+
+            if (m_RequestLaneWriters.IsCreated)
+            {
+                m_RequestLaneWriters.Dispose();
+            }
+
+            if (m_CancelRequestAcquisitionJobHandles.IsCreated)
+            {
+                m_CancelRequestAcquisitionJobHandles.Dispose();
+            }
+
+            if (m_OrderedBulkJobSchedulers != null)
+            {
+                foreach (BulkJobScheduler<AbstractCancelFlow> bulkJobScheduler in m_OrderedBulkJobSchedulers)
+                {
+                    bulkJobScheduler.Dispose();
+                }
+            }
+
             m_SystemCancelFlow.Dispose();
             base.DisposeSelf();
         }

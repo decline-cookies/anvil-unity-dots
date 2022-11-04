@@ -10,7 +10,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelCompleteDataStream : AbstractEntityInstanceIDDataStream
     {
-        internal DeferredNativeArray<EntityProxyInstanceID> Live { get; }
+        //Deliberately NOT getters because that messes up what the Safety Handle points to. 
+        //TODO: Elaborate
+        internal DeferredNativeArray<EntityProxyInstanceID> Live;
 
         internal CancelCompleteDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {

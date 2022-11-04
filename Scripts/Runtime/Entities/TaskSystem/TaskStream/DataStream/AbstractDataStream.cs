@@ -6,8 +6,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public abstract class AbstractDataStream<TInstance> : AbstractDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        internal UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> Pending { get; }
-        internal DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> Live { get; }
+        //Deliberately NOT getters because that messes up what the Safety Handle points to. 
+        //TODO: Elaborate
+        internal UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> Pending;
+        internal DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> Live;
 
         internal sealed override unsafe void* PendingWriterPointer
         {

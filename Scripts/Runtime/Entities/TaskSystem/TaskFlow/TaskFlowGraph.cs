@@ -302,6 +302,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
             {
+                //TODO: This is gross
                 if (taskDriver.Parent == null)
                 {
                     m_TopLevelTaskDrivers.Add(taskDriver);
