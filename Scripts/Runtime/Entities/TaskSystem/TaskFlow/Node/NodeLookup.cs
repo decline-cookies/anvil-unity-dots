@@ -85,7 +85,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     continue;
                 }
 
-                jobResolveTargetMapping.RegisterDataStream((DataStream<TResolveTargetType>)node.DataStream, Context);
+                jobResolveTargetMapping.RegisterDataStream((AbstractDataStream<TResolveTargetType>)node.DataStream, Context);
             }
         }
 
