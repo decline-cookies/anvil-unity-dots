@@ -4,10 +4,14 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Reflection;
 using Unity.Jobs;
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
-using Unity.Collections;
+
+#if DEBUG
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
+#endif
+
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+using Unity.Collections;
 #endif
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -23,8 +27,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public AccessController AccessController { get; }
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+#if DEBUG
         protected ProfilerMarker Debug_ProfilerMarker { get; }
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
         protected FixedString128Bytes Debug_DebugString { get; }
 #endif
 
@@ -35,9 +41,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_OwningTaskDriver = taskDriver;
             m_OwningTaskSystem = taskSystem;
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+
+#if DEBUG
+            Debug_ProfilerMarker = new ProfilerMarker(ProfilerCategory.Scripts, ToString(), MarkerFlags.Script);
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
             Debug_DebugString = new FixedString128Bytes(ToString());
-            Debug_ProfilerMarker = new ProfilerMarker(ProfilerCategory.Scripts, Debug_DebugString.Value, MarkerFlags.Script);
 #endif
         }
 

@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="TaskStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(DataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>

@@ -4,8 +4,12 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+
+#if DEBUG
 using Unity.Profiling;
+#endif
+
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
 using UnityEngine;
 #endif
 
@@ -69,17 +73,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       TaskDriverCancelRequests.AccessController.AcquireAsync(AccessType.SharedRead),
                                                       AccessController.AcquireAsync(AccessType.ExclusiveWrite));
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             ConsolidateDataStreamJob consolidateJob = new ConsolidateDataStreamJob(Pending,
                                                                                    Live,
-                                                                                   TaskDriverCancelRequests.Lookup,
-                                                                                   Debug_DebugString,
-                                                                                   Debug_ProfilerMarker);
-#else
-            ConsolidateDataStreamJob consolidateJob = new ConsolidateDataStreamJob(Pending,
-                                                                                   Live,
-                                                                                   TaskDriverCancelRequests.Lookup);
+                                                                                   TaskDriverCancelRequests.Lookup
+#if DEBUG
+                                                                                  ,
+                                                                                   Debug_ProfilerMarker
 #endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                                                                       ,Debug_DebugString
+#endif
+                                                                                  );
             dependsOn = consolidateJob.Schedule(dependsOn);
 
             AccessController.ReleaseAsync(dependsOn);
@@ -99,37 +103,41 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
             [WriteOnly] private DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> m_Live;
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
-            private readonly FixedString128Bytes m_DebugString;
+#if DEBUG
             private readonly ProfilerMarker m_ProfilerMarker;
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+            private readonly FixedString128Bytes m_DebugString;
+#endif
+
 
             public ConsolidateDataStreamJob(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> pending,
                                             DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> live,
-                                            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelRequests,
-                                            FixedString128Bytes debugString,
-                                            ProfilerMarker profilerMarker) : this()
-            {
-                m_Pending = pending;
-                m_Live = live;
-                m_CancelRequests = cancelRequests;
-                m_DebugString = debugString;
-                m_ProfilerMarker = profilerMarker;
-            }
-#else
-            public ConsolidateDataStreamJob(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> pending,
-                                            DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> live,
-                                            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelRequests) : this()
-            {
-                m_Pending = pending;
-                m_Live = live;
-                m_CancelRequests = cancelRequests;
-            }
+                                            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelRequests
+#if DEBUG
+                                           ,
+                                            ProfilerMarker profilerMarker
 #endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                                   ,FixedString128Bytes debugString
+#endif
+            ) : this()
+            {
+                m_Pending = pending;
+                m_Live = live;
+                m_CancelRequests = cancelRequests;
+#if DEBUG
+                m_ProfilerMarker = profilerMarker;
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                m_DebugString = debugString;
+#endif
+            }
 
 
             public void Execute()
             {
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+#if DEBUG
                 m_ProfilerMarker.Begin();
 #endif
                 m_Live.Clear();
@@ -145,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                         liveArray[liveIndex] = instance;
                         liveIndex++;
                     }
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
                     else
                     {
                         Debug.Log($"Cancelling Instance with ID {instance.InstanceID.ToFixedString()} for {m_DebugString}");
@@ -157,12 +165,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_Live.ResetLengthTo(liveIndex);
                 m_Pending.Clear();
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 if (liveIndex > 0)
                 {
                     Debug.Log($"{m_DebugString} - Count: {liveIndex}");
                 }
-                
+#endif
+#if DEBUG
                 m_ProfilerMarker.End();
 #endif
             }

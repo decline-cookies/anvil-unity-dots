@@ -6,8 +6,12 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+
+#if DEBUG
 using Unity.Profiling;
+#endif
+
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
 using Debug = UnityEngine.Debug;
 #endif
 
@@ -17,8 +21,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_CancelProgressLookup;
 
-        public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup, 
-                                       AbstractTaskDriver taskDriver, 
+        public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup,
+                                       AbstractTaskDriver taskDriver,
                                        AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
             m_CancelProgressLookup = cancelProgressLookup;
@@ -40,17 +44,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = JobHandle.CombineDependencies(dependsOn,
                                                       AccessController.AcquireAsync(AccessType.ExclusiveWrite),
                                                       m_CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup));
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
                                                                                                          Lookup,
-                                                                                                         progressLookup,
-                                                                                                         Debug_DebugString,
-                                                                                                         Debug_ProfilerMarker);
-#else
-            ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
-                                                                                                         Lookup,
-                                                                                                         progressLookup);
+                                                                                                         progressLookup
+#if DEBUG
+                                                                                                        ,
+                                                                                                         Debug_ProfilerMarker
 #endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                                                                                                      ,
+                                                                                                         Debug_DebugString
+#endif
+                                                                                                        );
 
             dependsOn = consolidateCancelRequestsJob.Schedule(dependsOn);
 
@@ -70,38 +76,42 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_Lookup;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
-            private readonly FixedString128Bytes m_DebugString;
+
+#if DEBUG
             private readonly ProfilerMarker m_ProfilerMarker;
 #endif
-
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
-            public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
-                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> lookup,
-                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
-                                                FixedString128Bytes debugString,
-                                                ProfilerMarker profilerMarker)
-            {
-                m_Pending = pending;
-                m_Lookup = lookup;
-                m_ProgressLookup = progressLookup;
-                m_DebugString = debugString;
-                m_ProfilerMarker = profilerMarker;
-            }
-#else
-            public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
-                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> lookup,
-                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup)
-            {
-                m_Pending = pending;
-                m_Lookup = lookup;
-                m_ProgressLookup = progressLookup;
-            }
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+            private readonly FixedString128Bytes m_DebugString;
 #endif
+
+
+            public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> lookup,
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup
+#if DEBUG
+                                               ,
+                                                ProfilerMarker profilerMarker
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                                             ,
+                                                FixedString128Bytes debugString
+#endif
+            )
+            {
+                m_Pending = pending;
+                m_Lookup = lookup;
+                m_ProgressLookup = progressLookup;
+#if DEBUG
+                m_ProfilerMarker = profilerMarker;
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                m_DebugString = debugString;
+#endif
+            }
 
             public void Execute()
             {
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+#if DEBUG
                 m_ProfilerMarker.Begin();
 #endif
 
@@ -117,12 +127,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 m_Pending.Clear();
 
-#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 if (!m_Lookup.IsEmpty)
                 {
                     Debug.Log($"{m_DebugString} - Count {m_Lookup.Count()}");
                 }
-
+#endif
+#if DEBUG
                 m_ProfilerMarker.End();
 #endif
             }

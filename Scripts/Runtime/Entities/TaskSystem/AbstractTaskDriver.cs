@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Entities;
-using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -148,26 +147,26 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         //TODO: Should Task Drivers should have no jobs
-        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(DataStream<TInstance> dataStream,
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(IDataStream<TInstance> dataStream,
                                                                          in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskSystem.ConfigureJobTriggeredBy(this,
-                                                      dataStream,
+                                                      (DataStream<TInstance>)dataStream,
                                                       scheduleJobFunction,
                                                       batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(CancellableDataStream<TInstance> dataStream,
+        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(ICancellableDataStream<TInstance> dataStream,
                                                                                  in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                  BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskSystem.ConfigureCancelJobFor(this,
-                                                    dataStream,
-                                                    scheduleJobFunction,
-                                                    batchStrategy);
+                                                    (CancellableDataStream<TInstance>)dataStream,
+                                                     scheduleJobFunction,
+                                                     batchStrategy);
         }
 
 

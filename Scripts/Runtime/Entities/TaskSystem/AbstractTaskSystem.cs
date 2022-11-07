@@ -218,7 +218,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(CancellableDataStream<TInstance> dataStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(ICancellableDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -226,7 +226,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelJobConfig<TInstance> jobConfig = JobConfigFactory.CreateCancelJobConfig(m_TaskFlowGraph,
                                                                                           this,
                                                                                           null,
-                                                                                          dataStream,
+                                                                                          (CancellableDataStream<TInstance>)dataStream,
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
 
@@ -235,7 +235,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return jobConfig;
         }
 
-        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(DataStream<TInstance> dataStream,
+        protected IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(IDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -243,7 +243,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             UpdateJobConfig<TInstance> jobConfig = JobConfigFactory.CreateUpdateJobConfig(m_TaskFlowGraph,
                                                                                           this,
                                                                                           null,
-                                                                                          dataStream,
+                                                                                          (DataStream<TInstance>)dataStream,
                                                                                           scheduleJobFunction,
                                                                                           batchStrategy);
             RegisterJob(null, jobConfig, TaskFlowRoute.Update);
