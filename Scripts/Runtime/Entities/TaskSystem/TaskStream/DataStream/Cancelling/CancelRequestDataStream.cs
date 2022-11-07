@@ -6,30 +6,22 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
 using Unity.Profiling;
 using Debug = UnityEngine.Debug;
+#endif
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class CancelRequestDataStream : AbstractEntityInstanceIDDataStream
+    internal class CancelRequestDataStream : AbstractLookupDataStream<EntityProxyInstanceID>
     {
-        private static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
-        
-        private readonly CancelData m_CancelData;
-        //Deliberately NOT getters because that messes up what the Safety Handle points to. 
-        //TODO: Elaborate
-        internal UnsafeParallelHashMap<EntityProxyInstanceID, byte> Lookup;
-        
-        public CancelRequestDataStream(CancelData cancelData, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
-        {
-            m_CancelData = cancelData;
-            Lookup = new UnsafeParallelHashMap<EntityProxyInstanceID, byte>(MAX_ELEMENTS_PER_CHUNK, Allocator.Persistent);
-        }
+        private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_CancelProgressLookup;
 
-        protected override void DisposeDataStream()
+        public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup, 
+                                       AbstractTaskDriver taskDriver, 
+                                       AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
-            Lookup.Dispose();
-            base.DisposeDataStream();
+            m_CancelProgressLookup = cancelProgressLookup;
         }
 
         //*************************************************************************************************************
@@ -47,16 +39,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             dependsOn = JobHandle.CombineDependencies(dependsOn,
                                                       AccessController.AcquireAsync(AccessType.ExclusiveWrite),
-                                                      m_CancelData.AcquireProgressLookup(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup));
-
+                                                      m_CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup));
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
                                                                                                          Lookup,
                                                                                                          progressLookup,
                                                                                                          Debug_DebugString,
                                                                                                          Debug_ProfilerMarker);
+#else
+            ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
+                                                                                                         Lookup,
+                                                                                                         progressLookup);
+#endif
+
             dependsOn = consolidateCancelRequestsJob.Schedule(dependsOn);
 
-            m_CancelData.ReleaseProgressLookup(dependsOn);
+            m_CancelProgressLookup.ReleaseAsync(dependsOn);
             AccessController.ReleaseAsync(dependsOn);
             return dependsOn;
         }
@@ -69,14 +67,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private struct ConsolidateCancelRequestsJob : IJob
         {
             [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
-            private UnsafeParallelHashMap<EntityProxyInstanceID, byte> m_Lookup;
+            private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_Lookup;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
-            
+
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             private readonly FixedString128Bytes m_DebugString;
             private readonly ProfilerMarker m_ProfilerMarker;
+#endif
 
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
-                                                UnsafeParallelHashMap<EntityProxyInstanceID, byte> lookup,
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> lookup,
                                                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
                                                 FixedString128Bytes debugString,
                                                 ProfilerMarker profilerMarker)
@@ -87,29 +88,43 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_DebugString = debugString;
                 m_ProfilerMarker = profilerMarker;
             }
+#else
+            public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> lookup,
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup)
+            {
+                m_Pending = pending;
+                m_Lookup = lookup;
+                m_ProgressLookup = progressLookup;
+            }
+#endif
 
             public void Execute()
             {
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
                 m_ProfilerMarker.Begin();
-                
+#endif
+
                 m_Lookup.Clear();
                 foreach (EntityProxyInstanceID proxyInstanceID in m_Pending)
                 {
                     Debug_EnsureNoDuplicates(proxyInstanceID);
-                    m_Lookup.TryAdd(proxyInstanceID, 1);
+                    m_Lookup.TryAdd(proxyInstanceID, true);
                     //We have something that wants to cancel, so we assume that it will get processed this frame.
                     //If nothing processes it, it will auto-complete the next frame. 
                     m_ProgressLookup.TryAdd(proxyInstanceID, true);
                 }
 
+                m_Pending.Clear();
+
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
                 if (!m_Lookup.IsEmpty)
                 {
                     Debug.Log($"{m_DebugString} - Count {m_Lookup.Count()}");
                 }
 
-                m_Pending.Clear();
-                
                 m_ProfilerMarker.End();
+#endif
             }
 
             //*************************************************************************************************************

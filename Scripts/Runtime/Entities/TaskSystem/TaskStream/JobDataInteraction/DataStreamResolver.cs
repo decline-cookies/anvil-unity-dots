@@ -13,9 +13,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     [BurstCompatible]
     internal struct DataStreamResolver
     {
-        private static unsafe long GetDataStreamPointerAddress(AbstractDataStream dataStream)
+        private static unsafe long GetDataStreamPointerAddress(IPendingDataStream dataStream)
         {
-            //TODO: TEST AND MAKE SURE
             long address = (long)dataStream.PendingWriterPointer;
             return address;
         }

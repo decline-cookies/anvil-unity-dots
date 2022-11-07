@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal CancelDataStreamScheduleInfo(CancelJobData<TInstance> jobData,
-                                              CancelPendingDataStream<TInstance> cancelPendingDataStream,
+                                              PendingCancelDataStream<TInstance> pendingCancelDataStream,
                                               BatchStrategy batchStrategy,
                                               JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;
 
-            DeferredNativeArrayScheduleInfo = cancelPendingDataStream.ScheduleInfo;
+            DeferredNativeArrayScheduleInfo = pendingCancelDataStream.ScheduleInfo;
         }
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)

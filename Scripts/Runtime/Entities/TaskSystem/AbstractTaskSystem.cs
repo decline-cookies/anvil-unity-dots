@@ -32,23 +32,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         public byte Context { get; }
         
-        internal List<AbstractDataStream> DataStreams { get; }
         internal List<AbstractTaskDriver> TaskDrivers { get; }
 
-        internal CancelData CancelData { get; }
+        internal TaskData TaskData { get; }
 
 
         protected AbstractTaskSystem()
         {
             m_TaskDriverContextProvider = new ByteIDProvider();
-            DataStreams = new List<AbstractDataStream>();
             TaskDrivers = new List<AbstractTaskDriver>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
             Context = m_TaskDriverContextProvider.GetNextID();
 
-            CancelData = new CancelData(this);
-            DataStreamFactory.CreateDataStreams(this, DataStreams);
+            TaskData = new TaskData(null, this);
         }
 
         protected override void OnCreate()
@@ -83,9 +80,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskDrivers.Clear();
 
             //Dispose all the data we own
-            DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelData.Dispose();
+            TaskData.Dispose();
 
             base.OnDestroy();
         }

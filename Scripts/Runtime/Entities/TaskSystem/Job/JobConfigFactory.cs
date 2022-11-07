@@ -72,14 +72,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskFlowGraph,
                                                                                   taskSystem,
                                                                                   taskDriver,
-                                                                                  dataStream.CancelPendingDataStream);
+                                                                                  dataStream.PendingCancelDataStream);
 
             CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig,
                                                                             taskSystem.World,
                                                                             taskDriver?.Context ?? taskSystem.Context);
 
             CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
-                                                                                                               dataStream.CancelPendingDataStream,
+                                                                                                               dataStream.PendingCancelDataStream,
                                                                                                                batchStrategy,
                                                                                                                scheduleJobFunction);
             return FinalizeJobConfig(jobConfig, scheduleInfo);

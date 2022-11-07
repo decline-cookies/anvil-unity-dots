@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        public void RegisterDataStream<TResolveTargetType>(AbstractDataStream<TResolveTargetType> dataStream, byte context)
+        public void RegisterDataStream<TResolveTargetType>(AbstractTypedDataStream<TResolveTargetType> dataStream, byte context)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             Dictionary<byte, ResolveTargetData> mapping = GetOrCreateContextMapping<TResolveTargetType>();

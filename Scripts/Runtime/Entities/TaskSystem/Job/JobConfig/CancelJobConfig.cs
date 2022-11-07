@@ -9,12 +9,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelJobConfig(TaskFlowGraph taskFlowGraph,
                                AbstractTaskSystem taskSystem,
                                AbstractTaskDriver taskDriver,
-                               CancelPendingDataStream<TInstance> cancelPendingDataStream)
+                               PendingCancelDataStream<TInstance> pendingCancelDataStream)
             : base(taskFlowGraph,
                    taskSystem,
                    taskDriver)
         {
-            RequireDataStreamForCancelling(cancelPendingDataStream);
+            RequireDataStreamForCancelling(pendingCancelDataStream);
             RequireCancelDataForCancelProgress(taskDriver != null ? taskDriver.CancelData : taskSystem.CancelData);
         }
 
@@ -27,9 +27,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AddAccessWrapper(new CancelDataAccessWrapper(cancelData, AccessType.ExclusiveWrite, Usage.Cancelling));
         }
         
-        private void RequireDataStreamForCancelling(CancelPendingDataStream<TInstance> cancelPendingDataStream)
+        private void RequireDataStreamForCancelling(PendingCancelDataStream<TInstance> pendingCancelDataStream)
         {
-            AddAccessWrapper(new PendingCancelDataStreamAccessWrapper<TInstance>(cancelPendingDataStream, AccessType.ExclusiveWrite, Usage.Cancelling));
+            AddAccessWrapper(new PendingCancelDataStreamAccessWrapper<TInstance>(pendingCancelDataStream, AccessType.ExclusiveWrite, Usage.Cancelling));
         }
     }
 }

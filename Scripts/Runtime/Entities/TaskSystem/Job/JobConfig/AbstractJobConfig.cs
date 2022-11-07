@@ -374,11 +374,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return cancelDataAccessWrapper.ProgressLookup;
         }
 
-        internal CancelPendingDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
+        internal PendingCancelDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             PendingCancelDataStreamAccessWrapper<TInstance> pendingCancelDataStreamAccessWrapper = GetAccessWrapper<PendingCancelDataStreamAccessWrapper<TInstance>>(usage);
-            return pendingCancelDataStreamAccessWrapper.CancelPendingDataStream;
+            return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
         }
 
         internal DataStream<TInstance> GetDataStream<TInstance>(Usage usage)

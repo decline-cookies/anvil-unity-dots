@@ -62,16 +62,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             lookup.CreateCancelRequestsNode(cancelRequestDataStream);
         }
 
-        private void RegisterDataStreams(List<AbstractDataStream> dataStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterDataStreams(List<AbstractTypedDataStream<>> dataStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            foreach (AbstractDataStream dataStream in dataStreams)
+            foreach (AbstractTypedDataStream<> dataStream in dataStreams)
             {
                 lookup.CreateDataStreamNodes(dataStream);
             }
         }
 
-        public bool IsDataStreamRegistered(AbstractDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public bool IsDataStreamRegistered(AbstractTypedDataStream<> dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup systemNodeLookup = GetOrCreateNodeLookup(taskSystem, null);
             NodeLookup driverNodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
@@ -99,9 +99,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return lookup;
         }
 
-        public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldDataStreamBulkJobScheduler()
+        public BulkJobScheduler<AbstractDataStream> CreateWorldDataStreamBulkJobScheduler()
         {
-            List<AbstractConsolidatableDataStream> dataStreams = new List<AbstractConsolidatableDataStream>();
+            List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
 
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
@@ -114,7 +114,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
             }
 
-            return new BulkJobScheduler<AbstractConsolidatableDataStream>(dataStreams.ToArray());
+            return new BulkJobScheduler<AbstractDataStream>(dataStreams.ToArray());
         }
 
         public BulkJobScheduler<CancelRequestDataStream> CreateWorldCancelRequestsDataStreamBulkJobScheduler()
@@ -134,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new BulkJobScheduler<CancelRequestDataStream>(cancelRequests.ToArray());
         }
 
-        public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldCancelCompleteBulkJobScheduler()
+        public BulkJobScheduler<AbstractDataStream> CreateWorldCancelCompleteBulkJobScheduler()
         {
             List<CancelCompleteDataStream> cancelCompletes = new List<CancelCompleteDataStream>();
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
@@ -146,17 +146,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
             }
 
-            return new BulkJobScheduler<AbstractConsolidatableDataStream>(cancelCompletes.ToArray());
+            return new BulkJobScheduler<AbstractDataStream>(cancelCompletes.ToArray());
         }
 
-        public BulkJobScheduler<AbstractConsolidatableDataStream> CreateWorldPendingCancelBulkJobScheduler()
+        public BulkJobScheduler<AbstractDataStream> CreateWorldPendingCancelBulkJobScheduler()
         {
-            List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
+            List<AbstractTypedDataStream<>> dataStreams = new List<AbstractTypedDataStream<>>();
 
             //TODO: Can make this nicer - also make sure we don't make a mistake with the pending Cancel data streams
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                foreach (AbstractDataStream dataStream in taskSystem.DataStreams)
+                foreach (AbstractTypedDataStream<> dataStream in taskSystem.DataStreams)
                 {
                     //TODO: Gross, can we avoid this check?
                     if (dataStream.IsCancellable)
@@ -167,7 +167,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    foreach (AbstractDataStream dataStream in taskDriver.DataStreams)
+                    foreach (AbstractTypedDataStream<> dataStream in taskDriver.DataStreams)
                     {
                         if (dataStream.IsCancellable)
                         {
@@ -177,7 +177,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
             }
             //TODO: This might be solvable with interfaces
-            return new BulkJobScheduler<AbstractConsolidatableDataStream>(dataStreams.ToArray());
+            return new BulkJobScheduler<AbstractDataStream>(dataStreams.ToArray());
         }
 
         public BulkJobScheduler<TaskDriverCancelFlow> CreateWorldCancelFlowBulkJobScheduler()
@@ -342,7 +342,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // UTILITY
         //*************************************************************************************************************
 
-        public string GetDebugString(AbstractDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public string GetDebugString(AbstractTypedDataStream<> dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             return lookup[dataStream].ToString();

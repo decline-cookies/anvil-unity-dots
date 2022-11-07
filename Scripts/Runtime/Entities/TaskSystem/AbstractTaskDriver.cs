@@ -63,13 +63,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Reference to the associated <see cref="World"/>
         /// </summary>
         public World World { get; }
-        
-        internal List<AbstractDataStream> DataStreams { get; }
-        
+
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
         
         internal TaskDriverCancelFlow CancelFlow { get; private set; }
-        internal CancelData CancelData { get; }
+        internal TaskData TaskData { get; }
         
         internal AbstractTaskDriver Parent
         {
@@ -86,16 +84,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Context = TaskSystem.RegisterTaskDriver(this);
 
             SubTaskDrivers = new List<AbstractTaskDriver>();
-            DataStreams = new List<AbstractDataStream>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
-            CancelData = new CancelData(this);
-
-            DataStreamFactory.CreateDataStreams(this, DataStreams);
+            TaskData = new TaskData(this, TaskSystem);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
-            
-            //TODO: You should be able to require a TaskDriver to Cancel which will give you the Trigger writer to say you want to cancel.
-            //TODO: That special piece of data will get run through to propagate immediately down to everyone in the chain
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
@@ -107,10 +99,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //We own our sub task drivers so dispose them
             SubTaskDrivers.DisposeAllAndTryClear();
             //Dispose all the data we own
-            DataStreams.DisposeAllAndTryClear();
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelData.Dispose();
             CancelFlow?.Dispose();
+            
+            TaskData.Dispose();
 
             base.DisposeSelf();
         }

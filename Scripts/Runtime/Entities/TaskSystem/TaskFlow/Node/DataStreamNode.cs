@@ -6,12 +6,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly NodeLookup m_Lookup;
 
-        public AbstractDataStream DataStream { get; }
+        public AbstractTypedDataStream<> DataStream { get; }
 
         public Type EntityProxyInstanceType { get; }
 
         public DataStreamNode(NodeLookup lookup,
-                              AbstractDataStream dataStream,
+                              AbstractTypedDataStream<> dataStream,
                               TaskFlowGraph taskFlowGraph,
                               AbstractTaskSystem taskSystem,
                               AbstractTaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)

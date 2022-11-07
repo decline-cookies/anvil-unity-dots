@@ -24,10 +24,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
         {
-            CancelPendingDataStream<TInstance> cancelPendingDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
+            PendingCancelDataStream<TInstance> pendingCancelDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);
             DataStreamTargetResolver dataStreamTargetResolver = m_CancelJobConfig.GetDataStreamTargetResolver();
             UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup = m_CancelJobConfig.GetCancelProgressLookup(AbstractJobConfig.Usage.Cancelling);
-            DataStreamCancellationUpdater<TInstance> cancellationUpdater = cancelPendingDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver, cancelProgressLookup);
+            DataStreamCancellationUpdater<TInstance> cancellationUpdater = pendingCancelDataStream.CreateDataStreamCancellationUpdater(dataStreamTargetResolver, cancelProgressLookup);
             return cancellationUpdater;
         }
     }

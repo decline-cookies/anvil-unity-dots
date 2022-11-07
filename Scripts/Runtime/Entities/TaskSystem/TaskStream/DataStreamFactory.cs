@@ -10,105 +10,155 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal static class DataStreamFactory
     {
         private static readonly Type I_ENTITY_PROXY_INSTANCE_TYPE = typeof(IEntityProxyInstance);
-        private static readonly Type ABSTRACT_ENTITY_PROXY_DATA_STREAM_TYPE = typeof(AbstractDataStream);
-        private static readonly MethodInfo PROTOTYPE_METHOD = typeof(DataStreamFactory).GetMethod(nameof(CreateDataStream), BindingFlags.Static | BindingFlags.NonPublic);
-        private static readonly Dictionary<Type, MethodInfo> TYPED_GENERIC_METHODS = new Dictionary<Type, MethodInfo>();
+        private static readonly Type I_CANCELLABLE_DATA_STREAM = typeof(ICancellableDataStream<>);
+        private static readonly Type I_DATA_STREAM = typeof(IDataStream<>);
+        private static readonly Type I_CANCEL_RESULT_DATA_STREAM = typeof(ICancelResultDataStream<>);
+        private static readonly MethodInfo PROTOTYPE_DATA_STREAM_METHOD = typeof(DataStreamFactory).GetMethod(nameof(CreateTypedDataStream), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo PROTOTYPE_CANCELLABLE_DATA_STREAM_METHOD = typeof(DataStreamFactory).GetMethod(nameof(CreateTypedCancellableDataStream), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly MethodInfo PROTOTYPE_CANCEL_RESULT_DATA_STREAM_METHOD = typeof(DataStreamFactory).GetMethod(nameof(CreateTypedCancelResultDataStream), BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly Dictionary<Type, MethodInfo> TYPED_GENERIC_DATA_STREAM_METHODS = new Dictionary<Type, MethodInfo>();
+        private static readonly Dictionary<Type, MethodInfo> TYPED_GENERIC_CANCELLABLE_DATA_STREAM_METHODS = new Dictionary<Type, MethodInfo>();
+        private static readonly Dictionary<Type, MethodInfo> TYPED_GENERIC_CANCEL_RESULT_DATA_STREAM_METHODS = new Dictionary<Type, MethodInfo>();
+
+        private static readonly HashSet<Type> DATA_STREAM_TYPES = new HashSet<Type>()
+        {
+            I_DATA_STREAM, I_CANCELLABLE_DATA_STREAM, I_CANCEL_RESULT_DATA_STREAM
+        };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
             //TODO: #70 - Double check this works as expected in a build. https://github.com/decline-cookies/anvil-unity-dots/pull/58/files#r974334409
-            TYPED_GENERIC_METHODS.Clear();
+            TYPED_GENERIC_DATA_STREAM_METHODS.Clear();
+            TYPED_GENERIC_CANCELLABLE_DATA_STREAM_METHODS.Clear();
+            TYPED_GENERIC_CANCEL_RESULT_DATA_STREAM_METHODS.Clear();
         }
 
-        public static void CreateDataStreams(AbstractTaskSystem taskSystem, List<AbstractDataStream> taskSystemTaskStreams)
+        private static void DetermineContext(TaskData taskData, out Type type, out object instance)
         {
-            CreateDataStreams(taskSystem.GetType(), taskSystem, taskSystemTaskStreams, taskSystem.CancelData.RequestDataStream, taskSystem, null);
+            if (taskData.TaskDriver != null)
+            {
+                type = taskData.TaskDriver.GetType();
+                instance = taskData.TaskDriver;
+            }
+            else
+            {
+                type = taskData.TaskSystem.GetType();
+                instance = taskData.TaskSystem;
+            }
         }
 
-        public static void CreateDataStreams(AbstractTaskDriver taskDriver, List<AbstractDataStream> taskDriverTaskStreams)
+        public static void CreateDataStreams(TaskData taskData)
         {
-            CreateDataStreams(taskDriver.GetType(), taskDriver, taskDriverTaskStreams, taskDriver.CancelData.RequestDataStream, taskDriver.TaskSystem, taskDriver);
-        }
-
-        private static void CreateDataStreams(Type type,
-                                              object instance,
-                                              List<AbstractDataStream> taskStreams,
-                                              CancelRequestDataStream cancelRequestDataStream,
-                                              AbstractTaskSystem taskSystem,
-                                              AbstractTaskDriver taskDriver)
-        {
-            Debug_EnsureCancelRequestsNotNull(cancelRequestDataStream);
-
+            DetermineContext(taskData, out Type type, out object instance);
+            
             //Get all the fields
             FieldInfo[] systemFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             foreach (FieldInfo field in systemFields)
             {
-                if (!ABSTRACT_ENTITY_PROXY_DATA_STREAM_TYPE.IsAssignableFrom(field.FieldType))
+                //Can't create if it's not a generic type...
+                if (!field.FieldType.IsGenericType)
+                {
+                    continue;
+                }
+                
+                //If it's not a valid type to create...
+                if (!DATA_STREAM_TYPES.Contains(field.FieldType))
                 {
                     continue;
                 }
 
+                //If the field should be ignored and not auto-generated...
                 IgnoreDataStreamAttribute ignoreDataStreamAttribute = field.GetCustomAttribute<IgnoreDataStreamAttribute>();
                 if (ignoreDataStreamAttribute != null)
                 {
                     continue;
                 }
-
-                //TODO: Find and replace all TaskStream to DataStream
-
+                
                 Debug_CheckFieldIsReadOnly(field);
                 Debug_CheckFieldTypeGenericTypeArguments(field.FieldType);
 
-                //Get the data type 
+                Type genericTypeDefinition = field.FieldType.GetGenericTypeDefinition();
                 Type entityProxyInstanceType = field.FieldType.GenericTypeArguments[0];
-                AbstractDataStream dataStream = Create(field.FieldType,
-                                                       entityProxyInstanceType,
-                                                       cancelRequestDataStream,
-                                                       taskSystem,
-                                                       taskDriver);
+                
+                Debug_CheckInstanceType(entityProxyInstanceType);
 
-                //Populate the incoming list so we can handle disposal nicely
-                taskStreams.Add(dataStream);
+                object createdInstance = null;
+                if (genericTypeDefinition == I_DATA_STREAM)
+                {
+                    createdInstance = CreateDataStream(type, taskData);
+                }
+                else if (genericTypeDefinition == I_CANCELLABLE_DATA_STREAM)
+                {
+                    createdInstance = CreateCancellableDataStream(type, taskData);
+                }
+                else if (genericTypeDefinition == I_CANCEL_RESULT_DATA_STREAM)
+                {
+                    createdInstance = CreateCancelResultDataStream(type, taskData);
+                }
+                
+                //TODO: Find and replace all TaskStream to DataStream
 
                 Debug_EnsureFieldNotSet(field, instance);
                 //Ensure the System's field is set to the task stream
-                field.SetValue(instance, dataStream);
+                field.SetValue(instance, createdInstance);
             }
         }
 
-        private static AbstractDataStream Create(Type taskStreamType,
-                                                 Type instanceType,
-                                                 CancelRequestDataStream cancelRequestDataStream,
-                                                 AbstractTaskSystem taskSystem,
-                                                 AbstractTaskDriver taskDriver)
+        private static object CreateDataStream(Type dataStreamType, TaskData taskData)
         {
-            Debug_CheckInstanceType(instanceType);
-            if (!TYPED_GENERIC_METHODS.TryGetValue(taskStreamType, out MethodInfo typedGenericMethod))
+            MethodInfo createFunction = GetOrCreateMethod(dataStreamType, TYPED_GENERIC_DATA_STREAM_METHODS, PROTOTYPE_DATA_STREAM_METHOD);
+            IInternalDataStream dataStream = (IInternalDataStream)createFunction.Invoke(null, new object[]{taskData});
+            return dataStream;
+        }
+
+        private static DataStream<TInstance> CreateTypedDataStream<TInstance>(TaskData taskData)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            DataStream<TInstance> dataStream = new DataStream<TInstance>(taskData.CancelRequestDataStream, taskData.TaskDriver, taskData.TaskSystem);
+            taskData.RegisterDataStream(dataStream);
+            return dataStream;
+        }
+        
+        private static object CreateCancellableDataStream(Type dataStreamType, TaskData taskData)
+        {
+            MethodInfo createFunction = GetOrCreateMethod(dataStreamType, TYPED_GENERIC_CANCELLABLE_DATA_STREAM_METHODS, PROTOTYPE_CANCELLABLE_DATA_STREAM_METHOD);
+            IInternalCancellableDataStream dataStream = (IInternalCancellableDataStream)createFunction.Invoke(null, new object[]{taskData});
+            return dataStream;
+        }
+
+        private static CancellableDataStream<TInstance> CreateTypedCancellableDataStream<TInstance>(TaskData taskData)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            CancellableDataStream<TInstance> dataStream = new CancellableDataStream<TInstance>(taskData.CancelRequestDataStream, taskData.TaskDriver, taskData.TaskSystem);
+            taskData.RegisterDataStream(dataStream);
+            return dataStream;
+        }
+        
+        private static object CreateCancelResultDataStream(Type dataStreamType, TaskData taskData)
+        {
+            MethodInfo createFunction = GetOrCreateMethod(dataStreamType, TYPED_GENERIC_CANCEL_RESULT_DATA_STREAM_METHODS, PROTOTYPE_CANCEL_RESULT_DATA_STREAM_METHOD);
+            IInternalCancelResultDataStream dataStream = (IInternalCancelResultDataStream)createFunction.Invoke(null, new object[]{taskData});
+            return dataStream;
+        }
+
+        private static CancelResultDataStream<TInstance> CreateTypedCancelResultDataStream<TInstance>(TaskData taskData)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            CancelResultDataStream<TInstance> dataStream = new CancelResultDataStream<TInstance>(taskData.TaskDriver, taskData.TaskSystem);
+            taskData.RegisterDataStream(dataStream);
+            return dataStream;
+        }
+
+        private static MethodInfo GetOrCreateMethod(Type type, Dictionary<Type, MethodInfo> lookup, MethodInfo prototype)
+        {
+            if (!lookup.TryGetValue(type, out MethodInfo typedGenericMethod))
             {
-                typedGenericMethod = PROTOTYPE_METHOD.MakeGenericMethod(taskStreamType);
-                TYPED_GENERIC_METHODS.Add(taskStreamType, typedGenericMethod);
+                typedGenericMethod = prototype.MakeGenericMethod(type);
+                lookup.Add(type, typedGenericMethod);
             }
 
-            return (AbstractDataStream)typedGenericMethod.Invoke(null,
-                                                                 new object[]
-                                                                 {
-                                                                     new object[]
-                                                                     {
-                                                                         cancelRequestDataStream, taskDriver, taskSystem
-                                                                     }
-                                                                 });
-        }
-
-        private static TTaskStream CreateDataStream<TTaskStream>(object[] constructorParams)
-            where TTaskStream : AbstractDataStream
-        {
-            return (TTaskStream)Activator.CreateInstance(typeof(TTaskStream),
-                                                         BindingFlags.Instance | BindingFlags.NonPublic,
-                                                         null,
-                                                         constructorParams,
-                                                         null,
-                                                         null);
+            return typedGenericMethod;
         }
 
         //*************************************************************************************************************
@@ -153,15 +203,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (fieldInfo.GetValue(instance) != null)
             {
                 throw new InvalidOperationException($"Field with name {fieldInfo.Name} on {fieldInfo.ReflectedType} is already set! Did you call {nameof(CreateDataStreams)} more than once?");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void Debug_EnsureCancelRequestsNotNull(CancelRequestDataStream cancelRequestDataStream)
-        {
-            if (cancelRequestDataStream == null)
-            {
-                throw new InvalidOperationException($"{nameof(CancelRequestDataStream)} is null! Code change caused an ordering issue maybe?");
             }
         }
     }
