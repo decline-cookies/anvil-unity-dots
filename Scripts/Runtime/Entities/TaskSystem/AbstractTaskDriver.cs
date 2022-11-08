@@ -20,12 +20,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Hides the base reference to the abstract version. This is so that from the outside, a developer
         /// doesn't try and select a DataStream to configure a job on.
         /// </remarks>
-        /// TODO: Should add a Safety check on Job scheduling that we're allowed to write
+        /// TODO: #67 - Should add a Safety check on Job scheduling that we're allowed to write
+        /// TODO: #100 - OR we don't need this to be hidden because we're allowed to write to TaskSystem data.
         protected new TTaskSystem TaskSystem
         {
             get => (TTaskSystem)base.TaskSystem;
         }
 
+        // MIKE: I can't think of a better pattern here.
         protected AbstractTaskDriver(World world, AbstractTaskDriver parent) : base(world, typeof(TTaskSystem), parent)
         {
         }
@@ -38,7 +40,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// are then picked up by the TaskDriver to be converted to specific data again and passed on to a sub task driver
     /// or to another general system. 
     /// </summary>
-    //TODO: #74 - Add support for Sub-Task Drivers properly when building an example nested TaskDriver. STILL VALID?
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
         private readonly TaskFlowGraph m_TaskFlowGraph;
@@ -55,6 +56,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Reference to the associated <see cref="AbstractTaskSystem"/>
         /// </summary>
+        //TODO: #100 - Might be able to change this back so we can access from the outside
         internal AbstractTaskSystem TaskSystem { get; }
 
         /// <summary>
@@ -85,7 +87,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
             
-            //TODO: This is still a bit weird and gross
+            //MIKE - Ordering Question, not sure if there is a better flow
             CancelFlow.BuildRequestData();
             
 
@@ -132,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobConfigs.Add(jobConfig);
         }
 
-        //TODO: Should Task Drivers should have no jobs
+        //TODO: #101 - Should drivers have all the jobs or systems?
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(IDataStream<TInstance> dataStream,
                                                                          in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)

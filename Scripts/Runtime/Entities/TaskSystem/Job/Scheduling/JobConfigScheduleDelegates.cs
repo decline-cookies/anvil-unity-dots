@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                     CancelCompleteScheduleInfo scheduleInfo);
         
         /// <summary>
-        /// For scheduling a job triggered by a <see cref="TaskStream{TInstance}"/> from
+        /// For scheduling a job triggered by a <see cref="IAbstractDataStream{TInstance}"/> from
         /// a <see cref="DataStreamJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         /// <summary>
-        /// For scheduling a job triggered by instances in a <see cref="TaskStream{TInstance}"/> that need to be
+        /// For scheduling a job triggered by instances in a <see cref="IAbstractDataStream{TInstance}"/> that need to be
         /// updated. Used with <see cref="UpdateJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
@@ -63,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
-        /// For scheduling a job triggered by instances in a <see cref="TaskStream{TInstance}"/> that have been
+        /// For scheduling a job triggered by instances in a <see cref="IAbstractDataStream{TInstance}"/> that have been
         /// requested to cancel. Used with <see cref="CancelJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>

@@ -75,10 +75,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_ContinueLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
                                                                                  m_CurrentContext,
                                                                                  ref instance));
+
             
-            //TODO: Debug_Ensure id is present
             //Hold open the progress so we can keep processing
             EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Entity, m_CurrentContext);
+            Debug_EnsureIDIsPresent(id);
             m_CancelProgressLookup[id] = true;
         }
 
@@ -130,6 +131,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             m_State = UpdaterState.Uninitialized;
 #endif
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureIDIsPresent(EntityProxyInstanceID id)
+        {
+            if (!m_CancelProgressLookup.ContainsKey(id))
+            {
+                throw new InvalidOperationException($"Tried to hold open {id} so that cancelling can continue but the entry doesn't exist in the lookup!");
+            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

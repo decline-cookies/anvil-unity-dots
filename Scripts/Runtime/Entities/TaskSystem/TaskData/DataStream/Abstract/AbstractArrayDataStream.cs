@@ -17,6 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                          IArrayDataStream
         where T : unmanaged
     {
+        //Deliberately not using pointers because that messes up what the safety handle pointer points to.
         public DeferredNativeArray<T> Live;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo

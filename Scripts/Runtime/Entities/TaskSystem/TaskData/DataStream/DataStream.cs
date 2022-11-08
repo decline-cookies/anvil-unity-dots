@@ -19,7 +19,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                            IUntypedDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        //TODO: Move to Util
         /// <summary>
         /// The number of elements of <typeparamref name="TInstance"/> that can fit into a chunk (16kb)
         /// This is useful for deciding on batch sizes.

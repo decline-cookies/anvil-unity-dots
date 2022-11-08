@@ -16,7 +16,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public readonly CancelCompleteDataStream CancelCompleteDataStream;
         public readonly AbstractTaskDriver TaskDriver;
         public readonly AbstractTaskSystem TaskSystem;
-        // public readonly byte Context;
         public readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> CancelProgressLookup;
         
         public readonly List<AbstractDataStream> AllPublicDataStreams;
@@ -42,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
-            //TODO: Should this get baked into AccessControlledValue's Dispose method?
+            //TODO: #104 - Should this get baked into AccessControlledValue's Dispose method?
             CancelProgressLookup.Acquire(AccessType.Disposal);
             CancelProgressLookup.Dispose();
             

@@ -85,7 +85,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
-        public static DataStreamJobConfig<TInstance> CreateTaskStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
+        public static DataStreamJobConfig<TInstance> CreateDataStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                           AbstractTaskSystem taskSystem,
                                                                                           AbstractTaskDriver taskDriver,
                                                                                           DataStream<TInstance> dataStream,

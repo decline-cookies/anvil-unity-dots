@@ -7,7 +7,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Represents a write only reference to a <see cref="TaskStream{TInstance}"/>
+    /// Represents a write only reference to a <see cref="IAbstractDataStream{TInstance}"/>
     /// To be used in jobs that only allows for writing of this data.
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to write</typeparam>
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         /// <summary>
-        /// Adds the instance to the <see cref="TaskStream{TInstance}"/>'s
+        /// Adds the instance to the <see cref="IAbstractDataStream{TInstance}"/>'s
         /// underlying pending collection to be added the next time the data is
         /// consolidated.
         /// </summary>

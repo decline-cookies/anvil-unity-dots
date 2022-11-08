@@ -8,7 +8,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : unmanaged
     {
         //Deliberately NOT getters because that messes up what the Safety Handle points to. 
-        //TODO: Elaborate
         public UnsafeTypedStream<T> Pending;
 
         public unsafe void* PendingWriterPointer { get; }

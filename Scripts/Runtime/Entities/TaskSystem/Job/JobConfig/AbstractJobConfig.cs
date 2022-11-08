@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             /// <summary>
             /// The data is being Updated. It will either continue to be processed again the next frame or be
-            /// resolved into a resolve target <see cref="TaskStream{TInstance}"/>
+            /// resolved into a resolve target <see cref="IAbstractDataStream{TInstance}"/>
             /// Represents an Exclusive Write lock on the underlying data.
             /// </summary>
             //Duplicating this but making them the same so that the context of the code and docs makes sense but
@@ -54,14 +54,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             /// <summary>
             /// The data is being Cancelled. It will either continue to be processed again the next frame or be
-            /// resolved into a resolve target <see cref="TaskStream{TInstance}"/>
+            /// resolved into a resolve target <see cref="IAbstractDataStream{TInstance}"/>
             /// Represents an Exclusive Write lock on the underlying data.
             /// Similar to <see cref="Update"/> but operates only on instances that have been cancelled.
             /// </summary>
             Cancelling,
 
             /// <summary>
-            /// The data is being written to a resolve target <see cref="TaskStream{TInstance}"/>.
+            /// The data is being written to a resolve target <see cref="IAbstractDataStream{TInstance}"/>.
             /// Represents a Shared Write lock on the underlying data.
             /// </summary>
             Resolve
@@ -167,7 +167,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
-            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver, AccessType.SharedWrite, Usage.Write));
+            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.CancelFlow, AccessType.SharedWrite, Usage.Write));
             return this;
         }
 

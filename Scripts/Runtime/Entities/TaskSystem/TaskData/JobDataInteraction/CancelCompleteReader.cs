@@ -3,6 +3,11 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Represents a read only reference to a <see cref="Entity"/> that has completed
+    /// it's cancellation work.
+    /// To be used in jobs that only allows for reading of this data.
+    /// </summary>
     [BurstCompatible]
     public readonly struct CancelCompleteReader
     {
@@ -13,6 +18,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_Iteration = iteration;
         }
 
+        /// <summary>
+        /// Gets the <see cref="Entity"/> at the specified index.
+        /// </summary>
+        /// <param name="index">The index into the backing array</param>
         public Entity this[int index]
         {
             get => m_Iteration[index].Entity;

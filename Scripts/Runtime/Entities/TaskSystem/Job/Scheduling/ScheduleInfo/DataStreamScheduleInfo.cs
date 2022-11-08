@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
         
-        //TODO: Add custom job type and implicit Reader
+        //TODO: #103 - Add custom job type and implicit Reader
 
         internal DataStreamScheduleInfo(DataStreamJobData<TInstance> jobData,
                                         DataStream<TInstance> dataStream,

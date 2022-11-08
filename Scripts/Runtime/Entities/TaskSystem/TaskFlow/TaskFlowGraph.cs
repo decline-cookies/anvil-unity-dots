@@ -99,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
 
-            //TODO: Can make this nicer
+            //TODO: #66, #67 or #68 Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
                 dataStreams.AddRange(taskSystem.TaskData.AllPublicDataStreams);
@@ -116,7 +116,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public BulkJobScheduler<CancelRequestDataStream> CreateWorldCancelRequestsDataStreamBulkJobScheduler()
         {
             List<CancelRequestDataStream> cancelRequests = new List<CancelRequestDataStream>();
-            //TODO: Can make this nicer
+            //TODO: #66, #67 or #68 Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
                 cancelRequests.Add(taskSystem.TaskData.CancelRequestDataStream);
@@ -133,6 +133,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public BulkJobScheduler<AbstractDataStream> CreateWorldCancelCompleteBulkJobScheduler()
         {
             List<CancelCompleteDataStream> cancelCompletes = new List<CancelCompleteDataStream>();
+            //TODO: #66, #67 or #68 Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
                 cancelCompletes.Add(taskSystem.TaskData.CancelCompleteDataStream);
@@ -149,7 +150,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
 
-            //TODO: Can make this nicer - also make sure we don't make a mistake with the pending Cancel data streams
+            //TODO: #66, #67 or #68 Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
                 foreach (AbstractDataStream dataStream in taskSystem.TaskData.CancellableDataStreams)
@@ -167,7 +168,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     }
                 }
             }
-            //TODO: This might be solvable with interfaces
             return new BulkJobScheduler<AbstractDataStream>(dataStreams.ToArray());
         }
 
@@ -360,7 +360,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (fieldType.GenericTypeArguments.Length != 1)
             {
-                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(DataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
+                throw new InvalidOperationException($"Type {fieldType} is to be used to create a {typeof(AbstractTypedDataStream<>)} but {fieldType} doesn't have the expected 1 generic type!");
             }
         }
 

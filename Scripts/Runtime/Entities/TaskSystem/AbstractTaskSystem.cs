@@ -155,7 +155,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStreamJobConfig<TInstance> jobConfig = JobConfigFactory.CreateTaskStreamJobConfig(m_TaskFlowGraph,
+            DataStreamJobConfig<TInstance> jobConfig = JobConfigFactory.CreateDataStreamJobConfig(m_TaskFlowGraph,
                                                                                                   this,
                                                                                                   taskDriver,
                                                                                                   dataStream,
@@ -261,7 +261,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            //TODO: I think all jobs call all be run in parallel because they don't conflict...
+            //TODO: #102 - I think all jobs call all be run in parallel because they don't conflict...
             //Run all TaskDriver populate jobs to allow them to write to data streams (TaskDrivers -> generic TaskSystem data)
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,

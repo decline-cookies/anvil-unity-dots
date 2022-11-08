@@ -314,10 +314,26 @@ namespace Anvil.Unity.DOTS.Data
             return jobHandle;
         }
         
-        //TODO: Come up with a better name for this and/or think about how this should be used. Use an UnsafeList for example
+        //TODO: #99 - Look at renaming this class or adjusting functionality?
+        /// <summary>
+        /// Resets the outward facing length this <see cref="DeferredNativeArray{T}"/> reports.
+        /// </summary>
+        /// <remarks>
+        /// This is typically used for a case where the max size the <see cref="DeferredNativeArray{T}"/> could be
+        /// is known.
+        /// It gets allocated for that amount, ex: 10.
+        /// Candidates to be written to the array are processed and 7 of the 10 candidates are written, the other
+        /// three are discarded.
+        /// This function is then called to reset the length to be 7 since only the first 7 elements in the array
+        /// are valid.
+        /// </remarks>
+        /// <param name="newLength">The length to set to.</param>
         public unsafe void ResetLengthTo(int newLength)
         {
+            //Can't reset the length on an uncreated array
             Debug.Assert(m_BufferInfo != null);
+            //Can't set the length to be larger than what has been allocated
+            Debug.Assert(newLength <= m_BufferInfo->Length);
             m_BufferInfo->Length = newLength;
         }
 

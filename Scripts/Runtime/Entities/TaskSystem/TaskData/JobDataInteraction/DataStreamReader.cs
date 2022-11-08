@@ -3,7 +3,7 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     /// <summary>
-    /// Represents a read only reference to a <see cref="TaskStream{TInstance}"/>
+    /// Represents a read only reference to a <see cref="IAbstractDataStream{TInstance}"/>
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to read</typeparam>

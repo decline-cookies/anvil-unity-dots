@@ -54,7 +54,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //TODO: #78 - Optimization, this could be pretty slow since we're only searching for one type but have to check all possible nodes.
             //TODO: It would be better to already have the nodes categorized by type or even better, by resolveTarget and type so it's faster to build.
             Type resolveTargetType = typeof(TResolveTargetType);
-            //TODO: Changed so that we don't care if its a ResolveTarget, if the type matches, it's valid
             foreach (DataStreamNode node in m_NodesByDataStream.Values)
             {
                 if (resolveTargetType != node.EntityProxyInstanceType)

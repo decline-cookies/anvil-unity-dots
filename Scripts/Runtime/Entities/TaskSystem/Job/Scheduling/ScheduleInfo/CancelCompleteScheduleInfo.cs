@@ -3,11 +3,17 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Specific scheduling information for a <see cref="CancelCompleteJobConfig"/>
+    /// </summary>
     public class CancelCompleteScheduleInfo : AbstractScheduleInfo
     {
         private readonly CancelCompleteJobData m_JobData;
         private readonly JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate m_ScheduleJobFunction;
         
+        /// <summary>
+        /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
+        /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
         
         internal CancelCompleteScheduleInfo(CancelCompleteJobData jobData,

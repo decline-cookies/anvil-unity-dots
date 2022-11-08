@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         /// <summary>
         /// Specifies a target to allow instances of data to resolve to. All matching
-        /// <see cref="TaskStream{TInstance}"/>s on the governing <see cref="AbstractTaskDriver"/> and
+        /// <see cref="IAbstractDataStream{TInstance}"/>s on the governing <see cref="AbstractTaskDriver"/> and
         /// <see cref="AbstractTaskSystem"/> will be required for writing in a shared-write context.
         /// </summary>
         /// <typeparam name="TResolveTargetType">The type of <see cref="IEntityProxyInstance"/> that will be resolved.</typeparam>

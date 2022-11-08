@@ -99,8 +99,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     createdInstance = CreateCancelResultDataStream(instanceType, taskData);
                 }
                 
-                //TODO: Find and replace all TaskStream to DataStream
-
                 Debug_EnsureFieldNotSet(field, instance);
                 //Ensure the System's field is set to the task stream
                 field.SetValue(instance, createdInstance);

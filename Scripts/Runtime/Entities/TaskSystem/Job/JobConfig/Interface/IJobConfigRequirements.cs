@@ -11,21 +11,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public interface IJobConfigRequirements : IJobConfig
     {
         /// <summary>
-        /// Specifies a <see cref="TaskStream{TInstance}"/> to be written to in a shared-write context.
+        /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
-        /// <param name="dataStream">The <see cref="TaskStream{TInstance}"/> to write to.</param>
+        /// <param name="dataStream">The <see cref="IAbstractDataStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
-        /// the <see cref="TaskStream{TInstance}"/></typeparam>
+        /// the <see cref="IAbstractDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
-        /// Specifies a <see cref="TaskStream{TInstance}"/> to be read from in a shared-read context.
+        /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be read from in a shared-read context.
         /// </summary>
-        /// <param name="dataStream">The <see cref="TaskStream{TInstance}"/> to read from.</param>
+        /// <param name="dataStream">The <see cref="IAbstractDataStream{TInstance}"/> to read from.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
-        /// the <see cref="TaskStream{TInstance}"/></typeparam>
+        /// the <see cref="IAbstractDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
