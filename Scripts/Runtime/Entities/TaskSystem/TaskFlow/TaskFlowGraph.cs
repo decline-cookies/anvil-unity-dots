@@ -102,13 +102,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                dataStreams.AddRange(taskSystem.TaskData.DataStreams);
-                dataStreams.AddRange(taskSystem.TaskData.CancelResultDataStreams);
+                dataStreams.AddRange(taskSystem.TaskData.AllPublicDataStreams);
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    dataStreams.AddRange(taskDriver.TaskData.DataStreams);
-                    dataStreams.AddRange(taskDriver.TaskData.CancelResultDataStreams);
+                    dataStreams.AddRange(taskDriver.TaskData.AllPublicDataStreams);
                 }
             }
 
