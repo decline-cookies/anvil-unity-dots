@@ -150,17 +150,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return RequireDataStreamForWrite(dataStream, Usage.Write);
         }
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(DataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedRead, Usage.Read));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Read));
             return this;
         }
 
@@ -171,10 +171,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream, Usage usage)
+        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream, Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedWrite, usage));
             return this;
         }
         
@@ -370,8 +370,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup(Usage usage)
         {
-            CancelDataAccessWrapper cancelDataAccessWrapper = GetAccessWrapper<CancelDataAccessWrapper>(usage);
-            return cancelDataAccessWrapper.ProgressLookup;
+            CancelProgressLookupAccessWrapper cancelProgressLookupAccessWrapper = GetAccessWrapper<CancelProgressLookupAccessWrapper>(usage);
+            return cancelProgressLookupAccessWrapper.ProgressLookup;
         }
 
         internal PendingCancelDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)

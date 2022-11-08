@@ -6,8 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class NodeLookup : AbstractNodeLookup
     {
-        private readonly Dictionary<AbstractTypedDataStream<>, DataStreamNode> m_NodesByDataStream;
-        private readonly Dictionary<CancelRequestDataStream, CancelRequestsNode> m_NodesByCancelRequests;
+        private readonly Dictionary<AbstractDataStream, DataStreamNode> m_NodesByDataStream;
 
         public byte Context { get; }
 
@@ -15,19 +14,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                           AbstractTaskSystem taskSystem,
                           AbstractTaskDriver taskDriver) : base(taskGraph, taskSystem, taskDriver)
         {
-            m_NodesByDataStream = new Dictionary<AbstractTypedDataStream<>, DataStreamNode>();
-            m_NodesByCancelRequests = new Dictionary<CancelRequestDataStream, CancelRequestsNode>();
+            m_NodesByDataStream = new Dictionary<AbstractDataStream, DataStreamNode>();
             Context = taskDriver?.Context ?? taskSystem.Context;
         }
 
-        public void CreateDataStreamNodes(AbstractTypedDataStream<> dataStream)
+        public void CreateDataStreamNodes(AbstractDataStream dataStream)
         {
             CreateDataStreamNode(dataStream);
-            //TODO: Add the PendingCancelled stream?
-            // CreateDataStreamNode(dataStream);
         }
 
-        private void CreateDataStreamNode(AbstractTypedDataStream<> dataStream)
+        private void CreateDataStreamNode(AbstractDataStream dataStream)
         {
             Debug_EnsureNoDuplicateDataStreamNodes(dataStream);
             DataStreamNode node = new DataStreamNode(this,
@@ -38,36 +34,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_NodesByDataStream.Add(dataStream, node);
         }
 
-        public void CreateCancelRequestsNode(CancelRequestDataStream cancelRequestDataStream)
-        {
-            Debug_EnsureNoDuplicateCancelRequestNodes(cancelRequestDataStream);
-            CancelRequestsNode node = new CancelRequestsNode(this,
-                                                             cancelRequestDataStream,
-                                                             TaskGraph,
-                                                             TaskSystem,
-                                                             TaskDriver);
-            m_NodesByCancelRequests.Add(cancelRequestDataStream, node);
-        }
-
-        public bool IsDataStreamRegistered(AbstractTypedDataStream<> dataStream)
+        public bool IsDataStreamRegistered(AbstractDataStream dataStream)
         {
             return m_NodesByDataStream.ContainsKey(dataStream);
         }
 
-        public DataStreamNode this[AbstractTypedDataStream<> dataStream]
+        public DataStreamNode this[AbstractDataStream dataStream]
         {
             get
             {
                 Debug_EnsureExists(dataStream);
                 return m_NodesByDataStream[dataStream];
-            }
-        }
-
-        public void AddDataStreamsTo(List<AbstractTypedDataStream<>> dataStreams)
-        {
-            foreach (AbstractTypedDataStream<> dataStream in m_NodesByDataStream.Keys)
-            {
-                dataStreams.Add(dataStream);
             }
         }
 
@@ -85,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     continue;
                 }
 
-                jobResolveTargetMapping.RegisterDataStream((AbstractTypedDataStream<TResolveTargetType>)node.DataStream, Context);
+                jobResolveTargetMapping.RegisterDataStream<TResolveTargetType>((IPendingDataStream)node.DataStream, Context);
             }
         }
 
@@ -94,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateDataStreamNodes(AbstractTypedDataStream<> dataStream)
+        private void Debug_EnsureNoDuplicateDataStreamNodes(AbstractDataStream dataStream)
         {
             if (m_NodesByDataStream.ContainsKey(dataStream))
             {
@@ -103,16 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateCancelRequestNodes(CancelRequestDataStream cancelRequestDataStream)
-        {
-            if (m_NodesByCancelRequests.ContainsKey(cancelRequestDataStream))
-            {
-                throw new InvalidOperationException($"Trying to create a new {nameof(CancelRequestsNode)} with instance of {cancelRequestDataStream} but one already exists!");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureExists(AbstractTypedDataStream<> dataStream)
+        private void Debug_EnsureExists(AbstractDataStream dataStream)
         {
             if (!m_NodesByDataStream.ContainsKey(dataStream))
             {

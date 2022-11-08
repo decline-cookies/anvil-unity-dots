@@ -16,12 +16,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancellableDataStream<TInstance> : DataStream<TInstance>,
                                                       ICancellableDataStream<TInstance>,
-                                                      IInternalCancellableDataStream
+                                                      IUntypedCancellableDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
+        private NativeArray<JobHandle> m_ConsolidationDependencies;
+
         public PendingCancelDataStream<TInstance> PendingCancelDataStream { get; }
 
-        private NativeArray<JobHandle> m_ConsolidationDependencies;
+        public AbstractDataStream UntypedPendingCancelDataStream
+        {
+            get => PendingCancelDataStream;
+        }
 
         internal CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriverCancelRequests, taskDriver, taskSystem)
         {
@@ -55,7 +60,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          Debug_ProfilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-  ,Debug_DebugString
+                                                                                                        ,
+                                                                                                         Debug_DebugString
 #endif
                                                                                                         );
 
@@ -102,7 +108,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                        ProfilerMarker profilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                 ,FixedString128Bytes debugString
+                                                      ,
+                                                       FixedString128Bytes debugString
 #endif
             ) : this()
             {

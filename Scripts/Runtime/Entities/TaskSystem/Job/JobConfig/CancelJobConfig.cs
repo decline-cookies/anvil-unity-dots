@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Jobs;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -15,16 +16,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                    taskDriver)
         {
             RequireDataStreamForCancelling(pendingCancelDataStream);
-            RequireCancelDataForCancelProgress(taskDriver != null ? taskDriver.CancelData : taskSystem.CancelData);
+            RequireCancelProgressLookup(taskDriver != null ? taskDriver.TaskData.CancelProgressLookup : taskSystem.TaskData.CancelProgressLookup);
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireCancelDataForCancelProgress(CancelData cancelData)
+        private void RequireCancelProgressLookup(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup)
         {
-            AddAccessWrapper(new CancelDataAccessWrapper(cancelData, AccessType.ExclusiveWrite, Usage.Cancelling));
+            AddAccessWrapper(new CancelProgressLookupAccessWrapper(cancelProgressLookup, AccessType.ExclusiveWrite, Usage.Cancelling));
         }
         
         private void RequireDataStreamForCancelling(PendingCancelDataStream<TInstance> pendingCancelDataStream)

@@ -4,7 +4,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-
 #if DEBUG
 using Unity.Profiling;
 #endif
@@ -17,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStream<TInstance> : AbstractArrayDataStream<EntityProxyInstanceWrapper<TInstance>>,
                                            IDataStream<TInstance>,
-                                           IInternalDataStream
+                                           IUntypedDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
         //TODO: Move to Util
@@ -81,7 +80,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                    Debug_ProfilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                       ,Debug_DebugString
+                                                                                  ,
+                                                                                   Debug_DebugString
 #endif
                                                                                   );
             dependsOn = consolidateJob.Schedule(dependsOn);
@@ -119,7 +119,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                             ProfilerMarker profilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                   ,FixedString128Bytes debugString
+                                           ,
+                                            FixedString128Bytes debugString
 #endif
             ) : this()
             {

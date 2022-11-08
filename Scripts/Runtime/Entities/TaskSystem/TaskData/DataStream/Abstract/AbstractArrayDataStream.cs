@@ -8,7 +8,6 @@ using Unity.Profiling;
 #endif
 
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-using System;
 using UnityEngine;
 #endif
 
@@ -86,8 +85,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                  ProfilerMarker profilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                       ,
-                                                FixedString128Bytes debugString
+                                                ,
+                                                 FixedString128Bytes debugString
 #endif
             ) : this()
             {
@@ -117,9 +116,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
                 //TODO: Custom profiler module
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                if (iterationArray.Length > 0)
+                if (liveArray.Length > 0)
                 {
-                    Debug.Log($"{m_DebugString} - Count {iterationArray.Length}");
+                    Debug.Log($"{m_DebugString} - Count {liveArray.Length}");
                 }
 #endif
 #if DEBUG

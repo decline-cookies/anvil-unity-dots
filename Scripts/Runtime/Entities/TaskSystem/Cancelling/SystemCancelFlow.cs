@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly AbstractTaskSystem m_TaskSystem;
 
-        public SystemCancelFlow(AbstractTaskSystem taskSystem, TaskDriverCancelFlow parent) : base(taskSystem.CancelData, parent)
+        public SystemCancelFlow(AbstractTaskSystem taskSystem, TaskDriverCancelFlow parent) : base(taskSystem.TaskData, parent)
         {
             m_TaskSystem = taskSystem;
         }
@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             cancelFlows.Add(this);
             //Add ourself
-            cancelRequests.Add(CancelData.RequestDataStream);
+            cancelRequests.Add(TaskData.CancelRequestDataStream);
             //Add the previous context which will represent the TaskDriver that writes to us
             contexts.Add(Parent.TaskDriverContext);
         }

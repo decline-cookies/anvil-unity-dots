@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => (TTaskSystem)base.TaskSystem;
         }
 
-        protected AbstractTaskDriver(World world) : base(world, typeof(TTaskSystem))
+        protected AbstractTaskDriver(World world, AbstractTaskDriver parent) : base(world, typeof(TTaskSystem), parent)
         {
         }
     }
@@ -38,12 +38,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// are then picked up by the TaskDriver to be converted to specific data again and passed on to a sub task driver
     /// or to another general system. 
     /// </summary>
-    //TODO: #74 - Add support for Sub-Task Drivers properly when building an example nested TaskDriver.
+    //TODO: #74 - Add support for Sub-Task Drivers properly when building an example nested TaskDriver. STILL VALID?
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly List<AbstractJobConfig> m_JobConfigs;
-        private AbstractTaskDriver m_Parent;
 
         private bool m_IsHardened;
 
@@ -65,19 +64,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
         
-        internal TaskDriverCancelFlow CancelFlow { get; private set; }
+        internal TaskDriverCancelFlow CancelFlow { get; }
         internal TaskData TaskData { get; }
-        
-        internal AbstractTaskDriver Parent
-        {
-            get => m_Parent;
-        }
+        internal AbstractTaskDriver Parent { get; }
 
-        protected AbstractTaskDriver(World world, Type systemType)
+        protected AbstractTaskDriver(World world, Type systemType, AbstractTaskDriver parent)
         {
             //We can't just pull this off the System because we might have triggered it's creation via
             //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
+            Parent = parent;
 
             TaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
             Context = TaskSystem.RegisterTaskDriver(this);
@@ -86,7 +82,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobConfigs = new List<AbstractJobConfig>();
 
             TaskData = new TaskData(this, TaskSystem);
+            CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
+            
+            //TODO: This is still a bit weird and gross
+            CancelFlow.BuildRequestData();
+            
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
@@ -99,9 +100,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             SubTaskDrivers.DisposeAllAndTryClear();
             //Dispose all the data we own
             m_JobConfigs.DisposeAllAndTryClear();
-            CancelFlow?.Dispose();
             
             TaskData.Dispose();
+            CancelFlow.Dispose();
 
             base.DisposeSelf();
         }
@@ -109,21 +110,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}|{Context}";
-        }
-
-        internal void SetParentTaskDriverFromCreation(AbstractTaskDriver parentTaskDriver)
-        {
-            m_Parent = parentTaskDriver;
-        }
-        
-        //TODO: This function needs to be better
-        internal void CreateCancelFlow()
-        {
-            if (CancelFlow != null)
-            {
-                return;
-            }
-            CancelFlow = new TaskDriverCancelFlow(this);
         }
 
         internal void Harden()
@@ -185,7 +171,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                      BatchStrategy batchStrategy)
         {
             return TaskSystem.ConfigureJobWhenCancelComplete(this,
-                                                             taskDriver.CancelData.CompleteDataStream,
+                                                             taskDriver.TaskData.CancelCompleteDataStream,
                                                              scheduleJobFunction,
                                                              batchStrategy);
         }

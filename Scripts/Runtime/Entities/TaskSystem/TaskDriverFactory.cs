@@ -33,8 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 
                 Debug_CheckFieldIsReadOnly(field);
 
-                AbstractTaskDriver subTaskDriver = Create(field.FieldType, taskDriver.World);
-                subTaskDriver.SetParentTaskDriverFromCreation(taskDriver);
+                AbstractTaskDriver subTaskDriver = Create(field.FieldType, taskDriver);
                 subTaskDrivers.Add(subTaskDriver);
 
                 Debug_EnsureFieldNotSet(field, taskDriver);
@@ -43,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
         }
 
-        private static AbstractTaskDriver Create(Type taskDriverType, World world)
+        private static AbstractTaskDriver Create(Type taskDriverType, AbstractTaskDriver parentTaskDriver)
         {
             if (!TYPED_GENERIC_METHODS.TryGetValue(taskDriverType, out MethodInfo typedGenericMethod))
             {
@@ -51,13 +50,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 TYPED_GENERIC_METHODS.Add(taskDriverType, typedGenericMethod);
             }
 
-            return (AbstractTaskDriver)typedGenericMethod.Invoke(null, new object[]{world});
+            return (AbstractTaskDriver)typedGenericMethod.Invoke(null, new object[]{parentTaskDriver.World, parentTaskDriver});
         }
 
-        private static TTaskDriver CreateTaskDriver<TTaskDriver>(World world)
+        private static TTaskDriver CreateTaskDriver<TTaskDriver>(World world, AbstractTaskDriver parent)
             where TTaskDriver : AbstractTaskDriver
         {
-            return (TTaskDriver)Activator.CreateInstance(typeof(TTaskDriver), world);
+            return (TTaskDriver)Activator.CreateInstance(typeof(TTaskDriver), world, parent);
         }
         
         //*************************************************************************************************************

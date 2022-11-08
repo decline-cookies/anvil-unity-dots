@@ -1,4 +1,5 @@
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System.Reflection;
@@ -6,41 +7,58 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+#if DEBUG
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
+#endif
+
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
 using UnityEngine;
+#endif
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractCancelFlow : AbstractAnvilBase
     {
         internal static readonly BulkScheduleDelegate<AbstractCancelFlow> CHECK_PROGRESS_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractCancelFlow>(nameof(ScheduleCheckCancelProgressJob), BindingFlags.Instance | BindingFlags.NonPublic);
-        
-        //Complete data
+
+
         private NativeArray<JobHandle> m_Dependencies;
 
-        protected CancelData CancelData { get; }
-        protected TaskDriverCancelFlow Parent { get; set; }
-        
-        //TODO: Hide this stuff when collections checks are disabled
-        protected ProfilerMarker Debug_ProfilerMarker { get; }
-        protected FixedString128Bytes Debug_DebugString { get; }
+        protected TaskData TaskData { get; }
+        protected TaskDriverCancelFlow Parent { get; }
 
-        protected AbstractCancelFlow(CancelData cancelData, TaskDriverCancelFlow parent)
+#if DEBUG
+        private ProfilerMarker Debug_ProfilerMarker { get; }
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+        private FixedString128Bytes Debug_DebugString { get; }
+#endif
+
+        protected AbstractCancelFlow(TaskData taskData, TaskDriverCancelFlow parent)
         {
-            CancelData = cancelData;
+            TaskData = taskData;
             Parent = parent;
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
 
-            Debug_DebugString = new FixedString128Bytes($"CancelFlow, {TaskDebugUtil.GetLocationName(CancelData.CompleteDataStream.OwningTaskSystem, CancelData.CompleteDataStream.OwningTaskDriver)}");
-            Debug_ProfilerMarker = new ProfilerMarker(ProfilerCategory.Scripts, Debug_DebugString.Value, MarkerFlags.Script);
+#if DEBUG
+            Debug_ProfilerMarker = new ProfilerMarker(ProfilerCategory.Scripts, ToString(), MarkerFlags.Script);
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+            Debug_DebugString = new FixedString128Bytes(ToString());
+#endif
         }
 
         protected override void DisposeSelf()
         {
             m_Dependencies.Dispose();
-            
+
             base.DisposeSelf();
+        }
+
+        public sealed override string ToString()
+        {
+            return $"{GetType().GetReadableName()}, {TaskDebugUtil.GetLocationName(TaskData.TaskSystem, TaskData.TaskDriver)}";
         }
 
         //*************************************************************************************************************
@@ -52,24 +70,31 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup = default;
 
             m_Dependencies[0] = dependsOn;
-            m_Dependencies[1] = CancelData.AcquireProgressLookup(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup);
-            m_Dependencies[2] = CancelData.CompleteDataStream.AccessController.AcquireAsync(AccessType.SharedWrite);
-            m_Dependencies[3] = Parent?.CancelData.AcquireProgressLookup(AccessType.ExclusiveWrite, out parentProgressLookup) ?? default;
+            m_Dependencies[1] = TaskData.CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup);
+            m_Dependencies[2] = TaskData.CancelCompleteDataStream.AccessController.AcquireAsync(AccessType.SharedWrite);
+            m_Dependencies[3] = Parent?.TaskData.CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out parentProgressLookup) ?? default;
 
             dependsOn = JobHandle.CombineDependencies(m_Dependencies);
 
             CheckCancelProgressJob checkCancelProgressJob = new CheckCancelProgressJob(parentProgressLookup,
                                                                                        progressLookup,
-                                                                                       CancelData.CompleteDataStream.Pending,
-                                                                                       Parent?.TaskDriverContext ?? 0,
-                                                                                       Debug_DebugString,
-                                                                                       Debug_ProfilerMarker);
+                                                                                       TaskData.CancelCompleteDataStream.Pending,
+                                                                                       Parent?.TaskDriverContext ?? 0
+#if DEBUG
+                                                                                      ,
+                                                                                       Debug_ProfilerMarker
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                                                                                      ,
+                                                                                       Debug_DebugString
+#endif
+                                                                                      );
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
-            CancelData.ReleaseProgressLookup(dependsOn);
-            CancelData.CompleteDataStream.AccessController.ReleaseAsync(dependsOn);
-            Parent?.CancelData.ReleaseProgressLookup(dependsOn);
+            TaskData.CancelProgressLookup.ReleaseAsync(dependsOn);
+            TaskData.CancelCompleteDataStream.AccessController.ReleaseAsync(dependsOn);
+            Parent?.TaskData.CancelProgressLookup.ReleaseAsync(dependsOn);
 
             return dependsOn;
         }
@@ -93,31 +118,51 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_CompleteLaneWriter;
 
-            private readonly FixedString128Bytes m_DebugString;
+#if DEBUG
             private readonly ProfilerMarker m_ProfilerMarker;
+#endif
+
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+            private readonly FixedString128Bytes m_DebugString;
+#endif
 
             public CheckCancelProgressJob(UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup,
                                           UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
                                           UnsafeTypedStream<EntityProxyInstanceID> completeWriter,
-                                          byte context,
-                                          FixedString128Bytes debugString,
-                                          ProfilerMarker profilerMarker) : this()
+                                          byte context
+#if DEBUG
+                                         ,
+                                          ProfilerMarker profilerMarker
+#endif
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                                         ,
+                                          FixedString128Bytes debugString
+#endif
+            ) : this()
+
             {
                 m_ParentProgressLookup = parentProgressLookup;
                 m_ProgressLookup = progressLookup;
                 m_CompleteWriter = completeWriter;
                 m_Context = context;
 
-                m_DebugString = debugString;
+#if DEBUG
                 m_ProfilerMarker = profilerMarker;
+#endif
+
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
+                m_DebugString = debugString;
+#endif
 
                 m_NativeThreadIndex = UNSET_THREAD_INDEX;
             }
 
             public void Execute()
             {
+#if DEBUG
                 m_ProfilerMarker.Begin();
-                
+#endif
+
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
                 m_CompleteLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
 
@@ -130,7 +175,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     CheckCancelProgress();
                 }
 
+#if DEBUG
                 m_ProfilerMarker.End();
+#endif
             }
 
             private void CheckCancelProgressWithParent()
@@ -172,7 +219,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 //If we're still processing...
                 if (isStillProcessing)
                 {
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
                     Debug.Log($"Still processing for {id.ToFixedString()} on {m_DebugString} - Holding open");
+#endif
                     //Flip us back to not processing. A CancelJob will switch this if we still need to process
                     m_ProgressLookup[id] = false;
                 }
@@ -184,7 +233,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 // - There wasn't any data for this id that was requested to cancel.
                 else
                 {
+#if ANVIL_DEBUG_LOGGING_EXPENSIVE
                     Debug.Log($"No longer processing for {id.ToFixedString()} on {m_DebugString} - Completing");
+#endif
                     //Remove ourselves from the Progress Lookup
                     m_ProgressLookup.Remove(id);
                     //Write ourselves to the Complete.

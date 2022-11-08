@@ -9,17 +9,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class TaskData : AbstractAnvilBase
     {
-        public readonly List<IInternalDataStream> DataStreams;
-        public readonly List<IInternalCancellableDataStream> CancellableDataStreams;
-        public readonly List<IInternalCancelResultDataStream> CancelResultDataStreams;
+        public readonly List<AbstractDataStream> DataStreams;
+        public readonly List<AbstractDataStream> CancellableDataStreams;
+        public readonly List<AbstractDataStream> CancelResultDataStreams;
         public readonly CancelRequestDataStream CancelRequestDataStream;
         public readonly CancelCompleteDataStream CancelCompleteDataStream;
         public readonly AbstractTaskDriver TaskDriver;
         public readonly AbstractTaskSystem TaskSystem;
-        public readonly byte Context;
-
-        private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_CancelProgressLookup;
-        private readonly List<IInternalAbstractDataStream> m_AllPublicDataStreams;
+        // public readonly byte Context;
+        public readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> CancelProgressLookup;
+        
+        public readonly List<AbstractDataStream> AllPublicDataStreams;
         
 
         public TaskData(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem)
@@ -27,14 +27,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskDriver = taskDriver;
             TaskSystem = taskSystem;
 
-            m_AllPublicDataStreams = new List<IInternalAbstractDataStream>();
+            AllPublicDataStreams = new List<AbstractDataStream>();
 
-            DataStreams = new List<IInternalDataStream>();
-            CancellableDataStreams = new List<IInternalCancellableDataStream>();
-            CancelResultDataStreams = new List<IInternalCancelResultDataStream>();
-            m_CancelProgressLookup = new AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>>(new UnsafeParallelHashMap<EntityProxyInstanceID, bool>(ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>(),
+            DataStreams = new List<AbstractDataStream>();
+            CancellableDataStreams = new List<AbstractDataStream>();
+            CancelResultDataStreams = new List<AbstractDataStream>();
+            CancelProgressLookup = new AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>>(new UnsafeParallelHashMap<EntityProxyInstanceID, bool>(ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>(),
                                                                                                                                                                           Allocator.Persistent));
-            CancelRequestDataStream = new CancelRequestDataStream(m_CancelProgressLookup, TaskDriver, TaskSystem);
+            CancelRequestDataStream = new CancelRequestDataStream(CancelProgressLookup, TaskDriver, TaskSystem);
             CancelCompleteDataStream = new CancelCompleteDataStream(TaskDriver, TaskSystem);
             
             DataStreamFactory.CreateDataStreams(this);
@@ -43,13 +43,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void DisposeSelf()
         {
             //TODO: Should this get baked into AccessControlledValue's Dispose method?
-            m_CancelProgressLookup.Acquire(AccessType.Disposal);
-            m_CancelProgressLookup.Dispose();
+            CancelProgressLookup.Acquire(AccessType.Disposal);
+            CancelProgressLookup.Dispose();
             
             CancelRequestDataStream.Dispose();
             CancelCompleteDataStream.Dispose();
             
-            m_AllPublicDataStreams.DisposeAllAndTryClear();
+            AllPublicDataStreams.DisposeAllAndTryClear();
             
             DataStreams.Clear();
             CancellableDataStreams.Clear();
@@ -63,21 +63,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStreams.Add(dataStream);
-            m_AllPublicDataStreams.Add(dataStream);
+            AllPublicDataStreams.Add(dataStream);
         }
         
         public void RegisterDataStream<TInstance>(CancellableDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             CancellableDataStreams.Add(dataStream);
-            m_AllPublicDataStreams.Add(dataStream);
+            AllPublicDataStreams.Add(dataStream);
         }
         
         public void RegisterDataStream<TInstance>(CancelResultDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             CancelResultDataStreams.Add(dataStream);
-            m_AllPublicDataStreams.Add(dataStream);
+            AllPublicDataStreams.Add(dataStream);
         }
     }
 }

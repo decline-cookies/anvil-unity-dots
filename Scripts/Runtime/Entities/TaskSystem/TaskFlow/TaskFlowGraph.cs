@@ -41,37 +41,33 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void RegisterTaskSystem(AbstractTaskSystem taskSystem)
         {
             m_TaskSystems.Add(taskSystem);
-            RegisterCancelRequestsDataStream(taskSystem.CancelData.RequestDataStream, taskSystem, null);
-            RegisterDataStreams(taskSystem.DataStreams, taskSystem, null);
+            RegisterDataStreams(taskSystem.TaskData, taskSystem, null);
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             m_TaskDrivers.Add(taskDriver);
-            RegisterCancelRequestsDataStream(taskDriver.CancelData.RequestDataStream, taskDriver.TaskSystem, taskDriver);
-            RegisterDataStreams(taskDriver.DataStreams, taskDriver.TaskSystem, taskDriver);
+            if (taskDriver.Parent == null)
+            {
+                m_TopLevelTaskDrivers.Add(taskDriver);
+            }
+            RegisterDataStreams(taskDriver.TaskData, taskDriver.TaskSystem, taskDriver);
         }
 
         //*************************************************************************************************************
         // DATA STREAMS
         //*************************************************************************************************************
 
-        private void RegisterCancelRequestsDataStream(CancelRequestDataStream cancelRequestDataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        private void RegisterDataStreams(TaskData taskData, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            lookup.CreateCancelRequestsNode(cancelRequestDataStream);
-        }
-
-        private void RegisterDataStreams(List<AbstractTypedDataStream<>> dataStreams, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
-        {
-            NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
-            foreach (AbstractTypedDataStream<> dataStream in dataStreams)
+            foreach (AbstractDataStream dataStream in taskData.AllPublicDataStreams)
             {
                 lookup.CreateDataStreamNodes(dataStream);
             }
         }
 
-        public bool IsDataStreamRegistered(AbstractTypedDataStream<> dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public bool IsDataStreamRegistered(AbstractDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup systemNodeLookup = GetOrCreateNodeLookup(taskSystem, null);
             NodeLookup driverNodeLookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
@@ -106,11 +102,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                dataStreams.AddRange(taskSystem.DataStreams);
+                dataStreams.AddRange(taskSystem.TaskData.DataStreams);
+                dataStreams.AddRange(taskSystem.TaskData.CancelResultDataStreams);
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    dataStreams.AddRange(taskDriver.DataStreams);
+                    dataStreams.AddRange(taskDriver.TaskData.DataStreams);
+                    dataStreams.AddRange(taskDriver.TaskData.CancelResultDataStreams);
                 }
             }
 
@@ -123,11 +121,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //TODO: Can make this nicer
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                cancelRequests.Add(taskSystem.CancelData.RequestDataStream);
+                cancelRequests.Add(taskSystem.TaskData.CancelRequestDataStream);
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    cancelRequests.Add(taskDriver.CancelData.RequestDataStream);
+                    cancelRequests.Add(taskDriver.TaskData.CancelRequestDataStream);
                 }
             }
 
@@ -139,10 +137,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             List<CancelCompleteDataStream> cancelCompletes = new List<CancelCompleteDataStream>();
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                cancelCompletes.Add(taskSystem.CancelData.CompleteDataStream);
+                cancelCompletes.Add(taskSystem.TaskData.CancelCompleteDataStream);
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    cancelCompletes.Add(taskDriver.CancelData.CompleteDataStream);
+                    cancelCompletes.Add(taskDriver.TaskData.CancelCompleteDataStream);
                 }
             }
 
@@ -151,28 +149,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public BulkJobScheduler<AbstractDataStream> CreateWorldPendingCancelBulkJobScheduler()
         {
-            List<AbstractTypedDataStream<>> dataStreams = new List<AbstractTypedDataStream<>>();
+            List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();
 
             //TODO: Can make this nicer - also make sure we don't make a mistake with the pending Cancel data streams
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
-                foreach (AbstractTypedDataStream<> dataStream in taskSystem.DataStreams)
+                foreach (AbstractDataStream dataStream in taskSystem.TaskData.CancellableDataStreams)
                 {
-                    //TODO: Gross, can we avoid this check?
-                    if (dataStream.IsCancellable)
-                    {
-                        dataStreams.Add(dataStream.GetCancelPendingDataStream());
-                    }
+                    IUntypedCancellableDataStream cancellableDataStream = (IUntypedCancellableDataStream)dataStream;
+                    dataStreams.Add(cancellableDataStream.UntypedPendingCancelDataStream);
                 }
 
                 foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
                 {
-                    foreach (AbstractTypedDataStream<> dataStream in taskDriver.DataStreams)
+                    foreach (AbstractDataStream dataStream in taskDriver.TaskData.CancellableDataStreams)
                     {
-                        if (dataStream.IsCancellable)
-                        {
-                            dataStreams.Add(dataStream.GetCancelPendingDataStream());
-                        }
+                        IUntypedCancellableDataStream cancellableDataStream = (IUntypedCancellableDataStream)dataStream;
+                        dataStreams.Add(cancellableDataStream.UntypedPendingCancelDataStream);
                     }
                 }
             }
@@ -315,15 +308,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 taskSystem.Harden();
             }
 
-            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
+            foreach (AbstractTaskDriver taskDriver in m_TopLevelTaskDrivers)
             {
-                //TODO: This is gross
-                if (taskDriver.Parent == null)
-                {
-                    m_TopLevelTaskDrivers.Add(taskDriver);
-                    taskDriver.CreateCancelFlow();
-                    taskDriver.CancelFlow.BuildScheduling();
-                }
+                taskDriver.CancelFlow.BuildScheduling();
             }
 
             //TODO: #66 - Build Relationships
@@ -342,7 +329,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // UTILITY
         //*************************************************************************************************************
 
-        public string GetDebugString(AbstractTypedDataStream<> dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
+        public string GetDebugString(AbstractDataStream dataStream, AbstractTaskSystem taskSystem, AbstractTaskDriver taskDriver)
         {
             NodeLookup lookup = GetOrCreateNodeLookup(taskSystem, taskDriver);
             return lookup[dataStream].ToString();

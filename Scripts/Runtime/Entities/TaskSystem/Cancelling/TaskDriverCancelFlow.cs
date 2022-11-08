@@ -30,13 +30,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => m_TaskDriver.Context;
         }
 
-        public TaskDriverCancelFlow(AbstractTaskDriver taskDriver) : base(taskDriver.CancelData, taskDriver.Parent?.CancelFlow)
+        public TaskDriverCancelFlow(AbstractTaskDriver taskDriver, TaskDriverCancelFlow parent) : base(taskDriver.TaskData, parent)
         {
             m_TaskDriver = taskDriver;
             m_SystemCancelFlow = new SystemCancelFlow(m_TaskDriver.TaskSystem, this);
             m_CancelFlowHierarchy = new Dictionary<int, List<AbstractCancelFlow>>();
             m_CancelRequestDataStreams = new List<CancelRequestDataStream>();
-            BuildRequestData();
         }
 
         protected override void DisposeSelf()
@@ -80,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                             m_RequestContexts);
         }
 
-        private void BuildRequestData()
+        public void BuildRequestData()
         {
             List<byte> cancelContexts = new List<byte>();
             List<AbstractCancelFlow> cancelFlows = new List<AbstractCancelFlow>();
@@ -99,30 +98,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_CancelRequestAcquisitionJobHandles = new NativeArray<JobHandle>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
         }
 
-        private void AssignParent(TaskDriverCancelFlow parent)
-        {
-            if (Parent != null && Parent != parent)
-            {
-                throw new InvalidOperationException();
-            }
-            Parent = parent;
-        }
-
         private void BuildRequestData(List<AbstractCancelFlow> cancelFlows,
                                       List<CancelRequestDataStream> cancelRequests,
                                       List<byte> contexts)
         {
             cancelFlows.Add(this);
             //Add ourself
-            cancelRequests.Add(CancelData.RequestDataStream);
+            cancelRequests.Add(TaskData.CancelRequestDataStream);
             //Add our TaskDriver's context
             contexts.Add(TaskDriverContext);
 
             //For all subtask drivers, recursively add
             foreach (AbstractTaskDriver taskDriver in m_TaskDriver.SubTaskDrivers)
             {
-                taskDriver.CreateCancelFlow();
-                taskDriver.CancelFlow.AssignParent(this);
                 taskDriver.CancelFlow.BuildRequestData(cancelFlows, cancelRequests, contexts);
             }
 

@@ -6,7 +6,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-
 #if DEBUG
 using Unity.Profiling;
 #endif
@@ -53,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          Debug_ProfilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                      ,
+                                                                                                        ,
                                                                                                          Debug_DebugString
 #endif
                                                                                                         );
@@ -93,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                 ProfilerMarker profilerMarker
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                             ,
+                                               ,
                                                 FixedString128Bytes debugString
 #endif
             )

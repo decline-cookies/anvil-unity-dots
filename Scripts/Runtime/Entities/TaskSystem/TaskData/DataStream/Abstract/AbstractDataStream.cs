@@ -4,7 +4,6 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Reflection;
 using Unity.Jobs;
-
 #if DEBUG
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
