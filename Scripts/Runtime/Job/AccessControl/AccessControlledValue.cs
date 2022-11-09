@@ -28,6 +28,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         protected override void DisposeSelf()
         {
+            m_AccessController.Acquire(AccessType.Disposal);
             m_AccessController.Dispose();
             (m_Value as IDisposable)?.Dispose();
             base.DisposeSelf();
