@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public UnsafeParallelHashMap<T, bool> Lookup;
 
-        public AbstractLookupDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        protected AbstractLookupDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
             Lookup = new UnsafeParallelHashMap<T, bool>(ChunkUtil.MaxElementsPerChunk<T>(), Allocator.Persistent);
         }
@@ -19,5 +19,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Lookup.Dispose();
             base.DisposeDataStream();
         }
+        
+        //*************************************************************************************************************
+        // SERIALIZATION
+        //*************************************************************************************************************
+
+        //TODO: #83 - Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
+        //here but keeping the TODO for future reminder.
     }
 }

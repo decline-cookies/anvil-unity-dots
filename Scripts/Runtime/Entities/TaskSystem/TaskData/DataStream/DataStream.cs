@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceWrapper<TInstance>>();
 
-        public CancelRequestDataStream TaskDriverCancelRequests { get; }
+        protected CancelRequestDataStream TaskDriverCancelRequests { get; }
 
 
         public DataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)

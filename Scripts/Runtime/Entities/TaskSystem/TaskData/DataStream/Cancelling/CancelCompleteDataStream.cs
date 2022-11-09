@@ -4,9 +4,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
         
-        internal CancelCompleteDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        public CancelCompleteDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
         }
+        
+        //*************************************************************************************************************
+        // SERIALIZATION
+        //*************************************************************************************************************
+
+        //TODO: #83 - Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
+        //here but keeping the TODO for future reminder.
         
         //*************************************************************************************************************
         // JOBS STRUCTS

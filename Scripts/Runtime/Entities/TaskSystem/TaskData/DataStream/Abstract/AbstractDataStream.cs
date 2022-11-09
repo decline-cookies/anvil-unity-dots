@@ -60,12 +60,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected virtual void DisposeDataStream()
         {
         }
-
-        protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
-
+        
         public sealed override string ToString()
         {
             return $"{Type.GetReadableName()}, {TaskDebugUtil.GetLocationName(m_OwningTaskSystem, m_OwningTaskDriver)}";
         }
+        
+        //*************************************************************************************************************
+        // SERIALIZATION
+        //*************************************************************************************************************
+
+        //TODO: #83 - Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
+        //here but keeping the TODO for future reminder.
+        
+        //*************************************************************************************************************
+        // CONSOLIDATION
+        //*************************************************************************************************************
+
+        protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
     }
 }

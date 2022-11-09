@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => PendingCancelDataStream;
         }
 
-        internal CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriverCancelRequests, taskDriver, taskSystem)
+        public CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriverCancelRequests, taskDriver, taskSystem)
         {
             PendingCancelDataStream = new PendingCancelDataStream<TInstance>(taskDriver, taskSystem);
             m_ConsolidationDependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
@@ -40,6 +40,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             PendingCancelDataStream.Dispose();
             base.DisposeDataStream();
         }
+        
+        //*************************************************************************************************************
+        // SERIALIZATION
+        //*************************************************************************************************************
+
+        //TODO: #83 - Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
+        //here but keeping the TODO for future reminder.
 
         //*************************************************************************************************************
         // CONSOLIDATION

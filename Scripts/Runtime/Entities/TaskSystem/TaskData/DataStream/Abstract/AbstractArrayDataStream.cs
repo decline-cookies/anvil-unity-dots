@@ -18,14 +18,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : unmanaged
     {
         //Deliberately not using pointers because that messes up what the safety handle pointer points to.
-        public DeferredNativeArray<T> Live;
+        protected DeferredNativeArray<T> Live;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo
         {
             get => Live.ScheduleInfo;
         }
 
-        internal AbstractArrayDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        protected AbstractArrayDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
             Live = new DeferredNativeArray<T>(Allocator.Persistent,
                                               Allocator.TempJob);
@@ -36,7 +36,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Live.Dispose();
             base.DisposeDataStream();
         }
+        
+        //*************************************************************************************************************
+        // SERIALIZATION
+        //*************************************************************************************************************
 
+        //TODO: #83 - Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
+        //here but keeping the TODO for future reminder.
+
+        //*************************************************************************************************************
+        // CONSOLIDATION
+        //*************************************************************************************************************
+        
         protected override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
             dependsOn = JobHandle.CombineDependencies(dependsOn,
@@ -115,7 +126,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_Pending.CopyTo(ref liveArray);
                 m_Pending.Clear();
 
-                //TODO: Custom profiler module
+                //TODO: #108 -  Custom profiler module
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 if (liveArray.Length > 0)
                 {
