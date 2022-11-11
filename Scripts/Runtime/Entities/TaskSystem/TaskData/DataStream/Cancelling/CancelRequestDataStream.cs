@@ -49,10 +49,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          progressLookup
 #if DEBUG
                                                                                                         ,
-                                                                                                         Debug_ProfilerMarker
+                                                                                                         Debug_ProfilingStats.ProfilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                        ,
+                                                                                                      ,
                                                                                                          Debug_DebugString
 #endif
                                                                                                         );
@@ -77,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
 #if DEBUG
-            private readonly ProfilerMarker m_ProfilerMarker;
+            private ProfilingInfo m_ProfilingInfo;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
             private readonly FixedString128Bytes m_DebugString;
@@ -89,10 +89,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup
 #if DEBUG
                                                ,
-                                                ProfilerMarker profilerMarker
+                                                ProfilingInfo profilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                               ,
+                                             ,
                                                 FixedString128Bytes debugString
 #endif
             )
@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_Lookup = lookup;
                 m_ProgressLookup = progressLookup;
 #if DEBUG
-                m_ProfilerMarker = profilerMarker;
+                m_ProfilingInfo = profilingInfo;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 m_DebugString = debugString;
@@ -111,7 +111,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public void Execute()
             {
 #if DEBUG
-                m_ProfilerMarker.Begin();
+                m_ProfilingInfo.ProfilerMarker.Begin();
+                int lookupCount = 0;
 #endif
 
                 m_Lookup.Clear();
@@ -122,6 +123,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     //We have something that wants to cancel, so we assume that it will get processed this frame.
                     //If nothing processes it, it will auto-complete the next frame. 
                     m_ProgressLookup.TryAdd(proxyInstanceID, true);
+#if DEBUG
+                    lookupCount++;
+#endif
                 }
 
                 m_Pending.Clear();
@@ -133,7 +137,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
 #endif
 #if DEBUG
-                m_ProfilerMarker.End();
+                m_ProfilingInfo.PendingCapacity = m_Pending.Capacity();
+                m_ProfilingInfo.LiveInstances = lookupCount;
+                m_ProfilingInfo.LiveCapacity = m_Lookup.Capacity;
+                m_ProfilingInfo.ProfilerMarker.End();
 #endif
             }
 

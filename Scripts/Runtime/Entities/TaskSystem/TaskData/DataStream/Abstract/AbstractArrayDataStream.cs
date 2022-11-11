@@ -58,7 +58,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                             Live
 #if DEBUG
                                                                                                            ,
-                                                                                                            Debug_ProfilerMarker
+                                                                                                            Debug_ProfilingStats.ProfilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                                                                                                            ,
@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [WriteOnly] private DeferredNativeArray<T> m_Live;
 
 #if DEBUG
-            private readonly ProfilerMarker m_ProfilerMarker;
+            private ProfilingInfo m_ProfilingInfo;
 #endif
 
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
@@ -94,7 +94,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                  DeferredNativeArray<T> live
 #if DEBUG
                                                 ,
-                                                 ProfilerMarker profilerMarker
+                                                 ProfilingInfo profilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                                                 ,
@@ -106,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_Live = live;
 
 #if DEBUG
-                m_ProfilerMarker = profilerMarker;
+                m_ProfilingInfo = profilingInfo;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 m_DebugString = debugString;
@@ -117,7 +117,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public void Execute()
             {
 #if DEBUG
-                m_ProfilerMarker.Begin();
+                m_ProfilingInfo.ProfilerMarker.Begin();
 #endif
                 m_Live.Clear();
 
@@ -134,7 +134,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
 #endif
 #if DEBUG
-                m_ProfilerMarker.End();
+                m_ProfilingInfo.PendingCapacity = m_Pending.Capacity();
+                m_ProfilingInfo.LiveInstances = m_Live.Length;
+                m_ProfilingInfo.LiveCapacity = m_Live.Capacity;
+                m_ProfilingInfo.ProfilerMarker.End();
 #endif
             }
         }

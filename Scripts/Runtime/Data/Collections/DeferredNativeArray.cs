@@ -88,6 +88,7 @@ namespace Anvil.Unity.DOTS.Data
 
             [NativeDisableUnsafePtrRestriction] public void* Buffer;
             public int Length;
+            public int Capacity;
             public Allocator DeferredAllocator;
         }
 
@@ -137,6 +138,7 @@ namespace Anvil.Unity.DOTS.Data
                                                                    BufferInfo.ALIGNMENT,
                                                                    allocator);
             array.m_BufferInfo->Length = 0;
+            array.m_BufferInfo->Capacity = 0;
             array.m_BufferInfo->Buffer = null;
             array.m_BufferInfo->DeferredAllocator = deferredAllocator;
 
@@ -159,6 +161,7 @@ namespace Anvil.Unity.DOTS.Data
             UnsafeUtility.Free(bufferInfo->Buffer, bufferInfo->DeferredAllocator);
             bufferInfo->Buffer = null;
             bufferInfo->Length = 0;
+            bufferInfo->Capacity = 0;
         }
 
         private static unsafe void DisposeBufferInfo(BufferInfo* bufferInfo, Allocator allocator)
@@ -202,6 +205,14 @@ namespace Anvil.Unity.DOTS.Data
             get =>
                 m_BufferInfo != null
                     ? m_BufferInfo->Length
+                    : 0;
+        }
+
+        public unsafe int Capacity
+        {
+            get =>
+                m_BufferInfo != null
+                    ? m_BufferInfo->Capacity
                     : 0;
         }
 
@@ -333,7 +344,7 @@ namespace Anvil.Unity.DOTS.Data
             //Can't reset the length on an uncreated array
             Debug.Assert(m_BufferInfo != null);
             //Can't set the length to be larger than what has been allocated
-            Debug.Assert(newLength <= m_BufferInfo->Length);
+            Debug.Assert(newLength <= m_BufferInfo->Capacity);
             m_BufferInfo->Length = newLength;
         }
 
@@ -363,6 +374,7 @@ namespace Anvil.Unity.DOTS.Data
 
             //Update the buffer info
             m_BufferInfo->Length = newLength;
+            m_BufferInfo->Capacity = newLength;
             m_BufferInfo->Buffer = newMemory;
 
             //Return an actual NativeArray so it's familiar to use and we don't have to reimplement the same api and functionality

@@ -4,10 +4,6 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Reflection;
 using Unity.Jobs;
-#if DEBUG
-using Unity.Profiling;
-using Unity.Profiling.LowLevel;
-#endif
 
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
 using Unity.Collections;
@@ -19,15 +15,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static readonly BulkScheduleDelegate<AbstractDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private readonly AbstractTaskDriver m_OwningTaskDriver;
-        private readonly AbstractTaskSystem m_OwningTaskSystem;
+        public readonly AbstractTaskDriver OwningTaskDriver;
+        public readonly AbstractTaskSystem OwningTaskSystem;
 
         public Type Type { get; }
 
         public AccessController AccessController { get; }
 
 #if DEBUG
-        protected ProfilerMarker Debug_ProfilerMarker { get; }
+        protected ProfilingStats Debug_ProfilingStats { get; }
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
         protected FixedString128Bytes Debug_DebugString { get; }
@@ -37,12 +33,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Type = GetType();
             AccessController = new AccessController();
-            m_OwningTaskDriver = taskDriver;
-            m_OwningTaskSystem = taskSystem;
+            OwningTaskDriver = taskDriver;
+            OwningTaskSystem = taskSystem;
 
 
 #if DEBUG
-            Debug_ProfilerMarker = new ProfilerMarker(ProfilerCategory.Scripts, ToString(), MarkerFlags.Script);
+            Debug_ProfilingStats = new ProfilingStats(this);
+            DataStreamProfilingUtil.RegisterProfilingStats(Debug_ProfilingStats);
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
             Debug_DebugString = new FixedString128Bytes(ToString());
@@ -54,6 +51,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AccessController.Acquire(AccessType.Disposal);
             DisposeDataStream();
             AccessController.Dispose();
+            
+#if DEBUG
+            Debug_ProfilingStats.Dispose();
+#endif
+            
             base.DisposeSelf();
         }
 
@@ -63,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         public sealed override string ToString()
         {
-            return $"{Type.GetReadableName()}, {TaskDebugUtil.GetLocationName(m_OwningTaskSystem, m_OwningTaskDriver)}";
+            return $"{Type.GetReadableName()}, {TaskDebugUtil.GetLocationName(OwningTaskSystem, OwningTaskDriver)}";
         }
         
         //*************************************************************************************************************
@@ -78,5 +80,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
+
+        public void PopulateProfiler()
+        {
+            DataStreamProfilingUtil.Debug_InstancesLiveCapacity.Value += Debug_ProfilingStats.ProfilingInfo.LiveCapacity;
+            DataStreamProfilingUtil.Debug_InstancesLiveCount.Value += Debug_ProfilingStats.ProfilingInfo.LiveInstances;
+            DataStreamProfilingUtil.Debug_InstancesPendingCapacity.Value += Debug_ProfilingStats.ProfilingInfo.PendingCapacity;
+            DataStreamProfilingUtil.UpdateStatsByType(Debug_ProfilingStats);
+        }
     }
 }

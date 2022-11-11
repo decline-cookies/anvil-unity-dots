@@ -95,6 +95,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return lookup;
         }
 
+        public void AddAllDataStreamsTo(List<AbstractDataStream> abstractDataStreams)
+        {
+            //TODO: Move this to the TaskData
+            foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
+            {
+                abstractDataStreams.AddRange(taskSystem.TaskData.DataStreams);
+                abstractDataStreams.AddRange(taskSystem.TaskData.CancellableDataStreams);
+                abstractDataStreams.AddRange(taskSystem.TaskData.CancelResultDataStreams);
+                foreach (AbstractDataStream abstractDataStream in taskSystem.TaskData.CancellableDataStreams)
+                {
+                    IUntypedCancellableDataStream cancellableDataStream = (IUntypedCancellableDataStream)abstractDataStream;
+                    abstractDataStreams.Add(cancellableDataStream.UntypedPendingCancelDataStream);
+                }
+                abstractDataStreams.Add(taskSystem.TaskData.CancelCompleteDataStream);
+                abstractDataStreams.Add(taskSystem.TaskData.CancelRequestDataStream);
+
+                foreach (AbstractTaskDriver taskDriver in taskSystem.TaskDrivers)
+                {
+                    abstractDataStreams.AddRange(taskDriver.TaskData.DataStreams);
+                    abstractDataStreams.AddRange(taskDriver.TaskData.CancellableDataStreams);
+                    abstractDataStreams.AddRange(taskDriver.TaskData.CancelResultDataStreams);
+                    foreach (AbstractDataStream abstractDataStream in taskDriver.TaskData.CancellableDataStreams)
+                    {
+                        IUntypedCancellableDataStream cancellableDataStream = (IUntypedCancellableDataStream)abstractDataStream;
+                        abstractDataStreams.Add(cancellableDataStream.UntypedPendingCancelDataStream);
+                    }
+                    abstractDataStreams.Add(taskDriver.TaskData.CancelCompleteDataStream);
+                    abstractDataStreams.Add(taskDriver.TaskData.CancelRequestDataStream);
+                }
+            }
+        }
+
         public BulkJobScheduler<AbstractDataStream> CreateWorldDataStreamBulkJobScheduler()
         {
             List<AbstractDataStream> dataStreams = new List<AbstractDataStream>();

@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelResultDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
         }
-        
+
         //*************************************************************************************************************
         // SERIALIZATION
         //*************************************************************************************************************

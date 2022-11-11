@@ -66,9 +66,10 @@ namespace Anvil.Unity.DOTS.Data
 
             public BlockInfo* FirstBlock;
             public BlockInfo* CurrentWriterBlock;
+            public int Count;
+            public int BlockCount;
             public byte* WriterHead;
             public byte* WriterEndOfBlock;
-            public int Count;
         }
 
         /// <summary>
@@ -117,7 +118,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         public int ElementsPerBlock
         {
-            get => m_BufferInfo->BlockSize / ELEMENT_SIZE;
+            get;
         }
 
         /// <summary>
@@ -190,6 +191,7 @@ namespace Anvil.Unity.DOTS.Data
             //Can't have a block allocator that is persistent and a temp allocator.
             Assert.IsTrue(blockAllocator <= allocator && blockAllocator > Allocator.None);
 #endif
+            ElementsPerBlock = elementsPerBlock;
 
             m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(BufferInfo.SIZE,
                                                              BufferInfo.ALIGNMENT,
@@ -209,7 +211,10 @@ namespace Anvil.Unity.DOTS.Data
                 lane->WriterHead = null;
                 lane->WriterEndOfBlock = null;
                 lane->Count = 0;
+                lane->BlockCount = 0;
             }
+
+            
         }
 
         /// <summary>
@@ -277,6 +282,7 @@ namespace Anvil.Unity.DOTS.Data
 
                     UnsafeUtility.Free(currentBlock->Data, blockAllocator);
                     UnsafeUtility.Free(currentBlock, blockAllocator);
+                    lane->BlockCount--;
                 }
             }
         }
@@ -366,6 +372,18 @@ namespace Anvil.Unity.DOTS.Data
             return count;
         }
         
+        public int Capacity()
+        {
+            int blocksAllocated = 0;
+            for (int i = 0; i < m_BufferInfo->LaneCount; ++i)
+            {
+                LaneInfo* lane = m_BufferInfo->LaneInfos + i;
+                blocksAllocated += lane->BlockCount;
+            }
+
+            return blocksAllocated * ElementsPerBlock;
+        }
+
         /// <summary>
         /// Copies everything from this <see cref="UnsafeTypedStream{T}"/> into a <see cref="NativeArray{T}"/>
         /// through optimized memory copying of the blocks. 
@@ -611,6 +629,7 @@ namespace Anvil.Unity.DOTS.Data
                     BlockInfo* blockPointer = (BlockInfo*)UnsafeUtility.Malloc(BlockInfo.SIZE, BlockInfo.ALIGNMENT, m_BufferInfo->BlockAllocator);
                     blockPointer->Data = (byte*)UnsafeUtility.Malloc(m_BufferInfo->BlockSize, ELEMENT_ALIGNMENT, m_BufferInfo->BlockAllocator);
                     blockPointer->Next = null;
+                    m_Lane->BlockCount++;
 
                     //Update lane writing info
                     m_Lane->WriterHead = blockPointer->Data;

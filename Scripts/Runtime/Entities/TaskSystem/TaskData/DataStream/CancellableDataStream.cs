@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          TaskDriverCancelRequests.Lookup
 #if DEBUG
                                                                                                         ,
-                                                                                                         Debug_ProfilerMarker
+                                                                                                         Debug_ProfilingStats.ProfilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                                                                                                         ,
@@ -95,11 +95,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
             [ReadOnly] private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CancelRequestsForID;
             [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
-            [WriteOnly] private DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> m_Iteration;
+            [WriteOnly] private DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> m_Live;
             [WriteOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingCancelledWriter;
 
 #if DEBUG
-            private readonly ProfilerMarker m_ProfilerMarker;
+            private ProfilingInfo m_ProfilingInfo;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
             private readonly FixedString128Bytes m_DebugString;
@@ -107,12 +107,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
             public ConsolidateCancellableDataStreamJob(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> pending,
-                                                       DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> iteration,
+                                                       DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> live,
                                                        UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingCancelledWriter,
                                                        UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelRequests
 #if DEBUG
                                                       ,
-                                                       ProfilerMarker profilerMarker
+                                                       ProfilingInfo profilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                                                       ,
@@ -121,12 +121,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ) : this()
             {
                 m_Pending = pending;
-                m_Iteration = iteration;
+                m_Live = live;
                 m_PendingCancelledWriter = pendingCancelledWriter;
                 m_CancelRequestsForID = cancelRequests;
 
 #if DEBUG
-                m_ProfilerMarker = profilerMarker;
+                m_ProfilingInfo = profilingInfo;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 m_DebugString = debugString;
@@ -138,14 +138,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public void Execute()
             {
 #if DEBUG
-                m_ProfilerMarker.Begin();
+                m_ProfilingInfo.ProfilerMarker.Begin();
 #endif
-                m_Iteration.Clear();
+                m_Live.Clear();
 
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter pendingCancelledLaneWriter = m_PendingCancelledWriter.AsLaneWriter(ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex));
 
                 int pendingCount = m_Pending.Count();
-                NativeArray<EntityProxyInstanceWrapper<TInstance>> iterationArray = m_Iteration.DeferredCreate(pendingCount);
+                NativeArray<EntityProxyInstanceWrapper<TInstance>> iterationArray = m_Live.DeferredCreate(pendingCount);
 
                 int liveIndex = 0;
                 foreach (EntityProxyInstanceWrapper<TInstance> instance in m_Pending)
@@ -164,7 +164,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     }
                 }
 
-                m_Iteration.ResetLengthTo(liveIndex);
+                m_Live.ResetLengthTo(liveIndex);
                 m_Pending.Clear();
 
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
@@ -174,7 +174,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
 #endif
 #if DEBUG
-                m_ProfilerMarker.End();
+                m_ProfilingInfo.PendingCapacity = m_Pending.Capacity();
+                m_ProfilingInfo.LiveInstances = m_Live.Length;
+                m_ProfilingInfo.LiveCapacity = m_Live.Capacity;
+                m_ProfilingInfo.ProfilerMarker.End();
 #endif
             }
         }

@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public PendingCancelDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
         }
-        
+
         //*************************************************************************************************************
         // SERIALIZATION
         //*************************************************************************************************************
