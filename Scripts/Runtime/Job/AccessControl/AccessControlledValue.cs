@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Jobs
     public class AccessControlledValue<T> : AbstractAnvilBase
     {
         private readonly AccessController m_AccessController;
-        
+
         protected T m_Value;
 
         /// <summary>
@@ -31,6 +31,25 @@ namespace Anvil.Unity.DOTS.Jobs
             m_AccessController.Dispose();
             (m_Value as IDisposable)?.Dispose();
             base.DisposeSelf();
+        }
+
+        /// <summary>
+        /// Gets the current <see cref="JobHandle"/> that must be completed before the provided <see cref="AccessType"/>
+        /// may be performed without modifying the state of the controller.
+        /// This is the same <see cref="JobHandle"/> that would be returned by <see cref="AcquireAsync"/> when provided
+        /// the same parameter.
+        /// </summary>
+        /// <remarks>
+        /// Generally <see cref="AcquireAsync"/> should be used. This method is an advanced feature for specialized
+        /// situations like detecting if a value has been acquired for writing between calls.
+        /// </remarks>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// A <see cref="JobHandle"/> that needs to be completed before the requested access type would be valid.
+        /// </returns>
+        public JobHandle GetDependencyFor(AccessType accessType)
+        {
+            return m_AccessController.GetDependencyFor(accessType);
         }
 
         /// <summary>
