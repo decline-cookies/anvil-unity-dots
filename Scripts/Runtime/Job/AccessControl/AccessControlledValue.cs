@@ -1,5 +1,6 @@
 using Anvil.CSharp.Core;
 using System;
+using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Jobs
@@ -53,7 +54,27 @@ namespace Anvil.Unity.DOTS.Jobs
         }
 
         /// <summary>
-        /// Acquires the data instance synchronously for a given <see cref="AccessType"/>
+        /// Acquires the data instance synchronously for a given <see cref="AccessType"/> and returns the data in an
+        /// <see cref="AccessHandle"/>.
+        /// This is the preferred method of synchronous value access vs <see cref="Acquire"/>/<see cref="Release"/>.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="AccessHandle"/> is a safer way to synchronously maintain access to an
+        /// <see cref="AccessControlledValue{T}"/>. Paired with a using statement access to the value will be released
+        /// when the handle falls out of scope.
+        /// </remarks>
+        /// <example>using var valueHandle = myAccessControlledValue.AcquireAsHandle(AccessType.SharedRead);</example>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// The <see cref="AccessHandle"/> that maintains access to the controlled value until disposed.
+        /// </returns>
+        public AccessHandle AcquireAsHandle(AccessType accessType)
+        {
+            return new AccessHandle(this, accessType);
+        }
+
+        /// <summary>
+        /// Acquires the data instance synchronously for a given <see cref="AccessType"/>.
         /// Will block on the calling thread if there are any jobs that need to complete before this data instance
         /// can be used.
         ///
@@ -108,6 +129,43 @@ namespace Anvil.Unity.DOTS.Jobs
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
+        }
+
+        // ----- Inner Types ----- //
+        /// <summary>
+        /// A convenience type that provides a synchronous handle to the controlled value that is released when
+        /// disposed.
+        /// </summary>
+        /// <remarks>
+        /// This type is the equivalent of calling <see cref="AccessControlledValue{T}.Acquire"/> and
+        /// <see cref="AccessControlledValue{T}.Release"/> yourself but is intended to be used with a using statement so
+        /// that the handle is always released.
+        /// </remarks>
+        public readonly struct AccessHandle : IDisposable
+        {
+            /// <summary>
+            /// The controlled value
+            /// </summary>
+            public readonly T Value;
+
+            private readonly AccessControlledValue<T> m_Access;
+
+
+            /// <summary>
+            /// Creates a new instance that gains synchronous access from the provided value controller.
+            /// </summary>
+            /// <param name="access">The access controlled value to acquire from.</param>
+            /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+            public AccessHandle(AccessControlledValue<T> access, AccessType accessType)
+            {
+                Value = access.Acquire(accessType);
+                m_Access = access;
+            }
+
+            public void Dispose()
+            {
+                m_Access.Release();
+            }
         }
     }
 }
