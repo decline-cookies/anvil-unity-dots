@@ -1,10 +1,12 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    [StructLayout(LayoutKind.Sequential)]
     internal readonly struct EntityProxyInstanceWrapper<TInstance> : IEquatable<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
     {

@@ -15,6 +15,7 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
     {
         private readonly Dictionary<Type, Label> m_TypeLabels;
         private VisualElement m_View;
+        private ScrollView m_ScrollView;
 
         public DataStreamDetailsViewController(ProfilerWindow profilerWindow) : base(profilerWindow)
         {
@@ -24,6 +25,10 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
         protected override VisualElement CreateView()
         {
             m_View = new VisualElement();
+
+            m_ScrollView = new ScrollView(ScrollViewMode.Vertical);
+            m_View.Add(m_ScrollView);
+            
             ProfilerWindow.SelectedFrameIndexChanged += ProfilerWindow_OnSelectedFrameIndexChanged;
             return m_View;
         }
@@ -50,15 +55,38 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
                 int typeLiveInstances = GetCount(agg.MNLiveInstances, dataView);
                 int typeLiveCapacity = GetCount(agg.MNLiveCapacity, dataView);
                 int typePendingCapacity = GetCount(agg.MNPendingCapacity, dataView);
+                long typeLiveInstancesBytes = GetBytes(agg.MNLiveInstanceBytes, dataView);
+                long typeLiveCapacityBytes = GetBytes(agg.MNLiveCapacityBytes, dataView);
+                long typePendingCapacityBytes = GetBytes(agg.MNPendingCapacityBytes, dataView);
+                
 
-                label.text = $"{agg.ReadableTypeName} - Live: {typeLiveInstances}, Capacity: {typeLiveCapacity}, Pending Capacity: {typePendingCapacity}, Total Capacity: {typeLiveCapacity + typePendingCapacity}";
+                label.text = $"{agg.ReadableTypeName} - {agg.ReadableInstanceTypeName} ({BytesToString(agg.BytesPerInstance)})\nLive: {BytesToString(typeLiveInstancesBytes)} ({typeLiveInstances:N0})\nCapacity: {BytesToString(typeLiveCapacityBytes)} ({typeLiveCapacity:N0})\nPending Capacity: {BytesToString(typePendingCapacityBytes)}  ({typePendingCapacity:N0})\nTotal Capacity: {BytesToString(typeLiveCapacityBytes + typePendingCapacityBytes)}  ({(typeLiveCapacity + typePendingCapacity):N0})";
             }
+        }
+
+        private string BytesToString(long byteCount)
+        {
+            string[] suf = new string[]{ "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+            if (byteCount == 0)
+            {
+                return "0" + suf[0];
+            }
+            long bytes = Math.Abs(byteCount);
+            int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+            double num = Math.Round(bytes / Math.Pow(1024, place), 1);
+            return (Math.Sign(byteCount) * num).ToString() + suf[place];
         }
 
         private int GetCount(string id, RawFrameDataView dataView)
         {
             int markerID = dataView.GetMarkerId(id);
             return dataView.GetCounterValueAsInt(markerID);
+        }
+
+        private long GetBytes(string id, RawFrameDataView dataView)
+        {
+            int markerID = dataView.GetMarkerId(id);
+            return dataView.GetCounterValueAsLong(markerID);
         }
 
         private Label GetOrCreateLabelByType(Type type)
@@ -72,7 +100,7 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
                         paddingTop = 8, paddingLeft = 8
                     }
                 };
-                m_View.Add(label);
+                m_ScrollView.Add(label);
                 m_TypeLabels.Add(type, label);
             }
 

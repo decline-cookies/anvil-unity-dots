@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          Debug_ProfilingStats.ProfilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                      ,
+                                                                                                    ,
                                                                                                          Debug_DebugString
 #endif
                                                                                                         );
@@ -92,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                 ProfilingInfo profilingInfo
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                             ,
+                                           ,
                                                 FixedString128Bytes debugString
 #endif
             )

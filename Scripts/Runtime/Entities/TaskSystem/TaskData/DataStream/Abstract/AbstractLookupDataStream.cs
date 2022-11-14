@@ -8,10 +8,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : unmanaged, IEquatable<T>
     {
         public UnsafeParallelHashMap<T, bool> Lookup;
+        
+#if DEBUG
+        protected internal sealed override unsafe long Debug_LiveBytesPerInstance
+        {
+            get => sizeof(T) + sizeof(bool);
+        }
+#endif
 
         protected AbstractLookupDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {
-            Lookup = new UnsafeParallelHashMap<T, bool>(ChunkUtil.MaxElementsPerChunk<T>(), Allocator.Persistent);
+            Lookup = new UnsafeParallelHashMap<T, bool>(ChunkUtil.MaxElementsPerChunk<T>() / 8, Allocator.Persistent);
         }
 
         protected override void DisposeDataStream()

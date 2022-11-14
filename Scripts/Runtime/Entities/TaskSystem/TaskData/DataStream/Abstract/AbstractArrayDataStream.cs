@@ -24,6 +24,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             get => Live.ScheduleInfo;
         }
+        
+#if DEBUG
+        protected internal sealed override unsafe long Debug_LiveBytesPerInstance
+        {
+            get => sizeof(T);
+        }
+#endif
 
         protected AbstractArrayDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
         {

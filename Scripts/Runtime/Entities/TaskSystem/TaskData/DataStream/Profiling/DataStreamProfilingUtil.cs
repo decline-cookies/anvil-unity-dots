@@ -11,22 +11,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             public readonly Type Type;
             public readonly string ReadableTypeName;
+            public readonly string ReadableInstanceTypeName;
+            public readonly long BytesPerInstance;
             public readonly string MNLiveInstances;
             public readonly string MNLiveCapacity;
             public readonly string MNPendingCapacity;
-            
+            public readonly string MNLiveInstanceBytes;
+            public readonly string MNLiveCapacityBytes;
+            public readonly string MNPendingCapacityBytes;
+
             public ProfilerCounterValue<int> LiveInstances;
             public ProfilerCounterValue<int> LiveCapacity;
             public ProfilerCounterValue<int> PendingCapacity;
 
-            public AggCounterForType(Type type)
+            public ProfilerCounterValue<long> LiveInstancesBytes;
+            public ProfilerCounterValue<long> LiveCapacityBytes;
+            public ProfilerCounterValue<long> PendingCapacityBytes;
+
+            public AggCounterForType(Type type, Type instanceType, long bytesPerInstance)
             {
                 Type = type;
+                ReadableInstanceTypeName = instanceType.GetReadableName();
+                BytesPerInstance = bytesPerInstance;
+                
                 ReadableTypeName = Type.GetReadableName();
                 MNLiveInstances = $"{ReadableTypeName}-LiveInstances";
                 MNLiveCapacity = $"{ReadableTypeName}-LiveCapacity";
                 MNPendingCapacity = $"{ReadableTypeName}-PendingCapacity";
-                
+
+                MNLiveInstanceBytes = $"{ReadableTypeName}-LiveInstanceBytes";
+                MNLiveCapacityBytes = $"{ReadableTypeName}-LiveCapacityBytes";
+                MNPendingCapacityBytes = $"{ReadableTypeName}-PendingCapacityBytes";
+
                 LiveInstances = new ProfilerCounterValue<int>(ProfilerCategory.Memory,
                                                               MNLiveInstances,
                                                               ProfilerMarkerDataUnit.Count,
@@ -39,9 +55,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                 MNPendingCapacity,
                                                                 ProfilerMarkerDataUnit.Count,
                                                                 ProfilerCounterOptions.FlushOnEndOfFrame | ProfilerCounterOptions.ResetToZeroOnFlush);
+
+                LiveInstancesBytes = new ProfilerCounterValue<long>(ProfilerCategory.Memory,
+                                                                    MNLiveInstanceBytes,
+                                                                    ProfilerMarkerDataUnit.Bytes,
+                                                                    ProfilerCounterOptions.FlushOnEndOfFrame | ProfilerCounterOptions.ResetToZeroOnFlush);
+                LiveCapacityBytes = new ProfilerCounterValue<long>(ProfilerCategory.Memory,
+                                                                   MNLiveCapacityBytes,
+                                                                   ProfilerMarkerDataUnit.Bytes,
+                                                                   ProfilerCounterOptions.FlushOnEndOfFrame | ProfilerCounterOptions.ResetToZeroOnFlush);
+                PendingCapacityBytes = new ProfilerCounterValue<long>(ProfilerCategory.Memory,
+                                                                      MNPendingCapacityBytes,
+                                                                      ProfilerMarkerDataUnit.Bytes,
+                                                                      ProfilerCounterOptions.FlushOnEndOfFrame | ProfilerCounterOptions.ResetToZeroOnFlush);
             }
         }
-        
+
         public const string COUNTER_INSTANCES_LIVE_COUNT = "Live Instances";
         public const string COUNTER_INSTANCES_LIVE_CAPACITY = "Live Capacity";
         public const string COUNTER_INSTANCES_PENDING_CAPACITY = "Pending Capacity";
@@ -73,7 +102,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (!StatsByType.TryGetValue(profilingStats.DataType, out AggCounterForType agg))
             {
-                agg = new AggCounterForType(profilingStats.DataType);
+                agg = new AggCounterForType(profilingStats.DataType, 
+                                            profilingStats.InstanceType, 
+                                            profilingStats.LiveBytesPerInstance);
                 StatsByType.Add(profilingStats.DataType, agg);
             }
         }
@@ -84,6 +115,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             agg.LiveCapacity.Value += profilingStats.ProfilingInfo.LiveCapacity;
             agg.LiveInstances.Value += profilingStats.ProfilingInfo.LiveInstances;
             agg.PendingCapacity.Value += profilingStats.ProfilingInfo.PendingCapacity;
+            agg.LiveCapacityBytes.Value += profilingStats.ProfilingInfo.LiveCapacity * profilingStats.LiveBytesPerInstance;
+            agg.LiveInstancesBytes.Value += profilingStats.ProfilingInfo.LiveInstances * profilingStats.LiveBytesPerInstance;
+            agg.PendingCapacityBytes.Value += profilingStats.ProfilingInfo.PendingCapacity * profilingStats.PendingBytesPerInstance;
         }
     }
 }

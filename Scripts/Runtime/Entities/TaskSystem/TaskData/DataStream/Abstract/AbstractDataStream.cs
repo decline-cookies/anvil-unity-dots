@@ -24,6 +24,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 #if DEBUG
         protected ProfilingStats Debug_ProfilingStats { get; }
+        protected internal abstract long Debug_PendingBytesPerInstance { get; }
+        protected internal abstract long Debug_LiveBytesPerInstance { get; }
+        protected internal abstract Type Debug_InstanceType { get; }
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
         protected FixedString128Bytes Debug_DebugString { get; }

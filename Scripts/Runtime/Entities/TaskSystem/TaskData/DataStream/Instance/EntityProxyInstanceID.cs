@@ -1,10 +1,12 @@
 using Anvil.Unity.DOTS.Util;
 using System;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityProxyInstanceID : IEquatable<EntityProxyInstanceID>
     {
         public static bool operator ==(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
