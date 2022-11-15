@@ -97,7 +97,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void AddAllDataStreamsTo(List<AbstractDataStream> abstractDataStreams)
         {
-            //TODO: Move this to the TaskData
+            //TODO: #108 or #66, #67, #68 Move this to the TaskData
             foreach (AbstractTaskSystem taskSystem in m_TaskSystems)
             {
                 abstractDataStreams.AddRange(taskSystem.TaskData.DataStreams);

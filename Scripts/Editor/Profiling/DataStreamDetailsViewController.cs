@@ -1,4 +1,3 @@
-using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Entities.Tasks;
 using System;
 using System.Collections.Generic;
@@ -7,16 +6,25 @@ using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
-using Type = System.Type;
 
 namespace Anvil.Unity.DOTS.Editor.Profiling
 {
+    //TODO: #108 - Improved Profiler features
+    /// <summary>
+    /// Profiling details to be shown when selecting the <see cref="DataStreamProfilerModule"/> in Unity's Profiler
+    /// </summary>
     public class DataStreamDetailsViewController : ProfilerModuleViewController
     {
         private readonly Dictionary<Type, Label> m_TypeLabels;
         private VisualElement m_View;
         private ScrollView m_ScrollView;
 
+        /// <summary>
+        /// Creates a new instance of the View Controller
+        /// Called by <see cref="DataStreamProfilerModule"/>
+        /// </summary>
+        /// <param name="profilerWindow">Reference to the <see cref="ProfilerWindow"/> for this view controller to be
+        /// displayed in.</param>
         public DataStreamDetailsViewController(ProfilerWindow profilerWindow) : base(profilerWindow)
         {
             m_TypeLabels = new Dictionary<Type, Label>();
@@ -49,7 +57,7 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
         {
             RawFrameDataView dataView = ProfilerDriver.GetRawFrameDataView((int)selectedFrameIndex, 0);
 
-            foreach (DataStreamProfilingUtil.AggCounterForType agg in DataStreamProfilingUtil.StatsByType.Values)
+            foreach (DataStreamProfilingUtil.ProfilingInfoForDataStreamType agg in DataStreamProfilingUtil.StatsByType.Values)
             {
                 Label label = GetOrCreateLabelByType(agg.Type);
                 int typeLiveInstances = GetCount(agg.MNLiveInstances, dataView);
@@ -66,15 +74,15 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
 
         private string BytesToString(long byteCount)
         {
-            string[] suf = new string[]{ "B", "KB", "MB", "GB", "TB", "PB", "EB" }; //Longs run out around EB
+            string[] suffixes = new string[]{ "B", "KB", "MB", "GB", "TB", "PB", "EB" };
             if (byteCount == 0)
             {
-                return "0" + suf[0];
+                return $"0{suffixes[0]}";
             }
             long bytes = Math.Abs(byteCount);
             int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
             double num = Math.Round(bytes / Math.Pow(1024, place), 1);
-            return (Math.Sign(byteCount) * num).ToString() + suf[place];
+            return $"{(Math.Sign(byteCount) * num)}{suffixes[place]}";
         }
 
         private int GetCount(string id, RawFrameDataView dataView)

@@ -207,7 +207,10 @@ namespace Anvil.Unity.DOTS.Data
                     ? m_BufferInfo->Length
                     : 0;
         }
-
+        
+        /// <summary>
+        /// The capacity of the array
+        /// </summary>
         public unsafe int Capacity
         {
             get =>

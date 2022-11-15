@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          TaskDriverCancelRequests.Lookup
 #if DEBUG
                                                                                                         ,
-                                                                                                         Debug_ProfilingStats.ProfilingInfo
+                                                                                                         Debug_ProfilingInfo.ProfilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                                                                                                         ,
@@ -99,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [WriteOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingCancelledWriter;
 
 #if DEBUG
-            private ProfilingInfo m_ProfilingInfo;
+            private DataStreamProfilingDetails m_ProfilingDetails;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
             private readonly FixedString128Bytes m_DebugString;
@@ -112,7 +112,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                        UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelRequests
 #if DEBUG
                                                       ,
-                                                       ProfilingInfo profilingInfo
+                                                       DataStreamProfilingDetails profilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                                                       ,
@@ -126,7 +126,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_CancelRequestsForID = cancelRequests;
 
 #if DEBUG
-                m_ProfilingInfo = profilingInfo;
+                m_ProfilingDetails = profilingDetails;
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
                 m_DebugString = debugString;
@@ -138,7 +138,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public void Execute()
             {
 #if DEBUG
-                m_ProfilingInfo.ProfilerMarker.Begin();
+                m_ProfilingDetails.ProfilerMarker.Begin();
 #endif
                 m_Live.Clear();
 
@@ -174,10 +174,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 }
 #endif
 #if DEBUG
-                m_ProfilingInfo.PendingCapacity = m_Pending.Capacity();
-                m_ProfilingInfo.LiveInstances = m_Live.Length;
-                m_ProfilingInfo.LiveCapacity = m_Live.Capacity;
-                m_ProfilingInfo.ProfilerMarker.End();
+                m_ProfilingDetails.PendingCapacity = m_Pending.Capacity();
+                m_ProfilingDetails.LiveInstances = m_Live.Length;
+                m_ProfilingDetails.LiveCapacity = m_Live.Capacity;
+                m_ProfilingDetails.ProfilerMarker.End();
 #endif
             }
         }

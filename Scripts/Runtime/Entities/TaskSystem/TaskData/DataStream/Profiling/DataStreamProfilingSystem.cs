@@ -5,7 +5,12 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
 #if DEBUG
+    /// <summary>
+    /// System that will handle populating profiling counters once per frame when guaranteed that all writing jobs
+    /// have completed.
+    /// </summary>
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
+    //TODO: #108 - Revisit to see if there is a better way to handle acquire/release. Or can we do it all in a job? 
     [UpdateInGroup(typeof(PresentationSystemGroup), OrderLast = true)]
     public partial class DataStreamProfilingSystem : AbstractAnvilSystemBase
     {
@@ -37,12 +42,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskFlowGraph.AddAllDataStreamsTo(m_AllDataStreams);
             
             base.OnStartRunning();
-        }
-
-        protected override void OnDestroy()
-        {
-           
-            base.OnDestroy();
         }
 
         protected override void OnUpdate()

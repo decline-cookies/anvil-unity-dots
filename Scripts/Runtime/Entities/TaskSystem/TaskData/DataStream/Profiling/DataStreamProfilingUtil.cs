@@ -5,9 +5,17 @@ using Unity.Profiling;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //TODO: #108 - Rework this a bit to try and remove the need for things to be public since only the profiler 
+    //TODO: should be working with this.
+    /// <summary>
+    /// Helper class for profiling Data Streams
+    /// </summary>
     public static class DataStreamProfilingUtil
     {
-        public class AggCounterForType
+        /// <summary>
+        /// Specific profiling information for a <see cref="AbstractDataStream"/>
+        /// </summary>
+        public class ProfilingInfoForDataStreamType
         {
             public readonly Type Type;
             public readonly string ReadableTypeName;
@@ -28,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             public ProfilerCounterValue<long> LiveCapacityBytes;
             public ProfilerCounterValue<long> PendingCapacityBytes;
 
-            public AggCounterForType(Type type, Type instanceType, long bytesPerInstance)
+            public ProfilingInfoForDataStreamType(Type type, Type instanceType, long bytesPerInstance)
             {
                 Type = type;
                 ReadableInstanceTypeName = instanceType.GetReadableName();
@@ -91,33 +99,33 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                                ProfilerCounterOptions.FlushOnEndOfFrame | ProfilerCounterOptions.ResetToZeroOnFlush);
 
 
-        public static readonly Dictionary<Type, AggCounterForType> StatsByType = new Dictionary<Type, AggCounterForType>();
+        public static readonly Dictionary<Type, ProfilingInfoForDataStreamType> StatsByType = new Dictionary<Type, ProfilingInfoForDataStreamType>();
 
-        public static void RegisterProfilingStats(ProfilingStats profilingStats)
+        public static void RegisterProfilingStats(DataStreamProfilingInfo profilingInfo)
         {
-            RegisterProfilingStatsByType(profilingStats);
+            RegisterProfilingStatsByType(profilingInfo);
         }
 
-        private static void RegisterProfilingStatsByType(ProfilingStats profilingStats)
+        private static void RegisterProfilingStatsByType(DataStreamProfilingInfo profilingInfo)
         {
-            if (!StatsByType.TryGetValue(profilingStats.DataType, out AggCounterForType agg))
+            if (!StatsByType.TryGetValue(profilingInfo.DataType, out ProfilingInfoForDataStreamType agg))
             {
-                agg = new AggCounterForType(profilingStats.DataType, 
-                                            profilingStats.InstanceType, 
-                                            profilingStats.LiveBytesPerInstance);
-                StatsByType.Add(profilingStats.DataType, agg);
+                agg = new ProfilingInfoForDataStreamType(profilingInfo.DataType, 
+                                            profilingInfo.InstanceType, 
+                                            profilingInfo.LiveBytesPerInstance);
+                StatsByType.Add(profilingInfo.DataType, agg);
             }
         }
 
-        public static void UpdateStatsByType(ProfilingStats profilingStats)
+        public static void UpdateStatsByType(DataStreamProfilingInfo profilingInfo)
         {
-            AggCounterForType agg = StatsByType[profilingStats.DataType];
-            agg.LiveCapacity.Value += profilingStats.ProfilingInfo.LiveCapacity;
-            agg.LiveInstances.Value += profilingStats.ProfilingInfo.LiveInstances;
-            agg.PendingCapacity.Value += profilingStats.ProfilingInfo.PendingCapacity;
-            agg.LiveCapacityBytes.Value += profilingStats.ProfilingInfo.LiveCapacity * profilingStats.LiveBytesPerInstance;
-            agg.LiveInstancesBytes.Value += profilingStats.ProfilingInfo.LiveInstances * profilingStats.LiveBytesPerInstance;
-            agg.PendingCapacityBytes.Value += profilingStats.ProfilingInfo.PendingCapacity * profilingStats.PendingBytesPerInstance;
+            ProfilingInfoForDataStreamType agg = StatsByType[profilingInfo.DataType];
+            agg.LiveCapacity.Value += profilingInfo.ProfilingDetails.LiveCapacity;
+            agg.LiveInstances.Value += profilingInfo.ProfilingDetails.LiveInstances;
+            agg.PendingCapacity.Value += profilingInfo.ProfilingDetails.PendingCapacity;
+            agg.LiveCapacityBytes.Value += profilingInfo.ProfilingDetails.LiveCapacity * profilingInfo.LiveBytesPerInstance;
+            agg.LiveInstancesBytes.Value += profilingInfo.ProfilingDetails.LiveInstances * profilingInfo.LiveBytesPerInstance;
+            agg.PendingCapacityBytes.Value += profilingInfo.ProfilingDetails.PendingCapacity * profilingInfo.PendingBytesPerInstance;
         }
     }
 }

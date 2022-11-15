@@ -6,8 +6,11 @@ using Unity.Profiling.LowLevel;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    /// <summary>
+    /// Job safe struct to write profiling information for <see cref="AbstractDataStream"/>
+    /// </summary>
     [BurstCompatible]
-    public unsafe struct ProfilingInfo : IDisposable
+    public unsafe struct DataStreamProfilingDetails : IDisposable
     {
         [BurstCompatible]
         private struct Buffer
@@ -22,7 +25,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         public readonly ProfilerMarker ProfilerMarker;
         [NativeDisableUnsafePtrRestriction] private Buffer* m_Buffer;
-
         
         public int LiveInstances
         {
@@ -42,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             set => m_Buffer->PendingCapacity = value;
         }
 
-        internal ProfilingInfo(AbstractDataStream dataStream) : this()
+        internal DataStreamProfilingDetails(AbstractDataStream dataStream) : this()
         {
             m_Buffer = (Buffer*)UnsafeUtility.Malloc(Buffer.SIZE, Buffer.ALIGNMENT, Allocator.Persistent);
             ProfilerMarker = new ProfilerMarker(ProfilerCategory.Scripts,

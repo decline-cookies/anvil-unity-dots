@@ -5,6 +5,10 @@ using Unity.Profiling.Editor;
 
 namespace Anvil.Unity.DOTS.Editor.Profiling
 {
+    //TODO: #108 - Improved Profiler features
+    /// <summary>
+    /// Profiling graph shown in Unity's Profiler.
+    /// </summary>
     [Serializable]
     [ProfilerModuleMetadata("Data Streams")]
     public class DataStreamProfilerModule : ProfilerModule
@@ -20,12 +24,19 @@ namespace Anvil.Unity.DOTS.Editor.Profiling
         {
             ProfilerCategory.Memory.Name
         };
-
+        
+        /// <summary>
+        /// Constructor automatically called by Unity
+        /// </summary>
         public DataStreamProfilerModule() : base(COUNTERS, ProfilerModuleChartType.Line, AUTO_ENABLED_CATEGORY_NAMES)
         {
             
         }
-
+        
+        /// <summary>
+        /// Called by Unity to create a details pane when the graph is selected.
+        /// </summary>
+        /// <returns>An instance of <see cref="DataStreamDetailsViewController"/></returns>
         public override ProfilerModuleViewController CreateDetailsViewController()
         {
             return new DataStreamDetailsViewController(ProfilerWindow);

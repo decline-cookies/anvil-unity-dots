@@ -213,8 +213,6 @@ namespace Anvil.Unity.DOTS.Data
                 lane->Count = 0;
                 lane->BlockCount = 0;
             }
-
-            
         }
 
         /// <summary>
@@ -372,6 +370,11 @@ namespace Anvil.Unity.DOTS.Data
             return count;
         }
         
+        /// <summary>
+        /// Calculates the total number of elements that can be stored in the entire collection across all lanes.
+        /// Note: This will only be accurate if all write jobs have completed before calling this.
+        /// </summary>
+        /// <returns>The total number of elements possible in the currently allocated memory</returns>
         public int Capacity()
         {
             int blocksAllocated = 0;

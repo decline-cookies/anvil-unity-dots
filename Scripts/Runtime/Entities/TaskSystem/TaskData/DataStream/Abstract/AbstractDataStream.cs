@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public AccessController AccessController { get; }
 
 #if DEBUG
-        protected ProfilingStats Debug_ProfilingStats { get; }
+        protected DataStreamProfilingInfo Debug_ProfilingInfo { get; }
         protected internal abstract long Debug_PendingBytesPerInstance { get; }
         protected internal abstract long Debug_LiveBytesPerInstance { get; }
         protected internal abstract Type Debug_InstanceType { get; }
@@ -41,8 +41,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
 #if DEBUG
-            Debug_ProfilingStats = new ProfilingStats(this);
-            DataStreamProfilingUtil.RegisterProfilingStats(Debug_ProfilingStats);
+            Debug_ProfilingInfo = new DataStreamProfilingInfo(this);
+            DataStreamProfilingUtil.RegisterProfilingStats(Debug_ProfilingInfo);
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
             Debug_DebugString = new FixedString128Bytes(ToString());
@@ -54,42 +54,44 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AccessController.Acquire(AccessType.Disposal);
             DisposeDataStream();
             AccessController.Dispose();
-            
+
 #if DEBUG
-            Debug_ProfilingStats.Dispose();
+            Debug_ProfilingInfo.Dispose();
 #endif
-            
+
             base.DisposeSelf();
         }
 
         protected virtual void DisposeDataStream()
         {
         }
-        
+
         public sealed override string ToString()
         {
             return $"{Type.GetReadableName()}, {TaskDebugUtil.GetLocationName(OwningTaskSystem, OwningTaskDriver)}";
         }
-        
+
         //*************************************************************************************************************
         // SERIALIZATION
         //*************************************************************************************************************
 
         //TODO: #83 - Add support for Serialization. Hopefully from the outside or via extension methods instead of functions
         //here but keeping the TODO for future reminder.
-        
+
         //*************************************************************************************************************
         // CONSOLIDATION
         //*************************************************************************************************************
 
         protected abstract JobHandle ConsolidateForFrame(JobHandle dependsOn);
 
+#if DEBUG
         public void PopulateProfiler()
         {
-            DataStreamProfilingUtil.Debug_InstancesLiveCapacity.Value += Debug_ProfilingStats.ProfilingInfo.LiveCapacity;
-            DataStreamProfilingUtil.Debug_InstancesLiveCount.Value += Debug_ProfilingStats.ProfilingInfo.LiveInstances;
-            DataStreamProfilingUtil.Debug_InstancesPendingCapacity.Value += Debug_ProfilingStats.ProfilingInfo.PendingCapacity;
-            DataStreamProfilingUtil.UpdateStatsByType(Debug_ProfilingStats);
+            DataStreamProfilingUtil.Debug_InstancesLiveCapacity.Value += Debug_ProfilingInfo.ProfilingDetails.LiveCapacity;
+            DataStreamProfilingUtil.Debug_InstancesLiveCount.Value += Debug_ProfilingInfo.ProfilingDetails.LiveInstances;
+            DataStreamProfilingUtil.Debug_InstancesPendingCapacity.Value += Debug_ProfilingInfo.ProfilingDetails.PendingCapacity;
+            DataStreamProfilingUtil.UpdateStatsByType(Debug_ProfilingInfo);
         }
+#endif
     }
 }

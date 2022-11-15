@@ -2,7 +2,10 @@ using System;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    public class ProfilingStats : IDisposable
+    /// <summary>
+    /// Profiling information for a <see cref="AbstractDataStream"/>
+    /// </summary>
+    public class DataStreamProfilingInfo : IDisposable
     {
         public readonly Type DataType;
         public readonly Type InstanceType;
@@ -11,9 +14,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public readonly AbstractTaskDriver TaskDriver;
         public readonly AbstractTaskSystem TaskSystem;
         
-        public ProfilingInfo ProfilingInfo;
+        public DataStreamProfilingDetails ProfilingDetails;
 
-        internal ProfilingStats(AbstractDataStream dataStream)
+        internal DataStreamProfilingInfo(AbstractDataStream dataStream)
         {
             DataType = dataStream.Type;
             InstanceType = dataStream.Debug_InstanceType;
@@ -21,12 +24,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             LiveBytesPerInstance = dataStream.Debug_LiveBytesPerInstance;
             TaskDriver = dataStream.OwningTaskDriver;
             TaskSystem = dataStream.OwningTaskSystem;
-            ProfilingInfo = new ProfilingInfo(dataStream);
+            ProfilingDetails = new DataStreamProfilingDetails(dataStream);
         }
 
         public void Dispose()
         {
-            ProfilingInfo.Dispose();
+            ProfilingDetails.Dispose();
         }
     }
 }
