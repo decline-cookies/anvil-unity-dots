@@ -78,7 +78,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             CheckCancelProgressJob checkCancelProgressJob = new CheckCancelProgressJob(parentProgressLookup,
                                                                                        progressLookup,
-                                                                                       TaskData.CancelCompleteDataStream.Pending,
+                                                                                       TaskData.CancelCompleteDataStream.Pending.AsWriter(),
                                                                                        Parent?.TaskDriverContext ?? 0
 #if DEBUG
                                                                                       ,
@@ -113,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ParentProgressLookup;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
-            [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_CompleteWriter;
+            [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_CompleteWriter;
             [ReadOnly] private readonly byte m_Context;
 
             private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_CompleteLaneWriter;
@@ -128,7 +128,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             public CheckCancelProgressJob(UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup,
                                           UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
-                                          UnsafeTypedStream<EntityProxyInstanceID> completeWriter,
+                                          UnsafeTypedStream<EntityProxyInstanceID>.Writer completeWriter,
                                           byte context
 #if DEBUG
                                          ,

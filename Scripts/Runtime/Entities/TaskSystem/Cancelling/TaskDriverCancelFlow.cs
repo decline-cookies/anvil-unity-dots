@@ -132,11 +132,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             List<AbstractCancelFlow> cancelFlows = GetOrCreateAtDepth(depth);
             List<AbstractCancelFlow> cancelFlowsOneDeeper = GetOrCreateAtDepth(depth + 1);
 
-            //Add our own Cancel Flow
-            cancelFlows.Add(taskDriver.CancelFlow);
-            //Add the System's Cancel Flow to the next depth
-            cancelFlowsOneDeeper.Add(taskDriver.CancelFlow.m_SystemCancelFlow);
-
+            //Add our own Cancel Flow if we have cancellable data
+            if (taskDriver.HasCancellableData)
+            {
+                cancelFlows.Add(taskDriver.CancelFlow);
+            }
+            //Add the System's Cancel Flow to the next depth if it has cancellable data
+            if (taskDriver.TaskSystem.HasCancellableData)
+            {
+                cancelFlowsOneDeeper.Add(taskDriver.CancelFlow.m_SystemCancelFlow);
+            }
+            
             //Drill down into the children
             foreach (AbstractTaskDriver subTaskDriver in taskDriver.SubTaskDrivers)
             {

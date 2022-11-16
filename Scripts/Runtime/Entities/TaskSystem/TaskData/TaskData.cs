@@ -32,9 +32,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancellableDataStreams = new List<AbstractDataStream>();
             CancelResultDataStreams = new List<AbstractDataStream>();
             CancelProgressLookup = new AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>>(new UnsafeParallelHashMap<EntityProxyInstanceID, bool>(ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>(),
-                                                                                                                                                                          Allocator.Persistent));
-            CancelRequestDataStream = new CancelRequestDataStream(CancelProgressLookup, TaskDriver, TaskSystem);
+                                     
+                                                                                                                                                                        Allocator.Persistent));
             CancelCompleteDataStream = new CancelCompleteDataStream(TaskDriver, TaskSystem);
+            CancelRequestDataStream = new CancelRequestDataStream(CancelProgressLookup, 
+                                                                  CancelCompleteDataStream, 
+                                                                  TaskDriver, 
+                                                                  TaskSystem);
+            
             
             DataStreamFactory.CreateDataStreams(this);
         }
