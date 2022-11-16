@@ -22,7 +22,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly List<CancelRequestDataStream> m_CancelRequestDataStreams;
         private NativeArray<byte> m_RequestContexts;
         private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_RequestWriters;
-        private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_RequestLaneWriters;
         private NativeArray<JobHandle> m_CancelRequestAcquisitionJobHandles;
 
         public byte TaskDriverContext
@@ -50,11 +49,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_RequestWriters.Dispose();
             }
 
-            if (m_RequestLaneWriters.IsCreated)
-            {
-                m_RequestLaneWriters.Dispose();
-            }
-
             if (m_CancelRequestAcquisitionJobHandles.IsCreated)
             {
                 m_CancelRequestAcquisitionJobHandles.Dispose();
@@ -75,7 +69,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal CancelRequestsWriter CreateCancelRequestsWriter()
         {
             return new CancelRequestsWriter(m_RequestWriters,
-                                            m_RequestLaneWriters,
                                             m_RequestContexts);
         }
 
@@ -86,7 +79,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             BuildRequestData(cancelFlows, m_CancelRequestDataStreams, cancelContexts);
 
             m_RequestWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
-            m_RequestLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
             m_RequestContexts = new NativeArray<byte>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
 
             for (int i = 0; i < m_RequestWriters.Length; ++i)
