@@ -3,6 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Diagnostics;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -18,17 +19,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [ReadOnly] private readonly NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_CancelRequestWriters;
         [ReadOnly] private readonly NativeArray<byte> m_Contexts;
 
-        [NativeDisableParallelForRestriction] private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_CancelRequestLaneWriters;
+        [NativeDisableContainerSafetyRestriction] private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_CancelRequestLaneWriters;
         private int m_LaneIndex;
 
         internal CancelRequestsWriter(NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> writers,
-                                      NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> laneWritersPlaceholder,
                                       NativeArray<byte> contexts) : this()
         {
             m_CancelRequestWriters = writers;
             m_Contexts = contexts;
 
-            m_CancelRequestLaneWriters = laneWritersPlaceholder;
+            m_CancelRequestLaneWriters = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
             Debug_InitializeWriterState();
@@ -47,7 +47,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureInitThreadOnlyCalledOnce();
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-            for (int i = 0; i < m_CancelRequestWriters.Length; ++i)
+            int len = m_CancelRequestWriters.Length;
+            m_CancelRequestLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(len, Allocator.Temp);
+            for (int i = 0; i < len; ++i)
             {
                 m_CancelRequestLaneWriters[i] = m_CancelRequestWriters[i].AsLaneWriter(m_LaneIndex);
             }
