@@ -20,6 +20,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_CancelProgressLookup;
 
+        public bool HasCancellableData
+        {
+            get => OwningTaskDriver?.HasCancellableData ?? OwningTaskSystem.HasCancellableData;
+        }
+
         public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup,
                                        AbstractTaskDriver taskDriver,
                                        AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
@@ -46,13 +51,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             ConsolidateCancelRequestsJob consolidateCancelRequestsJob = new ConsolidateCancelRequestsJob(Pending,
                                                                                                          Lookup,
-                                                                                                         progressLookup
+                                                                                                         progressLookup,
+                                                                                                         HasCancellableData
 #if DEBUG
                                                                                                         ,
                                                                                                          Debug_ProfilingInfo.ProfilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                    ,
+                                                                                                        ,
                                                                                                          Debug_DebugString
 #endif
                                                                                                         );
@@ -74,6 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [ReadOnly] private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_Lookup;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
+            [ReadOnly] private readonly bool m_HasCancellableData;
 
 
 #if DEBUG
@@ -86,13 +93,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             public ConsolidateCancelRequestsJob(UnsafeTypedStream<EntityProxyInstanceID> pending,
                                                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> lookup,
-                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup
+                                                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
+                                                bool hasCancellableData
 #if DEBUG
                                                ,
                                                 DataStreamProfilingDetails profilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                           ,
+                                               ,
                                                 FixedString128Bytes debugString
 #endif
             )
@@ -100,6 +108,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_Pending = pending;
                 m_Lookup = lookup;
                 m_ProgressLookup = progressLookup;
+                m_HasCancellableData = hasCancellableData;
 #if DEBUG
                 m_ProfilingDetails = profilingDetails;
 #endif
@@ -122,7 +131,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     m_Lookup.TryAdd(proxyInstanceID, true);
                     //We have something that wants to cancel, so we assume that it will get processed this frame.
                     //If nothing processes it, it will auto-complete the next frame. 
-                    m_ProgressLookup.TryAdd(proxyInstanceID, true);
+                    m_ProgressLookup.TryAdd(proxyInstanceID, m_HasCancellableData);
 #if DEBUG
                     lookupCount++;
 #endif

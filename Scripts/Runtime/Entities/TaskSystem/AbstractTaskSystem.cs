@@ -35,6 +35,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal List<AbstractTaskDriver> TaskDrivers { get; }
 
         internal TaskData TaskData { get; }
+        
+        internal bool HasCancellableData { get; }
 
 
         protected AbstractTaskSystem()
@@ -46,6 +48,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Context = m_TaskDriverContextProvider.GetNextID();
 
             TaskData = new TaskData(null, this);
+            HasCancellableData = TaskData.CancellableDataStreams.Count > 0;
         }
 
         protected override void OnCreate()

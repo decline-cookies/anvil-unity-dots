@@ -193,7 +193,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     ref bool isParentProcessing = ref entry.Value;
                     EntityProxyInstanceID id = new EntityProxyInstanceID(parentID.Entity, m_Context);
 
-                    bool isStillProcessing = m_ProgressLookup[id];
+                    if (!m_ProgressLookup.TryGetValue(id, out bool isStillProcessing))
+                    {
+                        continue;
+                    }
+                    
                     HandleProgress(isStillProcessing, ref id);
                     if (isParentProcessing)
                     {

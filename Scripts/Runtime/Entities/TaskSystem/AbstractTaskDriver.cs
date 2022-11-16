@@ -4,6 +4,7 @@ using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -65,10 +66,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public World World { get; }
 
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
-        
+
         internal TaskDriverCancelFlow CancelFlow { get; }
         internal TaskData TaskData { get; }
         internal AbstractTaskDriver Parent { get; }
+
+        internal bool HasCancellableData { get; }
 
         protected AbstractTaskDriver(World world, Type systemType, AbstractTaskDriver parent)
         {
@@ -86,10 +89,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskData = new TaskData(this, TaskSystem);
             CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
-            
+
+            HasCancellableData = TaskData.CancellableDataStreams.Count > 0
+                              || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
+                              || TaskSystem.HasCancellableData;
+
             //MIKE - Ordering Question, not sure if there is a better flow
             CancelFlow.BuildRequestData();
-            
+
 
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
@@ -102,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             SubTaskDrivers.DisposeAllAndTryClear();
             //Dispose all the data we own
             m_JobConfigs.DisposeAllAndTryClear();
-            
+
             TaskData.Dispose();
             CancelFlow.Dispose();
 
@@ -153,8 +160,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return TaskSystem.ConfigureCancelJobFor(this,
                                                     (CancellableDataStream<TInstance>)dataStream,
-                                                     scheduleJobFunction,
-                                                     batchStrategy);
+                                                    scheduleJobFunction,
+                                                    batchStrategy);
         }
 
 

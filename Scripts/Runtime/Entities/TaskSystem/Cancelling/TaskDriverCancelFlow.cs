@@ -75,8 +75,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void BuildRequestData()
         {
             List<byte> cancelContexts = new List<byte>();
-            List<AbstractCancelFlow> cancelFlows = new List<AbstractCancelFlow>();
-            BuildRequestData(cancelFlows, m_CancelRequestDataStreams, cancelContexts);
+            BuildRequestData(m_CancelRequestDataStreams, cancelContexts);
 
             m_RequestWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
             m_RequestContexts = new NativeArray<byte>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
@@ -90,24 +89,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_CancelRequestAcquisitionJobHandles = new NativeArray<JobHandle>(m_CancelRequestDataStreams.Count, Allocator.Persistent);
         }
 
-        private void BuildRequestData(List<AbstractCancelFlow> cancelFlows,
-                                      List<CancelRequestDataStream> cancelRequests,
+        private void BuildRequestData(List<CancelRequestDataStream> cancelRequests,
                                       List<byte> contexts)
         {
-            cancelFlows.Add(this);
             //Add ourself
             cancelRequests.Add(TaskData.CancelRequestDataStream);
             //Add our TaskDriver's context
             contexts.Add(TaskDriverContext);
-
+            
             //For all subtask drivers, recursively add
             foreach (AbstractTaskDriver taskDriver in m_TaskDriver.SubTaskDrivers)
             {
-                taskDriver.CancelFlow.BuildRequestData(cancelFlows, cancelRequests, contexts);
+                taskDriver.CancelFlow.BuildRequestData(cancelRequests, contexts);
             }
 
             //Add our governing system
-            m_SystemCancelFlow.BuildRelationshipData(cancelFlows, cancelRequests, contexts);
+            m_SystemCancelFlow.BuildRelationshipData(cancelRequests, contexts);
         }
 
         public void BuildScheduling()
