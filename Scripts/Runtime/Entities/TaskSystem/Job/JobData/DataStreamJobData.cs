@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly DataStreamJobConfig<TInstance> m_JobConfig;
 
-        internal DataStreamJobData(DataStreamJobConfig<TInstance> jobConfig, World world, byte context) : base(world, context, jobConfig)
+        internal DataStreamJobData(DataStreamJobConfig<TInstance> jobConfig, World world) : base(world, jobConfig)
         {
             m_JobConfig = jobConfig;
         }

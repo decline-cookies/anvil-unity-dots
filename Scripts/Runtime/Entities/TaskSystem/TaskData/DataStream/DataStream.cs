@@ -15,7 +15,8 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStream<TInstance> : AbstractArrayDataStream<EntityProxyInstanceWrapper<TInstance>>,
-                                           IDataStream<TInstance>,
+                                           IDriverDataStream<TInstance>,
+                                           ISystemDataStream<TInstance>,
                                            IUntypedDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
@@ -79,7 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                    Debug_ProfilingInfo.ProfilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                  ,
+                                                                                ,
                                                                                    Debug_DebugString
 #endif
                                                                                   );
@@ -118,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                             DataStreamProfilingDetails profilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                           ,
+                                         ,
                                             FixedString128Bytes debugString
 #endif
             ) : this()
@@ -160,7 +161,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     }
 #endif
                 }
-                
+
                 m_Live.ResetLengthTo(liveIndex);
                 m_Pending.Clear();
 

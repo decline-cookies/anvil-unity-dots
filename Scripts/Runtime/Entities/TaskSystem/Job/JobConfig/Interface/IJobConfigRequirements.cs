@@ -17,7 +17,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="IAbstractDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
+            where TInstance : unmanaged, IEntityProxyInstance;
+        
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream, AbstractTaskDriver taskDriver)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>
@@ -27,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="IAbstractDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IDataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
         
         /// <summary>

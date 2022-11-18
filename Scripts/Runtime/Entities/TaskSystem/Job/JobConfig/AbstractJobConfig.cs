@@ -150,14 +150,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return RequireDataStreamForWrite(dataStream, Usage.Write);
+            DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
+            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.OwningTaskDriver.Context);
+        }
+
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream, AbstractTaskDriver taskDriver)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
+            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, taskDriver.Context);
         }
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IDataStream<TInstance> dataStream)
+        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Read));
@@ -171,10 +179,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDataStream<TInstance> dataStream, Usage usage)
+        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream, Usage usage, byte context)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedWrite, usage));
+            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage, context));
             return this;
         }
         
@@ -385,6 +393,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStreamAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamAccessWrapper<TInstance>>(usage);
+            return dataStreamAccessWrapper.DataStream;
+        }
+
+        internal DataStream<TInstance> GetDataStreamWithContext<TInstance>(Usage usage, out byte context)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            DataStreamAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamAccessWrapper<TInstance>>(usage);
+            context = dataStreamAccessWrapper.Context;
             return dataStreamAccessWrapper.DataStream;
         }
 

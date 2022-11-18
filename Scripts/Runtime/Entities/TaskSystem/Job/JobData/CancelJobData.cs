@@ -1,4 +1,3 @@
-using System;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
@@ -13,15 +12,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly CancelJobConfig<TInstance> m_CancelJobConfig;
 
-        internal CancelJobData(CancelJobConfig<TInstance> jobConfig, World world, byte context) : base(world, context, jobConfig)
+        internal CancelJobData(CancelJobConfig<TInstance> jobConfig, World world) : base(world, jobConfig)
         {
             m_CancelJobConfig = jobConfig;
         }
-        
+
         //*************************************************************************************************************
         // DATA STREAMS
         //*************************************************************************************************************
-        
+
         internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
         {
             PendingCancelDataStream<TInstance> pendingCancelDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>(AbstractJobConfig.Usage.Cancelling);

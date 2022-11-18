@@ -11,7 +11,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     public abstract class AbstractJobData
     {
-        private readonly byte m_Context;
         private readonly AbstractJobConfig m_JobConfig;
         
         /// <summary>
@@ -29,11 +28,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         protected AbstractJobData(World world,
-                                  byte context,
                                   IJobConfig jobConfig)
         {
             World = world;
-            m_Context = context;
             m_JobConfig = (AbstractJobConfig)jobConfig;
         }
 
@@ -56,8 +53,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamWriter<TInstance> GetDataStreamWriter<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Write);
-            DataStreamWriter<TInstance> writer = dataStream.CreateDataStreamWriter(m_Context);
+            DataStream<TInstance> dataStream = m_JobConfig.GetDataStreamWithContext<TInstance>(AbstractJobConfig.Usage.Write, out byte context);
+            DataStreamWriter<TInstance> writer = dataStream.CreateDataStreamWriter(context);
             return writer;
         }
         

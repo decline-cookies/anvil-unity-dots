@@ -142,7 +142,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         //TODO: #101 - Should drivers have all the jobs or systems?
-        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(IDataStream<TInstance> dataStream,
+        public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(IAbstractDataStream<TInstance> dataStream,
                                                                          in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -153,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                       batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(ICancellableDataStream<TInstance> dataStream,
+        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(IDriverCancellableDataStream<TInstance> dataStream,
                                                                                  in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                  BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

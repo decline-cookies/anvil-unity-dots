@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly EntityQueryComponentJobConfig<T> m_JobConfig;
         
-        internal EntityQueryComponentJobData(EntityQueryComponentJobConfig<T> jobConfig, World world, byte context) : base(world, context, jobConfig)
+        internal EntityQueryComponentJobData(EntityQueryComponentJobConfig<T> jobConfig, World world) : base(world, jobConfig)
         {
             m_JobConfig = jobConfig;
         }

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly UpdateJobConfig<TInstance> m_UpdateJobConfig;
 
-        internal UpdateJobData(UpdateJobConfig<TInstance> jobConfig, World world, byte context) : base(world, context, jobConfig)
+        internal UpdateJobData(UpdateJobConfig<TInstance> jobConfig, World world) : base(world, jobConfig)
         {
             m_UpdateJobConfig = jobConfig;
         }

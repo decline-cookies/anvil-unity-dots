@@ -7,10 +7,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : unmanaged, IEntityProxyInstance
     {
         public DataStream<T> DataStream { get; }
+        public byte Context { get; }
 
-        public DataStreamAccessWrapper(DataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public DataStreamAccessWrapper(DataStream<T> dataStream, 
+                                       AccessType accessType, 
+                                       AbstractJobConfig.Usage usage, 
+                                       byte context = byte.MaxValue) : base(accessType, usage)
         {
             DataStream = dataStream;
+            Context = context;
         }
 
         public sealed override JobHandle Acquire()

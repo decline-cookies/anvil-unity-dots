@@ -15,7 +15,8 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancellableDataStream<TInstance> : DataStream<TInstance>,
-                                                      ICancellableDataStream<TInstance>,
+                                                      IDriverCancellableDataStream<TInstance>,
+                                                      ISystemCancellableDataStream<TInstance>,
                                                       IUntypedCancellableDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
@@ -40,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             PendingCancelDataStream.Dispose();
             base.DisposeDataStream();
         }
-        
+
         //*************************************************************************************************************
         // SERIALIZATION
         //*************************************************************************************************************
@@ -67,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                          Debug_ProfilingInfo.ProfilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                        ,
+                                                                                                      ,
                                                                                                          Debug_DebugString
 #endif
                                                                                                         );
@@ -115,7 +116,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                        DataStreamProfilingDetails profilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                      ,
+                                                    ,
                                                        FixedString128Bytes debugString
 #endif
             ) : this()

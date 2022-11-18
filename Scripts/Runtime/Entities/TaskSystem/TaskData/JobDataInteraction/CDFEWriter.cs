@@ -1,4 +1,5 @@
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -13,7 +14,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public struct CDFEWriter<T>
         where T : struct, IComponentData
     {
-        [NativeDisableParallelForRestriction] private ComponentDataFromEntity<T> m_CDFE;
+        //TODO: Update docs
+        [NativeDisableContainerSafetyRestriction][NativeDisableParallelForRestriction] private ComponentDataFromEntity<T> m_CDFE;
 
         internal CDFEWriter(SystemBase system)
         {

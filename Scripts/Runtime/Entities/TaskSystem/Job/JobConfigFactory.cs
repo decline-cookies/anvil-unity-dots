@@ -25,8 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                             cancelCompleteDataStream);
 
             CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig,
-                                                                      taskSystem.World,
-                                                                      taskDriver?.Context ?? taskSystem.Context);
+                                                                      taskSystem.World);
 
             CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData, 
                                                                                      cancelCompleteDataStream, 
@@ -50,8 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                   dataStream);
 
             UpdateJobData<TInstance> jobData = new UpdateJobData<TInstance>(jobConfig,
-                                                                            taskSystem.World,
-                                                                            taskDriver?.Context ?? taskSystem.Context);
+                                                                            taskSystem.World);
 
             UpdateDataStreamScheduleInfo<TInstance> scheduleInfo = new UpdateDataStreamScheduleInfo<TInstance>(jobData,
                                                                                                                dataStream,
@@ -75,8 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                   dataStream.PendingCancelDataStream);
 
             CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig,
-                                                                            taskSystem.World,
-                                                                            taskDriver?.Context ?? taskSystem.Context);
+                                                                            taskSystem.World);
 
             CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
                                                                                                                dataStream.PendingCancelDataStream,
@@ -99,8 +96,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                           dataStream);
 
             DataStreamJobData<TInstance> jobData = new DataStreamJobData<TInstance>(jobConfig,
-                                                                                    taskSystem.World,
-                                                                                    taskDriver?.Context ?? taskSystem.Context);
+                                                                                    taskSystem.World);
 
             DataStreamScheduleInfo<TInstance> scheduleInfo = new DataStreamScheduleInfo<TInstance>(jobData,
                                                                                                    dataStream,
@@ -125,8 +121,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                       entityQueryNativeArray);
 
             EntityQueryJobData jobData = new EntityQueryJobData(jobConfig,
-                                                                taskSystem.World,
-                                                                taskDriver?.Context ?? taskSystem.Context);
+                                                                taskSystem.World);
 
             EntityQueryScheduleInfo scheduleInfo = new EntityQueryScheduleInfo(jobData,
                                                                                entityQueryNativeArray,
@@ -152,8 +147,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                               entityQueryComponentNativeArray);
 
             EntityQueryComponentJobData<T> jobData = new EntityQueryComponentJobData<T>(jobConfig,
-                                                                                        taskSystem.World,
-                                                                                        taskDriver?.Context ?? taskSystem.Context);
+                                                                                        taskSystem.World);
 
             EntityQueryComponentScheduleInfo<T> scheduleInfo = new EntityQueryComponentScheduleInfo<T>(jobData,
                                                                                                        entityQueryComponentNativeArray,
@@ -177,8 +171,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                             nativeArray);
 
             NativeArrayJobData<T> jobData = new NativeArrayJobData<T>(jobConfig,
-                                                                      taskSystem.World,
-                                                                      taskDriver?.Context ?? taskSystem.Context);
+                                                                      taskSystem.World);
 
             NativeArrayScheduleInfo<T> scheduleInfo = new NativeArrayScheduleInfo<T>(jobData,
                                                                                      batchStrategy,

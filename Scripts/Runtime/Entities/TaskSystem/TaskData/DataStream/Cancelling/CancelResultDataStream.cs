@@ -1,7 +1,8 @@
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelResultDataStream<TInstance> : AbstractArrayDataStream<EntityProxyInstanceWrapper<TInstance>>,
-                                                       ICancelResultDataStream<TInstance>,
+                                                       IDriverCancelResultDataStream<TInstance>,
+                                                       ISystemCancelResultDataStream<TInstance>,
                                                        IUntypedCancelResultDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
