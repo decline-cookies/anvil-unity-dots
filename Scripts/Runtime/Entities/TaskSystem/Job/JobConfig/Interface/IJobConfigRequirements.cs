@@ -11,18 +11,26 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public interface IJobConfigRequirements : IJobConfig
     {
         /// <summary>
-        /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be written to in a shared-write context.
+        /// Specifies a <see cref="IDriverDataStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
-        /// <param name="dataStream">The <see cref="IAbstractDataStream{TInstance}"/> to write to.</param>
+        /// <param name="dataStream">The <see cref="IDriverDataStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
-        /// the <see cref="IAbstractDataStream{TInstance}"/></typeparam>
+        /// the <see cref="IDriverDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
-        
+
+        /// <summary>
+        /// Specifies a <see cref="ISystemDataStream{TInstance}"/> to be written to in a shared-write context.
+        /// </summary>
+        /// <param name="dataStream">The <see cref="ISystemDataStream{TInstance}"/> to write to.</param>
+        /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> this data should be associated with.</param>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in the
+        /// <see cref="ISystemDataStream{TInstance}"/></typeparam>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream, AbstractTaskDriver taskDriver)
             where TInstance : unmanaged, IEntityProxyInstance;
-        
+
         /// <summary>
         /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be read from in a shared-read context.
         /// </summary>
@@ -32,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
-        
+
         /// <summary>
         /// Specifies a generic struct to be read from in a shared-read context.
         /// </summary>
@@ -45,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireGenericDataForRead<TData>(AccessControlledValue<TData> data)
             where TData : struct;
-        
+
         /// <summary>
         /// Specifies a generic struct to be written to in a shared-write context.
         /// Sections of the struct will be written to by different threads at the same time.
@@ -59,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
-        
+
         /// <summary>
         /// Specifies a generic struct to be written to in an exclusive-write context.
         /// The entire struct will be written to by only one thread at a time.
@@ -73,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
-        
+
         /// <summary>
         /// Specifies an <see cref="EntityQuery"/> to be transformed into a <see cref="NativeArray{Entity}"/> and read
         /// from in a shared-read context.
@@ -107,14 +115,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData;
-        
+
         /// <summary>
         /// Specifies an <see cref="AbstractTaskDriver"/> that can have instances of data cancelled.
         /// </summary>
         /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to allow for cancelling</param>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver);
-        
+
         /// <summary>
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.
         /// </summary>
@@ -138,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData;
-        
+
         /// <summary>
         /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in an exclusive-write context.
         /// </summary>

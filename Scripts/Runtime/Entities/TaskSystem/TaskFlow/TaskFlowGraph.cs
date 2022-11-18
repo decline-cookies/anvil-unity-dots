@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 m_TopLevelTaskDrivers.Add(taskDriver);
             }
-            RegisterDataStreams(taskDriver.TaskData, taskDriver.TaskSystem, taskDriver);
+            RegisterDataStreams(taskDriver.TaskData, taskDriver.GoverningTaskSystem, taskDriver);
         }
 
         //*************************************************************************************************************

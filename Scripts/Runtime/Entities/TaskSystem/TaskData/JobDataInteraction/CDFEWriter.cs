@@ -9,12 +9,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// parallel. It sets the <see cref="NativeDisableParallelForRestrictionAttribute"/> on the CDFE.
     /// To be used in jobs that allow for updating a specific instance in the CDFE.
     /// </summary>
+    /// <remarks>
+    /// NOTE: The <see cref="ComponentDataFromEntity{T}"/> has the
+    /// <see cref="NativeDisableContainerSafetyRestrictionAttribute"/> applied meaning that Unity will not issue
+    /// safety warnings when using it in jobs. This is because there might be many jobs of the same type but
+    /// representing different <see cref="AbstractTaskDriver"/>s and Unity's safety system gets upset if you straddle
+    /// across the jobs. 
+    /// </remarks>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to update.</typeparam>
     [BurstCompatible]
     public struct CDFEWriter<T>
         where T : struct, IComponentData
     {
-        //TODO: Update docs
         [NativeDisableContainerSafetyRestriction][NativeDisableParallelForRestriction] private ComponentDataFromEntity<T> m_CDFE;
 
         internal CDFEWriter(SystemBase system)

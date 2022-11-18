@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public TaskDriverCancelFlow(AbstractTaskDriver taskDriver, TaskDriverCancelFlow parent) : base(taskDriver.TaskData, parent)
         {
             m_TaskDriver = taskDriver;
-            m_SystemCancelFlow = new SystemCancelFlow(m_TaskDriver.TaskSystem, this);
+            m_SystemCancelFlow = new SystemCancelFlow(m_TaskDriver.GoverningTaskSystem, this);
             m_CancelFlowHierarchy = new Dictionary<int, List<AbstractCancelFlow>>();
             m_CancelRequestDataStreams = new List<CancelRequestDataStream>();
         }
@@ -138,7 +138,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 cancelFlows.Add(taskDriver.CancelFlow);
             }
             //Add the System's Cancel Flow to the next depth if it has cancellable data
-            if (taskDriver.TaskSystem.HasCancellableData)
+            if (taskDriver.GoverningTaskSystem.HasCancellableData)
             {
                 cancelFlowsOneDeeper.Add(taskDriver.CancelFlow.m_SystemCancelFlow);
             }

@@ -1,4 +1,3 @@
-using System;
 using Unity.Collections;
 using Unity.Core;
 using Unity.Entities;
@@ -12,12 +11,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public abstract class AbstractJobData
     {
         private readonly AbstractJobConfig m_JobConfig;
-        
+
         /// <summary>
         /// Reference to the <see cref="World"/> this job will be running in.
         /// </summary>
         public World World { get; }
-        
+
         /// <summary>
         /// Convenience helper to get the <see cref="TimeData"/> for delta time and other related functions.
         /// </summary>
@@ -43,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskDriverCancelFlow cancelFlow = m_JobConfig.GetCancelFlow(AbstractJobConfig.Usage.Write);
             return cancelFlow.CreateCancelRequestsWriter();
         }
-        
+
         /// <summary>
         /// Gets a <see cref="DataStreamWriter{TInstance}"/> job-safe struct to use for writing new instances to a
         /// data stream.
@@ -57,7 +56,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DataStreamWriter<TInstance> writer = dataStream.CreateDataStreamWriter(context);
             return writer;
         }
-        
+
         /// <summary>
         /// Gets a <see cref="GetDataStreamReader{TInstance}"/> job-safe struct to use for reading from a data stream.
         /// </summary>
@@ -74,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // NATIVE ARRAY
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Gets <typeparamref name="TData"/> for reading from in a shared-read context in a job.
         /// </summary>
@@ -85,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Read);
         }
-        
+
         /// <summary>
         /// Gets <typeparamref name="TData"/> for writing to in a shared-write context in a job.
         /// </summary>
@@ -96,7 +95,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetData<TData>(AbstractJobConfig.Usage.Write);
         }
-        
+
         /// <summary>
         /// Gets <typeparamref name="TData"/> for writing to in an exclusive-write context in a job.
         /// </summary>
@@ -111,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // ENTITY QUERY
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Gets a <see cref="NativeArray{Entity}"/> to read from in a job from an <see cref="EntityQuery"/>
         /// </summary>
@@ -120,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetEntityNativeArrayFromQuery(AbstractJobConfig.Usage.Read);
         }
-        
+
         /// <summary>
         /// Gets a <see cref="NativeArray{T}"/> to read from in a job from an <see cref="EntityQuery"/>
         /// </summary>
@@ -131,11 +130,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetIComponentDataNativeArrayFromQuery<T>(AbstractJobConfig.Usage.Read);
         }
-        
+
         //*************************************************************************************************************
         // CDFE
         //*************************************************************************************************************
-        
+
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <summary>
         /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from in a job.
@@ -147,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetCDFEReader<T>();
         }
-    
+
         /// <summary>
         /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from and write to in a job.
         /// </summary>
@@ -158,11 +157,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetCDFEWriter<T>();
         }
-        
+
         //*************************************************************************************************************
         // DYNAMIC BUFFER
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Gets a <see cref="BufferFromEntity{T}"/> to read from in a job.
         /// </summary>
@@ -173,7 +172,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetDBFEForRead<T>();
         }
-        
+
         /// <summary>
         /// Gets a <see cref="BufferFromEntity{T}"/> to read from and write to in a job.
         /// </summary>
@@ -184,7 +183,5 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return m_JobConfig.GetDBFEForExclusiveWrite<T>();
         }
-        
-        
     }
 }

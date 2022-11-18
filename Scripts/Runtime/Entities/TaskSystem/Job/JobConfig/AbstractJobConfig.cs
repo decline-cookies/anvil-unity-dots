@@ -149,7 +149,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}"/>
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}(Anvil.Unity.DOTS.Entities.Tasks.IDriverDataStream{TInstance})"/>
         public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -157,6 +157,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.OwningTaskDriver.Context);
         }
 
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}(Anvil.Unity.DOTS.Entities.Tasks.ISystemDataStream{TInstance},Anvil.Unity.DOTS.Entities.Tasks.AbstractTaskDriver)"/>
         public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream, AbstractTaskDriver taskDriver)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -179,14 +180,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
-        protected IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream, Usage usage, byte context)
+        private IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream, Usage usage, byte context)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage, context));
             return this;
         }
-        
-        public IJobConfigRequirements RequireCancelCompleteDataStreamForRead(CancelCompleteDataStream cancelCompleteDataStream)
+
+        protected IJobConfigRequirements RequireCancelCompleteDataStreamForRead(CancelCompleteDataStream cancelCompleteDataStream)
         {
             AddAccessWrapper(new CancelCompleteDataStreamAccessWrapper(cancelCompleteDataStream, AccessType.SharedRead, Usage.Read));
             return this;
@@ -195,7 +196,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForRead{TData}"/>
         public IJobConfigRequirements RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
             where TData : struct
@@ -211,7 +212,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Write));
             return this;
         }
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForExclusiveWrite{TData}"/>
         public IJobConfigRequirements RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
@@ -270,11 +271,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Write, TaskSystem));
             return this;
         }
-        
+
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireDBFEForRead{T}"/>
         public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
@@ -283,7 +284,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return this;
         }
-        
+
         /// <inheritdoc cref="IJobConfigRequirements.RequireDBFEForExclusiveWrite{T}"/>
         public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
@@ -409,7 +410,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelFlowAccessWrapper cancelFlowAccessWrapper = GetAccessWrapper<CancelFlowAccessWrapper>(usage);
             return cancelFlowAccessWrapper.CancelFlow;
         }
-        
+
         internal TData GetData<TData>(Usage usage)
             where TData : struct
         {
@@ -450,7 +451,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Read);
             return dynamicBufferAccessWrapper.CreateDynamicBufferReader();
         }
-        
+
         internal DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {

@@ -17,15 +17,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <summary>
         /// Reference to the associated <typeparamref name="TTaskSystem"/>
         /// </summary>
-        /// <remarks>
-        /// Hides the base reference to the abstract version. This is so that from the outside, a developer
-        /// doesn't try and select a DataStream to configure a job on.
-        /// </remarks>
-        /// TODO: #67 - Should add a Safety check on Job scheduling that we're allowed to write
-        /// TODO: #100 - OR we don't need this to be hidden because we're allowed to write to TaskSystem data.
-        protected new TTaskSystem TaskSystem
+        protected TTaskSystem TaskSystem
         {
-            get => (TTaskSystem)base.TaskSystem;
+            get => (TTaskSystem)base.GoverningTaskSystem;
         }
 
         // MIKE: I can't think of a better pattern here.
@@ -55,10 +49,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public byte Context { get; }
 
         /// <summary>
-        /// Reference to the associated <see cref="AbstractTaskSystem"/>
+        /// Reference to the governing <see cref="AbstractTaskSystem"/>
         /// </summary>
-        //TODO: #100 - Might be able to change this back so we can access from the outside
-        internal AbstractTaskSystem TaskSystem { get; }
+        internal AbstractTaskSystem GoverningTaskSystem { get; }
 
         /// <summary>
         /// Reference to the associated <see cref="World"/>
@@ -80,19 +73,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             World = world;
             Parent = parent;
 
-            TaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
-            Context = TaskSystem.RegisterTaskDriver(this);
+            GoverningTaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
+            Context = GoverningTaskSystem.RegisterTaskDriver(this);
 
             SubTaskDrivers = new List<AbstractTaskDriver>();
             m_JobConfigs = new List<AbstractJobConfig>();
 
-            TaskData = new TaskData(this, TaskSystem);
+            TaskData = new TaskData(this, GoverningTaskSystem);
             CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
 
             HasCancellableData = TaskData.CancellableDataStreams.Count > 0
                               || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
-                              || TaskSystem.HasCancellableData;
+                              || GoverningTaskSystem.HasCancellableData;
 
             //MIKE - Ordering Question, not sure if there is a better flow
             CancelFlow.BuildRequestData();
@@ -147,10 +140,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskSystem.ConfigureJobTriggeredBy(this,
-                                                      (DataStream<TInstance>)dataStream,
-                                                      scheduleJobFunction,
-                                                      batchStrategy);
+            return GoverningTaskSystem.ConfigureJobTriggeredBy(this,
+                                                               (DataStream<TInstance>)dataStream,
+                                                               scheduleJobFunction,
+                                                               batchStrategy);
         }
 
         public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(IDriverCancellableDataStream<TInstance> dataStream,
@@ -158,10 +151,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                  BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskSystem.ConfigureCancelJobFor(this,
-                                                    (CancellableDataStream<TInstance>)dataStream,
-                                                    scheduleJobFunction,
-                                                    batchStrategy);
+            return GoverningTaskSystem.ConfigureCancelJobFor(this,
+                                                             (CancellableDataStream<TInstance>)dataStream,
+                                                             scheduleJobFunction,
+                                                             batchStrategy);
         }
 
 
@@ -169,20 +162,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                               JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                               BatchStrategy batchStrategy)
         {
-            return TaskSystem.ConfigureJobTriggeredBy(this,
-                                                      entityQuery,
-                                                      scheduleJobFunction,
-                                                      batchStrategy);
+            return GoverningTaskSystem.ConfigureJobTriggeredBy(this,
+                                                               entityQuery,
+                                                               scheduleJobFunction,
+                                                               batchStrategy);
         }
 
         public IJobConfigRequirements ConfigureJobWhenCancelComplete(AbstractTaskDriver taskDriver,
                                                                      in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
                                                                      BatchStrategy batchStrategy)
         {
-            return TaskSystem.ConfigureJobWhenCancelComplete(this,
-                                                             taskDriver.TaskData.CancelCompleteDataStream,
-                                                             scheduleJobFunction,
-                                                             batchStrategy);
+            return GoverningTaskSystem.ConfigureJobWhenCancelComplete(this,
+                                                                      taskDriver.TaskData.CancelCompleteDataStream,
+                                                                      scheduleJobFunction,
+                                                                      batchStrategy);
         }
 
 

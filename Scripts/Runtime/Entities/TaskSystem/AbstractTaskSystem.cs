@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly ByteIDProvider m_TaskDriverContextProvider;
         private readonly List<AbstractJobConfig> m_JobConfigs;
-        
+
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
 
@@ -31,11 +31,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// between instances running in the generic system job(s) versus more specific Task Drivers.
         /// </summary>
         public byte Context { get; }
-        
+
         internal List<AbstractTaskDriver> TaskDrivers { get; }
 
         internal TaskData TaskData { get; }
-        
+
         internal bool HasCancellableData { get; }
 
 
@@ -168,7 +168,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return jobConfig;
         }
-        
+
         internal IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(AbstractTaskDriver taskDriver,
                                                                                    CancellableDataStream<TInstance> dataStream,
                                                                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
@@ -202,7 +202,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             return jobConfig;
         }
-        
+
 
         private void RegisterJob(AbstractTaskDriver taskDriver,
                                  AbstractJobConfig jobConfig,
@@ -269,7 +269,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Populate,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
-            
+
             //Schedule the Update Jobs to run on System Data, we are guaranteed to have up to date Cancel Requests
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
@@ -279,14 +279,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Cancel,
                                      m_SystemJobConfigBulkJobSchedulerLookup);
-            
+
             //TODO: #72 - Allow for other phases as needed, try to make as parallel as possible
 
             // Have drivers to do their own generic work if necessary
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Update,
                                      m_DriverJobConfigBulkJobSchedulerLookup);
-            
+
             // Have drivers do their own cancel work if necessary
             dependsOn = ScheduleJobs(dependsOn,
                                      TaskFlowRoute.Cancel,
@@ -313,9 +313,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureTaskDriverSystemRelationship(AbstractTaskDriver taskDriver)
         {
-            if (taskDriver.TaskSystem != this)
+            if (taskDriver.GoverningTaskSystem != this)
             {
-                throw new InvalidOperationException($"{taskDriver} is part of system {taskDriver.TaskSystem} but it should be {this}!");
+                throw new InvalidOperationException($"{taskDriver} is part of system {taskDriver.GoverningTaskSystem} but it should be {this}!");
             }
 
             if (TaskDrivers.Contains(taskDriver))

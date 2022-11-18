@@ -27,14 +27,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig,
                                                                       taskSystem.World);
 
-            CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData, 
-                                                                                     cancelCompleteDataStream, 
-                                                                                     batchStrategy, 
+            CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData,
+                                                                                     cancelCompleteDataStream,
+                                                                                     batchStrategy,
                                                                                      scheduleJobFunction);
 
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
-        
+
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
                                                                                   AbstractTaskSystem taskSystem,
                                                                                   AbstractTaskDriver taskDriver,
@@ -153,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                        entityQueryComponentNativeArray,
                                                                                                        batchStrategy,
                                                                                                        scheduleJobFunction);
-            
+
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
@@ -176,7 +176,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             NativeArrayScheduleInfo<T> scheduleInfo = new NativeArrayScheduleInfo<T>(jobData,
                                                                                      batchStrategy,
                                                                                      scheduleJobFunction);
-            
+
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
