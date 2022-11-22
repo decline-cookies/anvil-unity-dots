@@ -1,0 +1,27 @@
+{
+    "name": "anvil-unity-dots-tests",
+    "rootNamespace": "Anvil.Unity.DOTS.Tests",
+    "references": [
+        "anvil-unity-dots-runtime",
+        "anvil-unity-dots-editor",
+        "anvil-unity-core-runtime",
+        "anvil-csharp-core",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Entities",
+        "Unity.Jobs",
+        "Unity.Mathematics",
+        "Unity.Transforms"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
