@@ -188,7 +188,6 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static Rect ConvertLocalToWorldRect(LocalToWorld localToWorld, Rect localRect)
         {
             //TODO: #321 - Optimize...
-            float4x4 worldToLocalMtx = math.inverse(localToWorld.Value);
 
             float3 point1 = (Vector3)localRect.min;
             float3 point2 = (Vector3)localRect.max;
@@ -196,10 +195,10 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             float3 point4 = new float3(point2.x, point1.y, 0);
 
             return RectUtil.CreateFromPoints(
-                ConvertLocalToWorldPoint(worldToLocalMtx, point1).xy,
-                ConvertLocalToWorldPoint(worldToLocalMtx, point2).xy,
-                ConvertLocalToWorldPoint(worldToLocalMtx, point3).xy,
-                ConvertLocalToWorldPoint(worldToLocalMtx, point4).xy
+                ConvertLocalToWorldPoint(localToWorld.Value, point1).xy,
+                ConvertLocalToWorldPoint(localToWorld.Value, point2).xy,
+                ConvertLocalToWorldPoint(localToWorld.Value, point3).xy,
+                ConvertLocalToWorldPoint(localToWorld.Value, point4).xy
             );
         }
 
