@@ -21,6 +21,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         //TODO: Update to use [DefaultFloatingPointTolerance] when Unity uses NUnit >=3.7 and remove all .Using<float3>(EqualityWithTolerance) uses
         // https://github.com/nunit/nunit/blob/master/src/NUnitFramework/framework/Attributes/DefaultFloatingPointToleranceAttribute.cs
         private const float FLOATING_POINT_TOLERANCE = 0.00001f;
+        private static readonly Regex s_NonUniformScaleError = new Regex(@"This conversion does not support transforms with non-uniform scaling\.");
 
         private static int EqualityWithTolerance(float3 a, float3 b)
         {
@@ -1004,7 +1005,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
 #if DEBUG
             // The assert ensures the utility method emits a log message when a non-uniform transform is provided.
-            LogAssert.Expect(LogType.Error, new Regex(@"This conversion does not support transforms with non-uniform scaling\."));
+            LogAssert.Expect(LogType.Error, s_NonUniformScaleError);
             TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound_negativeYZ, quaternion.identity);
             Log.GetLogger(typeof(TransformUtilTests)).Debug("The previous error message is expected.");
 #endif
@@ -1256,7 +1257,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
 #if DEBUG
             // The assert ensures the utility method emits a log message when a non-uniform transform is provided.
-            LogAssert.Expect(LogType.Error, new Regex(@"This conversion does not support transforms with non-uniform scaling\."));
+            LogAssert.Expect(LogType.Error, s_NonUniformScaleError);
             TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeYZ, quaternion.identity);
             Log.GetLogger(typeof(TransformUtilTests)).Debug("The previous error message is expected.");
 #endif
@@ -1304,6 +1305,194 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             //     math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound_negativeYZ, rotation_ZfortyFive)), localToWorld_compound_negativeYZScale),
             //     Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeYZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance)
             // );
+        }
+
+        // ----- ConvertWorldToLocalScale ----- //
+        [Test]
+        public static void ConvertWorldToLocalScaleTest_Scale()
+        {
+            float3 point_zero = float3.zero;
+            float3 point_one = new float3(1f, 1f, 1f);
+            float3 point_two = point_one * 2f;
+            float3 point_infinity = new float3(float.PositiveInfinity);
+
+
+            LocalToWorld localToWorld_one = new LocalToWorld()
+            {
+                Value = float4x4.TRS(float3.zero, quaternion.identity, point_one)
+            };
+            float4x4 worldToLocal_one = math.inverse(localToWorld_one.Value);
+
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_one, point_one), Is.EqualTo(point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_one, point_two), Is.EqualTo(point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_one, -point_one), Is.EqualTo(-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_one, -point_two), Is.EqualTo(-point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_one, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
+
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_one, point_one), Is.EqualTo(point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_one, point_two), Is.EqualTo(point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_one, -point_one), Is.EqualTo(-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_one, -point_two), Is.EqualTo(-point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_one, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
+
+
+            LocalToWorld localToWorld_two = new LocalToWorld()
+            {
+                Value = float4x4.TRS(float3.zero, quaternion.identity, point_two)
+            };
+            float4x4 worldToLocal_two = math.inverse(localToWorld_two.Value);
+
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_one), Is.EqualTo(point_one/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_two), Is.EqualTo(point_two/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, -point_one), Is.EqualTo(-point_one/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, -point_two), Is.EqualTo(-point_two/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_zero), Is.EqualTo(point_zero/point_two).Using<float3>(EqualityWithTolerance));
+
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_one), Is.EqualTo(point_one/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_two), Is.EqualTo(point_two/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, -point_one), Is.EqualTo(-point_one/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, -point_two), Is.EqualTo(-point_two/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_zero), Is.EqualTo(point_zero/point_two).Using<float3>(EqualityWithTolerance));
+
+
+            LocalToWorld localToWorld_negativeOne = new LocalToWorld()
+            {
+                Value = float4x4.TRS(float3.zero, quaternion.identity, -point_one)
+            };
+            float4x4 worldToLocal_negativeOne = math.inverse(localToWorld_negativeOne.Value);
+            float3x3 worldToLocal_negativeOneRotation = new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_negativeOne, quaternion.identity));
+
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, -point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, -point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, point_zero))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
+            );
+
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, -point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, -point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, point_zero))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
+            );
+
+
+            LocalToWorld localToWorld_negativeTwo = new LocalToWorld()
+            {
+                Value = float4x4.TRS(float3.zero, quaternion.identity, -point_two)
+            };
+            float4x4 worldToLocal_negativeTwo = math.inverse(localToWorld_negativeTwo.Value);
+            float3x3 worldToLocal_negativeTwoRotation = new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_negativeTwo, quaternion.identity));
+
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, -point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, -point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, point_zero))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
+            );
+
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, -point_one))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, -point_two))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
+            );
+            Assert.That(
+                math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, point_zero))),
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
+            );
+
+
+            LocalToWorld localToWorld_zero = new LocalToWorld()
+            {
+                Value = float4x4.TRS(float3.zero, quaternion.identity, point_zero)
+            };
+            float4x4 worldToLocal_zero = math.inverse(localToWorld_zero.Value);
+            Regex invalidMatrixError = new Regex(@"This transform is invalid. Returning a signed infinite scale\.");
+
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, point_one), Is.EqualTo(point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, point_two), Is.EqualTo(point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, -point_one), Is.EqualTo(-point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, -point_two), Is.EqualTo(-point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, point_zero), Is.EqualTo(point_zero));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, new float3(2, -2, 0)),
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
+                );
+
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, point_one), Is.EqualTo(point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, point_two), Is.EqualTo(point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, -point_one), Is.EqualTo(-point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, -point_two), Is.EqualTo(-point_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, point_zero), Is.EqualTo(point_zero));
+            LogAssert.Expect(LogType.Error, invalidMatrixError);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, new float3(2, -2, 0)),
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
+            );
         }
 
         //
