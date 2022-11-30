@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 #endif
 
-        protected AbstractLookupDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        protected AbstractLookupDataStream(AbstractTaskDriverWork owningTaskDriverWork) : base(owningTaskDriverWork)
         {
             Lookup = new UnsafeParallelHashMap<T, bool>(ChunkUtil.MaxElementsPerChunk<T>() / 8, Allocator.Persistent);
         }

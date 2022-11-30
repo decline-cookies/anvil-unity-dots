@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected CancelRequestDataStream TaskDriverCancelRequests { get; }
 
 
-        public DataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        public DataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriverWork owningTaskDriverWork) : base(owningTaskDriverWork)
         {
             //We don't own the m_CancelRequestsDataStream so we don't dispose it.
             TaskDriverCancelRequests = taskDriverCancelRequests;

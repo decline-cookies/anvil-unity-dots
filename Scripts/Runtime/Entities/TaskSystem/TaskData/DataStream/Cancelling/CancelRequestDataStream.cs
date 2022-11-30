@@ -28,8 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup,
                                        CancelCompleteDataStream cancelCompleteDataStream,
-                                       AbstractTaskDriver taskDriver,
-                                       AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+                                       AbstractTaskDriverWork owningTaskDriverWork) : base(owningTaskDriverWork)
         {
             m_CancelProgressLookup = cancelProgressLookup;
             m_CancelCompleteDataStream = cancelCompleteDataStream;

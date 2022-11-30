@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 #endif
 
-        protected AbstractArrayDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        protected AbstractArrayDataStream(AbstractTaskDriverWork owningTaskDriverWork) : base(owningTaskDriverWork)
         {
             Live = new DeferredNativeArray<T>(Allocator.Persistent,
                                               Allocator.TempJob);

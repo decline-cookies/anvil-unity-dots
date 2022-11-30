@@ -29,9 +29,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => PendingCancelDataStream;
         }
 
-        public CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriverCancelRequests, taskDriver, taskSystem)
+        public CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskDriverWork owningTaskDriverWork) : base(taskDriverCancelRequests, owningTaskDriverWork)
         {
-            PendingCancelDataStream = new PendingCancelDataStream<TInstance>(taskDriver, taskSystem);
+            PendingCancelDataStream = new PendingCancelDataStream<TInstance>(owningTaskDriverWork);
             m_ConsolidationDependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
         }
 

@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                        IUntypedCancelResultDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        public CancelResultDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem) : base(taskDriver, taskSystem)
+        public CancelResultDataStream(AbstractTaskDriverWork owningTaskDriverWork) : base(owningTaskDriverWork)
         {
         }
 

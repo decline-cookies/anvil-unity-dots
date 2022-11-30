@@ -4,7 +4,6 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Reflection;
 using Unity.Jobs;
-
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
 using Unity.Collections;
 #endif
@@ -15,8 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static readonly BulkScheduleDelegate<AbstractDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        public readonly AbstractTaskDriver OwningTaskDriver;
-        public readonly AbstractTaskSystem OwningTaskSystem;
+        public readonly AbstractTaskDriverWork OwningTaskDriverWork;
 
         public Type Type { get; }
 
@@ -32,12 +30,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected FixedString128Bytes Debug_DebugString { get; }
 #endif
 
-        protected AbstractDataStream(AbstractTaskDriver taskDriver, AbstractTaskSystem taskSystem)
+        protected AbstractDataStream(AbstractTaskDriverWork owningTaskDriverWork)
         {
             Type = GetType();
             AccessController = new AccessController();
-            OwningTaskDriver = taskDriver;
-            OwningTaskSystem = taskSystem;
+            OwningTaskDriverWork = owningTaskDriverWork;
 
 
 #if DEBUG
@@ -68,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public sealed override string ToString()
         {
-            return $"{Type.GetReadableName()}, {TaskDebugUtil.GetLocationName(OwningTaskSystem, OwningTaskDriver)}";
+            return $"{Type.GetReadableName()}, {OwningTaskDriverWork}";
         }
 
         //*************************************************************************************************************

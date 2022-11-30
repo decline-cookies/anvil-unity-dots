@@ -16,12 +16,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     public abstract class AbstractTaskSystem : AbstractAnvilSystemBase
     {
-        private readonly ByteIDProvider m_TaskDriverContextProvider;
-        private readonly List<AbstractJobConfig> m_JobConfigs;
+        
+        
 
-        private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
-        private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
-
+        
         private TaskFlowGraph m_TaskFlowGraph;
         private bool m_IsHardened;
 

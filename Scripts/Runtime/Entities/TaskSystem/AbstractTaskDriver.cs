@@ -6,28 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    /// <inheritdoc cref="AbstractTaskDriver"/>
-    /// <typeparam name="TTaskSystem">The type of <see cref="AbstractTaskSystem"/></typeparam>
-    public abstract class AbstractTaskDriver<TTaskSystem> : AbstractTaskDriver
-        where TTaskSystem : AbstractTaskSystem
-    {
-        /// <summary>
-        /// Reference to the associated <typeparamref name="TTaskSystem"/>
-        /// </summary>
-        protected TTaskSystem TaskSystem
-        {
-            get => (TTaskSystem)base.GoverningTaskSystem;
-        }
-
-        // MIKE: I can't think of a better pattern here.
-        protected AbstractTaskDriver(World world, AbstractTaskDriver parent) : base(world, typeof(TTaskSystem), parent)
-        {
-        }
-    }
-
     /// <summary>
     /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
     /// The goal of a TaskDriver is to convert specific data into general data that the corresponding
@@ -43,17 +25,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private bool m_IsHardened;
 
         /// <summary>
-        /// The context associated with this TaskDriver. Will be unique to the corresponding
-        /// <see cref="AbstractTaskSystem"/> and any other TaskDrivers of the same type.
-        /// </summary>
-        public byte Context { get; }
-
-        /// <summary>
-        /// Reference to the governing <see cref="AbstractTaskSystem"/>
-        /// </summary>
-        internal AbstractTaskSystem GoverningTaskSystem { get; }
-
-        /// <summary>
         /// Reference to the associated <see cref="World"/>
         /// </summary>
         public World World { get; }
@@ -61,25 +32,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
 
         internal TaskDriverCancelFlow CancelFlow { get; }
-        internal TaskData TaskData { get; }
         internal AbstractTaskDriver Parent { get; }
 
         internal bool HasCancellableData { get; }
 
-        protected AbstractTaskDriver(World world, Type systemType, AbstractTaskDriver parent)
+
+        private readonly Type m_Type;
+        internal CoreTaskDriverWork CoreTaskDriverWork { get; }
+        internal ContextualTaskDriverWork ContextualTaskDriverWork { get; }
+        
+
+        protected AbstractTaskDriver(World world, AbstractTaskDriver parent)
         {
+            m_Type = GetType();
             //We can't just pull this off the System because we might have triggered it's creation via
             //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
             Parent = parent;
-
-            GoverningTaskSystem = (AbstractTaskSystem)world.GetOrCreateSystem(systemType);
-            Context = GoverningTaskSystem.RegisterTaskDriver(this);
+            
+            //Get the shared CoreTaskWork for this type
+            CoreTaskDriverWork = World.GetOrCreateSystem<TaskDriverSystem>().GetOrCreateCoreTaskDriverWork(this);
+            //Create a new instance of ContextualTaskWork for this instance
+            ContextualTaskDriverWork = CoreTaskDriverWork.CreateContextualTaskDriverWork(this);
 
             SubTaskDrivers = new List<AbstractTaskDriver>();
             m_JobConfigs = new List<AbstractJobConfig>();
-
-            TaskData = new TaskData(this, GoverningTaskSystem);
+            
             CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
 
@@ -89,8 +67,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //MIKE - Ordering Question, not sure if there is a better flow
             CancelFlow.BuildRequestData();
-
-
+            
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
             //TODO: Investigate if we need this here: #66, #67, and/or #68 - https://github.com/decline-cookies/anvil-unity-dots/pull/87/files#r995032614
             m_TaskFlowGraph.RegisterTaskDriver(this);
