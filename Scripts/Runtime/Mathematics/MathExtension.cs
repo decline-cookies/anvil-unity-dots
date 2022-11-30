@@ -143,5 +143,35 @@ namespace Anvil.Unity.DOTS.Mathematics
                 a.c3.IsApproximately(b.c3)
             );
         }
+
+        /// <summary>
+        /// Converts the components of a value to infinite quantities where:
+        /// >0 = <see cref="float.PositiveInfinity"/>
+        /// <0 = <see cref="float.NegativeInfinity"/>
+        /// 0 = 0
+        /// </summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>A signed infinite value.</returns>
+        public static float3 ToSignedInfinite(this float3 value)
+        {
+            return math.select(math.sign(value) * new float3(float.PositiveInfinity), value, value == 0);
+        }
+
+        /// <summary>
+        /// Checks whether a given transformation matrix is valid.
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// Returns false if:
+        ///  - The determinant is 0 or <see cref="float.NaN"/>.
+        ///
+        /// An invalid matrix (Ex: with a 0 scale component) cannot be inverted. Special case values must be used when
+        /// transforming through an invalid matrix.
+        /// </remarks>
+        public static bool isValidTransform(this float4x4 matrix)
+        {
+            return math.determinant(matrix) is not 0 and not float.NaN;
+        }
     }
 }
