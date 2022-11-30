@@ -61,7 +61,10 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static quaternion ConvertLocalToWorldRotation(float4x4 localToWorldMtx, quaternion rotation)
         {
             EmitErrorIfNonUniformScale(localToWorldMtx.GetScale());
-            return math.mul(localToWorldMtx.GetRotation(),rotation);
+            return quaternion.LookRotationSafe(
+                math.rotate(localToWorldMtx, math.mul(rotation, math.forward())),
+                math.rotate(localToWorldMtx, math.mul(rotation, math.up()))
+            );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
