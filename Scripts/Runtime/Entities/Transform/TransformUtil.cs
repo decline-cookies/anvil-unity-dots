@@ -1,5 +1,6 @@
-using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.Core;
 using Anvil.Unity.DOTS.Mathematics;
 using Unity.Mathematics;
@@ -43,7 +44,11 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion ConvertWorldToLocalRotation(float4x4 worldToLocalMtx, quaternion rotation)
         {
-            return math.mul(worldToLocalMtx.GetRotation(), rotation);
+            EmitErrorIfNonUniformScale(worldToLocalMtx.GetScale());
+            return quaternion.LookRotationSafe(
+                math.rotate(worldToLocalMtx, math.mul(rotation, math.forward())),
+                math.rotate(worldToLocalMtx, math.mul(rotation, math.up()))
+            );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,7 +60,35 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion ConvertLocalToWorldRotation(float4x4 localToWorldMtx, quaternion rotation)
         {
+            EmitErrorIfNonUniformScale(localToWorldMtx.GetScale());
             return math.mul(localToWorldMtx.GetRotation(),rotation);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 ConvertWorldToLocalScale(LocalToWorld localToWorld, float3 scale)
+        {
+            return ConvertLocalToWorldScale(math.inverse(localToWorld.Value), scale);
+        }
+
+        /// <summary>
+        /// Converts a world scale value to the local space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertWorldToLocalRotation"/>.
+        /// (transforms with negative scale may be represented by multiple combinations of rotation and scale)
+        /// </summary>
+        /// <param name="worldToLocalMtx">The world to local transformation matrix.</param>
+        /// <param name="scale">The world scale value transform.</param>
+        /// <remarks>NOTE: This </remarks>
+        /// <returns>The local scale value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 ConvertWorldToLocalScale(float4x4 worldToLocalMtx, float3 scale)
+        {
+            float3 worldToLocalScale = worldToLocalMtx.GetScale();
+            EmitErrorIfNonUniformScale(worldToLocalScale);
+
+            return worldToLocalScale * scale;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,7 +100,10 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertLocalToWorldScale(float4x4 localToWorldMtx, float3 scale)
         {
-            return localToWorldMtx.GetScale() * scale;
+            float3 localToWorldScale = localToWorldMtx.GetScale();
+            EmitErrorIfNonUniformScale(localToWorldScale);
+
+            return localToWorldScale * scale;
         }
 
         public static Rect ConvertWorldToLocalRect(LocalToWorld localToWorld, Rect worldRect)
@@ -104,6 +140,28 @@ namespace Anvil.Unity.DOTS.Entities.Transform
                 ConvertLocalToWorldPoint(worldToLocalMtx, point3).xy,
                 ConvertLocalToWorldPoint(worldToLocalMtx, point4).xy
             );
+        }
+
+        //TODO: #116 - Transforms with non-uniform scale operations are not currently supported.
+        [Conditional("DEBUG")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void EmitErrorIfNonUniformScale(
+            float3 scale,
+            [CallerMemberName] string callerMethodName = "",
+            [CallerFilePath] string callerFilePath = "",
+            [CallerLineNumber] int callerLineNumber = 0)
+        {
+            scale = math.abs(scale);
+            bool isUniform = scale.x.IsApproximately(scale.y) && scale.y.IsApproximately(scale.z);
+            if (!isUniform)
+            {
+                Log.GetStaticLogger(typeof(TransformUtil)).Error(
+                    "This conversion does not support transforms with non-uniform scaling.",
+                    callerMethodName,
+                    callerFilePath,
+                    callerLineNumber
+                    );
+            }
         }
     }
 }
