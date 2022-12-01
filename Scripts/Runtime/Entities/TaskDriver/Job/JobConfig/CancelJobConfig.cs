@@ -8,15 +8,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         //TODO: Make sure we get the right iteration array for cancelled instances
         public CancelJobConfig(TaskFlowGraph taskFlowGraph,
-                               AbstractTaskDriverSystem taskSystem,
-                               AbstractTaskDriver taskDriver,
+                               AbstractWorkload owningWorkload,
                                PendingCancelDataStream<TInstance> pendingCancelDataStream)
             : base(taskFlowGraph,
-                   taskSystem,
-                   taskDriver)
+                   owningWorkload)
         {
             RequireDataStreamForCancelling(pendingCancelDataStream);
-            RequireCancelProgressLookup(taskDriver != null ? taskDriver.TaskData.CancelProgressLookup : taskSystem.TaskData.CancelProgressLookup);
+            RequireCancelProgressLookup(owningWorkload.CancelProgressLookup);
         }
 
         //*************************************************************************************************************

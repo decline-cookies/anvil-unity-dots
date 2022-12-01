@@ -17,30 +17,47 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             I_SYSTEM_CANCEL_RESULT_DATA_STREAM
         };
 
-        private readonly RootWorkload m_RootWorkload;
+        
         private readonly AbstractTaskDriver m_TaskDriver;
-        
-        
+        private readonly List<ContextWorkload> m_SubContextWorkloads;
 
+        public RootWorkload RootWorkload { get; }
+        public ContextWorkload Parent { get; }
+        
+        public TaskDriverCancelFlow CancelFlow { get; }
+        
+        
+        
         protected sealed override HashSet<Type> ValidDataStreamTypes
         {
             get => VALID_DATA_STREAM_TYPES;
         }
-
-
-        public ContextWorkload(AbstractTaskDriver taskDriver, RootWorkload rootWorkload) : base(taskDriver.GetType(), rootWorkload.GoverningSystem)
+        
+        public ContextWorkload(AbstractTaskDriver taskDriver, RootWorkload rootWorkload, ContextWorkload parent) : base(taskDriver.World, taskDriver.GetType(), rootWorkload.GoverningSystem)
         {
             m_TaskDriver = taskDriver;
-            m_RootWorkload = rootWorkload;
+            RootWorkload = rootWorkload;
+
+            Parent = parent;
+            
+            CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
+            
+            m_SubContextWorkloads = new List<ContextWorkload>();
         }
 
-        protected override byte GenerateContext()
+        protected sealed override byte GenerateContext()
         {
-            return m_RootWorkload.GenerateContextForContextWorkload();
+            return RootWorkload.GenerateContextForContextWorkload();
+        }
+        
+        protected sealed override bool InitHasCancellableData()
+        {
+            return base.InitHasCancellableData() || RootWorkload.HasCancellableData;
         }
 
         protected override void DisposeSelf()
         {
+            CancelFlow.Dispose();
             base.DisposeSelf();
         }
 
@@ -48,14 +65,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             AbstractDataStream dataStream = null;
             //If this is a System Data Stream type, we just want to assign the one from the core
-            if (RootWorkload.VALID_DATA_STREAM_TYPES.Contains(genericTypeDefinition))
-            {
-                dataStream = m_RootWorkload.GetDataStreamByType(instanceType);
-            }
-            else
-            {
-                dataStream = CreateDataStreamInstance(instanceType, genericTypeDefinition);
-            }
+            dataStream = RootWorkload.VALID_DATA_STREAM_TYPES.Contains(genericTypeDefinition)
+                ? RootWorkload.GetDataStreamByType(instanceType)
+                : CreateDataStreamInstance(instanceType, genericTypeDefinition);
             
             AssignDataStreamInstance(taskDriverField, m_TaskDriver, dataStream);
         }

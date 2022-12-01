@@ -11,8 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly CancelCompleteJobConfig m_JobConfig;
 
-        internal CancelCompleteJobData(CancelCompleteJobConfig jobConfig,
-                                       World world) : base(world, jobConfig)
+        internal CancelCompleteJobData(CancelCompleteJobConfig jobConfig) : base(jobConfig)
         {
             m_JobConfig = jobConfig;
         }

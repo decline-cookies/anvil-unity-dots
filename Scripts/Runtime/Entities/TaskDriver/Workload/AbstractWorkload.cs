@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -39,10 +40,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public AbstractTaskDriverSystem GoverningSystem { get; }
         
+        public bool HasCancellableData { get; }
+        
         public byte Context { get; }
+        
+        public World World { get; }
 
-        protected AbstractWorkload(Type taskDriverType, AbstractTaskDriverSystem governingSystem)
+        protected AbstractWorkload(World world, Type taskDriverType, AbstractTaskDriverSystem governingSystem)
         {
+            World = world;
             Context = GenerateContext();
             TaskDriverType = taskDriverType;
             GoverningSystem = governingSystem;
@@ -60,9 +66,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                   this);
 
             CreateDataStreams();
+
+            HasCancellableData = InitHasCancellableData();
         }
 
         protected abstract byte GenerateContext();
+
+        protected virtual bool InitHasCancellableData()
+        {
+            return CancellableDataStreams.Count > 0;
+        }
 
         protected override void DisposeSelf()
         {

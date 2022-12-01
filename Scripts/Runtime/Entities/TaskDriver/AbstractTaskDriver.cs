@@ -23,6 +23,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         private readonly TaskFlowGraph m_TaskFlowGraph;
         private readonly List<AbstractJobConfig> m_JobConfigs;
+        private readonly RootWorkload m_RootWorkload;
+        private readonly ContextWorkload m_ContextWorkload;
 
         private bool m_IsHardened;
 
@@ -32,47 +34,53 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public World World { get; }
 
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
-
-        internal TaskDriverCancelFlow CancelFlow { get; }
+        
         internal AbstractTaskDriver Parent { get; }
 
-        internal bool HasCancellableData { get; }
+        protected IRootWorkload RootWorkload
+        {
+            get => m_RootWorkload;
+        }
 
-
-        private readonly Type m_Type;
-        protected IRootWorkload RootWorkload { get; }
-        protected IContextWorkload ContextWorkload { get; }
+        protected IContextWorkload ContextWorkload
+        {
+            get => m_ContextWorkload;
+        }
 
         private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
-        
 
-        protected AbstractTaskDriver(World world, AbstractTaskDriver parent)
+        protected AbstractTaskDriver(World world) : this(world, null)
         {
-            m_Type = GetType();
+        }
+        
+        //This constructor can also be called via Reflection
+        private AbstractTaskDriver(World world, AbstractTaskDriver parent)
+        {
+            Type type = GetType();
             //We can't just pull this off the System because we might have triggered it's creation via
             //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
             Parent = parent;
 
-            Type systemType = GENERIC_TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(m_Type);
+            Type systemType = GENERIC_TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(type);
             
             //Get the shared CoreTaskWork for this type
             m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetOrCreateSystem(systemType);
-            RootWorkload = m_TaskDriverSystem.RootWorkload;
+            m_RootWorkload = m_TaskDriverSystem.GetOrCreateRootWorkload(this);
             //Create a new instance of ContextualTaskWork for this instance
-            ContextWorkload = m_TaskDriverSystem.RootWorkload.CreateContextWorkload(this);
+            m_ContextWorkload = m_RootWorkload.CreateContextWorkload(this, Parent?.m_ContextWorkload);
 
             SubTaskDrivers = new List<AbstractTaskDriver>();
             m_JobConfigs = new List<AbstractJobConfig>();
             
-            CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
+            
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
 
             HasCancellableData = TaskData.CancellableDataStreams.Count > 0
                               || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
                               || GoverningTaskSystem.HasCancellableData;
 
-            //MIKE - Ordering Question, not sure if there is a better flow
+            //TODO: We can do this in hardening
             CancelFlow.BuildRequestData();
             
             m_TaskFlowGraph = world.GetOrCreateSystem<TaskFlowSystem>().TaskFlowGraph;
@@ -87,8 +95,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Dispose all the data we own
             m_JobConfigs.DisposeAllAndTryClear();
 
-            TaskData.Dispose();
-            CancelFlow.Dispose();
+            m_ContextWorkload.Dispose();
 
             base.DisposeSelf();
         }

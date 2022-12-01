@@ -11,9 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public readonly Type InstanceType;
         public readonly long PendingBytesPerInstance;
         public readonly long LiveBytesPerInstance;
-        public readonly AbstractTaskDriver TaskDriver;
-        public readonly AbstractTaskDriverSystem TaskSystem;
-        
+
         public DataStreamProfilingDetails ProfilingDetails;
 
         internal DataStreamProfilingInfo(AbstractDataStream dataStream)
@@ -22,8 +20,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             InstanceType = dataStream.Debug_InstanceType;
             PendingBytesPerInstance = dataStream.Debug_PendingBytesPerInstance;
             LiveBytesPerInstance = dataStream.Debug_LiveBytesPerInstance;
-            TaskDriver = dataStream.OwningTaskDriver;
-            TaskSystem = dataStream.OwningTaskSystem;
             ProfilingDetails = new DataStreamProfilingDetails(dataStream);
         }
 

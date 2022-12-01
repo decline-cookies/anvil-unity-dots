@@ -26,11 +26,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        protected AbstractJobData(World world,
-                                  IJobConfig jobConfig)
+        protected AbstractJobData(IJobConfig jobConfig)
         {
-            World = world;
             m_JobConfig = (AbstractJobConfig)jobConfig;
+            World = m_JobConfig.OwningWorkload.World;
         }
 
         /// <summary>

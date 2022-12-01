@@ -3,12 +3,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class EntityQueryJobConfig : AbstractJobConfig
     {
         public EntityQueryJobConfig(TaskFlowGraph taskFlowGraph,
-                                    AbstractTaskDriverSystem taskSystem,
-                                    AbstractTaskDriver taskDriver,
+                                    AbstractWorkload owningWorkload,
                                     EntityQueryNativeArray entityQueryNativeArray)
             : base(taskFlowGraph,
-                   taskSystem,
-                   taskDriver)
+                   owningWorkload)
         {
             RequireEntityNativeArrayFromQueryForRead(entityQueryNativeArray);
         }

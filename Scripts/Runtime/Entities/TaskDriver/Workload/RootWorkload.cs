@@ -2,6 +2,7 @@ using Anvil.CSharp.Data;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -21,14 +22,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_SystemJobConfigBulkJobSchedulerLookup;
         private Dictionary<TaskFlowRoute, BulkJobScheduler<AbstractJobConfig>> m_DriverJobConfigBulkJobSchedulerLookup;
-        
+
 
         protected sealed override HashSet<Type> ValidDataStreamTypes
         {
             get => VALID_DATA_STREAM_TYPES;
         }
 
-        public RootWorkload(Type taskDriverType, AbstractTaskDriverSystem governingSystem) : base(taskDriverType, governingSystem)
+        public RootWorkload(World world, Type taskDriverType, AbstractTaskDriverSystem governingSystem) : base(world, taskDriverType, governingSystem)
         {
             m_IDProvider = new ByteIDProvider();
             m_ContextWorkloads = new List<ContextWorkload>();
@@ -51,10 +52,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.DisposeSelf();
         }
 
-        public ContextWorkload CreateContextWorkload(AbstractTaskDriver taskDriver)
+        public ContextWorkload CreateContextWorkload(AbstractTaskDriver taskDriver, ContextWorkload parent)
         {
             ContextWorkload contextWorkload = new ContextWorkload(taskDriver,
-                                                                  this);
+                                                                  this,
+                                                                  parent);
             m_ContextWorkloads.Add(contextWorkload);
             return contextWorkload;
         }
@@ -75,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AbstractDataStream dataStream = CreateDataStreamInstance(instanceType, genericTypeDefinition);
             m_DataStreamLookupByType.Add(instanceType, dataStream);
         }
-        
+
         //*************************************************************************************************************
         // EXECUTION
         //*************************************************************************************************************

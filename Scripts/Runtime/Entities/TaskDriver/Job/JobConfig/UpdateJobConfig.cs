@@ -8,12 +8,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public UpdateJobConfig(TaskFlowGraph taskFlowGraph,
-                               AbstractTaskDriverSystem taskSystem,
-                               AbstractTaskDriver taskDriver,
+                               AbstractWorkload owningWorkload,
                                DataStream<TInstance> dataStream) 
             : base(taskFlowGraph, 
-                   taskSystem, 
-                   taskDriver)
+                   owningWorkload)
         {
             RequireDataStreamForUpdate(dataStream);
         }

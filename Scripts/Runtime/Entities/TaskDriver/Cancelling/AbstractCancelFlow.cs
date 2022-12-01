@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private NativeArray<JobHandle> m_Dependencies;
 
-        protected TaskData TaskData { get; }
+        protected AbstractWorkload OwningWorkload { get; }
         protected TaskDriverCancelFlow Parent { get; }
 
 #if DEBUG
@@ -35,9 +35,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private FixedString128Bytes Debug_DebugString { get; }
 #endif
 
-        protected AbstractCancelFlow(TaskData taskData, TaskDriverCancelFlow parent)
+        protected AbstractCancelFlow(AbstractWorkload owningWorkload, TaskDriverCancelFlow parent)
         {
-            TaskData = taskData;
+            OwningWorkload = owningWorkload;
             Parent = parent;
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
 
@@ -58,7 +58,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public sealed override string ToString()
         {
-            return $"{GetType().GetReadableName()}, {TaskDebugUtil.GetLocationName(TaskData.TaskSystem, TaskData.TaskDriver)}";
+            return $"{GetType().GetReadableName()}, {OwningWorkload}";
         }
 
         //*************************************************************************************************************
@@ -70,15 +70,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup = default;
 
             m_Dependencies[0] = dependsOn;
-            m_Dependencies[1] = TaskData.CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup);
-            m_Dependencies[2] = TaskData.CancelCompleteDataStream.AccessController.AcquireAsync(AccessType.SharedWrite);
-            m_Dependencies[3] = Parent?.TaskData.CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out parentProgressLookup) ?? default;
+            m_Dependencies[1] = OwningWorkload.CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup);
+            m_Dependencies[2] = OwningWorkload.CancelCompleteDataStream.AccessController.AcquireAsync(AccessType.SharedWrite);
+            m_Dependencies[3] = Parent?.OwningWorkload.CancelProgressLookup.AcquireAsync(AccessType.ExclusiveWrite, out parentProgressLookup) ?? default;
 
             dependsOn = JobHandle.CombineDependencies(m_Dependencies);
 
             CheckCancelProgressJob checkCancelProgressJob = new CheckCancelProgressJob(parentProgressLookup,
                                                                                        progressLookup,
-                                                                                       TaskData.CancelCompleteDataStream.Pending.AsWriter(),
+                                                                                       OwningWorkload.CancelCompleteDataStream.Pending.AsWriter(),
                                                                                        Parent?.TaskDriverContext ?? 0
 #if DEBUG
                                                                                       ,
@@ -92,9 +92,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
-            TaskData.CancelProgressLookup.ReleaseAsync(dependsOn);
-            TaskData.CancelCompleteDataStream.AccessController.ReleaseAsync(dependsOn);
-            Parent?.TaskData.CancelProgressLookup.ReleaseAsync(dependsOn);
+            OwningWorkload.CancelProgressLookup.ReleaseAsync(dependsOn);
+            OwningWorkload.CancelCompleteDataStream.AccessController.ReleaseAsync(dependsOn);
+            Parent?.OwningWorkload.CancelProgressLookup.ReleaseAsync(dependsOn);
 
             return dependsOn;
         }

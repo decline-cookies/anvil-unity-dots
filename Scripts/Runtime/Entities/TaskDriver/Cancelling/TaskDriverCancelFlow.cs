@@ -11,8 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class TaskDriverCancelFlow : AbstractCancelFlow
     {
         internal static readonly BulkScheduleDelegate<TaskDriverCancelFlow> SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<TaskDriverCancelFlow>(nameof(Schedule), BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private readonly AbstractTaskDriver m_TaskDriver;
+        
         private readonly SystemCancelFlow m_SystemCancelFlow;
         private readonly Dictionary<int, List<AbstractCancelFlow>> m_CancelFlowHierarchy;
         private BulkJobScheduler<AbstractCancelFlow>[] m_OrderedBulkJobSchedulers;
@@ -26,13 +25,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public byte TaskDriverContext
         {
-            get => m_TaskDriver.Context;
+            get => OwningWorkload.Context;
         }
 
-        public TaskDriverCancelFlow(AbstractTaskDriver taskDriver, TaskDriverCancelFlow parent) : base(taskDriver.TaskData, parent)
+        public TaskDriverCancelFlow(ContextWorkload owningWorkload, TaskDriverCancelFlow parent) : base(owningWorkload, parent)
         {
-            m_TaskDriver = taskDriver;
-            m_SystemCancelFlow = new SystemCancelFlow(m_TaskDriver.GoverningTaskSystem, this);
+            m_SystemCancelFlow = new SystemCancelFlow(owningWorkload.RootWorkload, this);
             m_CancelFlowHierarchy = new Dictionary<int, List<AbstractCancelFlow>>();
             m_CancelRequestDataStreams = new List<CancelRequestDataStream>();
         }
@@ -93,7 +91,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                       List<byte> contexts)
         {
             //Add ourself
-            cancelRequests.Add(TaskData.CancelRequestDataStream);
+            cancelRequests.Add(OwningWorkload.CancelRequestDataStream);
             //Add our TaskDriver's context
             contexts.Add(TaskDriverContext);
             

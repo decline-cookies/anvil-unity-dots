@@ -146,20 +146,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}(Anvil.Unity.DOTS.Entities.Tasks.IDriverDataStream{TInstance})"/>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
+        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}(Anvil.Unity.DOTS.Entities.Tasks.IAbstractDataStream{TInstance})"/>
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
             return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.OwningWorkload.Context);
-        }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}(Anvil.Unity.DOTS.Entities.Tasks.ISystemDataStream{TInstance},Anvil.Unity.DOTS.Entities.Tasks.AbstractTaskDriver)"/>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream, AbstractTaskDriver taskDriver)
-            where TInstance : unmanaged, IEntityProxyInstance
-        {
-            DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
-            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, taskDriver.Context);
         }
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>

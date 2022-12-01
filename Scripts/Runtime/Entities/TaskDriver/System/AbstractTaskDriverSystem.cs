@@ -1,27 +1,28 @@
 using System;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractTaskDriverSystem : AbstractAnvilSystemBase
     {
-        public RootWorkload RootWorkload { get; }
-
-        protected AbstractTaskDriverSystem()
-        {
-            Type systemType = GetType();
-            Type taskDriverType = systemType.GenericTypeArguments[0];
-            RootWorkload = new RootWorkload(taskDriverType, this);
-        }
+        private RootWorkload m_RootWorkload;
+        
 
         protected override void OnDestroy()
         {
-            RootWorkload.Dispose();
+            m_RootWorkload?.Dispose();
             base.OnDestroy();
+        }
+
+        public RootWorkload GetOrCreateRootWorkload(AbstractTaskDriver taskDriver)
+        {
+            m_RootWorkload = new RootWorkload(taskDriver.World, taskDriver.GetType(), this);
+            return m_RootWorkload;
         }
 
         protected override void OnUpdate()
         {
-            Dependency = RootWorkload.Update(Dependency);
+            Dependency = m_RootWorkload.Update(Dependency);
         }
     }
 }

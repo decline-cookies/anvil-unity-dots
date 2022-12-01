@@ -13,19 +13,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal static class JobConfigFactory
     {
         public static CancelCompleteJobConfig CreateCancelCompleteJobConfig(TaskFlowGraph taskFlowGraph,
-                                                                            AbstractTaskDriverSystem taskSystem,
-                                                                            AbstractTaskDriver taskDriver,
+                                                                            AbstractWorkload owningWorkload,
                                                                             CancelCompleteDataStream cancelCompleteDataStream,
                                                                             JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
                                                                             BatchStrategy batchStrategy)
         {
             CancelCompleteJobConfig jobConfig = new CancelCompleteJobConfig(taskFlowGraph,
-                                                                            taskSystem,
-                                                                            taskDriver,
+                                                                            owningWorkload,
                                                                             cancelCompleteDataStream);
 
-            CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig,
-                                                                      taskSystem.World);
+            CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig);
 
             CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData,
                                                                                      cancelCompleteDataStream,
@@ -36,20 +33,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
-                                                                                  AbstractTaskDriverSystem taskSystem,
-                                                                                  AbstractTaskDriver taskDriver,
+                                                                                  AbstractWorkload owningWorkload,
                                                                                   DataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             UpdateJobConfig<TInstance> jobConfig = new UpdateJobConfig<TInstance>(taskFlowGraph,
-                                                                                  taskSystem,
-                                                                                  taskDriver,
+                                                                                  owningWorkload,
                                                                                   dataStream);
 
-            UpdateJobData<TInstance> jobData = new UpdateJobData<TInstance>(jobConfig,
-                                                                            taskSystem.World);
+            UpdateJobData<TInstance> jobData = new UpdateJobData<TInstance>(jobConfig);
 
             UpdateDataStreamScheduleInfo<TInstance> scheduleInfo = new UpdateDataStreamScheduleInfo<TInstance>(jobData,
                                                                                                                dataStream,
@@ -60,20 +54,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
-                                                                                  AbstractTaskDriverSystem taskSystem,
-                                                                                  AbstractTaskDriver taskDriver,
+                                                                                  AbstractWorkload owningWorkload,
                                                                                   CancellableDataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskFlowGraph,
-                                                                                  taskSystem,
-                                                                                  taskDriver,
+                                                                                  owningWorkload,
                                                                                   dataStream.PendingCancelDataStream);
 
-            CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig,
-                                                                            taskSystem.World);
+            CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig);
 
             CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
                                                                                                                dataStream.PendingCancelDataStream,
@@ -83,20 +74,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static DataStreamJobConfig<TInstance> CreateDataStreamJobConfig<TInstance>(TaskFlowGraph taskFlowGraph,
-                                                                                          AbstractTaskDriverSystem taskSystem,
-                                                                                          AbstractTaskDriver taskDriver,
+                                                                                          AbstractWorkload owningWorkload,
                                                                                           DataStream<TInstance> dataStream,
                                                                                           JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStreamJobConfig<TInstance> jobConfig = new DataStreamJobConfig<TInstance>(taskFlowGraph,
-                                                                                          taskSystem,
-                                                                                          taskDriver,
+                                                                                          owningWorkload,
                                                                                           dataStream);
 
-            DataStreamJobData<TInstance> jobData = new DataStreamJobData<TInstance>(jobConfig,
-                                                                                    taskSystem.World);
+            DataStreamJobData<TInstance> jobData = new DataStreamJobData<TInstance>(jobConfig);
 
             DataStreamScheduleInfo<TInstance> scheduleInfo = new DataStreamScheduleInfo<TInstance>(jobData,
                                                                                                    dataStream,
@@ -107,8 +95,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static EntityQueryJobConfig CreateEntityQueryJobConfig(TaskFlowGraph taskFlowGraph,
-                                                                      AbstractTaskDriverSystem taskSystem,
-                                                                      AbstractTaskDriver taskDriver,
+                                                                      AbstractWorkload owningWorkload,
                                                                       EntityQuery entityQuery,
                                                                       JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                                       BatchStrategy batchStrategy)
@@ -116,12 +103,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             EntityQueryNativeArray entityQueryNativeArray = new EntityQueryNativeArray(entityQuery);
 
             EntityQueryJobConfig jobConfig = new EntityQueryJobConfig(taskFlowGraph,
-                                                                      taskSystem,
-                                                                      taskDriver,
+                                                                      owningWorkload,
                                                                       entityQueryNativeArray);
 
-            EntityQueryJobData jobData = new EntityQueryJobData(jobConfig,
-                                                                taskSystem.World);
+            EntityQueryJobData jobData = new EntityQueryJobData(jobConfig);
 
             EntityQueryScheduleInfo scheduleInfo = new EntityQueryScheduleInfo(jobData,
                                                                                entityQueryNativeArray,
@@ -132,8 +117,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static EntityQueryComponentJobConfig<T> CreateEntityQueryComponentJobConfig<T>(TaskFlowGraph taskFlowGraph,
-                                                                                              AbstractTaskDriverSystem taskSystem,
-                                                                                              AbstractTaskDriver taskDriver,
+                                                                                              AbstractWorkload owningWorkload,
                                                                                               EntityQuery entityQuery,
                                                                                               JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
                                                                                               BatchStrategy batchStrategy)
@@ -142,12 +126,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray = new EntityQueryComponentNativeArray<T>(entityQuery);
 
             EntityQueryComponentJobConfig<T> jobConfig = new EntityQueryComponentJobConfig<T>(taskFlowGraph,
-                                                                                              taskSystem,
-                                                                                              taskDriver,
+                                                                                              owningWorkload,
                                                                                               entityQueryComponentNativeArray);
 
-            EntityQueryComponentJobData<T> jobData = new EntityQueryComponentJobData<T>(jobConfig,
-                                                                                        taskSystem.World);
+            EntityQueryComponentJobData<T> jobData = new EntityQueryComponentJobData<T>(jobConfig);
 
             EntityQueryComponentScheduleInfo<T> scheduleInfo = new EntityQueryComponentScheduleInfo<T>(jobData,
                                                                                                        entityQueryComponentNativeArray,
@@ -158,20 +140,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public static NativeArrayJobConfig<T> CreateNativeArrayJobConfig<T>(TaskFlowGraph taskFlowGraph,
-                                                                            AbstractTaskDriverSystem taskSystem,
-                                                                            AbstractTaskDriver taskDriver,
+                                                                            AbstractWorkload owningWorkload,
                                                                             AccessControlledValue<NativeArray<T>> nativeArray,
                                                                             JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction,
                                                                             BatchStrategy batchStrategy)
             where T : struct
         {
             NativeArrayJobConfig<T> jobConfig = new NativeArrayJobConfig<T>(taskFlowGraph,
-                                                                            taskSystem,
-                                                                            taskDriver,
+                                                                            owningWorkload,
                                                                             nativeArray);
 
-            NativeArrayJobData<T> jobData = new NativeArrayJobData<T>(jobConfig,
-                                                                      taskSystem.World);
+            NativeArrayJobData<T> jobData = new NativeArrayJobData<T>(jobConfig);
 
             NativeArrayScheduleInfo<T> scheduleInfo = new NativeArrayScheduleInfo<T>(jobData,
                                                                                      batchStrategy,

@@ -9,8 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private DataStreamTargetResolver m_DataStreamTargetResolver;
 
         protected AbstractResolvableJobConfig(TaskFlowGraph taskFlowGraph,
-                                              AbstractTaskDriverSystem taskSystem,
-                                              AbstractTaskDriver taskDriver) : base(taskFlowGraph, taskSystem, taskDriver)
+                                              AbstractWorkload owningWorkload) : base(taskFlowGraph, owningWorkload)
         {
             m_JobResolveTargetMapping = new JobResolveTargetMapping();
         }

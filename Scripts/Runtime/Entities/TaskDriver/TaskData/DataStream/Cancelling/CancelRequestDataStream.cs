@@ -21,11 +21,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_CancelProgressLookup;
         private readonly CancelCompleteDataStream m_CancelCompleteDataStream;
 
-        private bool HasCancellableData
-        {
-            get => OwningTaskDriver?.HasCancellableData ?? OwningTaskSystem.HasCancellableData;
-        }
-
         public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup,
                                        CancelCompleteDataStream cancelCompleteDataStream,
                                        AbstractWorkload owningWorkload) : base(owningWorkload)
@@ -47,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            return HasCancellableData
+            return OwningWorkload.HasCancellableData
                 ? ConsolidateWithCancellableData(dependsOn)
                 : ConsolidateWithoutCancellableData(dependsOn);
         }
@@ -66,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                                       Debug_ProfilingInfo.ProfilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                                     ,
+                                                                                                                   ,
                                                                                                                       Debug_DebugString
 #endif
                                                                                                                      );
@@ -92,7 +87,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                                                                             Debug_ProfilingInfo.ProfilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                                                                           ,
+                                                                                                                         ,
                                                                                                                             Debug_DebugString
 #endif
                                                                                                                            );
@@ -132,7 +127,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    DataStreamProfilingDetails profilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                  ,
+                                                                ,
                                                                    FixedString128Bytes debugString
 #endif
             )
@@ -215,7 +210,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                       DataStreamProfilingDetails profilingDetails
 #endif
 #if ANVIL_DEBUG_LOGGING_EXPENSIVE
-                                                                     ,
+                                                                   ,
                                                                       FixedString128Bytes debugString
 #endif
             ) : this()

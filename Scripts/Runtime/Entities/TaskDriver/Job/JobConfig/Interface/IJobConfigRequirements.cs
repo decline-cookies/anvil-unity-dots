@@ -17,18 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
         /// the <see cref="IDriverDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance;
-
-        /// <summary>
-        /// Specifies a <see cref="ISystemDataStream{TInstance}"/> to be written to in a shared-write context.
-        /// </summary>
-        /// <param name="dataStream">The <see cref="ISystemDataStream{TInstance}"/> to write to.</param>
-        /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> this data should be associated with.</param>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in the
-        /// <see cref="ISystemDataStream{TInstance}"/></typeparam>
-        /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream, AbstractTaskDriver taskDriver)
+        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>

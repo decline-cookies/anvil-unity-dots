@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly NativeArrayJobConfig<T> m_JobConfig;
 
-        internal NativeArrayJobData(NativeArrayJobConfig<T> jobConfig, World world) : base(world, jobConfig)
+        internal NativeArrayJobData(NativeArrayJobConfig<T> jobConfig) : base(jobConfig)
         {
             m_JobConfig = jobConfig;
         }

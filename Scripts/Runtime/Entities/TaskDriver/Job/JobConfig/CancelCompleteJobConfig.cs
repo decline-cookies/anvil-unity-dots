@@ -3,10 +3,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class CancelCompleteJobConfig : AbstractJobConfig
     {
         public CancelCompleteJobConfig(TaskFlowGraph taskFlowGraph,
-                                       AbstractTaskDriverSystem taskSystem,
-                                       AbstractTaskDriver taskDriver,
+                                       AbstractWorkload owningWorkload,
                                        CancelCompleteDataStream cancelCompleteDataStream)
-            : base(taskFlowGraph, taskSystem, taskDriver)
+            : base(taskFlowGraph, owningWorkload)
         {
             RequireCancelCompleteDataStreamForRead(cancelCompleteDataStream);
         }

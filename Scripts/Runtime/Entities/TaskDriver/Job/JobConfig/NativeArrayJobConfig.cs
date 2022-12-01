@@ -7,12 +7,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct
     {
         public NativeArrayJobConfig(TaskFlowGraph taskFlowGraph,
-                                    AbstractTaskDriverSystem taskSystem,
-                                    AbstractTaskDriver taskDriver,
+                                    AbstractWorkload owningWorkload,
                                     AccessControlledValue<NativeArray<T>> nativeArray)
             : base(taskFlowGraph,
-                   taskSystem,
-                   taskDriver)
+                   owningWorkload)
         {
             RequireGenericDataForRead(nativeArray);
         }

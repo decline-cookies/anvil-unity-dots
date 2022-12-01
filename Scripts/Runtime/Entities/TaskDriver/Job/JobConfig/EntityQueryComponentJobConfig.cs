@@ -6,12 +6,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : struct, IComponentData
     {
         public EntityQueryComponentJobConfig(TaskFlowGraph taskFlowGraph,
-                                             AbstractTaskDriverSystem taskSystem,
-                                             AbstractTaskDriver taskDriver,
+                                             AbstractWorkload owningWorkload,
                                              EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray)
             : base(taskFlowGraph,
-                   taskSystem,
-                   taskDriver)
+                   owningWorkload)
         {
             RequireIComponentDataNativeArrayFromQueryForRead(entityQueryComponentNativeArray);
         }
