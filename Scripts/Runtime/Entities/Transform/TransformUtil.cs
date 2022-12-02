@@ -10,6 +10,9 @@ using Logger = Anvil.CSharp.Logging.Logger;
 
 namespace Anvil.Unity.DOTS.Entities.Transform
 {
+    /// <summary>
+    /// A collection of utilities to help work with transforming values through matrices.
+    /// </summary>
     public static class TransformUtil
     {
         private static Logger Logger
@@ -17,12 +20,28 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             get => Log.GetStaticLogger(typeof(TransformUtil));
         }
 
+        /// <summary>
+        /// Converts a world position value to the local space expressed by a matrix.
+        /// </summary>
+        /// <param name="localToWorld">The local to world transformation matrix. (will be inverted)</param>
+        /// <param name="point">The world position value to convert.</param>
+        /// <returns>The local position value.</returns>
+        /// <remarks>
+        /// NOTE: If calling frequently it may be more performant to invert the <see cref="LocalToWorld.Value"/> matrix
+        /// and call the version of this method that takes a matrix instead.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertWorldToLocalPoint(LocalToWorld localToWorld, float3 point)
         {
             return ConvertWorldToLocalPoint(math.inverse(localToWorld.Value), point);
         }
 
+        /// <summary>
+        /// Converts a world position value to the local space expressed by a matrix.
+        /// </summary>
+        /// <param name="worldToLocalMtx">The world to local transformation matrix.</param>
+        /// <param name="point">The world position value to convert.</param>
+        /// <returns>The local position value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertWorldToLocalPoint(float4x4 worldToLocalMtx, float3 point)
         {
@@ -36,12 +55,24 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             return math.transform(worldToLocalMtx, point);
         }
 
+        /// <summary>
+        /// Converts a local position value to the world space expressed by a matrix.
+        /// </summary>
+        /// <param name="localToWorld">The local to world transformation matrix.</param>
+        /// <param name="point">The local position value to convert.</param>
+        /// <returns>The world position value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertLocalToWorldPoint(LocalToWorld localToWorld, float3 point)
         {
             return ConvertLocalToWorldPoint(localToWorld.Value, point);
         }
 
+        /// <summary>
+        /// Converts a local position value to the world space expressed by a matrix.
+        /// </summary>
+        /// <param name="localToWorldMtx">The local to world transformation matrix.</param>
+        /// <param name="point">The local position value to convert.</param>
+        /// <returns>The world position value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertLocalToWorldPoint(float4x4 localToWorldMtx, float3 point)
         {
@@ -55,12 +86,38 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             return math.transform(localToWorldMtx, point);
         }
 
+        /// <summary>
+        /// Converts a world rotation value to the local space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertWorldToLocalScale"/>.
+        /// (transforms with negative scale may be represented by multiple combinations of rotation and scale)
+        /// </summary>
+        /// <param name="localToWorldMtx">The local to world transformation matrix. (will be inverted)</param>
+        /// <param name="rotation">The world rotation value to convert.</param>
+        /// <returns>The local rotation value.</returns>
+        /// <remarks>
+        /// NOTE: If calling frequently it may be more performant to invert the <see cref="LocalToWorld.Value"/> matrix
+        /// and call the version of this method that takes a matrix instead.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion ConvertWorldToLocalRotation(LocalToWorld localToWorld, quaternion rotation)
         {
             return ConvertWorldToLocalRotation(math.inverse(localToWorld.Value), rotation);
         }
 
+        /// <summary>
+        /// Converts a world rotation value to the local space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertWorldToLocalScale"/>.
+        /// (transforms with negative scale may be represented by multiple combinations of rotation and scale)
+        /// </summary>
+        /// <param name="worldToLocalMtx">The world to local transformation matrix.</param>
+        /// <param name="rotation">The world rotation value to convert.</param>
+        /// <returns>The local rotation value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion ConvertWorldToLocalRotation(float4x4 worldToLocalMtx, quaternion rotation)
         {
@@ -79,12 +136,34 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             );
         }
 
+        /// <summary>
+        /// Converts a local rotation value to the world space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertWorldToLocalScale"/>.
+        /// (transforms with negative scale may be represented by multiple combinations of rotation and scale)
+        /// </summary>
+        /// <param name="localToWorld">The local to world transformation matrix.</param>
+        /// <param name="rotation">The local rotation value to convert.</param>
+        /// <returns>The world rotation value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion ConvertLocalToWorldRotation(LocalToWorld localToWorld, quaternion rotation)
         {
             return ConvertLocalToWorldRotation(localToWorld.Value, rotation);
         }
 
+        /// <summary>
+        /// Converts a local rotation value to the world space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertWorldToLocalScale"/>.
+        /// (transforms with negative scale may be represented by multiple combinations of rotation and scale)
+        /// </summary>
+        /// <param name="localToWorldMtx">The local to world transformation matrix.</param>
+        /// <param name="rotation">The local rotation value to convert.</param>
+        /// <returns>The world rotation value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion ConvertLocalToWorldRotation(float4x4 localToWorldMtx, quaternion rotation)
         {
@@ -103,6 +182,21 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             );
         }
 
+        /// <summary>
+        /// Converts a world scale value to the local space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertWorldToLocalRotation"/>.
+        /// (transforms with negative scale may be represented by multiple combinations of rotation and scale)
+        /// </summary>
+        /// <param name="localToWorld">The local to world transformation matrix. (will be inverted)</param>
+        /// <param name="scale">The world scale value transform.</param>
+        /// <returns>The local scale value.</returns>
+        /// <remarks>
+        /// NOTE: If calling frequently it may be more performant to invert the <see cref="LocalToWorld.Value"/> matrix
+        /// and call the version of this method that takes a matrix instead.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertWorldToLocalScale(LocalToWorld localToWorld, float3 scale)
         {
@@ -119,7 +213,6 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         /// </summary>
         /// <param name="worldToLocalMtx">The world to local transformation matrix.</param>
         /// <param name="scale">The world scale value transform.</param>
-        /// <remarks>NOTE: This </remarks>
         /// <returns>The local scale value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertWorldToLocalScale(float4x4 worldToLocalMtx, float3 scale)
@@ -137,12 +230,32 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             return worldToLocalScale * scale;
         }
 
+        /// <summary>
+        /// Converts a local scale value to the world space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertLocalToWorldScale"/>.
+        /// </summary>
+        /// <param name="localToWorld">The local to world transformation matrix.</param>
+        /// <param name="scale">The local scale value transform.</param>
+        /// <returns>The world scale value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertLocalToWorldScale(LocalToWorld localToWorld, float3 scale)
         {
             return ConvertLocalToWorldScale(localToWorld.Value, scale);
         }
 
+        /// <summary>
+        /// Converts a local scale value to the world space expressed by a matrix.
+        ///
+        /// NOTE: Transform matrices with negative scale values may produce output inconsistent with the existing
+        /// component values. The results are still valid but should be applied in tandem with
+        /// <see cref="ConvertLocalToWorldScale"/>.
+        /// </summary>
+        /// <param name="localToWorldMtx">The local to world transformation matrix.</param>
+        /// <param name="scale">The local scale value transform.</param>
+        /// <returns>The world scale value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 ConvertLocalToWorldScale(float4x4 localToWorldMtx, float3 scale)
         {
@@ -159,6 +272,24 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             return localToWorldScale * scale;
         }
 
+        /// <summary>
+        /// Converts a world space <see cref="Rect"/> to a local coordinate space through a <see cref="LocalToWorld"/>
+        /// transform.
+        /// </summary>
+        /// <param name="localToWorld">The transform to apply to the <see cref="Rect"/>.</param>
+        /// <param name="worldRect">The world space <see cref="Rect"/> to convert.</param>
+        /// <returns>The <see cref="Rect"/> represented in the transform's local space.</returns>
+        /// <remarks>
+        /// NOTE: Since the <see cref="Rect"/> is a 2D representation being passed through a 3D transformation the resulting
+        /// rectangle may not represent the same world area. The resulting rectangle is the 2D world (X/Y) world direction
+        /// view of the rectangle after it passes through the transform.
+        ///
+        /// <example>
+        ///     A rectangle that is converted through a transform that rotates 90-degrees on the X-axis will result in a
+        ///     height of 0. All of the world height will have been converted to z-depth and is not captured by the
+        ///     <see cref="Rect"/> object.
+        /// </example>
+        /// </remarks>
         public static Rect ConvertWorldToLocalRect(LocalToWorld localToWorld, Rect worldRect)
         {
             //TODO: #321 - Optimize...
@@ -185,6 +316,24 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             );
         }
 
+        /// <summary>
+        /// Converts a local space <see cref="Rect"/> to a world coordinate space through a <see cref="LocalToWorld"/>
+        /// transform.
+        /// </summary>
+        /// <param name="localToWorld">The transform invert and apply to the <see cref="Rect"/>.</param>
+        /// <param name="localRect">The local space <see cref="Rect"/> to convert.</param>
+        /// <returns>The <see cref="Rect"/> represented in the transform's world space.</returns>
+        /// <remarks>
+        /// NOTE: Since the <see cref="Rect"/> is a 2D representation being passed through a 3D transformation the resulting
+        /// rectangle may not represent the same local area. The resulting rectangle is the 2D (X/Y) world direction
+        /// view of the rectangle after it passes through the transform.
+        ///
+        /// <example>
+        ///     A rectangle that is converted through a transform that rotates 90-degrees on the X-axis will result in a
+        ///     height of 0. All of the local height will have been converted to z-depth and is not captured by the
+        ///     <see cref="Rect"/> object.
+        /// </example>
+        /// </remarks>
         public static Rect ConvertLocalToWorldRect(LocalToWorld localToWorld, Rect localRect)
         {
             //TODO: #321 - Optimize...
@@ -211,7 +360,6 @@ namespace Anvil.Unity.DOTS.Entities.Transform
 
         //TODO: #116 - Transforms with non-uniform scale operations are not currently supported.
         [Conditional("DEBUG")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void EmitErrorIfNonUniformScale(
             float3 scale,
             [CallerMemberName] string callerMethodName = "",
