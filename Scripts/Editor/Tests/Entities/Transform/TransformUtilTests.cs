@@ -2,7 +2,6 @@ using System.Text.RegularExpressions;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.Core;
 using Anvil.Unity.DOTS.Entities.Transform;
-using Anvil.Unity.DOTS.Mathematics;
 using NUnit.Framework;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -46,7 +45,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             return RectUtil.AreEquivalent(a, b) ? 0 : 1;
         }
 
-        // ----- ConvertWorldToLocalPointTest ----- //
+        // ----- ConvertWorldToLocalPoint ----- //
         [Test]
         public static void ConvertWorldToLocalPointTest_Identity()
         {
@@ -478,7 +477,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, -point_seven), Is.EqualTo(new float3(1.75f, -1.75f, 2.47487378f)).Using<float3>(EqualityWithTolerance));
         }
 
-        // ----- ConvertLocalToWorldPointTest ----- //
+        // ----- ConvertLocalToWorldPoint ----- //
         [Test]
         public static void ConvertLocalToWorldPointTest_Identity()
         {
@@ -1001,7 +1000,6 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             quaternion rotation_XZ_fortyFive = quaternion.Euler(math.radians(45), 0, math.radians(45));
             quaternion rotation_XZ_fortyFive_inverse = math.inverse(rotation_XZ_fortyFive);
             quaternion rotation_XZ_negativeFortyFive = quaternion.Euler(math.radians(-45), 0, math.radians(-45));
-            quaternion rotation_XZ_negativeFortyFive_inverse = math.inverse(rotation_XZ_negativeFortyFive);
 
 
             LocalToWorld localToWorld_compound = new LocalToWorld()
@@ -1479,7 +1477,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             // // These follow the template of the asserts for uniform scale transforms. They may or may not result in correct values for
             // // non-uniform scaling.
-            // float3x3 localToWorld_compound_negativeYZScale = float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeYZ, new float3(1f));
+            // float3x3 localToWorld_compound_negativeYZScale = float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeYZ, new float3(1f)));
             // Assert.That(
             //     math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeYZ, quaternion.identity)), localToWorld_compound_negativeYZScale),
             //     Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeYZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance)
@@ -1908,6 +1906,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             );
         }
 
+        // ----- ConvertLocalToWorldScale ----- //
         [Test]
         public static void ConvertLocalToWorldScaleTest_Scale()
         {
