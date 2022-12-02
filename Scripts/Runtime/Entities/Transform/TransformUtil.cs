@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static float3 ConvertWorldToLocalPoint(float4x4 worldToLocalMtx, float3 point)
         {
             // If the matrix is invalid it cannot produce reliable transformations and the point is infinite
-            if (!worldToLocalMtx.isValidTransform())
+            if (!worldToLocalMtx.IsValidTransform())
             {
                 Logger.Error("This transform is invalid. Returning a signed infinite position.");
                 return point.ToSignedInfinite();
@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static float3 ConvertLocalToWorldPoint(float4x4 localToWorldMtx, float3 point)
         {
             // If the matrix is invalid it cannot produce reliable transformations and the point is infinite
-            if (!localToWorldMtx.isValidTransform())
+            if (!localToWorldMtx.IsValidTransform())
             {
                 Logger.Error("This transform is invalid. Returning a signed infinite position.");
                 return point.ToSignedInfinite();
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static quaternion ConvertWorldToLocalRotation(float4x4 worldToLocalMtx, quaternion rotation)
         {
             // If the matrix is invalid it cannot produce reliable transformations and the rotation is 0
-            if (!worldToLocalMtx.isValidTransform())
+            if (!worldToLocalMtx.IsValidTransform())
             {
                 Logger.Error("Transform is not valid. Returning identity rotation.");
                 return quaternion.identity;
@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static quaternion ConvertLocalToWorldRotation(float4x4 localToWorldMtx, quaternion rotation)
         {
             // If the matrix is invalid it cannot produce reliable transformations and the rotation is 0
-            if (!localToWorldMtx.isValidTransform())
+            if (!localToWorldMtx.IsValidTransform())
             {
                 Logger.Error("Transform is not valid. Returning identity rotation.");
                 return quaternion.identity;
@@ -125,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static float3 ConvertWorldToLocalScale(float4x4 worldToLocalMtx, float3 scale)
         {
             // If the matrix is invalid cannot it produce reliable transformations and the scale is infinite
-            if (!worldToLocalMtx.isValidTransform())
+            if (!worldToLocalMtx.IsValidTransform())
             {
                 Logger.Error("This transform is invalid. Returning a signed infinite scale.");
                 return scale.ToSignedInfinite();
@@ -147,7 +147,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static float3 ConvertLocalToWorldScale(float4x4 localToWorldMtx, float3 scale)
         {
             // If the matrix is invalid cannot it produce reliable transformations and the scale is infinite
-            if (!localToWorldMtx.isValidTransform())
+            if (!localToWorldMtx.IsValidTransform())
             {
                 Logger.Error("This transform is invalid. Returning a signed infinite scale.");
                 return scale.ToSignedInfinite();
@@ -164,7 +164,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             //TODO: #321 - Optimize...
 
             // If the matrix is invalid it cannot produce reliable transformations and the rect is infinite
-            if (!localToWorld.Value.isValidTransform())
+            if (!localToWorld.Value.IsValidTransform())
             {
                 Logger.Error("This transform is invalid. Returning infinite min/max rect.");
                 return Rect.MinMaxRect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
@@ -188,6 +188,13 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         public static Rect ConvertLocalToWorldRect(LocalToWorld localToWorld, Rect localRect)
         {
             //TODO: #321 - Optimize...
+
+            // If the matrix is invalid it cannot produce reliable transformations and the rect is infinite
+            if (!localToWorld.Value.IsValidTransform())
+            {
+                Logger.Error("This transform is invalid. Returning infinite min/max rect.");
+                return Rect.MinMaxRect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            }
 
             float3 point1 = (Vector3)localRect.min;
             float3 point2 = (Vector3)localRect.max;
