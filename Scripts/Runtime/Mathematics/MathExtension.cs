@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Anvil.CSharp.Mathematics;
 using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Mathematics
@@ -16,6 +15,10 @@ namespace Anvil.Unity.DOTS.Mathematics
         /// </summary>
         /// <param name="matrix">The matrix to evaluate.</param>
         /// <returns>The scale component from the matrix.</returns>
+        /// <remarks>
+        /// This valid is only valid when used in tandem with <see cref="GetRotation"/> as multiple combinations of scale
+        /// and rotation may be used to represent the same transform.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float3 GetScale(this float4x4 matrix)
         {
@@ -35,14 +38,18 @@ namespace Anvil.Unity.DOTS.Mathematics
 
         /// <summary>
         /// Get the rotation component from a TRS matrix.
-        /// On a LocalToWorld matrix this is the world rotation.
+        /// On a <see cref="LocalToWorld"/> matrix this is the world rotation.
         /// </summary>
         /// <param name="matrix">The matrix to evaluate.</param>
         /// <returns>The rotation component from the matrix</returns>
+        /// <remarks>
+        /// This valid is only valid when used in tandem with <see cref="GetScale"/> as multiple combinations of scale
+        /// and rotation may be used to represent the same transform.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion GetRotation(this float4x4 matrix)
         {
-            return new quaternion(math.orthonormalize(new float3x3(matrix)));
+            return quaternion.LookRotationSafe(matrix.c2.xyz, matrix.c1.xyz);
 
             //TODO: #117 - Profile
             // Alternate Implementations
@@ -56,8 +63,8 @@ namespace Anvil.Unity.DOTS.Mathematics
             // return new quaternion(matrix);
 
             //OR
-            // 2. Look Rotation Safe
-            // return quaternion.LookRotationSafe(matrix.c2.xyz, matrix.c1.xyz);
+            // 2. Orthonormalize quaternion
+            // return new quaternion(math.orthonormalize(new float3x3(matrix)));
         }
 
         /// <summary>
@@ -67,9 +74,9 @@ namespace Anvil.Unity.DOTS.Mathematics
         /// <param name="matrix">The matrix to evaluate.</param>
         /// <returns>The position component from the matrix</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float3 GetPosition(this float4x4 matrix)
+        public static float3 GetTranslation(this float4x4 matrix)
         {
-            return new float3(matrix.c0.w, matrix.c1.w, matrix.c2.w);
+            return matrix.c3.xyz;
         }
 
         /// <summary>
