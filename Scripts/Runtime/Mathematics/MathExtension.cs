@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Mathematics
         /// An invalid matrix (Ex: with a 0 scale component) cannot be inverted. Special case values must be used when
         /// transforming through an invalid matrix.
         /// </remarks>
-        public static bool isValidTransform(this float4x4 matrix)
+        public static bool IsValidTransform(this float4x4 matrix)
         {
             return math.determinant(matrix) is not 0 and not float.NaN;
         }
