@@ -292,7 +292,8 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         /// </remarks>
         public static Rect ConvertWorldToLocalRect(LocalToWorld localToWorld, Rect worldRect)
         {
-            //TODO: #321 - Optimize...
+            //TODO: #119, #118 - Optimize...
+            //TODO: #118 - Consider adopting MinMaxAABB or AABB instead (Unity.Mathematics.Extensions + Unity.Mathematics.Extension.Hybrid)
 
             // If the matrix is invalid it cannot produce reliable transformations and the rect is infinite
             if (!localToWorld.Value.IsValidTransform())
@@ -336,7 +337,8 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         /// </remarks>
         public static Rect ConvertLocalToWorldRect(LocalToWorld localToWorld, Rect localRect)
         {
-            //TODO: #321 - Optimize...
+            //TODO: #119, #118 - Optimize...
+            //TODO: #118 - Consider adopting MinMaxAABB or AABB instead (Unity.Mathematics.Extensions + Unity.Mathematics.Extension.Hybrid)
 
             // If the matrix is invalid it cannot produce reliable transformations and the rect is infinite
             if (!localToWorld.Value.IsValidTransform())
