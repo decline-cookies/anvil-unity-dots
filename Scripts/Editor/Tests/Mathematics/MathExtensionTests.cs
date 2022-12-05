@@ -2,6 +2,7 @@ using Anvil.Unity.Core;
 using Anvil.Unity.DOTS.Mathematics;
 using NUnit.Framework;
 using Unity.Mathematics;
+using MathExtension = Anvil.Unity.DOTS.Mathematics.MathExtension;
 
 namespace Anvil.Unity.DOTS.Tests.Mathematics
 {
@@ -24,6 +25,8 @@ namespace Anvil.Unity.DOTS.Tests.Mathematics
         [Test]
         public static void GetScaleAndGetRotationTest()
         {
+            Assert.That(nameof(GetScaleAndGetRotationTest), Does.Contain(nameof(MathExtension.GetRotation)).And.Contain(nameof(MathExtension.GetScale)));
+
             float4x4 transform_identity = float4x4.TRS(float3.zero, quaternion.identity, new float3(1f));
 
             float4x4 transform_translate = float4x4.TRS(new float3(7f), quaternion.identity, new float3(1f));
@@ -116,6 +119,8 @@ namespace Anvil.Unity.DOTS.Tests.Mathematics
         [Test]
         public static void GetTranslationTest()
         {
+            Assert.That(nameof(GetTranslationTest), Does.StartWith(nameof(MathExtension.GetTranslation)));
+
             float3 point_zero = float3.zero;
             float3 point_seven = new float3(7f);
             float3 point_negativeSeven = new float3(-7f);
@@ -148,6 +153,8 @@ namespace Anvil.Unity.DOTS.Tests.Mathematics
         [Test]
         public static void IsValidTransformTest()
         {
+            Assert.That(nameof(IsValidTransformTest), Does.StartWith(nameof(MathExtension.IsValidTransform)));
+
             float3 point_zero = float3.zero;
             float3 point_seven = new float3(7f);
             float3 point_negativeSeven = new float3(-7f);
