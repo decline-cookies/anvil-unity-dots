@@ -15,8 +15,8 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancellableDataStream<TInstance> : DataStream<TInstance>,
-                                                      IDriverCancellableDataStream<TInstance>,
-                                                      ISystemCancellableDataStream<TInstance>,
+                                                      ICancellableDataStream<TInstance>,
+                                                      ICommonCancellableDataStream<TInstance>,
                                                       IUntypedCancellableDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
@@ -29,9 +29,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => PendingCancelDataStream;
         }
 
-        public CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractWorkload owningWorkload) : base(taskDriverCancelRequests, owningWorkload)
+        public CancellableDataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskSet owningTaskSet) : base(taskDriverCancelRequests, owningTaskSet)
         {
-            PendingCancelDataStream = new PendingCancelDataStream<TInstance>(owningWorkload);
+            PendingCancelDataStream = new PendingCancelDataStream<TInstance>(owningTaskSet);
             m_ConsolidationDependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
         }
 

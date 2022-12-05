@@ -215,7 +215,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
 
-        public void PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping, AbstractTaskDriverSystem taskSystem)
+        public void PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(JobResolveTargetMapping jobResolveTargetMapping, CommonTaskSet commonTaskSet)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             //Get the Resolve Channels that exist on the system

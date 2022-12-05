@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class PendingCancelDataStream<TInstance> : AbstractArrayDataStream<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        public PendingCancelDataStream(AbstractWorkload owningWorkload) : base(owningWorkload)
+        public PendingCancelDataStream(AbstractTaskSet owningTaskSet) : base(owningTaskSet)
         {
         }
 

@@ -87,15 +87,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         protected TaskFlowGraph TaskFlowGraph { get; }
-        protected internal AbstractWorkload OwningWorkload { get; }
+        protected internal AbstractTaskSet OwningTaskSet { get; }
 
 
         protected AbstractJobConfig(TaskFlowGraph taskFlowGraph,
-                                    AbstractWorkload owningWorkload)
+                                    AbstractTaskSet owningTaskSet)
         {
             IsEnabled = true;
             TaskFlowGraph = taskFlowGraph;
-            OwningWorkload = owningWorkload;
+            OwningTaskSet = owningTaskSet;
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
@@ -121,7 +121,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {OwningWorkload}";
+            return $"{GetType().GetReadableName()} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {OwningTaskSet}";
         }
 
         //*************************************************************************************************************
@@ -151,7 +151,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
-            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.OwningWorkload.Context);
+            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.OwningTaskSet.Context);
         }
 
         /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>
@@ -165,7 +165,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
         public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
-            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.CancelFlow, AccessType.SharedWrite, Usage.Write));
+            AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.TaskSet.CancelFlow, AccessType.SharedWrite, Usage.Write));
             return this;
         }
 
@@ -249,7 +249,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireCDFEForRead<T>()
             where T : struct, IComponentData
         {
-            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Read, OwningWorkload.GoverningSystem));
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Read, OwningTaskSet.GoverningSystem));
             return this;
         }
 
@@ -257,7 +257,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireCDFEForWrite<T>()
             where T : struct, IComponentData
         {
-            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Write, OwningWorkload.GoverningSystem));
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Write, OwningTaskSet.GoverningSystem));
             return this;
         }
 
@@ -269,7 +269,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
-            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Read, OwningWorkload.GoverningSystem));
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Read, OwningTaskSet.GoverningSystem));
 
             return this;
         }
@@ -278,7 +278,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
-            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.ExclusiveWrite, OwningWorkload.GoverningSystem));
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.ExclusiveWrite, OwningTaskSet.GoverningSystem));
             return this;
         }
 

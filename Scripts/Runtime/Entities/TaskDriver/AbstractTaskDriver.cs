@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -19,15 +20,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     public abstract class AbstractTaskDriver : AbstractAnvilBase
     {
-        private static readonly Type GENERIC_TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
-        
-        private readonly TaskFlowGraph m_TaskFlowGraph;
-        private readonly List<AbstractJobConfig> m_JobConfigs;
-        private readonly RootWorkload m_RootWorkload;
-        private readonly ContextWorkload m_ContextWorkload;
+        private readonly CommonTaskSet m_CommonTaskSet;
 
-        private bool m_IsHardened;
-
+        internal TaskSet TaskSet { get; }
         /// <summary>
         /// Reference to the associated <see cref="World"/>
         /// </summary>
@@ -37,17 +32,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         internal AbstractTaskDriver Parent { get; }
 
-        protected IRootWorkload RootWorkload
-        {
-            get => m_RootWorkload;
-        }
-
-        protected IContextWorkload ContextWorkload
-        {
-            get => m_ContextWorkload;
-        }
-
-        private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
 
         protected AbstractTaskDriver(World world) : this(world, null)
         {
@@ -56,24 +40,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //This constructor can also be called via Reflection
         private AbstractTaskDriver(World world, AbstractTaskDriver parent)
         {
-            Type type = GetType();
             //We can't just pull this off the System because we might have triggered it's creation via
             //world.GetOrCreateSystem and it's OnCreate hasn't occured yet so it's World is still null.
             World = world;
             Parent = parent;
 
-            Type systemType = GENERIC_TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(type);
             
-            //Get the shared CoreTaskWork for this type
-            m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetOrCreateSystem(systemType);
-            m_RootWorkload = m_TaskDriverSystem.GetOrCreateRootWorkload(this);
+
+            
             //Create a new instance of ContextualTaskWork for this instance
-            m_ContextWorkload = m_RootWorkload.CreateContextWorkload(this, Parent?.m_ContextWorkload);
+            TaskSet = m_CommonTaskSet.CreateTaskSet(this, Parent?.TaskSet);
 
             SubTaskDrivers = new List<AbstractTaskDriver>();
-            m_JobConfigs = new List<AbstractJobConfig>();
-            
-            
+
+
             TaskDriverFactory.CreateSubTaskDrivers(this, SubTaskDrivers);
 
             HasCancellableData = TaskData.CancellableDataStreams.Count > 0
@@ -92,10 +72,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             //We own our sub task drivers so dispose them
             SubTaskDrivers.DisposeAllAndTryClear();
-            //Dispose all the data we own
-            m_JobConfigs.DisposeAllAndTryClear();
+            
 
-            m_ContextWorkload.Dispose();
+            TaskSet.Dispose();
 
             base.DisposeSelf();
         }
@@ -105,25 +84,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return $"{GetType().GetReadableName()}|{Context}";
         }
 
-        internal void Harden()
-        {
-            Debug_EnsureNotHardened();
-            m_IsHardened = true;
-
-            foreach (AbstractJobConfig jobConfig in m_JobConfigs)
-            {
-                jobConfig.Harden();
-            }
-        }
-
         //*************************************************************************************************************
-        // CONFIGURATION
+        // JOB CONFIGURATION
         //*************************************************************************************************************
 
-        internal void AddToJobConfigs(AbstractJobConfig jobConfig)
+        public IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(ICommonCancellableDataStream<TInstance> dataStream,
+                                                                                JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
         {
-            m_JobConfigs.Add(jobConfig);
+            return m_CommonTaskSet.ConfigureJobToCancel(dataStream,
+                                                        scheduleJobFunction,
+                                                        batchStrategy);
         }
+
+        public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(ICommonDataStream<TInstance> dataStream,
+                                                                                JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                                                BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return m_CommonTaskSet.ConfigureJobToUpdate(dataStream,
+                                                        scheduleJobFunction,
+                                                        batchStrategy);
+        }
+        
 
         //TODO: #101 - Should drivers have all the jobs or systems?
         public IJobConfigRequirements ConfigureJobTriggeredBy<TInstance>(IAbstractDataStream<TInstance> dataStream,
@@ -131,21 +115,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                          BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return GoverningTaskSystem.ConfigureJobTriggeredBy(this,
-                                                               (DataStream<TInstance>)dataStream,
-                                                               scheduleJobFunction,
-                                                               batchStrategy);
+            return TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
+                                                   scheduleJobFunction,
+                                                   batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(IDriverCancellableDataStream<TInstance> dataStream,
+        public IResolvableJobConfigRequirements ConfigureCancelJobFor<TInstance>(ICancellableDataStream<TInstance> dataStream,
                                                                                  in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                  BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return GoverningTaskSystem.ConfigureCancelJobFor(this,
-                                                             (CancellableDataStream<TInstance>)dataStream,
-                                                             scheduleJobFunction,
-                                                             batchStrategy);
+            return TaskSet.ConfigureCancelJobFor((CancellableDataStream<TInstance>)dataStream,
+                                                 scheduleJobFunction,
+                                                 batchStrategy);
         }
 
 
@@ -153,36 +135,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                               JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                               BatchStrategy batchStrategy)
         {
-            return GoverningTaskSystem.ConfigureJobTriggeredBy(this,
-                                                               entityQuery,
-                                                               scheduleJobFunction,
-                                                               batchStrategy);
+            return TaskSet.ConfigureJobTriggeredBy(entityQuery,
+                                                   scheduleJobFunction,
+                                                   batchStrategy);
         }
 
-        public IJobConfigRequirements ConfigureJobWhenCancelComplete(AbstractTaskDriver taskDriver,
-                                                                     in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        public IJobConfigRequirements ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
                                                                      BatchStrategy batchStrategy)
         {
-            return GoverningTaskSystem.ConfigureJobWhenCancelComplete(this,
-                                                                      taskDriver.TaskData.CancelCompleteDataStream,
-                                                                      scheduleJobFunction,
-                                                                      batchStrategy);
+            return TaskSet.ConfigureJobWhenCancelComplete(TaskSet.CancelCompleteDataStream,
+                                                          scheduleJobFunction,
+                                                          batchStrategy);
         }
 
 
         //TODO: #73 - Implement other job types
-
-        //*************************************************************************************************************
-        // SAFETY
-        //*************************************************************************************************************
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNotHardened()
-        {
-            if (m_IsHardened)
-            {
-                throw new InvalidOperationException($"Trying to Harden {this} but we already are!");
-            }
-        }
     }
 }

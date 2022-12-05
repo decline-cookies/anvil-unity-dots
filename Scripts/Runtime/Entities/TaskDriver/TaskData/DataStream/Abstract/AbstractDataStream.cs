@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static readonly BulkScheduleDelegate<AbstractDataStream> CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractDataStream>(nameof(ConsolidateForFrame), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        public readonly AbstractWorkload OwningWorkload;
+        public readonly AbstractTaskSet OwningTaskSet;
 
         public Type Type { get; }
 
@@ -30,11 +30,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected FixedString128Bytes Debug_DebugString { get; }
 #endif
 
-        protected AbstractDataStream(AbstractWorkload owningWorkload)
+        protected AbstractDataStream(AbstractTaskSet owningTaskSet)
         {
             Type = GetType();
             AccessController = new AccessController();
-            OwningWorkload = owningWorkload;
+            OwningTaskSet = owningTaskSet;
 
 
 #if DEBUG
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public sealed override string ToString()
         {
-            return $"{Type.GetReadableName()}, {OwningWorkload}";
+            return $"{Type.GetReadableName()}, {OwningTaskSet}";
         }
 
         //*************************************************************************************************************

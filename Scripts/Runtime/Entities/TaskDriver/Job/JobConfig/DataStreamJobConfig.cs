@@ -4,10 +4,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public DataStreamJobConfig(TaskFlowGraph taskFlowGraph,
-                                   AbstractWorkload owningWorkload,
+                                   AbstractTaskSet owningTaskSet,
                                    DataStream<TInstance> dataStream)
             : base(taskFlowGraph,
-                   owningWorkload)
+                   owningTaskSet)
         {
             RequireDataStreamForRead(dataStream);
         }

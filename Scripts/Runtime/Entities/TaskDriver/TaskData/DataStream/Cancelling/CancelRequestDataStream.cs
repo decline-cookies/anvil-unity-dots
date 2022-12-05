@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public CancelRequestDataStream(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup,
                                        CancelCompleteDataStream cancelCompleteDataStream,
-                                       AbstractWorkload owningWorkload) : base(owningWorkload)
+                                       AbstractTaskSet owningTaskSet) : base(owningTaskSet)
         {
             m_CancelProgressLookup = cancelProgressLookup;
             m_CancelCompleteDataStream = cancelCompleteDataStream;
@@ -42,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected sealed override JobHandle ConsolidateForFrame(JobHandle dependsOn)
         {
-            return OwningWorkload.HasCancellableData
+            return OwningTaskSet.HasCancellableData
                 ? ConsolidateWithCancellableData(dependsOn)
                 : ConsolidateWithoutCancellableData(dependsOn);
         }

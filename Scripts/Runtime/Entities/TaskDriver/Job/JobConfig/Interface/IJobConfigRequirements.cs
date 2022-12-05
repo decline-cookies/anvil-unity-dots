@@ -11,11 +11,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public interface IJobConfigRequirements : IJobConfig
     {
         /// <summary>
-        /// Specifies a <see cref="IDriverDataStream{TInstance}"/> to be written to in a shared-write context.
+        /// Specifies a <see cref="IDataStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
-        /// <param name="dataStream">The <see cref="IDriverDataStream{TInstance}"/> to write to.</param>
+        /// <param name="dataStream">The <see cref="IDataStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
-        /// the <see cref="IDriverDataStream{TInstance}"/></typeparam>
+        /// the <see cref="IDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;

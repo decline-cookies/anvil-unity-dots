@@ -1,6 +1,6 @@
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    public interface ISystemCancellableDataStream<TInstance> : ISystemDataStream<TInstance>
+    public interface ICommonCancelResultDataStream<TInstance> : IAbstractDataStream<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
         

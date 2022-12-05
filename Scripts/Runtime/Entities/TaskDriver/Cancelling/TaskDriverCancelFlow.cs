@@ -25,12 +25,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public byte TaskDriverContext
         {
-            get => OwningWorkload.Context;
+            get => OwningTaskSet.Context;
         }
 
-        public TaskDriverCancelFlow(ContextWorkload owningWorkload, TaskDriverCancelFlow parent) : base(owningWorkload, parent)
+        public TaskDriverCancelFlow(TaskSet owningTaskSet, TaskDriverCancelFlow parent) : base(owningTaskSet, parent)
         {
-            m_SystemCancelFlow = new SystemCancelFlow(owningWorkload.RootWorkload, this);
+            m_SystemCancelFlow = new SystemCancelFlow(owningTaskSet.CommonTaskSet, this);
             m_CancelFlowHierarchy = new Dictionary<int, List<AbstractCancelFlow>>();
             m_CancelRequestDataStreams = new List<CancelRequestDataStream>();
         }
@@ -91,7 +91,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                       List<byte> contexts)
         {
             //Add ourself
-            cancelRequests.Add(OwningWorkload.CancelRequestDataStream);
+            cancelRequests.Add(OwningTaskSet.CancelRequestDataStream);
             //Add our TaskDriver's context
             contexts.Add(TaskDriverContext);
             

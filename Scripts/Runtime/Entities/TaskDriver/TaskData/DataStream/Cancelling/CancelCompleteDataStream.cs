@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
 
-        public CancelCompleteDataStream(AbstractWorkload owningWorkload) : base(owningWorkload)
+        public CancelCompleteDataStream(AbstractTaskSet owningTaskSet) : base(owningTaskSet)
         {
         }
 

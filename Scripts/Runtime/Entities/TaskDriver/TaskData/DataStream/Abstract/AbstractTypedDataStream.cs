@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 #endif
 
-        protected unsafe AbstractTypedDataStream(AbstractWorkload owningWorkload) : base(owningWorkload)
+        protected unsafe AbstractTypedDataStream(AbstractTaskSet owningTaskSet) : base(owningTaskSet)
         {
             Pending = new UnsafeTypedStream<T>(ChunkUtil.MaxElementsPerChunk<T>() / 8, Allocator.Persistent, Allocator.Persistent, ParallelAccessUtil.CollectionSizeForMaxThreads);
             PendingWriterPointer = Pending.AsWriter().GetBufferPointer();

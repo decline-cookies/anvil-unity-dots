@@ -15,8 +15,8 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class DataStream<TInstance> : AbstractArrayDataStream<EntityProxyInstanceWrapper<TInstance>>,
-                                           IDriverDataStream<TInstance>,
-                                           ISystemDataStream<TInstance>,
+                                           IDataStream<TInstance>,
+                                           ICommonDataStream<TInstance>,
                                            IUntypedDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected CancelRequestDataStream TaskDriverCancelRequests { get; }
 
 
-        public DataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractWorkload owningWorkload) : base(owningWorkload)
+        public DataStream(CancelRequestDataStream taskDriverCancelRequests, AbstractTaskSet owningTaskSet) : base(owningTaskSet)
         {
             //We don't own the m_CancelRequestsDataStream so we don't dispose it.
             TaskDriverCancelRequests = taskDriverCancelRequests;

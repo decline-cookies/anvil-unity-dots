@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private DataStreamTargetResolver m_DataStreamTargetResolver;
 
         protected AbstractResolvableJobConfig(TaskFlowGraph taskFlowGraph,
-                                              AbstractWorkload owningWorkload) : base(taskFlowGraph, owningWorkload)
+                                              AbstractTaskSet owningTaskSet) : base(taskFlowGraph, owningTaskSet)
         {
             m_JobResolveTargetMapping = new JobResolveTargetMapping();
         }
@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Any data streams that have registered for this resolve target type either on the system or related task drivers will be needed.
             //When the updater runs, it doesn't know yet which resolve target a particular instance will resolve to yet until it actually resolves.
             //We need to ensure that all possible locations have write access
-            TaskFlowGraph.PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(m_JobResolveTargetMapping, TaskSystem);
+            TaskFlowGraph.PopulateJobResolveTargetMappingForTarget<TResolveTargetType>(m_JobResolveTargetMapping, OwningTaskSet.CommonTaskSet);
             
             if (m_JobResolveTargetMapping.Mapping.Count == 0)
             {
