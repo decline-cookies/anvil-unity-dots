@@ -10,6 +10,9 @@ namespace Anvil.Unity.DOTS.Entities
     /// <remarks>Allows developers to define jobs with fewer parameters that clearly communicate intent.</remarks>
     public readonly struct ComponentDataFromSingleEntity<T> where T : struct, IComponentData
     {
+        //TODO: #115 - Implement a safety check to make sure there isn't another lookup/entity combination in flight.
+        // Until the above is implemented leave it to consuming jobs to add the attributes.
+        // [NativeDisableContainerSafetyRestriction]
         private readonly ComponentDataFromEntity<T> m_Lookup;
         private readonly Entity m_Entity;
 
@@ -25,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Gets the <see cref="DynamicBuffer{T}" />. 
+        /// Gets the <see cref="DynamicBuffer{T}" />.
         /// Call during job execution.
         /// </summary>
         /// <returns>The <see cref="T" /> instance</returns>
