@@ -79,10 +79,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// If Unity makes the event public or provides a mechanism for a world instance to know when it is being disposed
         /// this method will be redundant.
         /// </remarks>
+        //TODO: Use assembly injection?
         public static event Action<World> OnWorldDestroyed
         {
-            add => s_WorldDestroyedEvent.AddEventHandler(null, value);
-            remove => s_WorldDestroyedEvent.RemoveEventHandler(null, value);
+            add => s_WorldDestroyedEvent.AddMethod.Invoke(null, new[] { value });
+            remove => s_WorldDestroyedEvent.RemoveMethod.Invoke(null, new[] { value });
         }
 
         /// <summary>
@@ -94,8 +95,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// </remarks>
         public static event Action<World> OnWorldCreated
         {
-            add => s_WorldCreatedEvent.AddEventHandler(null, value);
-            remove => s_WorldCreatedEvent.RemoveEventHandler(null, value);
+            add => s_WorldCreatedEvent.AddMethod.Invoke(null, new[] { value });
+            remove => s_WorldCreatedEvent.RemoveMethod.Invoke(null, new[] { value });
         }
 
         // No need to reset between play sessions because PlayerLoop systems are stateless and
@@ -105,10 +106,10 @@ namespace Anvil.Unity.DOTS.Entities
         static WorldUtil()
         {
             Debug.Assert(s_WorldDestroyedEvent != null);
-            Debug.Assert(s_WorldDestroyedEvent.EventHandlerType != typeof(Action<World>));
+            Debug.Assert(s_WorldDestroyedEvent.EventHandlerType == typeof(Action<World>));
 
             Debug.Assert(s_WorldCreatedEvent != null);
-            Debug.Assert(s_WorldCreatedEvent.EventHandlerType != typeof(Action<World>));
+            Debug.Assert(s_WorldCreatedEvent.EventHandlerType == typeof(Action<World>));
         }
 
         /// <summary>
