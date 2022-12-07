@@ -309,7 +309,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             float3 point3 = new float3(point1.x, point2.y, 0);
             float3 point4 = new float3(point2.x, point1.y, 0);
 
-            return RectUtil.CreateFromPoints(
+            return RectUtil.CreateBoundingRect(
                 ConvertWorldToLocalPoint(worldToLocalMtx, point1).xy,
                 ConvertWorldToLocalPoint(worldToLocalMtx, point2).xy,
                 ConvertWorldToLocalPoint(worldToLocalMtx, point3).xy,
@@ -352,7 +352,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             float3 point3 = new float3(point1.x, point2.y, 0);
             float3 point4 = new float3(point2.x, point1.y, 0);
 
-            return RectUtil.CreateFromPoints(
+            return RectUtil.CreateBoundingRect(
                 ConvertLocalToWorldPoint(localToWorld.Value, point1).xy,
                 ConvertLocalToWorldPoint(localToWorld.Value, point2).xy,
                 ConvertLocalToWorldPoint(localToWorld.Value, point3).xy,
