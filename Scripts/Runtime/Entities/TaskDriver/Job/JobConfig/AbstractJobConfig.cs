@@ -11,12 +11,14 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractJobConfig : AbstractAnvilBase,
-                                                IJobConfigRequirements
+                                                IJobConfig
     {
+        //TODO: Change to better description
         internal enum Usage
         {
             /// <summary>
@@ -85,17 +87,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get;
             set;
         }
+        
+        protected ITaskSetOwner TaskSetOwner { get; }
 
-        protected TaskFlowGraph TaskFlowGraph { get; }
-        protected internal AbstractTaskSet OwningTaskSet { get; }
 
-
-        protected AbstractJobConfig(TaskFlowGraph taskFlowGraph,
-                                    AbstractTaskSet owningTaskSet)
+        protected AbstractJobConfig(ITaskSetOwner taskSetOwner)
         {
             IsEnabled = true;
-            TaskFlowGraph = taskFlowGraph;
-            OwningTaskSet = owningTaskSet;
+            TaskSetOwner = taskSetOwner;
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
@@ -121,7 +120,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {OwningTaskSet}";
+            return $"{GetType().GetReadableName()} with schedule function name of {m_ScheduleInfo?.ScheduleJobFunctionInfo ?? "NOT YET SET"} on {TaskSetOwner}";
         }
 
         //*************************************************************************************************************
@@ -145,38 +144,39 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForWrite{TInstance}(Anvil.Unity.DOTS.Entities.Tasks.IAbstractDataStream{TInstance})"/>
-        public IJobConfigRequirements RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
+        
+        public IJobConfig RequireDataStreamForWrite<TInstance>(IDriverDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
-            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.OwningTaskSet.Context);
+            //When writing explicitly to a driver data stream, it's going into a global pending bucket. We need to write the ID of the Live bucket to write to when it's consolidated.
+            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.LiveID);
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDataStreamForRead{TInstance}"/>
-        public IJobConfigRequirements RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
+        
+        public IJobConfig RequireDataStreamForWrite<TInstance>(ISystemDataStream<TInstance> dataStream)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            DataStream<TInstance> concreteDataStream = (DataStream<TInstance>)dataStream;
+            //When writing explicitly to a system data stream, it's going into a global pending bucket but that will be consolidated into one giant live bucket. 
+            //We need to write the ID of the TaskDriver that we got access to this SystemDataStream from and write that. When we resolve to a type, we'll know which 
+            //TaskDriver to write to. 
+            return RequireDataStreamForWrite(concreteDataStream, Usage.Write, concreteDataStream.TaskSetOwner.ID);
+        }
+        
+        public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new DataStreamAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Read));
             return this;
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireTaskDriverForRequestCancel"/>
-        public IJobConfigRequirements RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
+        
+        public IJobConfig RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
         {
             AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.TaskSet.CancelFlow, AccessType.SharedWrite, Usage.Write));
             return this;
         }
 
-        private IJobConfigRequirements RequireDataStreamForWrite<TInstance>(DataStream<TInstance> dataStream, Usage usage, byte context)
-            where TInstance : unmanaged, IEntityProxyInstance
-        {
-            AddAccessWrapper(new DataStreamAccessWrapper<TInstance>(dataStream, AccessType.SharedWrite, usage, context));
-            return this;
-        }
-
-        protected IJobConfigRequirements RequireCancelCompleteDataStreamForRead(CancelCompleteDataStream cancelCompleteDataStream)
+        protected IJobConfig RequireCancelCompleteDataStreamForRead(CancelCompleteDataStream cancelCompleteDataStream)
         {
             AddAccessWrapper(new CancelCompleteDataStreamAccessWrapper(cancelCompleteDataStream, AccessType.SharedRead, Usage.Read));
             return this;
@@ -185,25 +185,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForRead{TData}"/>
-        public IJobConfigRequirements RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
+        
+        public IJobConfig RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead, Usage.Read));
             return this;
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForWrite{TData}"/>
-        public IJobConfigRequirements RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
+        
+        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Write));
             return this;
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireGenericDataForExclusiveWrite{TData}"/>
-        public IJobConfigRequirements RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
+        
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.ExclusiveWrite));
@@ -213,27 +210,25 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireEntityNativeArrayFromQueryForRead"/>
-        public IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
+        
+        public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeArray(entityQuery));
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireIComponentDataNativeArrayFromQueryForRead{T}"/>
-        public IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
+        
+        public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData
         {
             return RequireIComponentDataNativeArrayFromQueryForRead(new EntityQueryComponentNativeArray<T>(entityQuery));
         }
 
-        protected IJobConfigRequirements RequireEntityNativeArrayFromQueryForRead(EntityQueryNativeArray entityQueryNativeArray)
+        protected IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQueryNativeArray entityQueryNativeArray)
         {
             AddAccessWrapper(new EntityQueryAccessWrapper(entityQueryNativeArray, Usage.Read));
             return this;
         }
 
-        protected IJobConfigRequirements RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
+        protected IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
             where T : struct, IComponentData
         {
             AddAccessWrapper(new EntityQueryComponentAccessWrapper<T>(entityQueryNativeArray, Usage.Read));
@@ -245,40 +240,36 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
-        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForRead{T}"/>
-        public IJobConfigRequirements RequireCDFEForRead<T>()
+        public IJobConfig RequireCDFEForRead<T>()
             where T : struct, IComponentData
         {
-            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Read, OwningTaskSet.GoverningSystem));
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Read, TaskSetOwner.TaskDriverSystem));
             return this;
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireCDFEForWrite{T}"/>
-        public IJobConfigRequirements RequireCDFEForWrite<T>()
+        
+        public IJobConfig RequireCDFEForWrite<T>()
             where T : struct, IComponentData
         {
-            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Write, OwningTaskSet.GoverningSystem));
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Write, TaskSetOwner.TaskDriverSystem));
             return this;
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDBFEForRead{T}"/>
-        public IJobConfigRequirements RequireDBFEForRead<T>()
+        
+        public IJobConfig RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
-            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Read, OwningTaskSet.GoverningSystem));
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Read, TaskSetOwner.TaskDriverSystem));
 
             return this;
         }
-
-        /// <inheritdoc cref="IJobConfigRequirements.RequireDBFEForExclusiveWrite{T}"/>
-        public IJobConfigRequirements RequireDBFEForExclusiveWrite<T>()
+        
+        public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
-            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.ExclusiveWrite, OwningTaskSet.GoverningSystem));
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.ExclusiveWrite, TaskSetOwner.TaskDriverSystem));
             return this;
         }
 

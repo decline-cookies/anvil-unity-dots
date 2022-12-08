@@ -24,6 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly uint m_ID;
         private readonly AbstractTaskDriver m_Parent;
         private readonly TaskSet m_TaskSet;
+        private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
 
 
         /// <summary>
@@ -34,8 +35,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
 
 
-        internal AbstractTaskDriverSystem TaskDriverSystem { get; }
-
+        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem { get => m_TaskDriverSystem; }
         TaskSet ITaskSetOwner.TaskSet { get => m_TaskSet; }
         uint ITaskSetOwner.ID { get => m_ID; }
 
@@ -53,9 +53,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Get or create the governing system for this Task Driver Type and register ourselves
             Type taskDriverType = GetType();
             Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
-            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetOrCreateSystem(taskDriverSystemType);
-            TaskDriverSystem.Init(World);
-            m_ID = TaskDriverSystem.RegisterTaskDriver(this);
+            m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetOrCreateSystem(taskDriverSystemType);
+            m_TaskDriverSystem.Init(World);
+            m_ID = m_TaskDriverSystem.RegisterTaskDriver(this);
 
 
             m_TaskSet = TaskSetConstructionUtil.CreateTaskSetForTaskDriver(this);
@@ -105,13 +105,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         protected IJobConfig ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                BatchStrategy batchStrategy)
+                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskDriverSystem.TaskSet.ConfigureJobToCancel(dataStream,
-                                                                 scheduleJobFunction,
-                                                                 batchStrategy);
+            return m_TaskDriverSystem.TaskSet.ConfigureJobToCancel(dataStream,
+                                                                   scheduleJobFunction,
+                                                                   batchStrategy);
         }
 
         protected IJobConfig ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
@@ -119,18 +119,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskDriverSystem.TaskSet.ConfigureJobToUpdate(dataStream,
-                                                                 scheduleJobFunction,
-                                                                 batchStrategy);
+            return m_TaskDriverSystem.TaskSet.ConfigureJobToUpdate(dataStream,
+                                                                   scheduleJobFunction,
+                                                                   batchStrategy);
         }
 
         //*************************************************************************************************************
         // JOB CONFIGURATION - DRIVER LEVEL
         //*************************************************************************************************************
-        
+
         public IJobConfig ConfigureDriverJobTriggeredBy<TInstance>(IDriverDataStream<TInstance> dataStream,
-                                                                               in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
-                                                                               BatchStrategy batchStrategy)
+                                                                   in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
+                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
@@ -139,8 +139,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public IJobConfig ConfigureDriverCancelJobFor<TInstance>(IDriverDataStream<TInstance> dataStream,
-                                                           in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                           BatchStrategy batchStrategy)
+                                                                 in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                 BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskSet.ConfigureCancelJobFor((CancellableDataStream<TInstance>)dataStream,
@@ -150,8 +150,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         public IJobConfig ConfigureDriverJobTriggeredBy(EntityQuery entityQuery,
-                                                  JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
-                                                  BatchStrategy batchStrategy)
+                                                        JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
+                                                        BatchStrategy batchStrategy)
         {
             return TaskSet.ConfigureJobTriggeredBy(entityQuery,
                                                    scheduleJobFunction,
@@ -159,7 +159,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
-                                                         BatchStrategy batchStrategy)
+                                                               BatchStrategy batchStrategy)
         {
             return TaskSet.ConfigureJobWhenCancelComplete(TaskSet.CancelCompleteDataStream,
                                                           scheduleJobFunction,

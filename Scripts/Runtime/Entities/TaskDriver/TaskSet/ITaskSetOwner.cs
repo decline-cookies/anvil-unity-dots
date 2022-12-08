@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public TaskSet TaskSet { get; }
         public uint ID { get; }
-        
         public World World { get; }
+        public AbstractTaskDriverSystem TaskDriverSystem { get; }
     }
 }

@@ -6,6 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal abstract class AbstractDataStream<T> : AbstractDataStream
         where T : unmanaged, IEquatable<T>
     {
+        public abstract uint LiveID { get; }
         protected DataSource<T> DataSource { get; }
 
         protected AbstractDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
@@ -17,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
     internal abstract class AbstractDataStream
     {
-        protected ITaskSetOwner TaskSetOwner { get; }
+        internal ITaskSetOwner TaskSetOwner { get; }
 
         protected AbstractDataStream(ITaskSetOwner taskSetOwner)
         {

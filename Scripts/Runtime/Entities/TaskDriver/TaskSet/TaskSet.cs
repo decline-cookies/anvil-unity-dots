@@ -10,13 +10,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly List<AbstractDataStream> m_DataStreamsWithDefaultCancellation;
         private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly List<AbstractDataStream> m_DataStreamsWithNoCancellation;
-        
+
         private readonly List<AbstractDataStream> m_AllPublicDataStreams;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
-        
-        
+
+
         public ITaskSetOwner TaskSetOwner { get; }
         public CancelRequestDataStream CancelRequestDataStream { get; }
         public CancelProgressDataStream CancelProgressDataStream { get; }
@@ -73,6 +73,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public AbstractDataStream GetDataStreamByType(Type type)
         {
             return m_PublicDataStreamsByType[type];
+        }
+
+        public IJobConfig ConfigureJobToCancel<TInstance>(IAbstractDataStream<TInstance> dataStream,
+                                                             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                             BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            JobConfigFactory.CreateCancelJobConfig()
         }
     }
 }

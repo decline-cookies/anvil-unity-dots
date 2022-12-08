@@ -18,7 +18,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public TaskSet TaskSet { get; private set; }
         public uint ID { get; }
-        
+
+        public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
+
         public Type TaskDriverType { get; }
         
         public new World World { get; private set; }
