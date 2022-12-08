@@ -1,56 +1,78 @@
+using Anvil.CSharp.Collections;
+using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class TaskSet : AbstractTaskSet
+    internal class TaskSet : AbstractAnvilBase
     {
-        private readonly AbstractTaskDriver m_TaskDriver;
-        private readonly List<TaskSet> m_SubTaskSets;
+        private readonly List<AbstractDataStream> m_DataStreamsWithDefaultCancellation;
+        private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
+        private readonly List<AbstractDataStream> m_DataStreamsWithNoCancellation;
+        
+        private readonly List<AbstractDataStream> m_AllPublicDataStreams;
+        private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
 
-        
-        public TaskSet Parent { get; }
-        
-        public TaskDriverCancelFlow CancelFlow { get; }
+        private readonly List<AbstractJobConfig> m_JobConfigs;
         
         
-        public TaskSet(AbstractTaskDriver taskDriver, CommonTaskSet commonTaskSet, TaskSet parent) : base(taskDriver.World, taskDriver.GetType(), commonTaskSet.GoverningSystem)
-        {
-            m_TaskDriver = taskDriver;
+        public ITaskSetOwner TaskSetOwner { get; }
+        public CancelRequestDataStream CancelRequestDataStream { get; }
+        public CancelProgressDataStream CancelProgressDataStream { get; }
+        public CancelCompleteDataStream CancelCompleteDataStream { get; }
 
-            Parent = parent;
-            
-            CancelFlow = new TaskDriverCancelFlow(this, Parent?.CancelFlow);
-            
-            m_SubTaskSets = new List<TaskSet>();
-        }
+        public TaskSet(ITaskSetOwner taskSetOwner)
+        {
+            TaskSetOwner = taskSetOwner;
+            m_JobConfigs = new List<AbstractJobConfig>();
 
-        protected sealed override byte GenerateContext()
-        {
-            return CommonTaskSet.GenerateContextForContextWorkload();
-        }
-        
-        protected sealed override bool InitHasCancellableData()
-        {
-            return base.InitHasCancellableData() || CommonTaskSet.HasCancellableData;
+            m_DataStreamsWithDefaultCancellation = new List<AbstractDataStream>();
+            m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
+            m_DataStreamsWithNoCancellation = new List<AbstractDataStream>();
+            m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
+
+            CancelRequestDataStream = new CancelRequestDataStream(TaskSetOwner);
+            CancelProgressDataStream = new CancelProgressDataStream(TaskSetOwner);
+            CancelCompleteDataStream = new CancelCompleteDataStream(TaskSetOwner);
         }
 
         protected override void DisposeSelf()
         {
-            CancelFlow.Dispose();
+            m_JobConfigs.DisposeAllAndTryClear();
+
             base.DisposeSelf();
         }
 
-        protected override void InitDataStreamInstance(FieldInfo taskDriverField, Type instanceType, Type genericTypeDefinition)
+        public DataStream<TInstance> CreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+            where TInstance : unmanaged, IEntityProxyInstance
         {
-            AbstractDataStream dataStream = null;
-            //If this is a System Data Stream type, we just want to assign the one from the core
-            dataStream = CommonTaskSet.VALID_DATA_STREAM_TYPES.Contains(genericTypeDefinition)
-                ? CommonTaskSet.GetDataStreamByType(instanceType)
-                : CreateDataStreamInstance(instanceType, genericTypeDefinition);
-            
-            AssignDataStreamInstance(taskDriverField, m_TaskDriver, dataStream);
+            DataStream<TInstance> dataStream = new DataStream<TInstance>(TaskSetOwner, cancelBehaviour);
+            switch (cancelBehaviour)
+            {
+                case CancelBehaviour.Default:
+                    m_DataStreamsWithDefaultCancellation.Add(dataStream);
+                    break;
+                case CancelBehaviour.None:
+                    m_DataStreamsWithNoCancellation.Add(dataStream);
+                    break;
+                case CancelBehaviour.Explicit:
+                    m_DataStreamsWithExplicitCancellation.Add(dataStream);
+                    //TODO: Add second data stream for pending cancel
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(cancelBehaviour), cancelBehaviour, null);
+            }
+
+            m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
+            m_AllPublicDataStreams.Add(dataStream);
+
+            return dataStream;
+        }
+
+        public AbstractDataStream GetDataStreamByType(Type type)
+        {
+            return m_PublicDataStreamsByType[type];
         }
     }
 }
