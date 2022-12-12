@@ -1,0 +1,33 @@
+{
+    "name": "anvil-unity-dots-tests",
+    "rootNamespace": "Anvil.Unity.DOTS.Tests",
+    "references": [
+        "anvil-unity-dots-runtime",
+        "anvil-unity-dots-editor",
+        "anvil-unity-core-runtime",
+        "anvil-csharp-core",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Entities",
+        "Unity.Jobs",
+        "Unity.Mathematics",
+        "Unity.Transforms",
+        "UnityEditor.TestRunner",
+        "UnityEngine.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "anvil-csharp-logging.dll",
+        "anvil-unity-logging.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
