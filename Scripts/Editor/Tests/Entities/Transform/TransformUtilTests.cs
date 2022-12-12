@@ -1779,6 +1779,8 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             Logger.Debug("END: Expected error messages.");
 #endif
 
+            // // These follow the template of the asserts for uniform scale transforms. They may or may not result in correct values for
+            // // non-uniform scaling.
             // float3x3 worldToLocal_nonUniformRotation = new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_nonUniform, quaternion.identity));
             // Assert.That(
             //     math.mul(worldToLocal_nonUniformRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_nonUniform, point_one))),
@@ -2168,6 +2170,8 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             Logger.Debug("END: Expected error messages.");
 #endif
 
+            // // These follow the template of the asserts for uniform scale transforms. They may or may not result in correct values for
+            // // non-uniform scaling.
             // float3x3 localToWorld_nonUniformRotation = new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_nonUniform, quaternion.identity));
             // Assert.That(
             //     math.mul(localToWorld_nonUniformRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_nonUniform, point_one))),
