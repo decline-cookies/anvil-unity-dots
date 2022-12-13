@@ -68,16 +68,29 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public static class WorldUtil
     {
-        private static readonly EventInfo s_WorldDestroyedEvent = typeof(World).GetEvent("WorldDestroyed", BindingFlags.Static | BindingFlags.NonPublic);
         private static readonly EventInfo s_WorldCreatedEvent = typeof(World).GetEvent("WorldCreated", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly EventInfo s_WorldDestroyedEvent = typeof(World).GetEvent("WorldDestroyed", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly EventInfo s_SystemCreatedEvent = typeof(World).GetEvent("SystemCreated", BindingFlags.Static | BindingFlags.NonPublic);
+        private static readonly EventInfo s_SystemDestroyedEvent = typeof(World).GetEvent("SystemDestroyed", BindingFlags.Static | BindingFlags.NonPublic);
+
+        /// <summary>
+        /// Dispatched after a world is created.
+        /// </summary>
+        /// <remarks>
+        /// This is a proxy for the internal <see cref="World.WorldCreated"/> static event that Unity has made internal.
+        /// </remarks>
+        //TODO: Use assembly injection?
+        public static event Action<World> OnWorldCreated
+        {
+            add => s_WorldCreatedEvent.AddMethod.Invoke(null, new[] { value });
+            remove => s_WorldCreatedEvent.RemoveMethod.Invoke(null, new[] { value });
+        }
 
         /// <summary>
         /// Dispatched before a world is destroyed.
         /// </summary>
         /// <remarks>
         /// This is a proxy for the internal <see cref="World.WorldDestroyed"/> static event that Unity has made internal.
-        /// If Unity makes the event public or provides a mechanism for a world instance to know when it is being disposed
-        /// this method will be redundant.
         /// </remarks>
         //TODO: Use assembly injection?
         public static event Action<World> OnWorldDestroyed
@@ -87,16 +100,29 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Dispatched after a world is created.
+        /// Dispatched after a system is created.
         /// </summary>
         /// <remarks>
-        /// This is a proxy for the internal <see cref="World.WorldCreated"/> static event that Unity has made internal.
-        /// Added for the sake of completion after adding <see cref="OnWorldDestroyed"/>.
+        /// This is a proxy for the internal <see cref="World.SystemCreated"/> static event that Unity has made internal.
         /// </remarks>
-        public static event Action<World> OnWorldCreated
+        //TODO: Use assembly injection?
+        public static event Action<World, ComponentSystemBase> OnSystemCreated
         {
-            add => s_WorldCreatedEvent.AddMethod.Invoke(null, new[] { value });
-            remove => s_WorldCreatedEvent.RemoveMethod.Invoke(null, new[] { value });
+            add => s_SystemCreatedEvent.AddMethod.Invoke(null, new[] { value });
+            remove => s_SystemCreatedEvent.RemoveMethod.Invoke(null, new[] { value });
+        }
+
+        /// <summary>
+        /// Dispatched before a system is destroyed.
+        /// </summary>
+        /// <remarks>
+        /// This is a proxy for the internal <see cref="World.SystemDestroyed"/> static event that Unity has made internal.
+        /// </remarks>
+        //TODO: Use assembly injection?
+        public static event Action<World, ComponentSystemBase> OnSystemDestroyed
+        {
+            add => s_SystemDestroyedEvent.AddMethod.Invoke(null, new[] { value });
+            remove => s_SystemDestroyedEvent.RemoveMethod.Invoke(null, new[] { value });
         }
 
         // No need to reset between play sessions because PlayerLoop systems are stateless and
