@@ -9,6 +9,7 @@
         "Unity.Entities",
         "Unity.Jobs",
         "Unity.Mathematics",
+        "Unity.Transforms",
         "Unity.Profiling.Core"
     ],
     "includePlatforms": [],
