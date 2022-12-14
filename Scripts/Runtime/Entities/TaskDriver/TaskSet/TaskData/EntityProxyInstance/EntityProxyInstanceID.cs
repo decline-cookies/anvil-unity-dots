@@ -20,9 +20,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public readonly Entity Entity;
-        public readonly byte Context;
+        public readonly uint Context;
 
-        public EntityProxyInstanceID(Entity entity, byte context)
+        public EntityProxyInstanceID(Entity entity, uint context)
         {
             Entity = entity;
             Context = context;
@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode(Context, Entity.Index);
+            return HashCodeUtil.GetHashCode((int)Context, Entity.Index);
         }
 
         public override string ToString()

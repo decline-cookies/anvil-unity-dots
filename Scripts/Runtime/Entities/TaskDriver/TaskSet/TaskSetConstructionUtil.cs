@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             //For all the system field types, we get the data from the system and assign.
-            TaskSet systemTaskSet = taskDriver.TaskDriverSystem.TaskSet;
+            TaskSet systemTaskSet = ((ITaskSetOwner)taskDriver).TaskDriverSystem.TaskSet;
             foreach (FieldInfo field in systemDataStreamFields)
             {
                 Type instanceType = field.FieldType.GenericTypeArguments[0];

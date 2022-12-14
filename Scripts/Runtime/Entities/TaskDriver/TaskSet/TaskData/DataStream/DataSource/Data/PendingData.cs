@@ -7,15 +7,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where T : unmanaged
     {
         private UnsafeTypedStream<T> m_Pending;
-        private readonly UnsafeTypedStream<T>.Writer m_PendingWriter;
         private readonly unsafe void* m_PendingWriterPointer;
+        
+        public UnsafeTypedStream<T>.Writer PendingWriter { get; }
 
         public unsafe PendingData(uint id) : base(id)
         {
             //TODO: Sizing?
             m_Pending = new UnsafeTypedStream<T>(Allocator.Persistent);
-            m_PendingWriter = m_Pending.AsWriter();
-            m_PendingWriterPointer = m_PendingWriter.GetBufferPointer();
+            PendingWriter = m_Pending.AsWriter();
+            m_PendingWriterPointer = PendingWriter.GetBufferPointer();
         }
 
         protected sealed override void DisposeData()

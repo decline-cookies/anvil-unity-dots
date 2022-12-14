@@ -2,6 +2,7 @@ using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -75,12 +76,58 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return m_PublicDataStreamsByType[type];
         }
 
-        public IJobConfig ConfigureJobToCancel<TInstance>(IAbstractDataStream<TInstance> dataStream,
-                                                             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+        // public IJobConfig ConfigureJobToCancel<TInstance>(IAbstractDataStream<TInstance> dataStream,
+        //                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+        //                                                   BatchStrategy batchStrategy)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        // {
+        //     CancelJobConfig<TInstance> cancelJobConfig = JobConfigFactory.CreateCancelJobConfig(TaskSetOwner, (DataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+        //     m_JobConfigs.Add(cancelJobConfig);
+        //     return cancelJobConfig;
+        // }
+
+        public IJobConfig ConfigureJobToUpdate<TInstance>(IAbstractDataStream<TInstance> dataStream,
+                                                          JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                          BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            UpdateJobConfig<TInstance> updateJobConfig = JobConfigFactory.CreateUpdateJobConfig(TaskSetOwner, (DataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+            m_JobConfigs.Add(updateJobConfig);
+            return updateJobConfig;
+        }
+
+        public IJobConfig ConfigureJobTriggeredBy<TInstance>(IAbstractDataStream<TInstance> dataStream,
+                                                             in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                              BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            JobConfigFactory.CreateCancelJobConfig()
+            DataStreamJobConfig<TInstance> dataStreamJobConfig = JobConfigFactory.CreateDataStreamJobConfig(TaskSetOwner, (DataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+            m_JobConfigs.Add(dataStreamJobConfig);
+            return dataStreamJobConfig;
         }
+
+        public IJobConfig ConfigureJobTriggeredBy(EntityQuery entityQuery,
+                                                  JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
+                                                  BatchStrategy batchStrategy)
+        {
+            EntityQueryJobConfig entityQueryJobConfig = JobConfigFactory.CreateEntityQueryJobConfig(TaskSetOwner, entityQuery, scheduleJobFunction, batchStrategy);
+            m_JobConfigs.Add(entityQueryJobConfig);
+            return entityQueryJobConfig;
+        }
+
+        public IJobConfig ConfigureJobTriggeredBy<T>(EntityQuery entityQuery,
+                                                     JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
+                                                     BatchStrategy batchStrategy)
+            where T : struct, IComponentData
+        {
+            EntityQueryComponentJobConfig<T> entityQueryComponentJobConfig = JobConfigFactory.CreateEntityQueryComponentJobConfig(TaskSetOwner, entityQuery, scheduleJobFunction, batchStrategy);
+            m_JobConfigs.Add(entityQueryComponentJobConfig);
+            return entityQueryComponentJobConfig;
+        }
+
+        // public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        //                                                        BatchStrategy batchStrategy)
+        // {
+        // }
     }
 }

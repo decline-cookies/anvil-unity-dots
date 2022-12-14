@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal class AbstractLookupDataStream<T> : AbstractDataStream<T>
         where T : unmanaged, IEquatable<T>
     {
-        public sealed override uint LiveID
+        public sealed override uint ActiveID
         {
             get => m_LiveLookupData.ID;
         }
@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly LiveLookupData<T> m_LiveLookupData;
         public AbstractLookupDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
-            m_LiveLookupData = DataSource.CreateLiveLookupData();
+            m_LiveLookupData = DataSource.CreateActiveLookupData();
         }
     }
 }

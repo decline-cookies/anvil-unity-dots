@@ -34,14 +34,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="updater">A reference to the <see cref="DataStreamCancellationUpdater{TInstance}"/></param>
         /// <typeparam name="TInstance">The type of instance</typeparam>
         /// <typeparam name="TResolveTargetType">The type of the resolved data</typeparam>
-        public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
-                                                                  TResolveTargetType resolvedInstance,
-                                                                  ref DataStreamCancellationUpdater<TInstance> updater)
-            where TInstance : unmanaged, IEntityProxyInstance
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
-        {
-            Resolve(instance, ref resolvedInstance, ref updater);
-        }
+        // public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
+        //                                                           TResolveTargetType resolvedInstance,
+        //                                                           ref DataStreamCancellationUpdater<TInstance> updater)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        //     where TResolveTargetType : unmanaged, IEntityProxyInstance
+        // {
+        //     Resolve(instance, ref resolvedInstance, ref updater);
+        // }
 
         /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.Tasks.DataStreamUpdater{TInstance})"/>
         public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
@@ -54,14 +54,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.Tasks.DataStreamCancellationUpdater{TInstance})"/>
-        public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
-                                                                  ref TResolveTargetType resolvedInstance,
-                                                                  ref DataStreamCancellationUpdater<TInstance> updater)
-            where TInstance : unmanaged, IEntityProxyInstance
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
-        {
-            updater.Resolve(ref resolvedInstance);
-        }
+        // public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
+        //                                                           ref TResolveTargetType resolvedInstance,
+        //                                                           ref DataStreamCancellationUpdater<TInstance> updater)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        //     where TResolveTargetType : unmanaged, IEntityProxyInstance
+        // {
+        //     updater.Resolve(ref resolvedInstance);
+        // }
 
         /// <summary>
         /// Used when the updating of a <see cref="IEntityProxyInstance"/> is complete but nothing needs to be written
@@ -83,11 +83,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="instance">The instance of data that was being cancelled</param>
         /// <param name="updater">A reference to the <see cref="DataStreamCancellationUpdater{TInstance}"/></param>
         /// <typeparam name="TInstance">The type of instance</typeparam>
-        public static void Resolve<TInstance>(this TInstance instance, ref DataStreamCancellationUpdater<TInstance> updater)
-            where TInstance : unmanaged, IEntityProxyInstance
-        {
-            updater.Resolve();
-        }
+        // public static void Resolve<TInstance>(this TInstance instance, ref DataStreamCancellationUpdater<TInstance> updater)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        // {
+        //     updater.Resolve();
+        // }
 
         /// <inheritdoc cref="DataStreamUpdater{TInstance}.Continue(ref TInstance)"/>
         public static void ContinueOn<TInstance>(this TInstance instance, ref DataStreamUpdater<TInstance> updater)
@@ -97,10 +97,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         /// <inheritdoc cref="DataStreamCancellationUpdater{TInstance}.Continue(ref TInstance)"/>
-        public static void ContinueOn<TInstance>(this TInstance instance, ref DataStreamCancellationUpdater<TInstance> updater)
-            where TInstance : unmanaged, IEntityProxyInstance
-        {
-            updater.Continue(ref instance);
-        }
+        // public static void ContinueOn<TInstance>(this TInstance instance, ref DataStreamCancellationUpdater<TInstance> updater)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        // {
+        //     updater.Continue(ref instance);
+        // }
     }
 }

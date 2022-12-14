@@ -65,13 +65,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             RegisterWithManagementSystem();
 
 
-            //TODO: We can do this in hardening
-            HasCancellableData = TaskData.CancellableDataStreams.Count > 0
-                              || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
-                              || GoverningTaskSystem.HasCancellableData;
-
-            //TODO: We can do this in hardening
-            CancelFlow.BuildRequestData();
+            // //TODO: We can do this in hardening
+            // HasCancellableData = TaskData.CancellableDataStreams.Count > 0
+            //                   || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
+            //                   || GoverningTaskSystem.HasCancellableData;
+            //
+            // //TODO: We can do this in hardening
+            // CancelFlow.BuildRequestData();
         }
 
         private void RegisterWithManagementSystem()
@@ -104,15 +104,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        protected IJobConfig ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                   BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
-        {
-            return m_TaskDriverSystem.TaskSet.ConfigureJobToCancel(dataStream,
-                                                                   scheduleJobFunction,
-                                                                   batchStrategy);
-        }
+        // protected IJobConfig ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
+        //                                                            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+        //                                                            BatchStrategy batchStrategy)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        // {
+        //     return m_TaskDriverSystem.TaskSet.ConfigureJobToCancel(dataStream,
+        //                                                            scheduleJobFunction,
+        //                                                            batchStrategy);
+        // }
 
         protected IJobConfig ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
                                                                    JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
@@ -133,38 +133,38 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
-                                                   scheduleJobFunction,
-                                                   batchStrategy);
+            return m_TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
+                                                     scheduleJobFunction,
+                                                     batchStrategy);
         }
 
-        public IJobConfig ConfigureDriverCancelJobFor<TInstance>(IDriverDataStream<TInstance> dataStream,
-                                                                 in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                 BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
-        {
-            return TaskSet.ConfigureCancelJobFor((CancellableDataStream<TInstance>)dataStream,
-                                                 scheduleJobFunction,
-                                                 batchStrategy);
-        }
+        // public IJobConfig ConfigureDriverCancelJobFor<TInstance>(IDriverDataStream<TInstance> dataStream,
+        //                                                          in JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+        //                                                          BatchStrategy batchStrategy)
+        //     where TInstance : unmanaged, IEntityProxyInstance
+        // {
+        //     return m_TaskSet.ConfigureCancelJobFor((CancellableDataStream<TInstance>)dataStream,
+        //                                            scheduleJobFunction,
+        //                                            batchStrategy);
+        // }
 
 
         public IJobConfig ConfigureDriverJobTriggeredBy(EntityQuery entityQuery,
                                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                         BatchStrategy batchStrategy)
         {
-            return TaskSet.ConfigureJobTriggeredBy(entityQuery,
-                                                   scheduleJobFunction,
-                                                   batchStrategy);
+            return m_TaskSet.ConfigureJobTriggeredBy(entityQuery,
+                                                     scheduleJobFunction,
+                                                     batchStrategy);
         }
 
-        public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
-                                                               BatchStrategy batchStrategy)
-        {
-            return TaskSet.ConfigureJobWhenCancelComplete(TaskSet.CancelCompleteDataStream,
-                                                          scheduleJobFunction,
-                                                          batchStrategy);
-        }
+        // public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        //                                                        BatchStrategy batchStrategy)
+        // {
+        //     return m_TaskSet.ConfigureJobWhenCancelComplete(TaskSet.CancelCompleteDataStream,
+        //                                                     scheduleJobFunction,
+        //                                                     batchStrategy);
+        // }
 
 
         //TODO: #73 - Implement other job types
