@@ -20,6 +20,8 @@ namespace Anvil.Unity.DOTS.Data
         public static void CopyFrom<T>(this NativeParallelHashSet<T> destination, NativeParallelHashSet<T> source)
             where T : unmanaged, IEquatable<T>
         {
+            destination.Clear();
+
             int sourceCount = source.Count();
             if (destination.Capacity < sourceCount)
             {
@@ -45,14 +47,13 @@ namespace Anvil.Unity.DOTS.Data
         public static void CopyFrom<T>(this NativeParallelHashSet<T> destination, IEnumerable<T> source)
             where T : unmanaged, IEquatable<T>
         {
-            int? sourceCount = (source as ICollection<T>)?.Count ?? (source as IReadOnlyCollection<T>)?.Count;
+            destination.Clear();
 
+            int? sourceCount = (source as ICollection<T>)?.Count ?? (source as IReadOnlyCollection<T>)?.Count;
             if (sourceCount.HasValue && destination.Capacity < sourceCount)
             {
                 destination.Capacity = sourceCount.Value;
             }
-
-            destination.Clear();
 
             foreach (T val in source)
             {
