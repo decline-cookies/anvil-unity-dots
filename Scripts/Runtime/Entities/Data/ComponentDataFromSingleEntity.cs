@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Gets the <see cref="DynamicBuffer{T}" />.
+        /// Gets the <see cref="T" />.
         /// Call during job execution.
         /// </summary>
         /// <returns>The <see cref="T" /> instance</returns>
