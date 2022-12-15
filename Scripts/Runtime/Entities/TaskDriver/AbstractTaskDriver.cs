@@ -7,15 +7,6 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver
-        where TTaskDriverSystem : AbstractTaskDriverSystem
-    {
-        protected AbstractTaskDriver(World world) : base(world, typeof(TTaskDriverSystem))
-        {
-        }
-    }
-    
-    
     /// <summary>
     /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
     /// The goal of a TaskDriver is to convert specific data into general data that the corresponding
@@ -26,6 +17,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public abstract class AbstractTaskDriver : AbstractAnvilBase,
                                                ITaskSetOwner
     {
+        private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
+
         private readonly uint m_ID;
         private readonly TaskSet m_TaskSet;
         private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
@@ -43,13 +36,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem { get => m_TaskDriverSystem; }
         TaskSet ITaskSetOwner.TaskSet { get => m_TaskSet; }
         uint ITaskSetOwner.ID { get => m_ID; }
-        
-        
-        internal AbstractTaskDriver(World world, Type taskDriverSystemType)
+
+
+        protected AbstractTaskDriver(World world)
         {
             World = world;
             SubTaskDrivers = new List<AbstractTaskDriver>();
             m_TaskSet = new TaskSet(this);
+
+            Type taskDriverType = GetType();
+            Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
 
             m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
             if (m_TaskDriverSystem == null)
@@ -58,9 +54,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 World.AddSystem(m_TaskDriverSystem);
                 World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(m_TaskDriverSystem);
             }
-            
+
             m_ID = m_TaskDriverSystem.RegisterTaskDriver(this);
-            
+
 
             RegisterWithManagementSystem();
 
@@ -112,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         protected IDriverDataStream<TInstance> CreateDriverDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
-            where TInstance: unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityProxyInstance
         {
             IDriverDataStream<TInstance> dataStream = m_TaskSet.CreateDataStream<TInstance>(cancelBehaviour);
             return dataStream;
@@ -137,9 +133,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return ((ITaskSetOwner)m_TaskDriverSystem).TaskSet.ConfigureJobToUpdate(dataStream,
-                                                                                    scheduleJobFunction,
-                                                                                    batchStrategy);
+            return m_TaskDriverSystem.TaskSet.ConfigureJobToUpdate(dataStream,
+                                                                   scheduleJobFunction,
+                                                                   batchStrategy);
         }
 
         //*************************************************************************************************************

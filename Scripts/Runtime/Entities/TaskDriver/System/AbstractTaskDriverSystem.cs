@@ -5,24 +5,17 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
-                                                             ITaskSetOwner
+    internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
+                                                               ITaskSetOwner
     {
         private readonly IDProvider m_TaskDriverIDProvider;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly TaskSet m_TaskSet;
-        
+
 
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
         
-
         public new World World { get; }
-
-        TaskSet ITaskSetOwner.TaskSet
-        {
-            get => m_TaskSet;
-        }
-
+        public TaskSet TaskSet { get; }
         public uint ID { get; }
 
 
@@ -35,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             ID = m_TaskDriverIDProvider.GetNextID();
 
-            m_TaskSet = new TaskSet(this);
+            TaskSet = new TaskSet(this);
         }
 
         protected override void OnDestroy()
@@ -44,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //We don't own the TaskDrivers registered here, so we won't dispose them
             m_TaskDrivers.Clear();
 
-            m_TaskSet.Dispose();
+            TaskSet.Dispose();
 
             base.OnDestroy();
         }
@@ -64,13 +57,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return m_TaskSet.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+            return TaskSet.GetOrCreateDataStream<TInstance>(cancelBehaviour);
         }
 
         protected override void OnUpdate()
         {
             //TODO: Implement
-            float a;
             // Dependency = CommonTaskSet.Update(Dependency);
         }
     }
