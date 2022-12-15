@@ -8,12 +8,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal partial class DataSourceSystem : AbstractAnvilSystemBase
     {
         private readonly Dictionary<Type, IDataSource> m_DataSourcesByType;
-        private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
+        private readonly List<AbstractTaskDriver> m_TaskDrivers;
 
         public DataSourceSystem()
         {
             m_DataSourcesByType = new Dictionary<Type, IDataSource>();
-            m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
+            m_TaskDrivers = new List<AbstractTaskDriver>();
         }
 
         protected sealed override void OnCreate()
@@ -41,10 +41,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return (DataSource<T>)dataSource;
         }
 
-        public void RegisterTopLevelTaskDriver(AbstractTaskDriver taskDriver)
+        public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
-            //TODO: Ensure top level
-            m_TopLevelTaskDrivers.Add(taskDriver);
+            m_TaskDrivers.Add(taskDriver);
         }
 
         protected sealed override void OnUpdate()

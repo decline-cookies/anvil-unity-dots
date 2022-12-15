@@ -3,11 +3,19 @@ using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    public abstract class AbstractTaskDriver<TTaskDriverSystem> : AbstractTaskDriver
+        where TTaskDriverSystem : AbstractTaskDriverSystem
+    {
+        protected AbstractTaskDriver(World world) : base(world, typeof(TTaskDriverSystem))
+        {
+        }
+    }
+    
+    
     /// <summary>
     /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
     /// The goal of a TaskDriver is to convert specific data into general data that the corresponding
@@ -18,11 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     public abstract class AbstractTaskDriver : AbstractAnvilBase,
                                                ITaskSetOwner
     {
-        private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
-
-
         private readonly uint m_ID;
-        private readonly AbstractTaskDriver m_Parent;
         private readonly TaskSet m_TaskSet;
         private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
 
@@ -32,35 +36,31 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </summary>
         public World World { get; }
 
+        internal AbstractTaskDriver Parent { get; private set; }
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
 
 
         AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem { get => m_TaskDriverSystem; }
         TaskSet ITaskSetOwner.TaskSet { get => m_TaskSet; }
         uint ITaskSetOwner.ID { get => m_ID; }
-
-
-        protected AbstractTaskDriver(World world) : this(world, null)
-        {
-        }
-
-        //This constructor can also be called via Reflection
-        private AbstractTaskDriver(World world, AbstractTaskDriver parent)
+        
+        
+        internal AbstractTaskDriver(World world, Type taskDriverSystemType)
         {
             World = world;
-            m_Parent = parent;
+            SubTaskDrivers = new List<AbstractTaskDriver>();
+            m_TaskSet = new TaskSet(this);
 
-            //Get or create the governing system for this Task Driver Type and register ourselves
-            Type taskDriverType = GetType();
-            Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
-            m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetOrCreateSystem(taskDriverSystemType);
-            m_TaskDriverSystem.Init(World);
+            m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
+            if (m_TaskDriverSystem == null)
+            {
+                m_TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
+                World.AddSystem(m_TaskDriverSystem);
+                World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(m_TaskDriverSystem);
+            }
+            
             m_ID = m_TaskDriverSystem.RegisterTaskDriver(this);
-
-
-            m_TaskSet = TaskSetConstructionUtil.CreateTaskSetForTaskDriver(this);
-
-            SubTaskDrivers = TaskDriverConstructionUtil.CreateSubTaskDrivers(this);
+            
 
             RegisterWithManagementSystem();
 
@@ -76,13 +76,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private void RegisterWithManagementSystem()
         {
-            if (m_Parent != null)
-            {
-                return;
-            }
-
             DataSourceSystem dataSourceSystem = World.GetExistingSystem<DataSourceSystem>();
-            dataSourceSystem.RegisterTopLevelTaskDriver(this);
+            dataSourceSystem.RegisterTaskDriver(this);
         }
 
         protected override void DisposeSelf()
@@ -98,6 +93,29 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}|{m_ID}";
+        }
+
+
+        protected TTaskDriver AddSubTaskDriver<TTaskDriver>(TTaskDriver subTaskDriver)
+            where TTaskDriver : AbstractTaskDriver
+        {
+            subTaskDriver.Parent = this;
+            SubTaskDrivers.Add(subTaskDriver);
+            return subTaskDriver;
+        }
+
+        protected ISystemDataStream<TInstance> CreateSystemDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            ISystemDataStream<TInstance> dataStream = m_TaskDriverSystem.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+            return dataStream;
+        }
+
+        protected IDriverDataStream<TInstance> CreateDriverDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
+            where TInstance: unmanaged, IEntityProxyInstance
+        {
+            IDriverDataStream<TInstance> dataStream = m_TaskSet.CreateDataStream<TInstance>(cancelBehaviour);
+            return dataStream;
         }
 
         //*************************************************************************************************************
@@ -119,9 +137,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return m_TaskDriverSystem.TaskSet.ConfigureJobToUpdate(dataStream,
-                                                                   scheduleJobFunction,
-                                                                   batchStrategy);
+            return ((ITaskSetOwner)m_TaskDriverSystem).TaskSet.ConfigureJobToUpdate(dataStream,
+                                                                                    scheduleJobFunction,
+                                                                                    batchStrategy);
         }
 
         //*************************************************************************************************************

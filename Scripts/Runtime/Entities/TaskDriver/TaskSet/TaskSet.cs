@@ -32,6 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
             m_DataStreamsWithNoCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
+            m_AllPublicDataStreams = new List<AbstractDataStream>();
 
             CancelRequestDataStream = new CancelRequestDataStream(TaskSetOwner);
             CancelProgressDataStream = new CancelProgressDataStream(TaskSetOwner);
@@ -43,6 +44,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_JobConfigs.DisposeAllAndTryClear();
 
             base.DisposeSelf();
+        }
+
+        public DataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            Type instanceType = typeof(TInstance);
+            if (!m_PublicDataStreamsByType.TryGetValue(instanceType, out AbstractDataStream dataStream))
+            {
+                dataStream = CreateDataStream<TInstance>(cancelBehaviour);
+                m_PublicDataStreamsByType.Add(instanceType, dataStream);
+            }
+
+            return (DataStream<TInstance>)dataStream;
         }
 
         public DataStream<TInstance> CreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
@@ -65,7 +79,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     throw new ArgumentOutOfRangeException(nameof(cancelBehaviour), cancelBehaviour, null);
             }
 
-            m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
             m_AllPublicDataStreams.Add(dataStream);
 
             return dataStream;

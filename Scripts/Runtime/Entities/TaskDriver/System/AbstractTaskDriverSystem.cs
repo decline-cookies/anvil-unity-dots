@@ -1,55 +1,41 @@
 using Anvil.CSharp.Data;
 using Anvil.CSharp.Logging;
-using System;
 using System.Collections.Generic;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
-                                                               ITaskSetOwner
+    public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
+                                                             ITaskSetOwner
     {
         private readonly IDProvider m_TaskDriverIDProvider;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly Type m_Type;
+        private readonly TaskSet m_TaskSet;
         
-
-        private bool m_IsInitialized;
-
-        public TaskSet TaskSet { get; private set; }
-        public uint ID { get; }
 
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
+        
 
-        public Type TaskDriverType { get; }
-        
-        public new World World { get; private set; }
-        
-        protected AbstractTaskDriverSystem()
+        public new World World { get; }
+
+        TaskSet ITaskSetOwner.TaskSet
         {
-            m_Type = GetType();
-            TaskDriverType = m_Type.GenericTypeArguments[0];
+            get => m_TaskSet;
+        }
+
+        public uint ID { get; }
+
+
+        protected AbstractTaskDriverSystem(World world)
+        {
+            World = world;
 
             m_TaskDriverIDProvider = new IDProvider();
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
             ID = m_TaskDriverIDProvider.GetNextID();
-        }
 
-        public void Init(World world)
-        {
-            World = world;
-            //Because we don't know which TaskDriver will create this system, it can be called
-            //multiple times. We only need a world reference once and we don't get that until 
-            //OnCreate for the system.
-            if (m_IsInitialized)
-            {
-                return;
-            }
-
-            m_IsInitialized = true;
-
-            TaskSet = TaskSetConstructionUtil.CreateTaskSetForTaskSystem(this);
+            m_TaskSet = new TaskSet(this);
         }
 
         protected override void OnDestroy()
@@ -58,14 +44,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //We don't own the TaskDrivers registered here, so we won't dispose them
             m_TaskDrivers.Clear();
 
-            TaskSet.Dispose();
+            m_TaskSet.Dispose();
 
             base.OnDestroy();
         }
 
         public override string ToString()
         {
-            return m_Type.GetReadableName();
+            return GetType().GetReadableName();
         }
 
         public uint RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -75,9 +61,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return taskDriverID;
         }
 
+        public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return m_TaskSet.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+        }
+
         protected override void OnUpdate()
         {
             //TODO: Implement
+            float a;
             // Dependency = CommonTaskSet.Update(Dependency);
         }
     }
