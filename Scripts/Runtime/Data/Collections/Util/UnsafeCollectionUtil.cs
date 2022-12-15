@@ -22,8 +22,7 @@ namespace Anvil.Unity.DOTS.Data
         public static unsafe void FloodClearBuffer<T>(void* bufferPtr, int startIndex, int length) where T : struct
         {
             Debug.Assert(startIndex >= 0);
-            Debug.Assert(startIndex < length);
-            Debug.Assert(startIndex + length <= length);
+            Debug.Assert(length > 0);
 
             int valueSize = UnsafeUtility.SizeOf<T>();
             bufferPtr = (byte*)bufferPtr + (valueSize * startIndex);
@@ -47,8 +46,7 @@ namespace Anvil.Unity.DOTS.Data
             where T : struct
         {
             Debug.Assert(startIndex >= 0);
-            Debug.Assert(startIndex < length);
-            Debug.Assert(startIndex + length <= length);
+            Debug.Assert(length > 0);
 
             int valueSize = UnsafeUtility.SizeOf<T>();
             void* valuePtr = UnsafeUtility.AddressOf(ref value);
