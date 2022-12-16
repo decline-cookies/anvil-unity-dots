@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Anvil.Unity.Collections;
 using Unity.Assertions;
 using Unity.Burst;
 using Unity.Collections;
@@ -326,8 +327,8 @@ namespace Anvil.Unity.DOTS.Data
             //which could leak memory. We can call this again if we've scheduled or performed a Clear.
             //If this triggers, we have been disposed or never created
             Debug.Assert(m_BufferInfo != null);
-            //If this triggers, we called DeferredCreate twice.
-            //Check scheduling to ensure that a Clear job happened in between the jobs that do a DeferredCreate
+            //If this triggers, we've already called DeferredCreate.
+            //Check scheduling to ensure that a Clear job happened in between the jobs that do a Deferred operation.
             Debug.Assert(m_BufferInfo->Buffer == null);
 
             //Allocate the new memory
