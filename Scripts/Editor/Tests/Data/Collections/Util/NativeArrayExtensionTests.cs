@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Tests.Data
             Assert.That(array[0], Is.EqualTo(1));
             Assert.That(array[1], Is.EqualTo(default(int)));
             Assert.That(array[2], Is.EqualTo(default(int)));
-            Assert.That(array[3], Is.EqualTo(3));
+            Assert.That(array[3], Is.EqualTo(4));
         }
 
         [Test]
