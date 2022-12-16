@@ -16,6 +16,11 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="destination">The <see cref="NativeParallelHashSet{T}"/> to copy values into.</param>
         /// <param name="source">The <see cref="NativeParallelHashSet{T}"/> to copy values from.</param>
         /// <typeparam name="T">The element type of the collection.</typeparam>
+        /// <remarks>
+        /// Unlike calling <see cref="NativeParallelHashMap{TKey,TValue}.Clear()"/> and
+        /// <see cref="NativeParallelHashMap{TKey,TValue}.UnionWith()"/> this method ensures that the capacity of the
+        /// <see cref="destination"/> is pre-allocated.
+        /// </remarks>
         [BurstCompile]
         public static void CopyFrom<T>(this NativeParallelHashSet<T> destination, NativeParallelHashSet<T> source)
             where T : unmanaged, IEquatable<T>
