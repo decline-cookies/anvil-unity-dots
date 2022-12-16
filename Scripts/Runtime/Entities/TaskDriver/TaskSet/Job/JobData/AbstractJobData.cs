@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamPendingWriter<TInstance> GetDataStreamWriter<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Default);
+            DataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Default);
             DataStreamPendingWriter<TInstance> writer = dataStream.CreateDataStreamPendingWriter();
             return writer;
         }
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamActiveReader<TInstance> GetDataStreamReader<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = m_JobConfig.GetDataStream<TInstance>(AbstractJobConfig.Usage.Default);
+            DataStream<TInstance> dataStream = m_JobConfig.GetActiveDataStream<TInstance>(AbstractJobConfig.Usage.Default);
             DataStreamActiveReader<TInstance> reader = dataStream.CreateDataStreamActiveReader();
             return reader;
         }

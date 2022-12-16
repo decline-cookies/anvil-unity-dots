@@ -3,6 +3,7 @@ using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -19,9 +20,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
 
-        private readonly uint m_ID;
-        private readonly TaskSet m_TaskSet;
-        private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
+        private bool m_IsHardened;
 
 
         /// <summary>
@@ -32,30 +31,33 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal AbstractTaskDriver Parent { get; private set; }
         internal List<AbstractTaskDriver> SubTaskDrivers { get; }
 
+        internal AbstractTaskDriverSystem TaskDriverSystem { get; }
+        internal TaskSet TaskSet { get; }
+        internal uint ID { get; }
 
-        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem { get => m_TaskDriverSystem; }
-        TaskSet ITaskSetOwner.TaskSet { get => m_TaskSet; }
-        uint ITaskSetOwner.ID { get => m_ID; }
+        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem { get => TaskDriverSystem; }
+        TaskSet ITaskSetOwner.TaskSet { get => TaskSet; }
+        uint ITaskSetOwner.ID { get => ID; }
 
 
         protected AbstractTaskDriver(World world)
         {
             World = world;
             SubTaskDrivers = new List<AbstractTaskDriver>();
-            m_TaskSet = new TaskSet(this);
+            TaskSet = new TaskSet(this);
 
             Type taskDriverType = GetType();
             Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
 
-            m_TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
-            if (m_TaskDriverSystem == null)
+            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
+            if (TaskDriverSystem == null)
             {
-                m_TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
-                World.AddSystem(m_TaskDriverSystem);
-                World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(m_TaskDriverSystem);
+                TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
+                World.AddSystem(TaskDriverSystem);
+                World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(TaskDriverSystem);
             }
 
-            m_ID = m_TaskDriverSystem.RegisterTaskDriver(this);
+            ID = TaskDriverSystem.RegisterTaskDriver(this);
 
 
             RegisterWithManagementSystem();
@@ -70,10 +72,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             // CancelFlow.BuildRequestData();
         }
 
+
         private void RegisterWithManagementSystem()
         {
-            DataSourceSystem dataSourceSystem = World.GetExistingSystem<DataSourceSystem>();
-            dataSourceSystem.RegisterTaskDriver(this);
+            TaskDriverManagementSystem taskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
+            taskDriverManagementSystem.RegisterTaskDriver(this);
         }
 
         protected override void DisposeSelf()
@@ -81,16 +84,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //We own our sub task drivers so dispose them
             SubTaskDrivers.DisposeAllAndTryClear();
 
-            m_TaskSet.Dispose();
+            TaskSet.Dispose();
 
             base.DisposeSelf();
         }
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{m_ID}";
+            return $"{GetType().GetReadableName()}|{ID}";
         }
 
+        //*************************************************************************************************************
+        // CONFIGURATION
+        //*************************************************************************************************************
 
         protected TTaskDriver AddSubTaskDriver<TTaskDriver>(TTaskDriver subTaskDriver)
             where TTaskDriver : AbstractTaskDriver
@@ -103,14 +109,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected ISystemDataStream<TInstance> CreateSystemDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            ISystemDataStream<TInstance> dataStream = m_TaskDriverSystem.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+            ISystemDataStream<TInstance> dataStream = TaskDriverSystem.GetOrCreateDataStream<TInstance>(cancelBehaviour);
             return dataStream;
         }
 
         protected IDriverDataStream<TInstance> CreateDriverDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            IDriverDataStream<TInstance> dataStream = m_TaskSet.CreateDataStream<TInstance>(cancelBehaviour);
+            IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelBehaviour);
             return dataStream;
         }
 
@@ -123,7 +129,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //                                                            BatchStrategy batchStrategy)
         //     where TInstance : unmanaged, IEntityProxyInstance
         // {
-        //     return m_TaskDriverSystem.TaskSet.ConfigureJobToCancel(dataStream,
+        //     return m_TaskDriverSystem.ConfigureJobToCancel(dataStream,
         //                                                            scheduleJobFunction,
         //                                                            batchStrategy);
         // }
@@ -133,9 +139,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return m_TaskDriverSystem.TaskSet.ConfigureJobToUpdate(dataStream,
-                                                                   scheduleJobFunction,
-                                                                   batchStrategy);
+            return TaskDriverSystem.ConfigureSystemJobToUpdate(dataStream,
+                                                               scheduleJobFunction,
+                                                               batchStrategy);
         }
 
         //*************************************************************************************************************
@@ -147,9 +153,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return m_TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
-                                                     scheduleJobFunction,
-                                                     batchStrategy);
+            return TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
+                                                   scheduleJobFunction,
+                                                   batchStrategy);
         }
 
         // public IJobConfig ConfigureDriverCancelJobFor<TInstance>(IDriverDataStream<TInstance> dataStream,
@@ -167,9 +173,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                         BatchStrategy batchStrategy)
         {
-            return m_TaskSet.ConfigureJobTriggeredBy(entityQuery,
-                                                     scheduleJobFunction,
-                                                     batchStrategy);
+            return TaskSet.ConfigureJobTriggeredBy(entityQuery,
+                                                   scheduleJobFunction,
+                                                   batchStrategy);
         }
 
         // public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
@@ -182,5 +188,42 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         //TODO: #73 - Implement other job types
+
+        //*************************************************************************************************************
+        // HARDENING
+        //*************************************************************************************************************
+
+        internal void Harden()
+        {
+            Debug_EnsureNotHardened();
+            m_IsHardened = true;
+
+            //Drill down so that the lowest Task Driver gets hardened
+            foreach (AbstractTaskDriver subTaskDriver in SubTaskDrivers)
+            {
+                subTaskDriver.Harden();
+            }
+
+            //Harden our own TaskSet
+            TaskSet.Harden();
+        }
+
+        internal void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)
+        {
+            TaskSet.AddJobConfigsTo(jobConfigs);
+        }
+
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNotHardened()
+        {
+            if (m_IsHardened)
+            {
+                throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+            }
+        }
     }
 }

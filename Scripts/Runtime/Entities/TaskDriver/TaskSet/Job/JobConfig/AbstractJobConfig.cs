@@ -315,10 +315,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //     return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
         // }
 
-        internal DataStream<TInstance> GetDataStream<TInstance>(Usage usage)
+        internal DataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AbstractDataStreamAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<AbstractDataStreamAccessWrapper<TInstance>>(usage);
+            DataStreamPendingAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamPendingAccessWrapper<TInstance>>(usage);
+            return dataStreamAccessWrapper.DataStream;
+        }
+        
+        internal DataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            DataStreamActiveAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamActiveAccessWrapper<TInstance>>(usage);
             return dataStreamAccessWrapper.DataStream;
         }
 

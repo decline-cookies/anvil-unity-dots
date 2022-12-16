@@ -13,8 +13,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected AbstractDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
-            DataSourceSystem dataSourceSystem = taskSetOwner.World.GetOrCreateSystem<DataSourceSystem>();
-            DataSource = dataSourceSystem.GetOrCreateDataSource<T>();
+            TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            DataSource = taskDriverManagementSystem.GetOrCreateDataSource<T>();
         }
 
         public JobHandle AcquirePendingAsync(AccessType accessType)
