@@ -1,6 +1,5 @@
 using Anvil.CSharp.Core;
 using System;
-using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Jobs
@@ -63,12 +62,12 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <see cref="AccessControlledValue{T}"/>. Paired with a using statement access to the value will be released
         /// when the handle falls out of scope.
         /// </remarks>
-        /// <example>using var valueHandle = myAccessControlledValue.AcquireAsHandle(AccessType.SharedRead);</example>
+        /// <example>using var valueHandle = myAccessControlledValue.AcquireWithHandle(AccessType.SharedRead);</example>
         /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
         /// <returns>
         /// The <see cref="AccessHandle"/> that maintains access to the controlled value until disposed.
         /// </returns>
-        public AccessHandle AcquireAsHandle(AccessType accessType)
+        public AccessHandle AcquireWithHandle(AccessType accessType)
         {
             return new AccessHandle(this, accessType);
         }
@@ -148,23 +147,25 @@ namespace Anvil.Unity.DOTS.Jobs
             /// </summary>
             public readonly T Value;
 
-            private readonly AccessControlledValue<T> m_Access;
+            private readonly AccessControlledValue<T> m_Controller;
 
 
             /// <summary>
-            /// Creates a new instance that gains synchronous access from the provided value controller.
+            /// Creates a new instance that gains synchronous access from the provided
+            /// <see cref="AccessControlledValue{T}"/>.
             /// </summary>
-            /// <param name="access">The access controlled value to acquire from.</param>
+            /// <param name="controller">The <see cref="AccessControlledValue{T}"/> to acquire from.</param>
             /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
-            public AccessHandle(AccessControlledValue<T> access, AccessType accessType)
+            public AccessHandle(AccessControlledValue<T> controller, AccessType accessType)
             {
-                Value = access.Acquire(accessType);
-                m_Access = access;
+                Value = controller.Acquire(accessType);
+                m_Controller = controller;
             }
 
+            /// <inheritdoc cref="IDisposable"/>
             public void Dispose()
             {
-                m_Access.Release();
+                m_Controller.Release();
             }
         }
     }
