@@ -16,10 +16,17 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="destination">The <see cref="NativeParallelHashSet{T}"/> to copy values into.</param>
         /// <param name="source">The <see cref="NativeParallelHashSet{T}"/> to copy values from.</param>
         /// <typeparam name="T">The element type of the collection.</typeparam>
+        /// <remarks>
+        /// Unlike calling <see cref="NativeParallelHashMap{TKey,TValue}.Clear()"/> and
+        /// <see cref="NativeParallelHashMap{TKey,TValue}.UnionWith()"/> this method ensures that the capacity of the
+        /// <see cref="destination"/> is pre-allocated.
+        /// </remarks>
         [BurstCompile]
         public static void CopyFrom<T>(this NativeParallelHashSet<T> destination, NativeParallelHashSet<T> source)
             where T : unmanaged, IEquatable<T>
         {
+            destination.Clear();
+
             int sourceCount = source.Count();
             if (destination.Capacity < sourceCount)
             {
@@ -45,14 +52,13 @@ namespace Anvil.Unity.DOTS.Data
         public static void CopyFrom<T>(this NativeParallelHashSet<T> destination, IEnumerable<T> source)
             where T : unmanaged, IEquatable<T>
         {
-            int? sourceCount = (source as ICollection<T>)?.Count ?? (source as IReadOnlyCollection<T>)?.Count;
+            destination.Clear();
 
+            int? sourceCount = (source as ICollection<T>)?.Count ?? (source as IReadOnlyCollection<T>)?.Count;
             if (sourceCount.HasValue && destination.Capacity < sourceCount)
             {
                 destination.Capacity = sourceCount.Value;
             }
-
-            destination.Clear();
 
             foreach (T val in source)
             {

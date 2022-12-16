@@ -63,54 +63,16 @@ namespace Anvil.Unity.DOTS.Entities
     }
 
     /// <summary>
-    /// A collection of utilities to manipulate and augments <see cref="World"/>s.
+    /// A collection of utilities to manipulate and augment <see cref="World"/>s.
     /// The Anvil compliment to <see cref="ScriptBehaviourUpdateOrder"/>.
     /// </summary>
     public static class WorldUtil
     {
-        private static readonly EventInfo s_WorldDestroyedEvent = typeof(World).GetEvent("WorldDestroyed", BindingFlags.Static | BindingFlags.NonPublic);
-        private static readonly EventInfo s_WorldCreatedEvent = typeof(World).GetEvent("WorldCreated", BindingFlags.Static | BindingFlags.NonPublic);
-
-        /// <summary>
-        /// Dispatched before a world is destroyed.
-        /// </summary>
-        /// <remarks>
-        /// This is a proxy for the internal <see cref="World.WorldDestroyed"/> static event that Unity has made internal.
-        /// If Unity makes the event public or provides a mechanism for a world instance to know when it is being disposed
-        /// this method will be redundant.
-        /// </remarks>
-        //TODO: Use assembly injection?
-        public static event Action<World> OnWorldDestroyed
-        {
-            add => s_WorldDestroyedEvent.AddMethod.Invoke(null, new[] { value });
-            remove => s_WorldDestroyedEvent.RemoveMethod.Invoke(null, new[] { value });
-        }
-
-        /// <summary>
-        /// Dispatched after a world is created.
-        /// </summary>
-        /// <remarks>
-        /// This is a proxy for the internal <see cref="World.WorldCreated"/> static event that Unity has made internal.
-        /// Added for the sake of completion after adding <see cref="OnWorldDestroyed"/>.
-        /// </remarks>
-        public static event Action<World> OnWorldCreated
-        {
-            add => s_WorldCreatedEvent.AddMethod.Invoke(null, new[] { value });
-            remove => s_WorldCreatedEvent.RemoveMethod.Invoke(null, new[] { value });
-        }
-
         // No need to reset between play sessions because PlayerLoop systems are stateless and
         // persist between sessions when domain reloading is disabled.
         private static bool s_AreCustomPlayerLoopPhasesAdded = false;
 
-        static WorldUtil()
-        {
-            Debug.Assert(s_WorldDestroyedEvent != null);
-            Debug.Assert(s_WorldDestroyedEvent.EventHandlerType == typeof(Action<World>));
-
-            Debug.Assert(s_WorldCreatedEvent != null);
-            Debug.Assert(s_WorldCreatedEvent.EventHandlerType == typeof(Action<World>));
-        }
+        static WorldUtil() { }
 
         /// <summary>
         /// Add custom phases to the <see cref="PlayerLoop"/>.

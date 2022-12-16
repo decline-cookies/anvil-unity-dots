@@ -52,53 +52,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
         }
 
-        // ----- Buffer and Component Getters for Jobs ----- //
-        /// <summary>
-        /// Builds a container to provide in job access to a singleton <see cref="DynamicBuffer{T}" />.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="isReadOnly">true if the data will not be written to.</param>
-        /// <returns>A container that provides in job access to the requested <see cref="DynamicBuffer{T}" />.</returns>
-        protected BufferFromSingleEntity<T> GetBufferFromSingletonEntity<T>(bool isReadOnly = false) where T : struct, IBufferElementData
-        {
-            return new BufferFromSingleEntity<T>(GetBufferFromEntity<T>(isReadOnly), GetSingletonEntity<T>());
-        }
-
-        /// <summary>
-        /// Builds a container to provide in job access to a <see cref="DynamicBuffer{T}" /> on an entity.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="entity">The <see cref="Entity" /> to get the <see cref="DynamicBuffer{T}" /> from.</param>
-        /// <param name="isReadOnly">true if the data will not be written to.</param>
-        /// <returns>A container that provides in job access to the requested <see cref="DynamicBuffer{T}" />.</returns>
-        protected BufferFromSingleEntity<T> GetBufferFromSingleEntity<T>(Entity entity, bool isReadOnly = false) where T : struct, IBufferElementData
-        {
-            return new BufferFromSingleEntity<T>(GetBufferFromEntity<T>(isReadOnly), entity);
-        }
-
-        /// <summary>
-        /// Builds a container to provide in job access to a singleton <see cref="IComponentData" />.
-        /// </summary>
-        /// <typeparam name="T">The type that implements <see cref="IComponentData" />.</typeparam>
-        /// <param name="isReadOnly">true if the data will not be written to.</param>
-        /// <returns>A container that provides in job access to the requested <see cref="T" />.</returns>
-        protected ComponentDataFromSingleEntity<T> GetComponentDataFromSingletonEntity<T>(bool isReadOnly) where T : struct, IComponentData
-        {
-            return new ComponentDataFromSingleEntity<T>(GetComponentDataFromEntity<T>(isReadOnly), GetSingletonEntity<T>());
-        }
-
-        /// <summary>
-        /// Builds a container to provide in job access to a <see cref="IComponentData{T}" /> on an entity.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="IComponentData" />.</typeparam>
-        /// <param name="entity">The <see cref="Entity" /> to get the <see cref="T" /> from.</param>
-        /// <param name="isReadOnly">true if the data will not be written to.</param>
-        /// <returns>A container that provides in job access to the requested <see cref="T" />.</returns>
-        protected ComponentDataFromSingleEntity<T> GetComponentDataFromSingleEntity<T>(Entity entity, bool isReadOnly) where T : struct, IComponentData
-        {
-            return new ComponentDataFromSingleEntity<T>(GetComponentDataFromEntity<T>(isReadOnly), entity);
-        }
-
         // ----- Copy From Buffers ----- //
         /// <summary>
         /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to
