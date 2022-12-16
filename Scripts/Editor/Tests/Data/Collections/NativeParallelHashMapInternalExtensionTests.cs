@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Tests.Data
             }
         }
 
-        // ----- GetKeyArray ----- //
+        // ----- GetValueArray ----- //
         [Test]
         public static void GetValueArrayTest()
         {
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Tests.Data
             }
         }
 
-        // ----- GetKeyArray ----- //
+        // ----- GetKeyValueArrays ----- //
         [Test]
         public static void GetKeyValueArraysTest()
         {
