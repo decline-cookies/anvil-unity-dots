@@ -1,24 +1,28 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Anvil.CSharp.Logging;
 using Anvil.Unity.Core;
+using Anvil.Unity.DOTS.Logging;
 using Anvil.Unity.DOTS.Mathematics;
+using Anvil.Unity.Logging;
+using Unity.Burst;
+using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using Logger = Anvil.CSharp.Logging.Logger;
 
 namespace Anvil.Unity.DOTS.Entities.Transform
 {
     /// <summary>
     /// A collection of utilities to help work with transforming values through matrices.
     /// </summary>
+    [BurstCompile]
     public static class TransformUtil
     {
-        private static Logger Logger
+        private static BurstableLogger<FixedString32Bytes> Logger
         {
-            get => Log.GetStaticLogger(typeof(TransformUtil));
+            get => new BurstableLogger<FixedString32Bytes>(string.Empty);
         }
+
 
         /// <summary>
         /// Converts a world position value to the local space expressed by a matrix.
@@ -48,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             // If the matrix is invalid it cannot produce reliable transformations and the point is infinite
             if (!worldToLocalMtx.IsValidTransform())
             {
-                Logger.Error("This transform is invalid. Returning a signed infinite position.");
+                Logger.Error<FixedString128Bytes>("This transform is invalid. Returning a signed infinite position.");
                 return point.ToSignedInfinite();
             }
 
@@ -79,7 +83,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             // If the matrix is invalid it cannot produce reliable transformations and the point is infinite
             if (!localToWorldMtx.IsValidTransform())
             {
-                Logger.Error("This transform is invalid. Returning a signed infinite position.");
+                Logger.Error<FixedString128Bytes>("This transform is invalid. Returning a signed infinite position.");
                 return point.ToSignedInfinite();
             }
 
@@ -220,7 +224,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             // If the matrix is invalid cannot it produce reliable transformations and the scale is infinite
             if (!worldToLocalMtx.IsValidTransform())
             {
-                Logger.Error("This transform is invalid. Returning a signed infinite scale.");
+                Logger.Error<FixedString128Bytes>("This transform is invalid. Returning a signed infinite scale.");
                 return scale.ToSignedInfinite();
             }
 
@@ -262,7 +266,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             // If the matrix is invalid cannot it produce reliable transformations and the scale is infinite
             if (!localToWorldMtx.IsValidTransform())
             {
-                Logger.Error("This transform is invalid. Returning a signed infinite scale.");
+                Logger.Error<FixedString128Bytes>("This transform is invalid. Returning a signed infinite scale.");
                 return scale.ToSignedInfinite();
             }
 
@@ -362,22 +366,14 @@ namespace Anvil.Unity.DOTS.Entities.Transform
 
         //TODO: #116 - Transforms with non-uniform scale operations are not currently supported.
         [Conditional("DEBUG")]
-        private static void EmitErrorIfNonUniformScale(
-            float3 scale,
-            [CallerMemberName] string callerMethodName = "",
-            [CallerFilePath] string callerFilePath = "",
-            [CallerLineNumber] int callerLineNumber = 0)
+        [UnityLogListener.Exclude]
+        private static void EmitErrorIfNonUniformScale(float3 scale)
         {
             scale = math.abs(scale);
             bool isUniform = scale.x.IsApproximately(scale.y) && scale.y.IsApproximately(scale.z);
             if (!isUniform)
             {
-                Logger.Error(
-                    "This conversion does not support transforms with non-uniform scaling.",
-                    callerMethodName,
-                    callerFilePath,
-                    callerLineNumber
-                    );
+                Logger.Error<FixedString128Bytes>("This conversion does not support transforms with non-uniform scaling.");
             }
         }
     }
