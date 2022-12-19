@@ -136,6 +136,25 @@ namespace Anvil.Unity.DOTS.Jobs
         }
 
         /// <summary>
+        /// Acquires access synchronously for a given <see cref="AccessType"/> and returns an <see cref="AccessHandle"/>.
+        /// This is the preferred method of synchronous access vs <see cref="Acquire"/>/<see cref="Release"/>.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="AccessHandle"/> is a safer way to synchronously maintain access to an
+        /// <see cref="AccessController{T}"/>. Paired with a using statement access to the controller will be released
+        /// when the handle falls out of scope.
+        /// </remarks>
+        /// <example>using var valueHandle = myAccessController.AcquireWithHandle(AccessType.SharedRead);</example>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// The <see cref="AccessHandle"/> that maintains access to the controller until disposed.
+        /// </returns>
+        public AccessHandle AcquireWithHandle(AccessType accessType)
+        {
+            return new AccessHandle(this, accessType);
+        }
+
+        /// <summary>
         /// Acquires access synchronously for a given <see cref="AccessType"/>
         /// Will block on the calling thread if there are any jobs that need to complete before this
         /// can be used.
@@ -285,6 +304,39 @@ namespace Anvil.Unity.DOTS.Jobs
             if (!releaseAccessDependency.DependsOn(m_LastHandleAcquired))
             {
                 throw new InvalidOperationException($"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
+            }
+        }
+
+        // ----- Inner Types ----- //
+        /// <summary>
+        /// A convenience type that provides a synchronous handle to the <see cref="AccessController"/> that is released
+        /// when disposed.
+        /// </summary>
+        /// <remarks>
+        /// This type is the equivalent of calling <see cref="AccessController.Acquire"/> and
+        /// <see cref="AccessController.Release"/> yourself but is intended to be used with a using statement so
+        /// that the handle is always released.
+        /// </remarks>
+        public readonly struct AccessHandle : IDisposable
+        {
+            private readonly AccessController m_Controller;
+
+
+            /// <summary>
+            /// Creates a new instance that gains synchronous access from the provided controller.
+            /// </summary>
+            /// <param name="access">The <see cref="AccessController"/> to acquire from.</param>
+            /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+            public AccessHandle(AccessController controller, AccessType accessType)
+            {
+                m_Controller = controller;
+                m_Controller.Acquire(accessType);
+            }
+
+            /// <inheritdoc cref="IDisposable"/>
+            public void Dispose()
+            {
+                m_Controller.Release();
             }
         }
     }
