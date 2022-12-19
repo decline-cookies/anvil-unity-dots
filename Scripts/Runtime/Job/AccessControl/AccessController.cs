@@ -85,7 +85,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         /// <summary>
         /// Resets the internal state of this <see cref="AccessController"/> so that it can
-        /// be used again. 
+        /// be used again.
         /// </summary>
         /// <remarks>
         /// Typically this is used in cases where the underlying data that you are using the
@@ -104,6 +104,35 @@ namespace Anvil.Unity.DOTS.Jobs
             m_State = AcquisitionState.Unacquired;
             m_ExclusiveWriteDependency = m_SharedWriteDependency = m_SharedReadDependency = initialDependency;
             m_LastHandleAcquired = default;
+        }
+
+        /// <summary>
+        /// Gets the current <see cref="JobHandle"/> that must be completed before the provided <see cref="AccessType"/>
+        /// may be performed without modifying the state of the controller.
+        /// This is the same <see cref="JobHandle"/> that would be returned by <see cref="AcquireAsync"/> when provided
+        /// the same parameter.
+        /// </summary>
+        /// <remarks>
+        /// Generally <see cref="AcquireAsync"/> should be used. This method is an advanced feature for specialized
+        /// situations like detecting if a value has been acquired for writing between calls.
+        /// </remarks>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// A <see cref="JobHandle"/> that needs to be completed before the requested access type would be valid.
+        /// </returns>
+        public JobHandle GetDependencyFor(AccessType accessType)
+        {
+            Debug.Assert(!IsDisposed);
+
+            return accessType switch
+            {
+                AccessType.Disposal => m_ExclusiveWriteDependency,
+                AccessType.ExclusiveWrite => m_ExclusiveWriteDependency,
+                AccessType.SharedWrite => m_SharedWriteDependency,
+                AccessType.SharedRead => m_SharedReadDependency,
+                _ => throw new ArgumentOutOfRangeException(nameof(accessType), accessType,
+                    $"Tried to get dependency with {nameof(AccessType)} of {accessType} but no code path satisfies!")
+            };
         }
 
         /// <summary>
@@ -157,6 +186,9 @@ namespace Anvil.Unity.DOTS.Jobs
                 default:
                     throw new ArgumentOutOfRangeException(nameof(accessType), accessType, $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
             }
+
+            //TODO: #129 - Remove once we have unit tests.
+            Debug.Assert(acquiredHandle.Equals(GetDependencyFor(accessType)));
 
             m_LastHandleAcquired = acquiredHandle;
 
