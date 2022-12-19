@@ -56,6 +56,11 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        private StackTrace m_LastAccessOperationStack;
+#endif
+
+
         public AccessController()
         {
         }
@@ -210,6 +215,7 @@ namespace Anvil.Unity.DOTS.Jobs
             Debug.Assert(acquiredHandle.Equals(GetDependencyFor(accessType)));
 
             m_LastHandleAcquired = acquiredHandle;
+            CaptureAccessOperationStack();
 
             return acquiredHandle;
         }
@@ -269,6 +275,7 @@ namespace Anvil.Unity.DOTS.Jobs
                     throw new ArgumentOutOfRangeException(nameof(m_State), m_State, $"Tried to release but {nameof(m_State)} was {m_State} and no code path satisfies!");
             }
 
+            CaptureAccessOperationStack();
             m_State = AcquisitionState.Unacquired;
         }
 
@@ -283,7 +290,10 @@ namespace Anvil.Unity.DOTS.Jobs
 
             if (m_State != AcquisitionState.Unacquired)
             {
-                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again.");
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again." +
+                                                    $"\n ----- Last Acquisition Stack -----" +
+                                                    $"\n {GetLastAccessOperationStack()}" +
+                                                    $"\n ----- END Last Acquisition Stack -----\n");
             }
         }
 
@@ -293,7 +303,10 @@ namespace Anvil.Unity.DOTS.Jobs
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (m_State == AcquisitionState.Unacquired)
             {
-                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times.");
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times." +
+                                                    $"\n ----- Last Release Stack -----" +
+                                                    $"\n {GetLastAccessOperationStack()}" +
+                                                    $"\n ----- END Last Release Stack -----\n");
             }
 
             if (m_State == AcquisitionState.Disposing)
@@ -306,6 +319,24 @@ namespace Anvil.Unity.DOTS.Jobs
                 throw new InvalidOperationException($"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
             }
         }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CaptureAccessOperationStack()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            m_LastAccessOperationStack = new StackTrace(1, true);
+#endif
+        }
+
+        private string GetLastAccessOperationStack()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            return m_LastAccessOperationStack.ToString();
+#else
+            throw new NotSupportedException();
+#endif
+        }
+
 
         // ----- Inner Types ----- //
         /// <summary>
