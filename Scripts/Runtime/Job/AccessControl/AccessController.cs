@@ -186,6 +186,8 @@ namespace Anvil.Unity.DOTS.Jobs
                 default:
                     throw new ArgumentOutOfRangeException(nameof(accessType), accessType, $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
             }
+
+            //TODO: #129 - Remove once we have unit tests.
             Debug.Assert(acquiredHandle.Equals(GetDependencyFor(accessType)));
 
             m_LastHandleAcquired = acquiredHandle;
