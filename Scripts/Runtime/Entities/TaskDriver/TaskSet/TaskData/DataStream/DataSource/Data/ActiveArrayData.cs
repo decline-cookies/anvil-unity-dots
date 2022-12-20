@@ -3,21 +3,26 @@ using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class ActiveArrayData<T> : AbstractData
-        where T : unmanaged
+    internal class ActiveArrayData<TInstance> : AbstractData
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        private DeferredNativeArray<T> m_Active;
+        private DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> m_Active;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
 
-        public NativeArray<T> DeferredJobArray
+        public NativeArray<EntityProxyInstanceWrapper<TInstance>> DeferredJobArray
         {
             get => m_Active.AsDeferredJobArray();
         }
 
+        public DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> Active
+        {
+            get => m_Active;
+        }
+
         public ActiveArrayData(uint id) : base(id)
         {
-            m_Active = new DeferredNativeArray<T>(Allocator.Persistent, Allocator.TempJob);
+            m_Active = new DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>(Allocator.Persistent, Allocator.TempJob);
             ScheduleInfo = m_Active.ScheduleInfo;
         }
 

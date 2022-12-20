@@ -5,16 +5,16 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract class AbstractDataStream<T> : AbstractDataStream
-        where T : unmanaged, IEquatable<T>
+    internal abstract class AbstractDataStream<TInstance> : AbstractDataStream
+        where TInstance : unmanaged, IEntityProxyInstance
     {
         public abstract uint ActiveID { get; }
-        protected DataSource<T> DataSource { get; }
+        protected DataSource<TInstance> DataSource { get; }
 
         protected AbstractDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            DataSource = taskDriverManagementSystem.GetOrCreateDataSource<T>();
+            DataSource = taskDriverManagementSystem.GetOrCreateDataSource<TInstance>();
         }
 
         public JobHandle AcquirePendingAsync(AccessType accessType)

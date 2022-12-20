@@ -99,6 +99,14 @@ namespace Anvil.Unity.DOTS.Data
         private static readonly int SIZE = UnsafeUtility.SizeOf<T>();
         private static readonly int ALIGNMENT = UnsafeUtility.AlignOf<T>();
 
+        internal static unsafe DeferredNativeArray<T> ReinterpretFromPointer(void* ptr)
+        {
+            Debug_EnsurePointerNotNull(ptr);
+            DeferredNativeArray<T> array = new DeferredNativeArray<T>();
+            array.m_BufferInfo = (BufferInfo*)ptr;
+            return array;
+        }
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         // ReSharper disable once StaticMemberInGenericType
         private static int s_StaticSafetyId;
@@ -173,6 +181,15 @@ namespace Anvil.Unity.DOTS.Data
 
             ClearBufferInfo(bufferInfo);
             UnsafeUtility.Free(bufferInfo, allocator);
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static unsafe void Debug_EnsurePointerNotNull(void* ptr)
+        {
+            if (ptr == null)
+            {
+                throw new InvalidOperationException($"Trying to reinterpret the writer from a pointer but the pointer is null!");
+            }
         }
 
         //*************************************************************************************************************
@@ -414,6 +431,11 @@ namespace Anvil.Unity.DOTS.Data
 #endif
 
             return array;
+        }
+        
+        internal unsafe void* GetBufferPointer()
+        {
+            return m_BufferInfo;
         }
 
         //*************************************************************************************************************

@@ -23,9 +23,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         public ITaskSetOwner TaskSetOwner { get; }
-        public CancelRequestDataStream CancelRequestDataStream { get; }
-        public CancelProgressDataStream CancelProgressDataStream { get; }
-        public CancelCompleteDataStream CancelCompleteDataStream { get; }
+        // public CancelRequestDataStream CancelRequestDataStream { get; }
+        // public CancelProgressDataStream CancelProgressDataStream { get; }
+        // public CancelCompleteDataStream CancelCompleteDataStream { get; }
 
         public TaskSet(ITaskSetOwner taskSetOwner)
         {
@@ -39,9 +39,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             m_AllPublicDataStreams = new List<AbstractDataStream>();
 
-            CancelRequestDataStream = new CancelRequestDataStream(TaskSetOwner);
-            CancelProgressDataStream = new CancelProgressDataStream(TaskSetOwner);
-            CancelCompleteDataStream = new CancelCompleteDataStream(TaskSetOwner);
+            // CancelRequestDataStream = new CancelRequestDataStream(TaskSetOwner);
+            // CancelProgressDataStream = new CancelProgressDataStream(TaskSetOwner);
+            // CancelCompleteDataStream = new CancelCompleteDataStream(TaskSetOwner);
         }
 
         protected override void DisposeSelf()

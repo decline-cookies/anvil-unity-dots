@@ -6,10 +6,10 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract class AbstractArrayDataStream<T> : AbstractDataStream<T>
-        where T : unmanaged, IEquatable<T>
+    internal abstract class AbstractArrayDataStream<TInstance> : AbstractDataStream<TInstance>
+        where TInstance : unmanaged, IEntityProxyInstance
     {
-        private readonly ActiveArrayData<T> m_ActiveArrayData;
+        private readonly ActiveArrayData<TInstance> m_ActiveArrayData;
         
         public sealed override uint ActiveID
         {
@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
 
-        public NativeArray<T> DeferredJobArray
+        public NativeArray<EntityProxyInstanceWrapper<TInstance>> DeferredJobArray
         {
             get => m_ActiveArrayData.DeferredJobArray;
         }

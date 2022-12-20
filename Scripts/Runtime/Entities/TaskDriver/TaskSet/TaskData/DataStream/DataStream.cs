@@ -1,6 +1,6 @@
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class DataStream<TInstance> : AbstractArrayDataStream<EntityProxyInstanceWrapper<TInstance>>,
+    internal class DataStream<TInstance> : AbstractArrayDataStream<TInstance>,
                                            IDriverDataStream<TInstance>,
                                            ISystemDataStream<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
