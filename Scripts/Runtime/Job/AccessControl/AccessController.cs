@@ -56,7 +56,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
         private StackTrace m_LastAccessOperationStack;
 #endif
 
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Jobs
         protected override void DisposeSelf()
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY
             if (!m_ExclusiveWriteDependency.IsCompleted)
             {
                 throw new InvalidOperationException("The exclusive write access dependency is not completed");
@@ -195,18 +195,22 @@ namespace Anvil.Unity.DOTS.Jobs
                     m_State = AcquisitionState.Disposing;
                     acquiredHandle = m_ExclusiveWriteDependency;
                     break;
+                
                 case AccessType.ExclusiveWrite:
                     m_State = AcquisitionState.ExclusiveWrite;
                     acquiredHandle = m_ExclusiveWriteDependency;
                     break;
+
                 case AccessType.SharedWrite:
                     m_State = AcquisitionState.SharedWrite;
                     acquiredHandle = m_SharedWriteDependency;
                     break;
+
                 case AccessType.SharedRead:
                     m_State = AcquisitionState.SharedRead;
                     acquiredHandle = m_SharedReadDependency;
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(accessType), accessType, $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
             }
@@ -255,22 +259,27 @@ namespace Anvil.Unity.DOTS.Jobs
                             = m_SharedReadDependency
                                 = releaseAccessDependency;
                     break;
+
                 case AcquisitionState.SharedWrite:
                     //If you were shared writing, then no one else can exclusive write or read until you're done
                     m_ExclusiveWriteDependency
                         = m_SharedReadDependency
                             = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
+
                 case AcquisitionState.SharedRead:
                     //If you were reading, then no one else can do any writing until your reading is done
                     m_ExclusiveWriteDependency
                         = m_SharedWriteDependency
                             = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
+
                 case AcquisitionState.Disposing:
-                    throw new InvalidOperationException($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new InvalidOperationException($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ANVIL_DEBUG_SAFETY for more info.");
+
                 case AcquisitionState.Unacquired:
-                    throw new InvalidOperationException($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new InvalidOperationException($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ANVIL_DEBUG_SAFETY for more info.");
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(m_State), m_State, $"Tried to release but {nameof(m_State)} was {m_State} and no code path satisfies!");
             }
@@ -279,7 +288,7 @@ namespace Anvil.Unity.DOTS.Jobs
             m_State = AcquisitionState.Unacquired;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void ValidateAcquireState()
         {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -297,7 +306,7 @@ namespace Anvil.Unity.DOTS.Jobs
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -320,20 +329,20 @@ namespace Anvil.Unity.DOTS.Jobs
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
         private void CaptureAccessOperationStack()
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             m_LastAccessOperationStack = new StackTrace(1, true);
 #endif
         }
 
         private string GetLastAccessOperationStack()
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
             return m_LastAccessOperationStack.ToString();
 #else
-            throw new NotSupportedException();
+            return "(unavailable - enable ANVIL_DEBUG_SAFETY_EXPENSIVE to record stack during access operations)";
 #endif
         }
 
