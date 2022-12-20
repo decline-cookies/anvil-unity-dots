@@ -22,13 +22,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return !(lhs == rhs);
         }
-
-        public readonly EntityProxyInstanceID InstanceID;
+        
         public readonly TInstance Payload;
+        public readonly EntityProxyInstanceID InstanceID;
 
-        public EntityProxyInstanceWrapper(Entity entity, uint context, ref TInstance payload)
+        public EntityProxyInstanceWrapper(Entity entity, uint taskSetOwnerID, uint activeID, ref TInstance payload)
         {
-            InstanceID = new EntityProxyInstanceID(entity, context);
+            InstanceID = new EntityProxyInstanceID(entity, taskSetOwnerID, activeID);
             Payload = payload;
         }
 

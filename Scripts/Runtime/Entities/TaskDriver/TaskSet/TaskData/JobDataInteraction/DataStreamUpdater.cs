@@ -23,7 +23,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
-        private uint m_CurrentContext;
+        private uint m_CurrentTaskSetOwnerID;
+        private uint m_CurrentActiveID;
 
         internal DataStreamUpdater(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
                                    NativeArray<EntityProxyInstanceWrapper<TInstance>> active,
@@ -36,7 +37,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_PendingLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
-            m_CurrentContext = default;
+            m_CurrentTaskSetOwnerID = default;
+            m_CurrentActiveID = default;
 
             Debug_InitializeUpdaterState();
         }
@@ -72,8 +74,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureCanContinue(ref instance);
             m_PendingLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                                 m_CurrentContext,
-                                                                                 ref instance));
+                                                                                m_CurrentTaskSetOwnerID,
+                                                                                m_CurrentActiveID,
+                                                                                ref instance));
         }
 
         internal void Resolve()
@@ -91,14 +94,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //                                    m_LaneIndex,
             //                                    ref resolvedInstance);
         }
-        
+
         internal TInstance this[int index]
         {
             get
             {
                 Debug_EnsureCanUpdate();
                 EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Active[index];
-                m_CurrentContext = instanceWrapper.InstanceID.Context;
+                m_CurrentTaskSetOwnerID = instanceWrapper.InstanceID.TaskSetOwnerID;
+                m_CurrentActiveID = instanceWrapper.InstanceID.ActiveID;
                 return instanceWrapper.Payload;
             }
         }

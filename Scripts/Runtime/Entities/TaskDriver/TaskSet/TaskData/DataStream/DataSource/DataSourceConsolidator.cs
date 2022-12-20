@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -21,7 +22,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                              Allocator.Persistent);
             foreach (KeyValuePair<uint, ActiveArrayData<TInstance>> entry in dataMapping)
             {
-                m_ActiveConsolidatorsByID.Add(entry.Key, new ActiveConsolidator<TInstance>(entry.Value.Active.GetBufferPointer()));
+                void* activePointer = entry.Value.Active.GetBufferPointer();
+                m_ActiveConsolidatorsByID.Add(entry.Key, new ActiveConsolidator<TInstance>(activePointer));
             }
         }
 
@@ -35,17 +37,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void Consolidate()
         {
+            foreach (KeyValue<uint, ActiveConsolidator<TInstance>> entry in m_ActiveConsolidatorsByID)
+            {
+                entry.Value.PrepareForConsolidation();
+            }
+            
             foreach (EntityProxyInstanceWrapper<TInstance> entry in m_Pending)
             {
-                uint context = entry.InstanceID.Context;
-                ActiveConsolidator<TInstance> activeConsolidator = m_ActiveConsolidatorsByID[context];
+                uint activeID = entry.InstanceID.ActiveID;
+                ActiveConsolidator<TInstance> activeConsolidator = m_ActiveConsolidatorsByID[activeID];
                 activeConsolidator.WritePending(entry);
             }
 
-            foreach (KeyValue<uint, ActiveConsolidator<TInstance>> entry in m_ActiveConsolidatorsByID)
-            {
-                entry.Value.DeferredCreate();
-            }
+            m_Pending.Clear();
         }
     }
 }

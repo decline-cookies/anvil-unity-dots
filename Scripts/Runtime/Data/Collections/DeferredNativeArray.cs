@@ -160,16 +160,12 @@ namespace Anvil.Unity.DOTS.Data
 
         private static unsafe void ClearBufferInfo(BufferInfo* bufferInfo)
         {
-            if (bufferInfo == null
-             || bufferInfo->Buffer == null)
+            if (bufferInfo == null)
             {
                 return;
             }
-
-            UnsafeUtility.Free(bufferInfo->Buffer, bufferInfo->DeferredAllocator);
-            bufferInfo->Buffer = null;
+            
             bufferInfo->Length = 0;
-            bufferInfo->Capacity = 0;
         }
 
         private static unsafe void DisposeBufferInfo(BufferInfo* bufferInfo, Allocator allocator)
@@ -179,7 +175,14 @@ namespace Anvil.Unity.DOTS.Data
                 return;
             }
 
-            ClearBufferInfo(bufferInfo);
+            if (bufferInfo->Buffer != null)
+            {
+                UnsafeUtility.Free(bufferInfo->Buffer, bufferInfo->DeferredAllocator);
+                bufferInfo->Buffer = null;
+                bufferInfo->Length = 0;
+                bufferInfo->Capacity = 0;
+            }
+
             UnsafeUtility.Free(bufferInfo, allocator);
         }
         
@@ -366,6 +369,37 @@ namespace Anvil.Unity.DOTS.Data
             //Can't set the length to be larger than what has been allocated
             Debug.Assert(newLength <= m_BufferInfo->Capacity);
             m_BufferInfo->Length = newLength;
+        }
+
+        public unsafe void SetCapacity(int capacity)
+        {
+            Debug.Assert(m_BufferInfo != null);
+
+            long size = SIZE * capacity;
+            void* newMemory = UnsafeUtility.Malloc(size, ALIGNMENT, m_BufferInfo->DeferredAllocator);
+
+            //If we have anything in the buffer already, we need to copy it over
+            if (m_BufferInfo->Length > 0)
+            {
+                UnsafeUtility.MemCpy(newMemory, m_BufferInfo->Buffer, m_BufferInfo->Length * SIZE);
+            }
+            
+            UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
+
+            m_BufferInfo->Buffer = newMemory;
+            m_BufferInfo->Capacity = capacity;
+        }
+
+        public unsafe void Add(T element)
+        {
+            //If we're going to go over, we need to reallocate
+            if (m_BufferInfo->Length + 1 > m_BufferInfo->Capacity)
+            {
+                SetCapacity(m_BufferInfo->Capacity * 2);
+            }
+
+            UnsafeUtility.WriteArrayElement(m_BufferInfo->Buffer, m_BufferInfo->Length, element);
+            m_BufferInfo->Length++;
         }
 
         /// <summary>

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public static bool operator ==(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
         {
-            return lhs.Entity == rhs.Entity && lhs.Context == rhs.Context;
+            return lhs.Entity == rhs.Entity && lhs.TaskSetOwnerID == rhs.TaskSetOwnerID;
         }
 
         public static bool operator !=(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
@@ -20,12 +20,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         public readonly Entity Entity;
-        public readonly uint Context;
+        public readonly uint TaskSetOwnerID;
+        public readonly uint ActiveID;
 
-        public EntityProxyInstanceID(Entity entity, uint context)
+        public EntityProxyInstanceID(Entity entity, uint taskSetOwnerID, uint activeID)
         {
             Entity = entity;
-            Context = context;
+            TaskSetOwnerID = taskSetOwnerID;
+            ActiveID = activeID;
         }
 
         public bool Equals(EntityProxyInstanceID other)
@@ -40,12 +42,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode((int)Context, Entity.Index);
+            return HashCodeUtil.GetHashCode((int)TaskSetOwnerID, Entity.Index);
         }
 
         public override string ToString()
         {
-            return $"{Entity.ToString()} - Context: {Context}";
+            return $"{Entity.ToString()} - TaskSetOwnerID: {TaskSetOwnerID}";
         }
 
         [BurstCompatible]
@@ -54,8 +56,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             FixedString64Bytes fs = new FixedString64Bytes();
             // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
             fs.Append(Entity.ToFixedString());
-            fs.Append((FixedString32Bytes)" - Context: ");
-            fs.Append(Context);
+            fs.Append((FixedString32Bytes)" - TaskSetOwnerID: ");
+            fs.Append(TaskSetOwnerID);
             return fs;
         }
     }

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly ActiveArrayData<TInstance> m_ActiveArrayData;
         
-        public sealed override uint ActiveID
+        public uint ActiveID
         {
             get => m_ActiveArrayData.ID;
         }
@@ -27,6 +27,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_ActiveArrayData = DataSource.CreateActiveArrayData();
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
+        }
+
+        protected AbstractArrayDataStream(ITaskSetOwner taskSetOwner, DataStream<TInstance> systemDataStream) : base(taskSetOwner, systemDataStream)
+        {
+            m_ActiveArrayData = systemDataStream.m_ActiveArrayData;
+            ScheduleInfo = systemDataStream.ScheduleInfo;
         }
 
         public JobHandle AcquireActiveAsync(AccessType accessType)

@@ -109,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected ISystemDataStream<TInstance> CreateSystemDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            ISystemDataStream<TInstance> dataStream = TaskDriverSystem.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+            ISystemDataStream<TInstance> dataStream = TaskDriverSystem.GetOrCreateDataStream<TInstance>(this, cancelBehaviour);
             return dataStream;
         }
 

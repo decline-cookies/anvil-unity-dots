@@ -18,15 +18,17 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingWriter;
-        [ReadOnly] private readonly uint m_Context;
+        [ReadOnly] private readonly uint m_TaskSetOwnerID;
+        [ReadOnly] private readonly uint m_ActiveID;
 
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
 
-        internal DataStreamPendingWriter(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter, uint context) : this()
+        internal DataStreamPendingWriter(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter, uint taskSetOwnerID, uint activeID) : this()
         {
             m_PendingWriter = pendingWriter;
-            m_Context = context;
+            m_TaskSetOwnerID = taskSetOwnerID;
+            m_ActiveID = activeID;
 
             m_PendingLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -35,11 +37,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         }
 
         internal unsafe DataStreamPendingWriter(void* writerPtr,
-                                                uint context,
+                                                uint taskSetOwnerID,
+                                                uint activeID,
                                                 int laneIndex) : this()
         {
             m_PendingWriter = UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
-            m_Context = context;
+            m_TaskSetOwnerID = taskSetOwnerID;
+            m_ActiveID = activeID;
             m_LaneIndex = laneIndex;
 
             Debug_EnsureWriterIsValid();
@@ -81,7 +85,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureCanAdd();
             m_PendingLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                                m_Context,
+                                                                                m_TaskSetOwnerID,
+                                                                                m_ActiveID,
                                                                                 ref instance));
         }
 

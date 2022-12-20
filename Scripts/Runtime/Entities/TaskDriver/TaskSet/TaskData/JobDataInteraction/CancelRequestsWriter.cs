@@ -70,7 +70,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureCanRequestCancel();
             for (int i = 0; i < m_CancelRequestLaneWriters.Length; ++i)
             {
-                m_CancelRequestLaneWriters[i].Write(new EntityProxyInstanceID(entity, m_Contexts[i]));
+                //TODO: ENABLE
+                // m_CancelRequestLaneWriters[i].Write(new EntityProxyInstanceID(entity, m_Contexts[i]));
             }
         }
 
