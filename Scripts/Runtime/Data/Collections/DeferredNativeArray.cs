@@ -191,7 +191,7 @@ namespace Anvil.Unity.DOTS.Data
         {
             if (ptr == null)
             {
-                throw new InvalidOperationException($"Trying to reinterpret the writer from a pointer but the pointer is null!");
+                throw new InvalidOperationException($"Trying to reinterpret the {typeof(DeferredNativeArray<T>)} from a pointer but the pointer is null!");
             }
         }
 

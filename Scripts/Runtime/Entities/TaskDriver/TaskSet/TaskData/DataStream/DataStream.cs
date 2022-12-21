@@ -30,11 +30,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new DataStreamActiveReader<TInstance>(DeferredJobArray);
         }
 
-        public DataStreamUpdater<TInstance> CreateDataStreamUpdater(DataStreamTargetResolver targetResolver)
+        public DataStreamUpdater<TInstance> CreateDataStreamUpdater(ResolveTargetTypeLookup resolveTargetTypeLookup)
         {
             return new DataStreamUpdater<TInstance>(DataSource.PendingWriter,
                                                     DeferredJobArray,
-                                                    targetResolver);
+                                                    resolveTargetTypeLookup);
         }
 
     }

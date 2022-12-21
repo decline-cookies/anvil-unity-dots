@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -8,5 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public uint ID { get; }
         public World World { get; }
         public AbstractTaskDriverSystem TaskDriverSystem { get; }
+
+        public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams);
     }
 }

@@ -51,6 +51,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.DisposeSelf();
         }
 
+        public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
+        {
+            if (!m_PublicDataStreamsByType.TryGetValue(type, out AbstractDataStream dataStream))
+            {
+                return;
+            }
+
+            dataStreams.Add(dataStream);
+        }
+
         public DataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -58,7 +68,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (!m_PublicDataStreamsByType.TryGetValue(instanceType, out AbstractDataStream dataStream))
             {
                 dataStream = CreateDataStream<TInstance>(cancelBehaviour);
-                m_PublicDataStreamsByType.Add(instanceType, dataStream);
             }
 
             return (DataStream<TInstance>)dataStream;
@@ -84,6 +93,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     throw new ArgumentOutOfRangeException(nameof(cancelBehaviour), cancelBehaviour, null);
             }
 
+            m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
             m_AllPublicDataStreams.Add(dataStream);
 
             return dataStream;
@@ -109,9 +119,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //     return cancelJobConfig;
         // }
 
-        public IJobConfig ConfigureJobToUpdate<TInstance>(IAbstractDataStream<TInstance> dataStream,
-                                                          JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                          BatchStrategy batchStrategy)
+        public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(IAbstractDataStream<TInstance> dataStream,
+                                                                                JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                                                BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);

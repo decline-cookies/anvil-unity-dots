@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingWriter;
         [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Active;
-        [ReadOnly] private DataStreamTargetResolver m_DataStreamTargetResolver;
+        [ReadOnly] private ResolveTargetTypeLookup m_ResolveTargetTypeLookup;
 
 
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
@@ -28,11 +28,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal DataStreamUpdater(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
                                    NativeArray<EntityProxyInstanceWrapper<TInstance>> active,
-                                   DataStreamTargetResolver dataStreamTargetResolver) : this()
+                                   ResolveTargetTypeLookup resolveTargetTypeLookup) : this()
         {
             m_PendingWriter = pendingWriter;
             m_Active = active;
-            m_DataStreamTargetResolver = dataStreamTargetResolver;
+            m_ResolveTargetTypeLookup = resolveTargetTypeLookup;
 
             m_PendingLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -90,9 +90,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureCanResolve();
             //TODO: #69 - Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
             //TODO: manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
-            // m_DataStreamTargetResolver.Resolve(m_CurrentContext,
-            //                                    m_LaneIndex,
-            //                                    ref resolvedInstance);
+            m_ResolveTargetTypeLookup.Resolve(m_CurrentTaskSetOwnerID,
+                                              m_LaneIndex, 
+                                              ref resolvedInstance);
         }
 
         internal TInstance this[int index]

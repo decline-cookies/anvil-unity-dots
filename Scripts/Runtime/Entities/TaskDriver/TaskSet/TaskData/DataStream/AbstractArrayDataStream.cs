@@ -1,6 +1,5 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -10,15 +9,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly ActiveArrayData<TInstance> m_ActiveArrayData;
-        
-        public uint ActiveID
+
+        protected uint ActiveID
         {
             get => m_ActiveArrayData.ID;
         }
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
 
-        public NativeArray<EntityProxyInstanceWrapper<TInstance>> DeferredJobArray
+        protected NativeArray<EntityProxyInstanceWrapper<TInstance>> DeferredJobArray
         {
             get => m_ActiveArrayData.DeferredJobArray;
         }
@@ -33,6 +32,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_ActiveArrayData = systemDataStream.m_ActiveArrayData;
             ScheduleInfo = systemDataStream.ScheduleInfo;
+        }
+
+        public sealed override uint GetActiveID()
+        {
+            return ActiveID;
         }
 
         public JobHandle AcquireActiveAsync(AccessType accessType)

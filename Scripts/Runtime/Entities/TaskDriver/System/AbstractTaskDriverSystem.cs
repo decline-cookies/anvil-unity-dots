@@ -74,9 +74,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        public IJobConfig ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                BatchStrategy batchStrategy)
+        public IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
+                                                                                      JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                                                      BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             //We only want to register Jobs to the System once. However we still want to preserve the API in the TaskDriver.
@@ -114,6 +114,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             m_BulkJobScheduler = new BulkJobScheduler<AbstractJobConfig>(jobConfigs.ToArray());
         }
+
+        public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
+        {
+            TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
+            foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
+            {
+                taskDriver.TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
+            }
+        }
+
+        //*************************************************************************************************************
+        // EXECUTION
+        //*************************************************************************************************************
 
         protected override void OnUpdate()
         {

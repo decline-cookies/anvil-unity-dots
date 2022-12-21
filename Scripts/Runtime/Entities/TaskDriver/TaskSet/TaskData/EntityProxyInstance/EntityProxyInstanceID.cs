@@ -6,6 +6,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    [BurstCompatible]
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityProxyInstanceID : IEquatable<EntityProxyInstanceID>
     {

@@ -1,6 +1,4 @@
 using Anvil.Unity.DOTS.Jobs;
-using System;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -40,5 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             TaskSetOwner = taskSetOwner;
         }
+
+        public abstract uint GetActiveID();
     }
 }

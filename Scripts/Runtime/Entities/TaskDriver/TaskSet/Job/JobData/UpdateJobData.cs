@@ -23,16 +23,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal DataStreamUpdater<TInstance> GetDataStreamUpdater()
         {
             DataStream<TInstance> dataStream = m_UpdateJobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Update);
-            // DataStreamTargetResolver dataStreamTargetResolver = m_UpdateJobConfig.GetDataStreamTargetResolver();
-            // DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(dataStreamTargetResolver);
-            DataStreamTargetResolver dataStreamTargetResolver = new DataStreamTargetResolver();
-            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(dataStreamTargetResolver);
+            ResolveTargetTypeLookup resolveTargetTypeLookup = m_UpdateJobConfig.GetResolveTargetTypeLookup();
+            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(resolveTargetTypeLookup);
             return updater;
         }
-    }
-
-    public struct DataStreamTargetResolver
-    {
-        
     }
 }

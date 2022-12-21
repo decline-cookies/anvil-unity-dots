@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -18,8 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_Pending = pendingData.Pending;
             
-            m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, ActiveConsolidator<TInstance>>(dataMapping.Count,
-                                                             Allocator.Persistent);
+            m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, ActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
             foreach (KeyValuePair<uint, ActiveArrayData<TInstance>> entry in dataMapping)
             {
                 void* activePointer = entry.Value.Active.GetBufferPointer();

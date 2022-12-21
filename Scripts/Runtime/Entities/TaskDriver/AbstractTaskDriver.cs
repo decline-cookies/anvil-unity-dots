@@ -4,6 +4,7 @@ using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -124,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        // protected IJobConfig ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
+        // protected IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
         //                                                            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
         //                                                            BatchStrategy batchStrategy)
         //     where TInstance : unmanaged, IEntityProxyInstance
@@ -134,9 +135,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //                                                            batchStrategy);
         // }
 
-        protected IJobConfig ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                   BatchStrategy batchStrategy)
+        protected IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
+                                                                                         JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+                                                                                         BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             return TaskDriverSystem.ConfigureSystemJobToUpdate(dataStream,
@@ -211,6 +212,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         internal void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)
         {
             TaskSet.AddJobConfigsTo(jobConfigs);
+        }
+
+        void ITaskSetOwner.AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
+        {
+            TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
         }
 
         //*************************************************************************************************************

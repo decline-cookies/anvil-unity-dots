@@ -1,23 +1,28 @@
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal abstract class AbstractResolvableJobConfig : AbstractJobConfig
+    internal abstract class AbstractResolvableJobConfig : AbstractJobConfig,
+                                                          IResolvableJobConfigRequirements
     {
-        // private readonly JobResolveTargetMapping m_JobResolveTargetMapping;
-        // private DataStreamTargetResolver m_DataStreamTargetResolver;
+        private static readonly MethodInfo PROTOTYPE_CREATE_RESOLVE_ACCESS_WRAPPER_METHOD = typeof(AbstractResolvableJobConfig).GetMethod(nameof(CreateAndAddDataStreamPendingAccessWrapperForResolving), BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private readonly HashSet<Type> m_ResolveTypes;
+        private ResolveTargetTypeLookup m_ResolveTargetTypeLookup;
+
+        private readonly HashSet<ResolveTargetDefinition> m_ResolveTargetDefinitions;
 
         protected AbstractResolvableJobConfig(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
-            m_ResolveTypes = new HashSet<Type>();
+            m_ResolveTargetDefinitions = new HashSet<ResolveTargetDefinition>();
         }
 
         protected override void DisposeSelf()
         {
-            // m_DataStreamTargetResolver.Dispose();
+            m_ResolveTargetTypeLookup.Dispose();
             base.DisposeSelf();
         }
 
@@ -26,11 +31,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IResolvableJobConfigRequirements.RequireResolveTarget{TResolveTargetType}"/>
-        public IJobConfig RequireResolveTarget<TResolveTargetType>()
+        public unsafe IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
-            //TODO: We're not necessarily hardened yet so we should just store the type for now, we'll add the access wrappers later during hardening
-            m_ResolveTypes.Add(typeof(TResolveTargetType));
+            TaskDriverManagementSystem taskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            DataSource<TResolveTargetType> dataSource = taskDriverManagementSystem.GetOrCreateDataSource<TResolveTargetType>();
+            
+            m_ResolveTargetDefinitions.Add(ResolveTargetDefinition.Create<TResolveTargetType>(dataSource.PendingWriterPointer));
             return this;
             
             // //Any data streams that have registered for this resolve target type either on the system or related task drivers will be needed.
@@ -55,12 +62,33 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected sealed override void HardenConfig()
         {
-            //TODO: Get all the TaskDrivers and System to find the DataStreams that match the types. 
-            //TODO: Then build the lookup. For a given Type resolve the to TypeID.
-            //TODO: That TypeID should have a lookup for TaskDriverID.
-            //TODO: That TaskDriverID should have a link to the Pending Writer Pointer and the ActiveID for consolidating to.
+            m_ResolveTargetTypeLookup = new ResolveTargetTypeLookup(m_ResolveTargetDefinitions.Count);
             
-            // m_DataStreamTargetResolver = new DataStreamTargetResolver(m_JobResolveTargetMapping);
+            foreach (ResolveTargetDefinition targetDefinition in m_ResolveTargetDefinitions)
+            {
+                List<AbstractDataStream> resolvableDataStreams = new List<AbstractDataStream>();
+                TaskSetOwner.AddResolvableDataStreamsTo(targetDefinition.Type, resolvableDataStreams);
+                //TODO: Ensure there are values
+
+                m_ResolveTargetTypeLookup.CreateWritersForType(targetDefinition, resolvableDataStreams);
+                AddResolveAccessWrapper(targetDefinition.Type, resolvableDataStreams[0]);
+            }
+        }
+
+        private void AddResolveAccessWrapper(Type type, AbstractDataStream dataStream)
+        {
+            MethodInfo genericCreateMethod = PROTOTYPE_CREATE_RESOLVE_ACCESS_WRAPPER_METHOD.MakeGenericMethod(type);
+            genericCreateMethod.Invoke(this,
+                                       new object[]
+                                       {
+                                           dataStream
+                                       });
+        }
+
+        private void CreateAndAddDataStreamPendingAccessWrapperForResolving<TInstance>(AbstractDataStream dataStream)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Resolve));
         }
 
         //*************************************************************************************************************
@@ -68,13 +96,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         
         /// <summary>
-        // /// Returns the job-safe struct of <see cref="DataStreamTargetResolver"/> so that jobs can
-        // /// resolve to the right <see cref="DataStream{TInstance}"/> based on context and id. 
-        // /// </summary>
-        // /// <returns>The <see cref="DataStreamTargetResolver"/> for this job config</returns>
-        // public DataStreamTargetResolver GetDataStreamTargetResolver()
-        // {
-        //     return m_DataStreamTargetResolver;
-        // }
+        /// Returns the job-safe struct of <see cref="DataStreamTargetResolver"/> so that jobs can
+        /// resolve to the right <see cref="DataStream{TInstance}"/> based on context and id. 
+        /// </summary>
+        /// <returns>The <see cref="DataStreamTargetResolver"/> for this job config</returns>
+        public ResolveTargetTypeLookup GetResolveTargetTypeLookup()
+        {
+            return m_ResolveTargetTypeLookup;
+        }
     }
 }

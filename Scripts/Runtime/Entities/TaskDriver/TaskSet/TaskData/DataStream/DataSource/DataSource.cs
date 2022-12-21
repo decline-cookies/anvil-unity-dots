@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -28,12 +27,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private ActiveArrayData<TInstance>[] m_ActiveData;
 
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
+        public unsafe void* PendingWriterPointer { get; }
 
-        public DataSource()
+        public unsafe DataSource()
         {
             m_IDProvider = new IDProvider();
             m_PendingData = new PendingData<TInstance>(m_IDProvider.GetNextID());
             PendingWriter = m_PendingData.PendingWriter;
+            PendingWriterPointer = m_PendingData.PendingWriterPointer;
             m_ActiveDataLookupByID = new Dictionary<uint, ActiveArrayData<TInstance>>();
         }
 
@@ -88,7 +89,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public JobHandle Consolidate(JobHandle dependsOn)
         {
-
             dependsOn = Acquire(dependsOn);
 
             ConsolidatePendingToActiveJob consolidatePendingToActiveJob = new ConsolidatePendingToActiveJob(m_DataSourceConsolidator);
@@ -137,7 +137,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_DataSourceConsolidator = dataSourceConsolidator;
             }
 
-            public unsafe void Execute()
+            public void Execute()
             {
                 m_DataSourceConsolidator.Consolidate();
             }

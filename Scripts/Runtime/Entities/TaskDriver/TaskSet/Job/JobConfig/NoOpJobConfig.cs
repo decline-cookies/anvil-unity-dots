@@ -3,7 +3,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    internal class NoOpJobConfig : IJobConfig
+    internal class NoOpJobConfig : IResolvableJobConfigRequirements
     {
         public bool IsEnabled
         {
@@ -77,6 +77,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
+        {
+            return this;
+        }
+
+        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
+            where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             return this;
         }
