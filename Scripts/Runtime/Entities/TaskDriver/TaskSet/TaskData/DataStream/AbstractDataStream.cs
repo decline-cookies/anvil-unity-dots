@@ -6,12 +6,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal abstract class AbstractDataStream<TInstance> : AbstractDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        protected DataSource<TInstance> DataSource { get; }
+        protected EntityProxyDataSource<TInstance> DataSource { get; }
 
         protected AbstractDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            DataSource = taskDriverManagementSystem.GetOrCreateDataSource<TInstance>();
+            DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
         }
 
         protected AbstractDataStream(ITaskSetOwner taskSetOwner, DataStream<TInstance> systemDataStream) : base(taskSetOwner)

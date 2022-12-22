@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal abstract class AbstractArrayDataStream<TInstance> : AbstractDataStream<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        private readonly ActiveArrayData<TInstance> m_ActiveArrayData;
+        private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
 
         protected uint ActiveID
         {

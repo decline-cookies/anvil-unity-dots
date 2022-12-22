@@ -7,20 +7,21 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
-    internal struct DataSourceConsolidator<TInstance> : IDisposable
+    internal struct EntityProxyDataSourceConsolidator<TInstance> : IDisposable
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
         private UnsafeParallelHashMap<uint, ActiveConsolidator<TInstance>> m_ActiveConsolidatorsByID;
 
-        public unsafe DataSourceConsolidator(PendingData<TInstance> pendingData, Dictionary<uint, ActiveArrayData<TInstance>> dataMapping)
+        public unsafe EntityProxyDataSourceConsolidator(PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData, Dictionary<uint, AbstractData> dataMapping)
         {
             m_Pending = pendingData.Pending;
             
             m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, ActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
-            foreach (KeyValuePair<uint, ActiveArrayData<TInstance>> entry in dataMapping)
+            foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
             {
-                void* activePointer = entry.Value.Active.GetBufferPointer();
+                ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)entry.Value;
+                void* activePointer = activeArrayData.Active.GetBufferPointer();
                 m_ActiveConsolidatorsByID.Add(entry.Key, new ActiveConsolidator<TInstance>(activePointer));
             }
         }

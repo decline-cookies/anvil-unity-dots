@@ -62,15 +62,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
             RegisterWithManagementSystem();
-
-
-            // //TODO: We can do this in hardening
-            // HasCancellableData = TaskData.CancellableDataStreams.Count > 0
-            //                   || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
-            //                   || GoverningTaskSystem.HasCancellableData;
-            //
-            // //TODO: We can do this in hardening
-            // CancelFlow.BuildRequestData();
         }
 
 
@@ -204,6 +195,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 subTaskDriver.Harden();
             }
+            
+            //Harden our TaskDriverSystem if it hasn't been already
+            TaskDriverSystem.Harden();
 
             //Harden our own TaskSet
             TaskSet.Harden();

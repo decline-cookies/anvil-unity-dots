@@ -121,12 +121,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData;
 
-        // /// <summary>
-        // /// Specifies an <see cref="AbstractTaskDriver"/> that can have instances of data cancelled.
-        // /// </summary>
-        // /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to allow for cancelling</param>
-        // /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        // public IJobConfig RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver);
+        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver);
 
         /// <summary>
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.

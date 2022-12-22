@@ -1,9 +1,4 @@
-using Anvil.Unity.DOTS.Data;
-using Anvil.Unity.DOTS.Jobs;
-using System;
-using System.Diagnostics;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -14,25 +9,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     [BurstCompatible]
     public struct CancelRequestsWriter
     {
-        private const int UNSET_LANE_INDEX = -1;
-        
-        [ReadOnly] private readonly NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> m_CancelRequestWriters;
-        [ReadOnly] private readonly NativeArray<byte> m_Contexts;
-
-        [NativeDisableContainerSafetyRestriction] private NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter> m_CancelRequestLaneWriters;
-        private int m_LaneIndex;
-
-        internal CancelRequestsWriter(NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.Writer> writers,
-                                      NativeArray<byte> contexts) : this()
-        {
-            m_CancelRequestWriters = writers;
-            m_Contexts = contexts;
-
-            m_CancelRequestLaneWriters = default;
-            m_LaneIndex = UNSET_LANE_INDEX;
-
-            Debug_InitializeWriterState();
-        }
+        // private DataStreamPendingWriter<CancelRequest> m_PendingWriter;
+        // internal CancelRequestsWriter(DataStreamPendingWriter<CancelRequest> pendingWriter) : this()
+        // {
+        //     m_PendingWriter = pendingWriter;
+        // }
 
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -44,15 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <param name="nativeThreadIndex">The native thread index that the job is running on</param>
         public void InitForThread(int nativeThreadIndex)
         {
-            Debug_EnsureInitThreadOnlyCalledOnce();
-
-            m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
-            int len = m_CancelRequestWriters.Length;
-            m_CancelRequestLaneWriters = new NativeArray<UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter>(len, Allocator.Temp);
-            for (int i = 0; i < len; ++i)
-            {
-                m_CancelRequestLaneWriters[i] = m_CancelRequestWriters[i].AsLaneWriter(m_LaneIndex);
-            }
+            // m_PendingWriter.InitForThread(nativeThreadIndex);
         }
 
         /// <summary>
@@ -67,58 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <inheritdoc cref="RequestCancel(Entity)"/>
         public void RequestCancel(ref Entity entity)
         {
-            Debug_EnsureCanRequestCancel();
-            for (int i = 0; i < m_CancelRequestLaneWriters.Length; ++i)
-            {
-                //TODO: ENABLE
-                // m_CancelRequestLaneWriters[i].Write(new EntityProxyInstanceID(entity, m_Contexts[i]));
-            }
-        }
-
-        //*************************************************************************************************************
-        // SAFETY
-        //*************************************************************************************************************
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        private enum WriterState
-        {
-            Uninitialized,
-            Ready
-        }
-
-        private WriterState m_State;
-#endif
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_InitializeWriterState()
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            m_State = WriterState.Uninitialized;
-#endif
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureCanRequestCancel()
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_State == WriterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to request a cancel.");
-            }
-#endif
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureInitThreadOnlyCalledOnce()
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_State != WriterState.Uninitialized)
-            {
-                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
-            }
-
-            m_State = WriterState.Ready;
-#endif
+            // m_PendingWriter.Add(new CancelRequest(entity));
         }
     }
 }

@@ -21,7 +21,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Default,
             Update,
-            Resolve
+            Resolve,
+            RequestCancel
         }
 
         internal static readonly BulkScheduleDelegate<AbstractJobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractJobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
@@ -111,6 +112,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             AddAccessWrapper(new DataStreamActiveAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Default));
+            return this;
+        }
+
+        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
+        {
+            // AddAccessWrapper(new DataStreamPendingAccessWrapper<CancelRequest>(taskDriver.TaskSet.CancelRequestDataStream, AccessType.SharedWrite, Usage.RequestCancel));
             return this;
         }
         
@@ -312,6 +319,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // {
         //     PendingCancelDataStreamAccessWrapper<TInstance> pendingCancelDataStreamAccessWrapper = GetAccessWrapper<PendingCancelDataStreamAccessWrapper<TInstance>>(usage);
         //     return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
+        // }
+
+        // internal CancelRequestDataStream GetCancelRequestDataStream()
+        // {
+        //     return (CancelRequestDataStream)GetPendingDataStream<CancelRequest>(Usage.RequestCancel);
         // }
 
         internal DataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)

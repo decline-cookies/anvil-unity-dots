@@ -7,12 +7,12 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
-    internal unsafe struct ActiveConsolidator<TInstance> : IDisposable
+    internal readonly unsafe struct ActiveConsolidator<TInstance> : IDisposable
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private static readonly int ELEMENT_SIZE = sizeof(EntityProxyInstanceWrapper<TInstance>);
-        
-        
+
+
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ActiveBufferPointer;
 
         public ActiveConsolidator(void* activeBufferPointer) : this()
@@ -36,10 +36,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Add(instance);
         }
-        
-        
+
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static unsafe void Debug_EnsurePointerNotNull(void* ptr)
+        private static void Debug_EnsurePointerNotNull(void* ptr)
         {
             if (ptr == null)
             {

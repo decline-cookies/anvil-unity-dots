@@ -23,9 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
 
         public ITaskSetOwner TaskSetOwner { get; }
-        // public CancelRequestDataStream CancelRequestDataStream { get; }
-        // public CancelProgressDataStream CancelProgressDataStream { get; }
-        // public CancelCompleteDataStream CancelCompleteDataStream { get; }
+
 
         public TaskSet(ITaskSetOwner taskSetOwner)
         {
@@ -38,10 +36,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_DataStreamsWithNoCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             m_AllPublicDataStreams = new List<AbstractDataStream>();
-
-            // CancelRequestDataStream = new CancelRequestDataStream(TaskSetOwner);
-            // CancelProgressDataStream = new CancelProgressDataStream(TaskSetOwner);
-            // CancelCompleteDataStream = new CancelCompleteDataStream(TaskSetOwner);
+            
+            //TODO: Build a Cancellation Data Structure
         }
 
         protected override void DisposeSelf()
@@ -181,6 +177,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 jobConfig.Harden();
             }
+            
+            // //TODO: We can do this in hardening
+            // HasCancellableData = TaskData.CancellableDataStreams.Count > 0
+            //                   || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
+            //                   || GoverningTaskSystem.HasCancellableData;
+            //
+            // //TODO: We can do this in hardening
+            // CancelFlow.BuildRequestData();
+            
+            //TODO: Build up the Cancellation data structure with parent/child info
         }
         
         //*************************************************************************************************************

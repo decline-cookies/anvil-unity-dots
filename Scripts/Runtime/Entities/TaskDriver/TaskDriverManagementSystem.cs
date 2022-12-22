@@ -13,19 +13,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase
     {
         private static readonly Type ENTITY_PROXY_INSTANCE_ID_TYPE = typeof(EntityProxyInstanceID);
-        
-        private readonly Dictionary<Type, IDataSource> m_DataSourcesByType;
+
+        private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
         private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
-        private BulkJobScheduler<IDataSource> m_DataSourceBulkJobScheduler;
+        private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
+
 
         public TaskDriverManagementSystem()
         {
-            m_DataSourcesByType = new Dictionary<Type, IDataSource>();
+            m_EntityProxyDataSourcesByType = new Dictionary<Type, IDataSource>();
             m_AllTaskDrivers = new HashSet<AbstractTaskDriver>();
             m_AllTaskDriverSystems = new HashSet<AbstractTaskDriverSystem>();
             m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
@@ -39,6 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 return;
             }
+
             m_IsInitialized = true;
 
             Harden();
@@ -46,24 +48,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected sealed override void OnDestroy()
         {
-            m_DataSourcesByType.DisposeAllValuesAndClear();
-            m_DataSourceBulkJobScheduler?.Dispose();
+            m_EntityProxyDataSourcesByType.DisposeAllValuesAndClear();
+            m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
+
             base.OnDestroy();
         }
-        
+
         private void Harden()
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            
-            
-            foreach (IDataSource dataSource in m_DataSourcesByType.Values)
+
+            foreach (IDataSource dataSource in m_EntityProxyDataSourcesByType.Values)
             {
                 dataSource.Harden();
             }
 
-            m_DataSourceBulkJobScheduler = new BulkJobScheduler<IDataSource>(m_DataSourcesByType.Values.ToArray());
-            
+            m_EntityProxyDataSourceBulkJobScheduler = new BulkJobScheduler<IDataSource>(m_EntityProxyDataSourcesByType.Values.ToArray());
+
             //For all the TaskDrivers, filter to find the ones that don't have Parents.
             //Those are our top level TaskDrivers
             foreach (AbstractTaskDriver taskDriver in m_AllTaskDrivers.Where(taskDriver => taskDriver.Parent == null))
@@ -71,30 +73,30 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_TopLevelTaskDrivers.Add(taskDriver);
             }
 
-            //Then tell each top level Task Driver to Harden
+            //Then tell each top level Task Driver to Harden - This will Harden the associated sub task driver and the Task Driver System
             foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
             {
                 topLevelTaskDriver.Harden();
             }
-            
-            //Then harden all the systems. All TaskDrivers are guaranteed to be hardened now so we can schedule all the jobs
+
+            //All the data has been hardened, we can Harden the Update Phase for the Systems
             foreach (AbstractTaskDriverSystem taskDriverSystem in m_AllTaskDriverSystems)
             {
-                taskDriverSystem.Harden();
+                taskDriverSystem.HardenUpdatePhase();
             }
         }
 
-        public DataSource<TInstance> GetOrCreateDataSource<TInstance>()
+        public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Type type = typeof(TInstance);
-            if (!m_DataSourcesByType.TryGetValue(type, out IDataSource dataSource))
+            if (!m_EntityProxyDataSourcesByType.TryGetValue(type, out IDataSource dataSource))
             {
-                dataSource = new DataSource<TInstance>();
-                m_DataSourcesByType.Add(type, dataSource);
+                dataSource = new EntityProxyDataSource<TInstance>();
+                m_EntityProxyDataSourcesByType.Add(type, dataSource);
             }
 
-            return (DataSource<TInstance>)dataSource;
+            return (EntityProxyDataSource<TInstance>)dataSource;
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -107,13 +109,34 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             JobHandle dependsOn = Dependency;
 
-            dependsOn = m_DataSourceBulkJobScheduler.Schedule(dependsOn,
-                                                              IDataSource.CONSOLIDATE_SCHEDULE_FUNCTION);
+            //TODO: Implement
+            //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
+            //             //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
+            //             //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
+            //             dependsOn = m_WorldCancelRequestsBulkJobScheduler.Schedule(dependsOn,
+            //                                                                        AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+
+            //Next we check if any cancel progress was updated
+            //             dependsOn = m_WorldCancelProgressBulkJobScheduler.Schedule(dependsOn,
+            //                                                                        TaskDriverCancelFlow.SCHEDULE_FUNCTION);
+
+
+            dependsOn = m_EntityProxyDataSourceBulkJobScheduler.Schedule(dependsOn,
+                                                                         IDataSource.CONSOLIDATE_SCHEDULE_FUNCTION);
+
+            // Consolidate all PendingCancelDataStreams (Cancel jobs can run now)
+            //             dependsOn = m_WorldPendingCancelBulkJobScheduler.Schedule(dependsOn,
+            //                                                                       AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+
+            // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
+            //             // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain
+            //             dependsOn = m_WorldCancelCompleteBulkJobScheduler.Schedule(dependsOn,
+            //                                                                        AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             Dependency = dependsOn;
         }
-        
-        
+
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************

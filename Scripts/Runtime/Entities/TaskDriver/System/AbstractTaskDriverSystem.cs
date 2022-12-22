@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
         private bool m_IsHardened;
+        private bool m_IsUpdatePhaseHardened;
 
 
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
@@ -67,6 +68,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+            //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
             return new DataStream<TInstance>(taskDriver, dataStream);
         }
 
@@ -98,12 +100,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void Harden()
         {
-            Debug_EnsureNotHardened();
+            //This will get called multiple times but we only want to actually harden once
+            if (m_IsHardened)
+            {
+                return;
+            }
             m_IsHardened = true;
 
             //Harden our TaskSet
             TaskSet.Harden();
+        }
 
+        public void HardenUpdatePhase()
+        {
+            Debug_EnsureNotHardenUpdatePhase();
+            m_IsUpdatePhaseHardened = true;
+            
             //Create the Bulk Job Scheduler for any jobs to run during this System's Update phase
             List<AbstractJobConfig> jobConfigs = new List<AbstractJobConfig>();
             TaskSet.AddJobConfigsTo(jobConfigs);
@@ -146,11 +158,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNotHardened()
+        private void Debug_EnsureNotHardenUpdatePhase()
         {
-            if (m_IsHardened)
+            if (m_IsUpdatePhaseHardened)
             {
-                throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+                throw new InvalidOperationException($"Trying to Harden the Update Phase for {this} but {nameof(HardenUpdatePhase)} has already been called!");
             }
         }
     }

@@ -86,5 +86,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return this;
         }
+
+        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
+        {
+            return this;
+        }
     }
 }

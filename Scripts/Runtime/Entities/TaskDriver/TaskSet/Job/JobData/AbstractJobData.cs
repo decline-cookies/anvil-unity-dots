@@ -32,14 +32,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             World = m_JobConfig.TaskSetOwner.World;
         }
 
-        // /// <summary>
-        // /// Gets a <see cref="CancelRequestsWriter"/> job-safe struct to use for requesting a cancel.
-        // /// </summary>
-        // /// <returns>The <see cref="CancelRequestsWriter"/></returns>
+        /// <summary>
+        /// Gets a <see cref="CancelRequestsWriter"/> job-safe struct to use for requesting a cancel.
+        /// </summary>
+        /// <returns>The <see cref="CancelRequestsWriter"/></returns>
         // public CancelRequestsWriter GetCancelRequestsWriter()
         // {
-        //     TaskDriverCancelFlow cancelFlow = m_JobConfig.GetCancelFlow(AbstractJobConfig.Usage.Write);
-        //     return cancelFlow.CreateCancelRequestsWriter();
+        //     CancelRequestDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestDataStream();
+        //     CancelRequestsWriter cancelRequestsWriter = cancelRequestDataStream.CreateCancelRequestsWriter();
+        //     return cancelRequestsWriter;
         // }
 
         /// <summary>
