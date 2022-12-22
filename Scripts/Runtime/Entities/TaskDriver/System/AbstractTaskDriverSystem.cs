@@ -67,9 +67,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelBehaviour);
+            EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelBehaviour);
             //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
-            return new DataStream<TInstance>(taskDriver, dataStream);
+            return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
         //*************************************************************************************************************

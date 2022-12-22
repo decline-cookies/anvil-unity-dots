@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public UpdateJobConfig(ITaskSetOwner taskSetOwner,
-                               DataStream<TInstance> dataStream) 
+                               EntityProxyDataStream<TInstance> dataStream) 
             : base(taskSetOwner)
         {
             RequireDataStreamForUpdate(dataStream);
@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireDataStreamForUpdate(DataStream<TInstance> dataStream)
+        private void RequireDataStreamForUpdate(EntityProxyDataStream<TInstance> dataStream)
         {
             //When updating we want to read from the Active and write to the Pending
             AddAccessWrapper(new DataStreamActiveAccessWrapper<TInstance>(dataStream, AccessType.SharedRead, Usage.Update));

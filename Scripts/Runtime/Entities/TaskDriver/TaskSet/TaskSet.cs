@@ -21,7 +21,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private bool m_IsHardened;
 
-
+        public CancelRequestsDataStream CancelRequestsDataStream { get; }
+        
         public ITaskSetOwner TaskSetOwner { get; }
 
 
@@ -36,7 +37,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_DataStreamsWithNoCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             m_AllPublicDataStreams = new List<AbstractDataStream>();
-            
+
+            CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
+
             //TODO: Build a Cancellation Data Structure
         }
 
@@ -57,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dataStreams.Add(dataStream);
         }
 
-        public DataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Type instanceType = typeof(TInstance);
@@ -66,13 +69,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 dataStream = CreateDataStream<TInstance>(cancelBehaviour);
             }
 
-            return (DataStream<TInstance>)dataStream;
+            return (EntityProxyDataStream<TInstance>)dataStream;
         }
 
-        public DataStream<TInstance> CreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = new DataStream<TInstance>(TaskSetOwner, cancelBehaviour);
+            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelBehaviour);
             switch (cancelBehaviour)
             {
                 case CancelBehaviour.Default:
@@ -122,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
             
-            UpdateJobConfig<TInstance> updateJobConfig = JobConfigFactory.CreateUpdateJobConfig(TaskSetOwner, (DataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+            UpdateJobConfig<TInstance> updateJobConfig = JobConfigFactory.CreateUpdateJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(updateJobConfig);
             return updateJobConfig;
         }
@@ -134,7 +137,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
             
-            DataStreamJobConfig<TInstance> dataStreamJobConfig = JobConfigFactory.CreateDataStreamJobConfig(TaskSetOwner, (DataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+            DataStreamJobConfig<TInstance> dataStreamJobConfig = JobConfigFactory.CreateDataStreamJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(dataStreamJobConfig);
             return dataStreamJobConfig;
         }

@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         internal DataStreamUpdater<TInstance> GetDataStreamUpdater()
         {
-            DataStream<TInstance> dataStream = m_UpdateJobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Update);
+            EntityProxyDataStream<TInstance> dataStream = m_UpdateJobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Update);
             ResolveTargetTypeLookup resolveTargetTypeLookup = m_UpdateJobConfig.GetResolveTargetTypeLookup();
             DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(resolveTargetTypeLookup);
             return updater;

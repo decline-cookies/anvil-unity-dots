@@ -7,7 +7,7 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     [BurstCompatible]
-    internal readonly unsafe struct ActiveConsolidator<TInstance> : IDisposable
+    internal readonly unsafe struct EntityProxyActiveConsolidator<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private static readonly int ELEMENT_SIZE = sizeof(EntityProxyInstanceWrapper<TInstance>);
@@ -15,14 +15,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ActiveBufferPointer;
 
-        public ActiveConsolidator(void* activeBufferPointer) : this()
+        public EntityProxyActiveConsolidator(void* activeBufferPointer) : this()
         {
             Debug_EnsurePointerNotNull(activeBufferPointer);
             m_ActiveBufferPointer = activeBufferPointer;
-        }
-
-        public void Dispose()
-        {
         }
 
         public void PrepareForConsolidation()

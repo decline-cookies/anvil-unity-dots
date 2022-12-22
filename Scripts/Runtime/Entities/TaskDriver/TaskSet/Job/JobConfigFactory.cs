@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // }
 
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(ITaskSetOwner taskSetOwner,
-                                                                                  DataStream<TInstance> dataStream,
+                                                                                  EntityProxyDataStream<TInstance> dataStream,
                                                                                   JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                   BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -70,7 +70,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // }
 
         public static DataStreamJobConfig<TInstance> CreateDataStreamJobConfig<TInstance>(ITaskSetOwner taskSetOwner,
-                                                                                          DataStream<TInstance> dataStream,
+                                                                                          EntityProxyDataStream<TInstance> dataStream,
                                                                                           JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                                           BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance

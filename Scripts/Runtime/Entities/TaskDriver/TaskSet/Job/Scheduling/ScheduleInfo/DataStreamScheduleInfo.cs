@@ -21,12 +21,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //TODO: #103 - Add custom job type and implicit Reader
 
         internal DataStreamScheduleInfo(DataStreamJobData<TInstance> jobData,
-                                        DataStream<TInstance> dataStream,
+                                        EntityProxyDataStream<TInstance> dataStream,
                                         BatchStrategy batchStrategy,
                                         JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
                    batchStrategy,
-                   DataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
+                   EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;

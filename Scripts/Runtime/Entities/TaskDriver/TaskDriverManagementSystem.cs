@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
         private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
+        private readonly CancelRequestsDataSource m_CancelRequestsDataSource;
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
@@ -30,6 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_AllTaskDrivers = new HashSet<AbstractTaskDriver>();
             m_AllTaskDriverSystems = new HashSet<AbstractTaskDriverSystem>();
             m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
+            m_CancelRequestsDataSource = new CancelRequestsDataSource();
         }
 
         protected override void OnStartRunning()
@@ -50,6 +52,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_EntityProxyDataSourcesByType.DisposeAllValuesAndClear();
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
+            
+            m_CancelRequestsDataSource.Dispose();
 
             base.OnDestroy();
         }
@@ -63,6 +67,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 dataSource.Harden();
             }
+            
+            m_CancelRequestsDataSource.Harden();
 
             m_EntityProxyDataSourceBulkJobScheduler = new BulkJobScheduler<IDataSource>(m_EntityProxyDataSourcesByType.Values.ToArray());
 
@@ -97,6 +103,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             return (EntityProxyDataSource<TInstance>)dataSource;
+        }
+
+        public CancelRequestsDataSource GetCancelRequestsDataSource()
+        {
+            return m_CancelRequestsDataSource;
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)

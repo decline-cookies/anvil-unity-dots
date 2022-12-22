@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private void CreateAndAddDataStreamPendingAccessWrapperForResolving<TInstance>(AbstractDataStream dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Resolve));
+            AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Resolve));
         }
 
         //*************************************************************************************************************
@@ -97,7 +97,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         /// <summary>
         /// Returns the job-safe struct of <see cref="DataStreamTargetResolver"/> so that jobs can
-        /// resolve to the right <see cref="DataStream{TInstance}"/> based on context and id. 
+        /// resolve to the right <see cref="EntityProxyDataStream{TInstance}"/> based on context and id. 
         /// </summary>
         /// <returns>The <see cref="DataStreamTargetResolver"/> for this job config</returns>
         public ResolveTargetTypeLookup GetResolveTargetTypeLookup()

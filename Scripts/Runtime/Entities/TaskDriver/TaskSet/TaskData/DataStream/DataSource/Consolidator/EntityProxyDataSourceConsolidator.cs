@@ -11,18 +11,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
-        private UnsafeParallelHashMap<uint, ActiveConsolidator<TInstance>> m_ActiveConsolidatorsByID;
+        private UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>> m_ActiveConsolidatorsByID;
 
         public unsafe EntityProxyDataSourceConsolidator(PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData, Dictionary<uint, AbstractData> dataMapping)
         {
             m_Pending = pendingData.Pending;
             
-            m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, ActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
+            m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
             foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
             {
                 ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)entry.Value;
                 void* activePointer = activeArrayData.Active.GetBufferPointer();
-                m_ActiveConsolidatorsByID.Add(entry.Key, new ActiveConsolidator<TInstance>(activePointer));
+                m_ActiveConsolidatorsByID.Add(entry.Key, new EntityProxyActiveConsolidator<TInstance>(activePointer));
             }
         }
 
@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void Consolidate()
         {
-            foreach (KeyValue<uint, ActiveConsolidator<TInstance>> entry in m_ActiveConsolidatorsByID)
+            foreach (KeyValue<uint, EntityProxyActiveConsolidator<TInstance>> entry in m_ActiveConsolidatorsByID)
             {
                 entry.Value.PrepareForConsolidation();
             }
@@ -44,8 +44,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (EntityProxyInstanceWrapper<TInstance> entry in m_Pending)
             {
                 uint activeID = entry.InstanceID.ActiveID;
-                ActiveConsolidator<TInstance> activeConsolidator = m_ActiveConsolidatorsByID[activeID];
-                activeConsolidator.WritePending(entry);
+                EntityProxyActiveConsolidator<TInstance> entityProxyActiveConsolidator = m_ActiveConsolidatorsByID[activeID];
+                entityProxyActiveConsolidator.WritePending(entry);
             }
 
             m_Pending.Clear();

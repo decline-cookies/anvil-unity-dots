@@ -145,7 +145,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskSet.ConfigureJobTriggeredBy((DataStream<TInstance>)dataStream,
+            return TaskSet.ConfigureJobTriggeredBy((EntityProxyDataStream<TInstance>)dataStream,
                                                    scheduleJobFunction,
                                                    batchStrategy);
         }

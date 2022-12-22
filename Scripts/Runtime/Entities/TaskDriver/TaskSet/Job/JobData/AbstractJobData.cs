@@ -36,12 +36,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// Gets a <see cref="CancelRequestsWriter"/> job-safe struct to use for requesting a cancel.
         /// </summary>
         /// <returns>The <see cref="CancelRequestsWriter"/></returns>
-        // public CancelRequestsWriter GetCancelRequestsWriter()
-        // {
-        //     CancelRequestDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestDataStream();
-        //     CancelRequestsWriter cancelRequestsWriter = cancelRequestDataStream.CreateCancelRequestsWriter();
-        //     return cancelRequestsWriter;
-        // }
+        public CancelRequestsWriter GetCancelRequestsWriter()
+        {
+            CancelRequestsDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestsDataStream();
+            CancelRequestsWriter cancelRequestsWriter = cancelRequestDataStream.CreateCancelRequestsWriter();
+            return cancelRequestsWriter;
+        }
 
         /// <summary>
         /// Gets a <see cref="DataStreamPendingWriter{TInstance}"/> job-safe struct to use for writing new instances to a
@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamPendingWriter<TInstance> GetDataStreamWriter<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Default);
+            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Default);
             DataStreamPendingWriter<TInstance> writer = dataStream.CreateDataStreamPendingWriter();
             return writer;
         }
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public DataStreamActiveReader<TInstance> GetDataStreamReader<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStream<TInstance> dataStream = m_JobConfig.GetActiveDataStream<TInstance>(AbstractJobConfig.Usage.Default);
+            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetActiveDataStream<TInstance>(AbstractJobConfig.Usage.Default);
             DataStreamActiveReader<TInstance> reader = dataStream.CreateDataStreamActiveReader();
             return reader;
         }

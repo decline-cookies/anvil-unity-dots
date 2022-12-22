@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public DataStreamJobConfig(ITaskSetOwner taskSetOwner,
-                                   DataStream<TInstance> dataStream)
+                                   EntityProxyDataStream<TInstance> dataStream)
             : base(taskSetOwner)
         {
             RequireDataStreamForRead(dataStream);

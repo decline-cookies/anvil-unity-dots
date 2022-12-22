@@ -104,20 +104,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Default));
+            AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Default));
             return this;
         }
 
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamActiveAccessWrapper<TInstance>((DataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Default));
+            AddAccessWrapper(new DataStreamActiveAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Default));
             return this;
         }
 
         public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
         {
-            // AddAccessWrapper(new DataStreamPendingAccessWrapper<CancelRequest>(taskDriver.TaskSet.CancelRequestDataStream, AccessType.SharedWrite, Usage.RequestCancel));
+            AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
             return this;
         }
         
@@ -321,19 +321,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //     return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
         // }
 
-        // internal CancelRequestDataStream GetCancelRequestDataStream()
-        // {
-        //     return (CancelRequestDataStream)GetPendingDataStream<CancelRequest>(Usage.RequestCancel);
-        // }
+        internal CancelRequestsDataStream GetCancelRequestsDataStream()
+        {
+            CancelRequestsPendingAccessWrapper cancelRequestsPendingAccessWrapper = GetAccessWrapper<CancelRequestsPendingAccessWrapper>(Usage.RequestCancel);
+            return cancelRequestsPendingAccessWrapper.CancelRequestsDataStream;
+        }
 
-        internal DataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)
+        internal EntityProxyDataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStreamPendingAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamPendingAccessWrapper<TInstance>>(usage);
             return dataStreamAccessWrapper.DataStream;
         }
         
-        internal DataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
+        internal EntityProxyDataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             DataStreamActiveAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamActiveAccessWrapper<TInstance>>(usage);
