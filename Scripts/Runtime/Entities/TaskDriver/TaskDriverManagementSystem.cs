@@ -1,4 +1,5 @@
 using Anvil.CSharp.Collections;
+using Anvil.CSharp.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,8 +13,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase
     {
-        private static readonly Type ENTITY_PROXY_INSTANCE_ID_TYPE = typeof(EntityProxyInstanceID);
-
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
@@ -23,15 +22,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private bool m_IsInitialized;
         private bool m_IsHardened;
         private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
+        
+        private readonly IDProvider m_IDProvider;
 
 
         public TaskDriverManagementSystem()
         {
+            m_IDProvider = new IDProvider();
             m_EntityProxyDataSourcesByType = new Dictionary<Type, IDataSource>();
             m_AllTaskDrivers = new HashSet<AbstractTaskDriver>();
             m_AllTaskDriverSystems = new HashSet<AbstractTaskDriverSystem>();
             m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
-            m_CancelRequestsDataSource = new CancelRequestsDataSource();
+            m_CancelRequestsDataSource = new CancelRequestsDataSource(this);
         }
 
         protected override void OnStartRunning()
@@ -54,8 +56,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
             
             m_CancelRequestsDataSource.Dispose();
+            
+            m_IDProvider.Dispose();
 
             base.OnDestroy();
+        }
+
+        public uint GetNextID()
+        {
+            return m_IDProvider.GetNextID();
         }
 
         private void Harden()
@@ -98,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Type type = typeof(TInstance);
             if (!m_EntityProxyDataSourcesByType.TryGetValue(type, out IDataSource dataSource))
             {
-                dataSource = new EntityProxyDataSource<TInstance>();
+                dataSource = new EntityProxyDataSource<TInstance>(this);
                 m_EntityProxyDataSourcesByType.Add(type, dataSource);
             }
 
@@ -119,13 +128,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected sealed override void OnUpdate()
         {
             JobHandle dependsOn = Dependency;
-
-            //TODO: Implement
+            
             //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
-            //             //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
-            //             //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
-            //             dependsOn = m_WorldCancelRequestsBulkJobScheduler.Schedule(dependsOn,
-            //                                                                        AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+            //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
+            //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
+            dependsOn = m_CancelRequestsDataSource.Consolidate(dependsOn);
 
             //Next we check if any cancel progress was updated
             //             dependsOn = m_WorldCancelProgressBulkJobScheduler.Schedule(dependsOn,

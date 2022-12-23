@@ -10,6 +10,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public uint ID { get; }
         public World World { get; }
         public AbstractTaskDriverSystem TaskDriverSystem { get; }
+        
+        public List<AbstractTaskDriver> SubTaskDrivers { get; }
+        
+        public bool HasCancellableData { get; }
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams);
     }

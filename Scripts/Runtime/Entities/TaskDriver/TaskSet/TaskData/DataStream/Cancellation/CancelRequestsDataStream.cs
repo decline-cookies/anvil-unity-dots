@@ -1,4 +1,6 @@
 using Anvil.Unity.DOTS.Jobs;
+using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -7,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly CancelRequestsDataSource m_DataSource;
         private readonly ActiveLookupData<EntityProxyInstanceID> m_ActiveLookupData;
-        
+
         public CancelRequestsDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
@@ -30,11 +32,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_DataSource.ReleasePendingAsync(dependsOn);
         }
-        
-        
+
         public CancelRequestsWriter CreateCancelRequestsWriter()
         {
-            return new CancelRequestsWriter(m_DataSource.PendingWriter, TaskSetOwner.ID, m_ActiveLookupData.ID);
+            return new CancelRequestsWriter(m_DataSource.PendingWriter, TaskSetOwner.TaskSet.CancelRequestsContexts);
         }
     }
 }

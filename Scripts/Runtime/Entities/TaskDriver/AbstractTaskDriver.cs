@@ -4,6 +4,7 @@ using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Unity.Entities;
 
@@ -21,7 +22,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
 
+        private readonly TaskDriverManagementSystem m_TaskDriverManagementSystem;
+
         private bool m_IsHardened;
+        private bool m_HasCancellableData;
 
 
         /// <summary>
@@ -40,10 +44,26 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         TaskSet ITaskSetOwner.TaskSet { get => TaskSet; }
         uint ITaskSetOwner.ID { get => ID; }
 
+        List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
+        {
+            get => SubTaskDrivers;
+        }
+
+        bool ITaskSetOwner.HasCancellableData
+        {
+            get
+            {
+                Debug_EnsureHardened();
+                return m_HasCancellableData;
+            }
+        }
+
 
         protected AbstractTaskDriver(World world)
         {
             World = world;
+            m_TaskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            
             SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
 
@@ -57,18 +77,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 World.AddSystem(TaskDriverSystem);
                 World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(TaskDriverSystem);
             }
+            TaskDriverSystem.RegisterTaskDriver(this);
 
-            ID = TaskDriverSystem.RegisterTaskDriver(this);
-
-
-            RegisterWithManagementSystem();
-        }
-
-
-        private void RegisterWithManagementSystem()
-        {
-            TaskDriverManagementSystem taskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
-            taskDriverManagementSystem.RegisterTaskDriver(this);
+            ID = m_TaskDriverManagementSystem.GetNextID();
+            m_TaskDriverManagementSystem.RegisterTaskDriver(this);
         }
 
         protected override void DisposeSelf()
@@ -189,6 +201,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
+            
 
             //Drill down so that the lowest Task Driver gets hardened
             foreach (AbstractTaskDriver subTaskDriver in SubTaskDrivers)
@@ -201,6 +214,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //Harden our own TaskSet
             TaskSet.Harden();
+
+            m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0
+                                || TaskDriverSystem.HasCancellableData
+                                || SubTaskDrivers.Any(subtaskDriver => subtaskDriver.m_HasCancellableData);
         }
 
         internal void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)
@@ -223,6 +240,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureHardened()
+        {
+            if (!m_IsHardened)
+            {
+                throw new InvalidOperationException($"Expected {this} to be Hardened but it hasn't yet!");
             }
         }
     }

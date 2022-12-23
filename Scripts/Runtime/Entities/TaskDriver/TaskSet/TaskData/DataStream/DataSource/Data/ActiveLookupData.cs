@@ -10,16 +10,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private static readonly int INITIAL_SIZE = (int)math.ceil(ChunkUtil.MaxElementsPerChunk<T>() / 8.0f);
         
-        private UnsafeParallelHashMap<T, bool> m_Lookup;
+        public UnsafeParallelHashMap<T, bool> Lookup { get; }
 
         public ActiveLookupData(uint id) : base(id)
         {
-            m_Lookup = new UnsafeParallelHashMap<T, bool>(INITIAL_SIZE, Allocator.Persistent);
+            Lookup = new UnsafeParallelHashMap<T, bool>(INITIAL_SIZE, Allocator.Persistent);
         }
 
         protected sealed override void DisposeData()
         {
-            m_Lookup.Dispose();
+            Lookup.Dispose();
         }
     }
 }

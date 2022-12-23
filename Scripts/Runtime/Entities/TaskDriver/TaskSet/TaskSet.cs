@@ -3,7 +3,10 @@ using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using Unity.Collections;
 using Unity.Entities;
+using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -22,8 +25,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private bool m_IsHardened;
 
         public CancelRequestsDataStream CancelRequestsDataStream { get; }
-        
+        public NativeArray<CancelRequestContext> CancelRequestsContexts { get; private set; }
+
         public ITaskSetOwner TaskSetOwner { get; }
+
+        public int ExplicitCancellationCount
+        {
+            get => m_DataStreamsWithExplicitCancellation.Count;
+        }
 
 
         public TaskSet(ITaskSetOwner taskSetOwner)
@@ -46,6 +55,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void DisposeSelf()
         {
             m_JobConfigs.DisposeAllAndTryClear();
+            if (CancelRequestsContexts.IsCreated)
+            {
+                CancelRequestsContexts.Dispose();
+            }
 
             base.DisposeSelf();
         }
@@ -124,7 +137,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
-            
+
             UpdateJobConfig<TInstance> updateJobConfig = JobConfigFactory.CreateUpdateJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(updateJobConfig);
             return updateJobConfig;
@@ -136,7 +149,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
-            
+
             DataStreamJobConfig<TInstance> dataStreamJobConfig = JobConfigFactory.CreateDataStreamJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(dataStreamJobConfig);
             return dataStreamJobConfig;
@@ -147,7 +160,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                   BatchStrategy batchStrategy)
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
-            
+
             EntityQueryJobConfig entityQueryJobConfig = JobConfigFactory.CreateEntityQueryJobConfig(TaskSetOwner, entityQuery, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(entityQueryJobConfig);
             return entityQueryJobConfig;
@@ -159,7 +172,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             where T : struct, IComponentData
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
-            
+
             EntityQueryComponentJobConfig<T> entityQueryComponentJobConfig = JobConfigFactory.CreateEntityQueryComponentJobConfig(TaskSetOwner, entityQuery, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(entityQueryComponentJobConfig);
             return entityQueryComponentJobConfig;
@@ -175,23 +188,43 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            
+
             foreach (AbstractJobConfig jobConfig in m_JobConfigs)
             {
                 jobConfig.Harden();
             }
+
+            //If we're a TaskDriver, we should harden our Cancel Requests
+            if (TaskSetOwner != TaskSetOwner.TaskDriverSystem)
+            {
+                List<CancelRequestContext> contexts = new List<CancelRequestContext>();
+                AddCancelRequestContextsTo(contexts);
+                CancelRequestsContexts = new NativeArray<CancelRequestContext>(contexts.ToArray(), Allocator.Persistent);
+            }
             
-            // //TODO: We can do this in hardening
-            // HasCancellableData = TaskData.CancellableDataStreams.Count > 0
-            //                   || SubTaskDrivers.Any(subTaskDriver => subTaskDriver.HasCancellableData)
-            //                   || GoverningTaskSystem.HasCancellableData;
             //
             // //TODO: We can do this in hardening
             // CancelFlow.BuildRequestData();
-            
+
             //TODO: Build up the Cancellation data structure with parent/child info
         }
-        
+
+        private void AddCancelRequestContextsTo(List<CancelRequestContext> contexts)
+        {
+            //Add ourself
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.GetActiveID(), TaskSetOwner.HasCancellableData));
+
+            //Add the System
+            CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
+            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID(), systemCancelRequestsDataStream.TaskSetOwner.HasCancellableData));
+
+            //Add all SubTask Drivers and their systems
+            foreach (AbstractTaskDriver taskDriver in TaskSetOwner.SubTaskDrivers)
+            {
+                taskDriver.TaskSet.AddCancelRequestContextsTo(contexts);
+            }
+        }
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************

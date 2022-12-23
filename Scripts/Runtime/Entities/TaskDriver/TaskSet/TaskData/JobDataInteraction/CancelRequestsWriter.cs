@@ -16,17 +16,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private const int UNSET_LANE_INDEX = -1;
         
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_PendingWriter;
-        [ReadOnly] private readonly uint m_TaskSetOwnerID;
-        [ReadOnly] private readonly uint m_ActiveID;
+        [ReadOnly] private readonly NativeArray<CancelRequestContext> m_CancelRequestContexts;
 
         private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
         
-        internal CancelRequestsWriter(UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingWriter, uint taskSetOwnerID, uint activeID) : this()
+        internal CancelRequestsWriter(UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingWriter, NativeArray<CancelRequestContext> cancelRequestContexts) : this()
         {
             m_PendingWriter = pendingWriter;
-            m_TaskSetOwnerID = taskSetOwnerID;
-            m_ActiveID = activeID;
+            m_CancelRequestContexts = cancelRequestContexts;
 
             m_PendingLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -63,7 +61,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void RequestCancel(ref Entity entity)
         {
             Debug_EnsureCanCancel();
-            m_PendingLaneWriter.Write(new EntityProxyInstanceID(entity, m_TaskSetOwnerID, m_ActiveID));
+            foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
+            {
+                m_PendingLaneWriter.Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.ActiveID));
+            }
         }
         
         //*************************************************************************************************************

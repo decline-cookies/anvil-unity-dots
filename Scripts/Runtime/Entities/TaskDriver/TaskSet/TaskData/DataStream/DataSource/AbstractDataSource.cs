@@ -1,6 +1,5 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
-using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -16,9 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                     IDataSource
         where T : unmanaged, IEquatable<T>
     {
-        private readonly IDProvider m_IDProvider;
-        
-
+        private readonly TaskDriverManagementSystem m_TaskDriverManagementSystem;
         private bool m_IsHardened;
         
         private NativeArray<JobHandle> m_ConsolidationDependencies;
@@ -30,10 +27,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected PendingData<T> PendingData { get; }
         protected Dictionary<uint, AbstractData> ActiveDataLookupByID { get; }
 
-        protected unsafe AbstractDataSource()
+        protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
         {
-            m_IDProvider = new IDProvider();
-            PendingData = new PendingData<T>(m_IDProvider.GetNextID());
+            m_TaskDriverManagementSystem = taskDriverManagementSystem;
+            PendingData = new PendingData<T>(m_TaskDriverManagementSystem.GetNextID());
             PendingWriter = PendingData.PendingWriter;
             PendingWriterPointer = PendingData.PendingWriterPointer;
             ActiveDataLookupByID = new Dictionary<uint, AbstractData>();
@@ -41,7 +38,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         protected override void DisposeSelf()
         {
-            m_IDProvider.Dispose();
             PendingData.Dispose();
             ActiveDataLookupByID.DisposeAllValuesAndClear();
 
@@ -55,14 +51,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public ActiveArrayData<T> CreateActiveArrayData()
         {
-            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(m_IDProvider.GetNextID());
+            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(m_TaskDriverManagementSystem.GetNextID());
             ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
             return activeArrayData;
         }
 
         public ActiveLookupData<T> CreateActiveLookupData()
         {
-            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(m_IDProvider.GetNextID());
+            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(m_TaskDriverManagementSystem.GetNextID());
             ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
             return activeLookupData;
         }

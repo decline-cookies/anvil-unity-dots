@@ -12,37 +12,52 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                                ITaskSetOwner
     {
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
+        private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
         
-        private readonly IDProvider m_TaskDriverIDProvider;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
+        private readonly TaskDriverManagementSystem m_TaskDriverManagementSystem;
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
-
-
+        private bool m_HasCancellableData;
+        
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
 
         public new World World { get; }
         public TaskSet TaskSet { get; }
         public uint ID { get; }
 
+        public List<AbstractTaskDriver> SubTaskDrivers
+        {
+            get => EMPTY_SUB_TASK_DRIVERS;
+        }
+
+        public bool HasCancellableData
+        {
+            get
+            {
+                Debug_EnsureHardened();
+                return m_HasCancellableData;
+            }
+        }
+
 
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;
+            m_TaskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
 
-            m_TaskDriverIDProvider = new IDProvider();
+            
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
-            ID = m_TaskDriverIDProvider.GetNextID();
+            ID = m_TaskDriverManagementSystem.GetNextID();
 
             TaskSet = new TaskSet(this);
         }
 
         protected override void OnDestroy()
         {
-            m_TaskDriverIDProvider.Dispose();
             //We don't own the TaskDrivers registered here, so we won't dispose them
             m_TaskDrivers.Clear();
 
@@ -57,11 +72,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return GetType().GetReadableName();
         }
 
-        public uint RegisterTaskDriver(AbstractTaskDriver taskDriver)
+        public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
-            uint taskDriverID = m_TaskDriverIDProvider.GetNextID();
             m_TaskDrivers.Add(taskDriver);
-            return taskDriverID;
         }
 
         public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
@@ -109,6 +122,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //Harden our TaskSet
             TaskSet.Harden();
+
+            m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0;
         }
 
         public void HardenUpdatePhase()
@@ -163,6 +178,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (m_IsUpdatePhaseHardened)
             {
                 throw new InvalidOperationException($"Trying to Harden the Update Phase for {this} but {nameof(HardenUpdatePhase)} has already been called!");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureHardened()
+        {
+            if (!m_IsHardened)
+            {
+                throw new InvalidOperationException($"Expected {this} to be Hardened but it hasn't yet!");
             }
         }
     }
