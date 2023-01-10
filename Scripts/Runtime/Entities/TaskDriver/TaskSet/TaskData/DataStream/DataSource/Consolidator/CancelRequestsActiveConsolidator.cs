@@ -21,7 +21,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void WriteToActive(EntityProxyInstanceID id)
         {
-            UnityEngine.Debug.Log($"Consolidating CancelRequest from Pending to Active Lookup with Entity {id.Entity} on TaskSetOwner {id.TaskSetOwnerID} to Active {id.ActiveID}");
             //TODO: Handle the cases where we don't have cancellable data
             //TODO: Write to the Progress lookup at the same time
             m_Lookup.TryAdd(id, true);

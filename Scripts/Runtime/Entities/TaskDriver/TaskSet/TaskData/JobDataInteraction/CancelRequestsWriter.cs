@@ -64,7 +64,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
                 m_PendingLaneWriter.Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.ActiveID));
-                UnityEngine.Debug.Log($"Writing Cancel for Entity {entity} in TaskSetOwner {cancelRequestContext.TaskSetOwnerID} to Active {cancelRequestContext.ActiveID}");
             }
         }
         

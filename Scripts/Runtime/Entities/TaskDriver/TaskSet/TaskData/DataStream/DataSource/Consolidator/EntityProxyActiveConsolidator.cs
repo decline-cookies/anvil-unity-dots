@@ -53,28 +53,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private void WriteToActiveWithDefaultCancel(ref EntityProxyInstanceWrapper<TInstance> instance)
         {
-            UnityEngine.Debug.Log($"Checking for Default Cancel of {instance.InstanceID.Entity} on TaskSetOwner {instance.InstanceID.TaskSetOwnerID}");
             //If it exists in the lookup, don't write it to the native array, let it poof out of existence
             if (m_CancelRequestsLookup.ContainsKey(instance.InstanceID))
             {
-                UnityEngine.Debug.Log("FOUND, DELETING");
                 return;
             }
-            UnityEngine.Debug.Log("Not cancelled, continuing");
             //Otherwise it wasn't cancelled so write it
             WriteInstanceToActive(ref instance);
         }
 
         private void WriteToActiveWithExplicitCancel(ref EntityProxyInstanceWrapper<TInstance> instance)
         {
-            UnityEngine.Debug.Log($"Checking for Explicit Cancel of {instance.InstanceID.Entity} on TaskSetOwner {instance.InstanceID.TaskSetOwnerID}");
             if (m_CancelRequestsLookup.ContainsKey(instance.InstanceID))
             {
-                UnityEngine.Debug.Log("FOUND, DELETING");
                 //TODO: Write to Pending Cancelled 
                 return;
             }
-            UnityEngine.Debug.Log("Not cancelled, continuing");
             //Otherwise it wasn't cancelled so write it
             WriteInstanceToActive(ref instance);
         }

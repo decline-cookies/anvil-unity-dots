@@ -54,8 +54,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ID = m_TaskDriverManagementSystem.GetNextID();
 
             TaskSet = new TaskSet(this);
-            
-            UnityEngine.Debug.Log($"TaskDriverSystem {this} with CancelRequest ActiveID {TaskSet.CancelRequestsDataStream.ActiveLookupData.ID}");
         }
 
         protected override void OnDestroy()
