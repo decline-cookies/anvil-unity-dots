@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
 using Unity.Jobs;
 
@@ -20,6 +21,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void HardenSelf()
         {
             base.HardenSelf();
+            //We'll want to write to the Cancel Complete collection directly if we don't have to wait for explicit cancel jobs so we need SharedWrite Access
+            AddConsolidationData(TaskDriverManagementSystem.GetCancelCompleteDataSource().PendingData, AccessType.SharedWrite);
             m_Consolidator = new CancelRequestsDataSourceConsolidator(PendingData, ActiveDataLookupByID);
         }
 

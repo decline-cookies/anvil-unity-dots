@@ -6,9 +6,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelCompleteDataStream : AbstractDataStream
     {
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
+
         private readonly CancelCompleteDataSource m_DataSource;
         public ActiveArrayData<EntityProxyInstanceID> ActiveArrayData { get; }
         public UnsafeTypedStream<EntityProxyInstanceID>.Writer PendingWriter { get; }
+        
+        public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
 
         public CancelCompleteDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
@@ -17,11 +21,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             PendingWriter = m_DataSource.PendingWriter;
             
             ActiveArrayData = m_DataSource.CreateActiveArrayData(TaskSetOwner, CancelBehaviour.None);
+            ScheduleInfo = ActiveArrayData.ScheduleInfo;
         }
 
         public override uint GetActiveID()
         {
             return ActiveArrayData.ID;
+        }
+        
+        public JobHandle AcquireActiveAsync(AccessType accessType)
+        {
+            return ActiveArrayData.AcquireAsync(accessType);
+        }
+
+        public void ReleaseActiveAsync(JobHandle dependsOn)
+        {
+            ActiveArrayData.ReleaseAsync(dependsOn);
         }
         
         public JobHandle AcquirePendingAsync(AccessType accessType)

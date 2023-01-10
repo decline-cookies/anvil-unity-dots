@@ -12,25 +12,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// </summary>
     internal static class JobConfigFactory
     {
-        // public static CancelCompleteJobConfig CreateCancelCompleteJobConfig(TaskFlowGraph taskFlowGraph,
-        //                                                                     AbstractTaskSet owningTaskSet,
-        //                                                                     CancelCompleteDataStream cancelCompleteDataStream,
-        //                                                                     JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
-        //                                                                     BatchStrategy batchStrategy)
-        // {
-        //     CancelCompleteJobConfig jobConfig = new CancelCompleteJobConfig(taskFlowGraph,
-        //                                                                     owningTaskSet,
-        //                                                                     cancelCompleteDataStream);
-        //
-        //     CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig);
-        //
-        //     CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData,
-        //                                                                              cancelCompleteDataStream,
-        //                                                                              batchStrategy,
-        //                                                                              scheduleJobFunction);
-        //
-        //     return FinalizeJobConfig(jobConfig, scheduleInfo);
-        // }
+        public static CancelCompleteJobConfig CreateCancelCompleteJobConfig(ITaskSetOwner taskSetOwner,
+                                                                            CancelCompleteDataStream cancelCompleteDataStream,
+                                                                            JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                                            BatchStrategy batchStrategy)
+        {
+            CancelCompleteJobConfig jobConfig = new CancelCompleteJobConfig(taskSetOwner,
+                                                                            cancelCompleteDataStream);
+        
+            CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig);
+        
+            CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData,
+                                                                                     cancelCompleteDataStream,
+                                                                                     batchStrategy,
+                                                                                     scheduleJobFunction);
+        
+            return FinalizeJobConfig(jobConfig, scheduleInfo);
+        }
 
         public static UpdateJobConfig<TInstance> CreateUpdateJobConfig<TInstance>(ITaskSetOwner taskSetOwner,
                                                                                   EntityProxyDataStream<TInstance> dataStream,

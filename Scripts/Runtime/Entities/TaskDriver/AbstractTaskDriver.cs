@@ -182,13 +182,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                    batchStrategy);
         }
 
-        // public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
-        //                                                        BatchStrategy batchStrategy)
-        // {
-        //     return m_TaskSet.ConfigureJobWhenCancelComplete(TaskSet.CancelCompleteDataStream,
-        //                                                     scheduleJobFunction,
-        //                                                     batchStrategy);
-        // }
+        public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                               BatchStrategy batchStrategy)
+        {
+            return TaskSet.ConfigureJobWhenCancelComplete(scheduleJobFunction,
+                                                          batchStrategy);
+        }
 
 
         //TODO: #73 - Implement other job types

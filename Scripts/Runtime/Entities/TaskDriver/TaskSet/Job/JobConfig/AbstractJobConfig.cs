@@ -22,7 +22,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Default,
             Update,
             Resolve,
-            RequestCancel
+            RequestCancel,
+            CancelComplete
         }
 
         internal static readonly BulkScheduleDelegate<AbstractJobConfig> PREPARE_AND_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<AbstractJobConfig>(nameof(PrepareAndSchedule), BindingFlags.Instance | BindingFlags.NonPublic);
@@ -127,11 +128,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //     return this;
         // }
         //
-        // protected IJobConfig RequireCancelCompleteDataStreamForRead(CancelCompleteDataStream cancelCompleteDataStream)
-        // {
-        //     AddAccessWrapper(new CancelCompleteDataStreamAccessWrapper(cancelCompleteDataStream, AccessType.SharedRead, Usage.Read));
-        //     return this;
-        // }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
@@ -302,11 +298,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return (TWrapper)m_AccessWrappers[id];
         }
 
-        // internal CancelCompleteDataStream GetCancelCompleteDataStream(Usage usage)
-        // {
-        //     CancelCompleteDataStreamAccessWrapper cancelCompleteDataStreamAccessWrapper = GetAccessWrapper<CancelCompleteDataStreamAccessWrapper>(usage);
-        //     return cancelCompleteDataStreamAccessWrapper.CancelCompleteDataStream;
-        // }
+        internal CancelCompleteDataStream GetCancelCompleteDataStream()
+        {
+            CancelCompleteActiveAccessWrapper cancelCompleteActiveAccessWrapper = GetAccessWrapper<CancelCompleteActiveAccessWrapper>(Usage.CancelComplete);
+            return cancelCompleteActiveAccessWrapper.CancelCompleteDataStream;
+        }
 
         // internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup(Usage usage)
         // {

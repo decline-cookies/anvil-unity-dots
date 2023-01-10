@@ -154,15 +154,5 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData;
-        
-        // /// <summary>
-        // /// Specifies a target to allow instances of data to resolve to. All matching
-        // /// <see cref="IAbstractDataStream{TInstance}"/>s on the governing <see cref="AbstractTaskDriver"/> and
-        // /// <see cref="AbstractTaskDriverSystem"/> will be required for writing in a shared-write context.
-        // /// </summary>
-        // /// <typeparam name="TResolveTargetType">The type of <see cref="IEntityProxyInstance"/> that will be resolved.</typeparam>
-        // /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        // public IJobConfig RequireResolveTarget<TResolveTargetType>()
-        //     where TResolveTargetType : unmanaged, IEntityProxyInstance;
     }
 }

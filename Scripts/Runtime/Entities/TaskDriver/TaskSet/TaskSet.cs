@@ -178,10 +178,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return entityQueryComponentJobConfig;
         }
 
-        // public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
-        //                                                        BatchStrategy batchStrategy)
-        // {
-        // }
+        public IJobConfig ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                         BatchStrategy batchStrategy)
+        {
+            Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
+
+            CancelCompleteJobConfig cancelCompleteJobConfig = JobConfigFactory.CreateCancelCompleteJobConfig(TaskSetOwner, CancelCompleteDataStream, scheduleJobFunction, batchStrategy);
+            m_JobConfigs.Add(cancelCompleteJobConfig);
+            return cancelCompleteJobConfig;
+        }
 
 
         public void Harden()
@@ -201,7 +206,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 AddCancelRequestContextsTo(contexts);
                 CancelRequestsContexts = new NativeArray<CancelRequestContext>(contexts.ToArray(), Allocator.Persistent);
             }
-            
+
             //
             // //TODO: We can do this in hardening
             // CancelFlow.BuildRequestData();
@@ -216,7 +221,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //Add the System
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
-            
+
             //We need to add a context for the System and the TaskDriver. 
             //TODO: Elaborate on the reasoning
             contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
