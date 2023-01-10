@@ -23,6 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private bool m_IsHardened;
 
         public CancelRequestsDataStream CancelRequestsDataStream { get; }
+        public CancelCompleteDataStream CancelCompleteDataStream { get; }
         public NativeArray<CancelRequestContext> CancelRequestsContexts { get; private set; }
 
         public ITaskSetOwner TaskSetOwner { get; }
@@ -46,6 +47,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_AllPublicDataStreams = new List<AbstractDataStream>();
 
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
+            CancelCompleteDataStream = new CancelCompleteDataStream(taskSetOwner);
 
             //TODO: Build a Cancellation Data Structure
         }
@@ -216,7 +218,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
             
             //We need to add a context for the System and the TaskDriver. 
-            //TODO: Elaborate
+            //TODO: Elaborate on the reasoning
             contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
             contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
 

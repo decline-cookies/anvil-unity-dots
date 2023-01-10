@@ -78,8 +78,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Add(instance);
         }
-
-
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsurePointerNotNull(void* ptr)
         {

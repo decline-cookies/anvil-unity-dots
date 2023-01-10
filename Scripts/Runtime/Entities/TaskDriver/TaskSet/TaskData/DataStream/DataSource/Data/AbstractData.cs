@@ -1,4 +1,5 @@
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
@@ -29,6 +30,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             DisposeData();
             m_AccessController.Dispose();
             base.DisposeSelf();
+        }
+
+        public override string ToString()
+        {
+            return $"{GetType().GetReadableName()}";
         }
 
         protected abstract void DisposeData();

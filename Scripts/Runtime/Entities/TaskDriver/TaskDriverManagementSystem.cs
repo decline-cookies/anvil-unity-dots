@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -19,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
         private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
         private readonly CancelRequestsDataSource m_CancelRequestsDataSource;
+        private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
@@ -36,6 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_AllTaskDriverSystems = new HashSet<AbstractTaskDriverSystem>();
             m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
             m_CancelRequestsDataSource = new CancelRequestsDataSource(this);
+            m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
         }
 
         protected override void OnStartRunning()
@@ -58,6 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
             
             m_CancelRequestsDataSource.Dispose();
+            m_CancelCompleteDataSource.Dispose();
             
             m_IDProvider.Dispose();
 
@@ -78,8 +80,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 dataSource.Harden();
             }
-            
-            m_CancelRequestsDataSource.Harden();
 
             m_EntityProxyDataSourceBulkJobScheduler = new BulkJobScheduler<IDataSource>(m_EntityProxyDataSourcesByType.Values.ToArray());
 
@@ -101,6 +101,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 taskDriverSystem.HardenUpdatePhase();
             }
+            
+            //Harden the Cancellation data
+            m_CancelRequestsDataSource.Harden();
+            m_CancelCompleteDataSource.Harden();
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
@@ -119,6 +123,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelRequestsDataSource GetCancelRequestsDataSource()
         {
             return m_CancelRequestsDataSource;
+        }
+
+        public CancelCompleteDataSource GetCancelCompleteDataSource()
+        {
+            return m_CancelCompleteDataSource;
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -149,9 +158,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //                                                                       AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
-            //             // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain
-            //             dependsOn = m_WorldCancelCompleteBulkJobScheduler.Schedule(dependsOn,
-            //                                                                        AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
+            // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain
+            dependsOn = m_CancelCompleteDataSource.Consolidate(dependsOn);
 
             Dependency = dependsOn;
         }
