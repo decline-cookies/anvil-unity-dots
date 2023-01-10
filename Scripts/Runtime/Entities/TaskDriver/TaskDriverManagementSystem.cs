@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -24,6 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
         
         private readonly IDProvider m_IDProvider;
+        
 
 
         public TaskDriverManagementSystem()

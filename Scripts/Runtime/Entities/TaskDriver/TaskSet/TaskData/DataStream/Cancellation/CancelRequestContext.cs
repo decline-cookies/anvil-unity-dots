@@ -4,12 +4,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         public readonly uint TaskSetOwnerID;
         public readonly uint ActiveID;
-        public readonly bool HasCancellableData;
-        public CancelRequestContext(uint taskSetOwnerID, uint activeID, bool hasCancellableData)
+        public CancelRequestContext(uint taskSetOwnerID, uint activeID)
         {
             TaskSetOwnerID = taskSetOwnerID;
             ActiveID = activeID;
-            HasCancellableData = hasCancellableData;
+        }
+
+        public override string ToString()
+        {
+            return $"TaskSetOwnerID: {TaskSetOwnerID}, ActiveID: {ActiveID}";
         }
     }
 }

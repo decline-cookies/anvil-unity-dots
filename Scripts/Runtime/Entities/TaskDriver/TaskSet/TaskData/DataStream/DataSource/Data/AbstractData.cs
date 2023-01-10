@@ -7,13 +7,20 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal abstract class AbstractData : AbstractAnvilBase
     {
-        public uint ID { get; }
         private readonly AccessController m_AccessController;
+        
+        public uint ID { get; }
+        public CancelBehaviour CancelBehaviour { get; }
+        
+        public ITaskSetOwner TaskSetOwner { get; }
+        
 
-        protected AbstractData(uint id)
+        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
         {
-            ID = id;
             m_AccessController = new AccessController();
+            ID = id;
+            TaskSetOwner = taskSetOwner;
+            CancelBehaviour = cancelBehaviour;
         }
 
         protected sealed override void DisposeSelf()

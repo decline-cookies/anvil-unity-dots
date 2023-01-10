@@ -42,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 uint activeID = entry.ActiveID;
                 CancelRequestsActiveConsolidator activeConsolidator = m_ActiveConsolidatorsByID[activeID];
-                activeConsolidator.WritePending(entry);
+                activeConsolidator.WriteToActive(entry);
             }
 
             m_Pending.Clear();

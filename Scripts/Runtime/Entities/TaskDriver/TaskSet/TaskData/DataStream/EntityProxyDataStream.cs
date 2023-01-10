@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
-            m_ActiveArrayData = m_DataSource.CreateActiveArrayData();
+            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelBehaviour);
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
         }
 

@@ -3,10 +3,8 @@ using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEditor.VersionControl;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -212,11 +210,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private void AddCancelRequestContextsTo(List<CancelRequestContext> contexts)
         {
             //Add ourself
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.GetActiveID(), TaskSetOwner.HasCancellableData));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.GetActiveID()));
 
             //Add the System
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
-            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID(), systemCancelRequestsDataStream.TaskSetOwner.HasCancellableData));
+            
+            //We need to add a context for the System and the TaskDriver. 
+            //TODO: Elaborate
+            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
 
             //Add all SubTask Drivers and their systems
             foreach (AbstractTaskDriver taskDriver in TaskSetOwner.SubTaskDrivers)

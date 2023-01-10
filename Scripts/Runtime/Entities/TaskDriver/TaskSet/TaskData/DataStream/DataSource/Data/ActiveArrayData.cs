@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => m_Active;
         }
 
-        public ActiveArrayData(uint id) : base(id)
+        public ActiveArrayData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(id, taskSetOwner, cancelBehaviour)
         {
             m_Active = new DeferredNativeArray<T>(Allocator.Persistent);
             //TODO: Make this part of the constructor

@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private bool m_IsHardened;
         
         private NativeArray<JobHandle> m_ConsolidationDependencies;
-        private AbstractData[] m_ActiveData;
+        private readonly List<DataAccessWrapper> m_ConsolidationData;
 
         public UnsafeTypedStream<T>.Writer PendingWriter { get; }
         public unsafe void* PendingWriterPointer { get; }
@@ -34,6 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             PendingWriter = PendingData.PendingWriter;
             PendingWriterPointer = PendingData.PendingWriterPointer;
             ActiveDataLookupByID = new Dictionary<uint, AbstractData>();
+            m_ConsolidationData = new List<DataAccessWrapper>();
         }
 
         protected override void DisposeSelf()
@@ -49,16 +50,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.DisposeSelf();
         }
 
-        public ActiveArrayData<T> CreateActiveArrayData()
+        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
         {
-            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(m_TaskDriverManagementSystem.GetNextID());
+            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(m_TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelBehaviour);
             ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
             return activeArrayData;
         }
 
-        public ActiveLookupData<T> CreateActiveLookupData()
+        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
         {
-            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(m_TaskDriverManagementSystem.GetNextID());
+            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(m_TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelBehaviour);
             ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
             return activeLookupData;
         }
@@ -78,16 +79,26 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureNotHardened();
             m_IsHardened = true;
 
-            //Build up hardened collections
-            m_ActiveData = ActiveDataLookupByID.Values.ToArray();
-            //One job handle for each Active Data, one for the Pending, one for the incoming dependency
-            m_ConsolidationDependencies = new NativeArray<JobHandle>(ActiveDataLookupByID.Count + 2, Allocator.Persistent);
-
+            //Allow derived classes to add to the Consolidation Data if they need to.
             HardenSelf();
+            
+            //For each piece of active data, we want exclusive access to it when consolidating. We're going to be writing to it via one thread.
+            foreach (AbstractData data in ActiveDataLookupByID.Values)
+            {
+                m_ConsolidationData.Add(new DataAccessWrapper(data, AccessType.ExclusiveWrite));
+            }
+            
+            //One job handle for each Consolidation Data, one for the Pending, one for the incoming dependency
+            m_ConsolidationDependencies = new NativeArray<JobHandle>(m_ConsolidationData.Count + 2, Allocator.Persistent);
         }
 
         protected virtual void HardenSelf()
         {
+        }
+
+        protected void AddConsolidationData(AbstractData data, AccessType accessType)
+        {
+            m_ConsolidationData.Add(new DataAccessWrapper(data, accessType));
         }
 
         //*************************************************************************************************************
@@ -107,9 +118,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private JobHandle AcquireAsync(JobHandle dependsOn)
         {
             int dependencyIndex = 0;
-            for (; dependencyIndex < m_ActiveData.Length; ++dependencyIndex)
+            for (; dependencyIndex < m_ConsolidationData.Count; ++dependencyIndex)
             {
-                m_ConsolidationDependencies[dependencyIndex] = m_ActiveData[dependencyIndex].AcquireAsync(AccessType.ExclusiveWrite);
+                DataAccessWrapper dataAccessWrapper = m_ConsolidationData[dependencyIndex];
+                m_ConsolidationDependencies[dependencyIndex] = dataAccessWrapper.Data.AcquireAsync(dataAccessWrapper.AccessType);
             }
 
             m_ConsolidationDependencies[dependencyIndex] = PendingData.AcquireAsync(AccessType.ExclusiveWrite);
@@ -121,9 +133,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private void ReleaseAsync(JobHandle dependsOn)
         {
-            foreach (AbstractData activeData in m_ActiveData)
+            foreach (DataAccessWrapper dataAccessWrapper in m_ConsolidationData)
             {
-                activeData.ReleaseAsync(dependsOn);
+                dataAccessWrapper.Data.ReleaseAsync(dependsOn);
             }
 
             PendingData.ReleaseAsync(dependsOn);
@@ -139,6 +151,22 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+            }
+        }
+        
+        //*************************************************************************************************************
+        // INNER CLASS
+        //*************************************************************************************************************
+
+        private class DataAccessWrapper
+        {
+            public readonly AbstractData Data;
+            public readonly AccessType AccessType;
+
+            public DataAccessWrapper(AbstractData data, AccessType accessType)
+            {
+                Data = data;
+                AccessType = accessType;
             }
         }
     }
