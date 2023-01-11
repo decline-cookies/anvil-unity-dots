@@ -7,6 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private readonly CancelRequestsDataSource m_DataSource;
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
+        public ActiveLookupData<EntityProxyInstanceID> ProgressLookupData { get; }
 
         public CancelRequestsDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
@@ -14,6 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_DataSource = taskDriverManagementSystem.GetCancelRequestsDataSource();
 
             ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
+            ProgressLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
         }
 
         public override uint GetActiveID()

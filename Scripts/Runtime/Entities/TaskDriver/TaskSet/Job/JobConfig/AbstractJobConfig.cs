@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -305,18 +306,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return cancelCompleteActiveAccessWrapper.CancelCompleteDataStream;
         }
 
-        // internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup(Usage usage)
-        // {
-        //     CancelProgressLookupAccessWrapper cancelProgressLookupAccessWrapper = GetAccessWrapper<CancelProgressLookupAccessWrapper>(usage);
-        //     return cancelProgressLookupAccessWrapper.ProgressLookup;
-        // }
-
-        // internal PendingCancelDataStream<TInstance> GetPendingCancelDataStream<TInstance>(Usage usage)
-        //     where TInstance : unmanaged, IEntityProxyInstance
-        // {
-        //     PendingCancelDataStreamAccessWrapper<TInstance> pendingCancelDataStreamAccessWrapper = GetAccessWrapper<PendingCancelDataStreamAccessWrapper<TInstance>>(usage);
-        //     return pendingCancelDataStreamAccessWrapper.PendingCancelDataStream;
-        // }
+        internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup()
+        {
+            CancelProgressLookupAccessWrapper cancelProgressLookupAccessWrapper = GetAccessWrapper<CancelProgressLookupAccessWrapper>(Usage.Cancelling);
+            return cancelProgressLookupAccessWrapper.ProgressLookup;
+        }
 
         internal CancelRequestsDataStream GetCancelRequestsDataStream()
         {

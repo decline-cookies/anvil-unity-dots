@@ -150,12 +150,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //                                                                        TaskDriverCancelFlow.SCHEDULE_FUNCTION);
 
 
+            //All Entity Proxy Data Streams will now be consolidated. Anything that was cancellable will be dealt with here as well
+            //and written to the right location
             dependsOn = m_EntityProxyDataSourceBulkJobScheduler.Schedule(dependsOn,
                                                                          IDataSource.CONSOLIDATE_SCHEDULE_FUNCTION);
-
-            // Consolidate all PendingCancelDataStreams (Cancel jobs can run now)
-            //             dependsOn = m_WorldPendingCancelBulkJobScheduler.Schedule(dependsOn,
-            //                                                                       AbstractDataStream.CONSOLIDATE_FOR_FRAME_SCHEDULE_FUNCTION);
 
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
             // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain

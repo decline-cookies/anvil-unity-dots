@@ -6,28 +6,25 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 {
     internal class CancelProgressLookupAccessWrapper : AbstractAccessWrapper
     {
-        private readonly AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> m_CancelProgressLookup;
-        private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
+        private readonly ActiveLookupData<EntityProxyInstanceID> m_CancelProgressLookupData;
 
-        public UnsafeParallelHashMap<EntityProxyInstanceID, bool> ProgressLookup
-        {
-            get => m_ProgressLookup;
-        }
-        
+        public UnsafeParallelHashMap<EntityProxyInstanceID, bool> ProgressLookup { get; }
 
-        public CancelProgressLookupAccessWrapper(AccessControlledValue<UnsafeParallelHashMap<EntityProxyInstanceID, bool>> cancelProgressLookup, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+
+        public CancelProgressLookupAccessWrapper(ActiveLookupData<EntityProxyInstanceID> cancelProgressLookupData, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
-            m_CancelProgressLookup = cancelProgressLookup;
+            m_CancelProgressLookupData = cancelProgressLookupData;
+            ProgressLookup = m_CancelProgressLookupData.Lookup;
         }
 
         public override JobHandle Acquire()
         {
-            return m_CancelProgressLookup.AcquireAsync(AccessType, out m_ProgressLookup);
+            return m_CancelProgressLookupData.AcquireAsync(AccessType);
         }
 
         public override void Release(JobHandle dependsOn)
         {
-            m_CancelProgressLookup.ReleaseAsync(dependsOn);
+            m_CancelProgressLookupData.ReleaseAsync(dependsOn);
         }
     }
 }

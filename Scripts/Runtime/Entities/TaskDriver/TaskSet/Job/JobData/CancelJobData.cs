@@ -1,5 +1,4 @@
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
@@ -25,9 +24,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             EntityProxyDataStream<TInstance> pendingCancelDataStream = m_CancelJobConfig.GetPendingCancelDataStream<TInstance>();
             ResolveTargetTypeLookup resolveTargetTypeLookup = m_CancelJobConfig.GetResolveTargetTypeLookup();
-            //TODO: Implement
-            // UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup = m_CancelJobConfig.GetCancelProgressLookup(AbstractJobConfig.Usage.Cancelling);
-            DataStreamCancellationUpdater<TInstance> cancellationUpdater = pendingCancelDataStream.CreateDataStreamCancellationUpdater(resolveTargetTypeLookup, default);
+            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup = m_CancelJobConfig.GetCancelProgressLookup();
+            DataStreamCancellationUpdater<TInstance> cancellationUpdater = pendingCancelDataStream.CreateDataStreamCancellationUpdater(resolveTargetTypeLookup, cancelProgressLookup);
             return cancellationUpdater;
         }
     }

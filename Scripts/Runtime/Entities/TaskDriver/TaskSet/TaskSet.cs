@@ -24,6 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public CancelRequestsDataStream CancelRequestsDataStream { get; }
         public CancelCompleteDataStream CancelCompleteDataStream { get; }
+
         public NativeArray<CancelRequestContext> CancelRequestsContexts { get; private set; }
 
         public ITaskSetOwner TaskSetOwner { get; }
