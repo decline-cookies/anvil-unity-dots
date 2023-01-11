@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -13,8 +14,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
+        private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_PendingCancelActiveArrayData;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
+        public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
         public CancelBehaviour CancelBehaviour { get; }
 
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(taskSetOwner)
@@ -24,6 +27,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelBehaviour);
+
+            if (m_ActiveArrayData.PendingCancelActiveData != null)
+            {
+                m_PendingCancelActiveArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)m_ActiveArrayData.PendingCancelActiveData;
+                PendingCancelScheduleInfo = m_PendingCancelActiveArrayData.ScheduleInfo;
+            }
+
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
         }
 
@@ -32,6 +42,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_DataSource = systemDataStream.m_DataSource;
             m_ActiveArrayData = systemDataStream.m_ActiveArrayData;
             ScheduleInfo = systemDataStream.ScheduleInfo;
+            PendingCancelScheduleInfo = systemDataStream.PendingCancelScheduleInfo;
+            m_PendingCancelActiveArrayData = systemDataStream.m_PendingCancelActiveArrayData;
         }
 
         public JobHandle AcquirePendingAsync(AccessType accessType)
@@ -59,6 +71,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_ActiveArrayData.ReleaseAsync(dependsOn);
         }
 
+        public JobHandle AcquirePendingCancelActiveAsync(AccessType accessType)
+        {
+            return m_ActiveArrayData.PendingCancelActiveData.AcquireAsync(accessType);
+        }
+
+        public void ReleasePendingCancelActiveAsync(JobHandle dependsOn)
+        {
+            m_ActiveArrayData.PendingCancelActiveData.ReleaseAsync(dependsOn);
+        }
+
 
         public DataStreamPendingWriter<TInstance> CreateDataStreamPendingWriter()
         {
@@ -75,6 +97,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new DataStreamUpdater<TInstance>(m_DataSource.PendingWriter,
                                                     m_ActiveArrayData.DeferredJobArray,
                                                     resolveTargetTypeLookup);
+        }
+
+        public DataStreamCancellationUpdater<TInstance> CreateDataStreamCancellationUpdater(ResolveTargetTypeLookup resolveTargetTypeLookup,
+                                                                                            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup)
+        {
+            return new DataStreamCancellationUpdater<TInstance>(m_DataSource.PendingWriter,
+                                                                m_PendingCancelActiveArrayData.DeferredJobArray,
+                                                                resolveTargetTypeLookup,
+                                                                cancelProgressLookup);
         }
     }
 }

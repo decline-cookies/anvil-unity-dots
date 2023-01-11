@@ -115,16 +115,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             jobConfigs.AddRange(m_JobConfigs);
         }
 
-        // public IJobConfig ConfigureJobToCancel<TInstance>(IAbstractDataStream<TInstance> dataStream,
-        //                                                   JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-        //                                                   BatchStrategy batchStrategy)
-        //     where TInstance : unmanaged, IEntityProxyInstance
-        // {
-        //     CancelJobConfig<TInstance> cancelJobConfig = JobConfigFactory.CreateCancelJobConfig(TaskSetOwner, (DataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
-        //     m_JobConfigs.Add(cancelJobConfig);
-        //     return cancelJobConfig;
-        // }
-
         public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(IAbstractDataStream<TInstance> dataStream,
                                                                                 JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
                                                                                 BatchStrategy batchStrategy)
@@ -135,6 +125,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             UpdateJobConfig<TInstance> updateJobConfig = JobConfigFactory.CreateUpdateJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
             m_JobConfigs.Add(updateJobConfig);
             return updateJobConfig;
+        }
+
+        public IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(IAbstractDataStream<TInstance> pendingCancelDataStream,
+                                                                                JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
+
+            CancelJobConfig<TInstance> cancelJobConfig = JobConfigFactory.CreateCancelJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)pendingCancelDataStream, scheduleJobFunction, batchStrategy);
+            m_JobConfigs.Add(cancelJobConfig);
+            return cancelJobConfig;
         }
 
         public IJobConfig ConfigureJobTriggeredBy<TInstance>(IAbstractDataStream<TInstance> dataStream,

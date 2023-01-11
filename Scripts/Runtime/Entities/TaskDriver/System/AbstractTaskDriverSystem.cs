@@ -106,6 +106,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                 scheduleJobFunction,
                                                 batchStrategy);
         }
+        
+        public IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
+                                                                                      JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                      BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            //We only want to register Jobs to the System once. However we still want to preserve the API in the TaskDriver.
+            //If we have two or more TaskDrivers, we are guaranteed to have configured our System Jobs so we can just return 
+            //a NO-OP job config that does nothing.
+            if (m_TaskDrivers.Count >= 2)
+            {
+                return NO_OP_JOB_CONFIG;
+            }
+
+            return TaskSet.ConfigureJobToCancel(dataStream,
+                                                scheduleJobFunction,
+                                                batchStrategy);
+        }
 
         //*************************************************************************************************************
         // HARDENING

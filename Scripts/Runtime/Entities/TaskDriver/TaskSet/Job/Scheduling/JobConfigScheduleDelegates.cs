@@ -67,9 +67,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// requested to cancel. Used with <see cref="CancelJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
-        // public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle,
-        //                                                                CancelJobData<TInstance> jobData,
-        //                                                                CancelDataStreamScheduleInfo<TInstance> scheduleInfo)
-        //     where TInstance : unmanaged, IEntityProxyInstance;
+        public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle,
+                                                                       CancelJobData<TInstance> jobData,
+                                                                       CancelDataStreamScheduleInfo<TInstance> scheduleInfo)
+            where TInstance : unmanaged, IEntityProxyInstance;
     }
 }

@@ -19,14 +19,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             CancelCompleteJobConfig jobConfig = new CancelCompleteJobConfig(taskSetOwner,
                                                                             cancelCompleteDataStream);
-        
+
             CancelCompleteJobData jobData = new CancelCompleteJobData(jobConfig);
-        
+
             CancelCompleteScheduleInfo scheduleInfo = new CancelCompleteScheduleInfo(jobData,
                                                                                      cancelCompleteDataStream,
                                                                                      batchStrategy,
                                                                                      scheduleJobFunction);
-        
+
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
@@ -49,23 +49,24 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
 
-        // public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(ITaskSetOwner taskSetOwner,
-        //                                                                           DataStream<TInstance> dataStream,
-        //                                                                           JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-        //                                                                           BatchStrategy batchStrategy)
-        //     where TInstance : unmanaged, IEntityProxyInstance
-        // {
-        //     CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskSetOwner,
-        //                                                                           dataStream);
-        //
-        //     CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig);
-        //
-        //     CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
-        //                                                                                                        dataStream.PendingCancelDataStream,
-        //                                                                                                        batchStrategy,
-        //                                                                                                        scheduleJobFunction);
-        //     return FinalizeJobConfig(jobConfig, scheduleInfo);
-        // }
+        public static CancelJobConfig<TInstance> CreateCancelJobConfig<TInstance>(ITaskSetOwner taskSetOwner,
+                                                                                  EntityProxyDataStream<TInstance> pendingCancelDataStream,
+                                                                                  JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                  BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskSetOwner,
+                                                                                  pendingCancelDataStream);
+
+            CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig);
+
+            CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
+                                                                                                               pendingCancelDataStream,
+                                                                                                               batchStrategy,
+                                                                                                               scheduleJobFunction);
+
+            return FinalizeJobConfig(jobConfig, scheduleInfo);
+        }
 
         public static DataStreamJobConfig<TInstance> CreateDataStreamJobConfig<TInstance>(ITaskSetOwner taskSetOwner,
                                                                                           EntityProxyDataStream<TInstance> dataStream,

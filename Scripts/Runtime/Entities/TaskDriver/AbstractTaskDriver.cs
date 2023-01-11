@@ -63,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             World = world;
             m_TaskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            
+
             SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
 
@@ -77,6 +77,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 World.AddSystem(TaskDriverSystem);
                 World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(TaskDriverSystem);
             }
+
             TaskDriverSystem.RegisterTaskDriver(this);
 
             ID = m_TaskDriverManagementSystem.GetNextID();
@@ -128,15 +129,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        // protected IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
-        //                                                            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-        //                                                            BatchStrategy batchStrategy)
-        //     where TInstance : unmanaged, IEntityProxyInstance
-        // {
-        //     return m_TaskDriverSystem.ConfigureJobToCancel(dataStream,
-        //                                                            scheduleJobFunction,
-        //                                                            batchStrategy);
-        // }
+        protected IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
+                                                                                         JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+                                                                                         BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return TaskDriverSystem.ConfigureSystemJobToCancel(dataStream,
+                                                               scheduleJobFunction,
+                                                               batchStrategy);
+        }
 
         protected IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
                                                                                          JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
@@ -200,14 +201,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            
+
 
             //Drill down so that the lowest Task Driver gets hardened
             foreach (AbstractTaskDriver subTaskDriver in SubTaskDrivers)
             {
                 subTaskDriver.Harden();
             }
-            
+
             //Harden our TaskDriverSystem if it hasn't been already
             TaskDriverSystem.Harden();
 
@@ -241,7 +242,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureHardened()
         {
