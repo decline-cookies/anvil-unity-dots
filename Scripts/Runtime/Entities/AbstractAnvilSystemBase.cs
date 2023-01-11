@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             set => m_Logger = value;
         }
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY
         /// <inheritdoc cref="Dependency" />
         protected new JobHandle Dependency
         {
