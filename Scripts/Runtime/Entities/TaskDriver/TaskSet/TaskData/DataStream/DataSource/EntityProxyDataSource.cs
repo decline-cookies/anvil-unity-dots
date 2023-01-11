@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected override void HardenSelf()
         {
             base.HardenSelf();
-
+            
             //We need to ensure we get the right access to any of the cancel data structures
             foreach (AbstractData data in ActiveDataLookupByID.Values)
             {
@@ -32,10 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     AddConsolidationData(data.TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData, AccessType.SharedRead);
                 }
             }
-            
-            //TODO: We need to get access to the Pending Cancelled Instance Data Streams for any Explicit 
-            
-            
+
             m_Consolidator = new EntityProxyDataSourceConsolidator<TInstance>(PendingData, ActiveDataLookupByID);
         }
 
@@ -44,8 +41,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         //*************************************************************************************************************
         protected sealed override JobHandle ConsolidateSelf(JobHandle dependsOn)
         {
-            //TODO: We need to get access to the Pending Cancelled Instance Data Streams for any Explicit 
-            
             ConsolidateEntityProxyDataSourceJob consolidateEntityProxyDataSourceJob = new ConsolidateEntityProxyDataSourceJob(m_Consolidator);
             dependsOn = consolidateEntityProxyDataSourceJob.Schedule(dependsOn);
 

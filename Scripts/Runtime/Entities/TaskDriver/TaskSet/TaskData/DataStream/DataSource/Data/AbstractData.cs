@@ -15,13 +15,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         public ITaskSetOwner TaskSetOwner { get; }
         
+        public AbstractData PendingCancelActiveData { get; }
+        
 
-        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
+        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour, AbstractData pendingCancelActiveData)
         {
             m_AccessController = new AccessController();
             ID = id;
             TaskSetOwner = taskSetOwner;
             CancelBehaviour = cancelBehaviour;
+            PendingCancelActiveData = pendingCancelActiveData;
         }
 
         protected sealed override void DisposeSelf()

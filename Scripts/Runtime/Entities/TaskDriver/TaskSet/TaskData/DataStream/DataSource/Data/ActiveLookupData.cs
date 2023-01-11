@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         public UnsafeParallelHashMap<T, bool> Lookup { get; }
 
-        public ActiveLookupData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(id, taskSetOwner, cancelBehaviour)
+        public ActiveLookupData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(id, taskSetOwner, cancelBehaviour, null)
         {
             Lookup = new UnsafeParallelHashMap<T, bool>(INITIAL_SIZE, Allocator.Persistent);
         }

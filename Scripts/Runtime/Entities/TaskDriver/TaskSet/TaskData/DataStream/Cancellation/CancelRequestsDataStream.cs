@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetCancelRequestsDataSource();
 
-            ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner, CancelBehaviour.None);
+            ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
         }
 
         public override uint GetActiveID()

@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -13,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
         private UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>> m_ActiveConsolidatorsByID;
 
-        public unsafe EntityProxyDataSourceConsolidator(PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
+        public EntityProxyDataSourceConsolidator(PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
                                                         Dictionary<uint, AbstractData> dataMapping)
         {
             m_Pending = pendingData.Pending;
@@ -22,9 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
             {
                 ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)entry.Value;
-                void* activePointer = activeArrayData.Active.GetBufferPointer();
-                m_ActiveConsolidatorsByID.Add(entry.Key,
-                                              new EntityProxyActiveConsolidator<TInstance>(activePointer, activeArrayData));
+                m_ActiveConsolidatorsByID.Add(entry.Key, new EntityProxyActiveConsolidator<TInstance>(activeArrayData));
             }
         }
 

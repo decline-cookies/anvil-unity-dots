@@ -99,7 +99,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     break;
                 case CancelBehaviour.Explicit:
                     m_DataStreamsWithExplicitCancellation.Add(dataStream);
-                    //TODO: Add second data stream for pending cancel
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(cancelBehaviour), cancelBehaviour, null);
@@ -109,11 +108,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_AllPublicDataStreams.Add(dataStream);
 
             return dataStream;
-        }
-
-        public AbstractDataStream GetDataStreamByType(Type type)
-        {
-            return m_PublicDataStreamsByType[type];
         }
 
         public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)

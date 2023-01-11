@@ -52,14 +52,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
         {
-            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelBehaviour);
+            //TODO: Comment explanations
+            ActiveArrayData<T> pendingCancelArrayData = null;
+            if (cancelBehaviour is CancelBehaviour.Explicit)
+            {
+                pendingCancelArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelBehaviour.None, null);
+            }
+            
+            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelBehaviour, pendingCancelArrayData);
             ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
+
             return activeArrayData;
         }
 
-        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
+        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner)
         {
-            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelBehaviour);
+            //TODO: Comment explanations
+            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelBehaviour.None);
             ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
             return activeLookupData;
         }
@@ -86,6 +95,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (AbstractData data in ActiveDataLookupByID.Values)
             {
                 AddConsolidationData(data, AccessType.ExclusiveWrite);
+                //Add any Pending Cancel Active data as well.
+                if (data.PendingCancelActiveData != null)
+                {
+                    AddConsolidationData(data.PendingCancelActiveData, AccessType.ExclusiveWrite);
+                }
             }
             //We'll also add our own Pending data. We want exclusive access because we'll be reading from it and then clearing the collection.
             AddConsolidationData(PendingData, AccessType.ExclusiveWrite);

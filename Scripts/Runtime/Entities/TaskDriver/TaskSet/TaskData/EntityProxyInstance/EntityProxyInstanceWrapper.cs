@@ -33,6 +33,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Payload = payload;
         }
 
+        public EntityProxyInstanceWrapper(ref EntityProxyInstanceWrapper<TInstance> original, uint newActiveID)
+        {
+            EntityProxyInstanceID originalInstanceID = original.InstanceID;
+            InstanceID = new EntityProxyInstanceID(originalInstanceID.Entity, originalInstanceID.TaskSetOwnerID, newActiveID);
+            Payload = original.Payload;
+        }
+
         public bool Equals(EntityProxyInstanceWrapper<TInstance> other)
         {
             return this == other;
