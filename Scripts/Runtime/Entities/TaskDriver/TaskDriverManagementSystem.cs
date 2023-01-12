@@ -19,11 +19,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
         private readonly CancelRequestsDataSource m_CancelRequestsDataSource;
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
+        private readonly List<CancelProgressFlow> m_CancelProgressFlows;
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
         private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
-        
+        private BulkJobScheduler<CancelProgressFlow> m_CancelProgressFlowBulkJobScheduler;
+
         private readonly IDProvider m_IDProvider;
         
 
@@ -37,6 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
             m_CancelRequestsDataSource = new CancelRequestsDataSource(this);
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
+            m_CancelProgressFlows = new List<CancelProgressFlow>();
         }
 
         protected override void OnStartRunning()
@@ -57,6 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_EntityProxyDataSourcesByType.DisposeAllValuesAndClear();
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
+            m_CancelProgressFlowBulkJobScheduler?.Dispose();
             
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
@@ -105,6 +109,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Harden the Cancellation data
             m_CancelRequestsDataSource.Harden();
             m_CancelCompleteDataSource.Harden();
+            
+            //Construct the CancelProgressFlows
+            foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
+            {
+                CancelProgressFlow cancelProgressFlow = new CancelProgressFlow(topLevelTaskDriver);
+                m_CancelProgressFlows.Add(cancelProgressFlow);
+            }
+
+            m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
+
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
@@ -146,8 +160,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dependsOn = m_CancelRequestsDataSource.Consolidate(dependsOn);
 
             //Next we check if any cancel progress was updated
-            //             dependsOn = m_WorldCancelProgressBulkJobScheduler.Schedule(dependsOn,
-            //                                                                        TaskDriverCancelFlow.SCHEDULE_FUNCTION);
+            dependsOn = m_CancelProgressFlowBulkJobScheduler.Schedule(dependsOn,
+                                                                      CancelProgressFlow.SCHEDULE_FUNCTION);
 
 
             //All Entity Proxy Data Streams will now be consolidated. Anything that was cancellable will be dealt with here as well

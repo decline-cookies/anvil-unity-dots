@@ -203,12 +203,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 AddCancelRequestContextsTo(contexts);
                 CancelRequestsContexts = new NativeArray<CancelRequestContext>(contexts.ToArray(), Allocator.Persistent);
             }
-
-            //
-            // //TODO: We can do this in hardening
-            // CancelFlow.BuildRequestData();
-
-            //TODO: Build up the Cancellation data structure with parent/child info
         }
 
         private void AddCancelRequestContextsTo(List<CancelRequestContext> contexts)
