@@ -63,6 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_EnsureCanCancel();
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
+                UnityEngine.Debug.Log($"Requesting Cancel for: {entity} with TaskSetOwnerID of {cancelRequestContext.TaskSetOwnerID} and ActiveID of {cancelRequestContext.ActiveID}");
                 m_PendingLaneWriter.Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.ActiveID));
             }
         }

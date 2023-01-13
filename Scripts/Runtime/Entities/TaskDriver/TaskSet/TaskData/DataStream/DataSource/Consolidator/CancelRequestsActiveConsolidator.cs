@@ -45,6 +45,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void WriteToActive(EntityProxyInstanceID id, int laneIndex)
         {
+            //TODO: There is a disconnect here between the System ID and the TaskDriver ID for who owns this.
+            //TODO: This also raises an issue with if the ProgressLookup will ever get properly cleared.
+            
             UnityEngine.Debug.Log($"Requesting Cancel for - {id}");
             m_RequestLookup.TryAdd(id, true);
 

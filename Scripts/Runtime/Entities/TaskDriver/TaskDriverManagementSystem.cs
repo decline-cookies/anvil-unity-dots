@@ -113,11 +113,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Construct the CancelProgressFlows
             foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
             {
+                //Only create a CancelFlow if we have cancellable data
+                if (!((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
+                {
+                    continue;
+                }
                 CancelProgressFlow cancelProgressFlow = new CancelProgressFlow(topLevelTaskDriver);
                 m_CancelProgressFlows.Add(cancelProgressFlow);
             }
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
+
+            foreach (CancelProgressFlow cancelProgressFlow in m_CancelProgressFlows)
+            {
+                UnityEngine.Debug.Log(cancelProgressFlow);
+            }
 
         }
 

@@ -15,6 +15,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly Dictionary<int, List<CancelProgressFlowNode>> m_CancelFlowHierarchy;
         private readonly BulkJobScheduler<CancelProgressFlowNode>[] m_OrderedBulkJobSchedulers;
 
+        private readonly string m_DebugString;
+
         public CancelProgressFlow(AbstractTaskDriver topLevelTaskDriver)
         {
             m_CancelProgressFlowNodes = new List<CancelProgressFlowNode>();
@@ -36,6 +38,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             m_OrderedBulkJobSchedulers = orderedBulkJobSchedulers.ToArray();
+
+            m_DebugString = BuildDebugString();
         }
 
         protected override void DisposeSelf()
@@ -44,6 +48,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_OrderedBulkJobSchedulers.DisposeAllAndTryClear();
             
             base.DisposeSelf();
+        }
+
+        public override string ToString()
+        {
+            return m_DebugString;
+        }
+
+        private string BuildDebugString()
+        {
+            string debugString = string.Empty;
+            for (int i = 0; i < m_CancelFlowHierarchy.Count; ++i)
+            {
+                List<CancelProgressFlowNode> cancelProgressFlowNodesAtDepth = m_CancelFlowHierarchy[i];
+                debugString += $"Depth: {i}\n";
+                foreach (CancelProgressFlowNode node in cancelProgressFlowNodesAtDepth)
+                {
+                    debugString += $"{node}\n";
+                }
+            }
+
+            return debugString;
         }
 
         private void BuildSchedulingHierarchy(ITaskSetOwner taskSetOwner, int depth, CancelProgressFlowNode parent)

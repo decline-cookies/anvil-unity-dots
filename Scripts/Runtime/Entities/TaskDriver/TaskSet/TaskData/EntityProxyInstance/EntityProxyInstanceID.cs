@@ -31,6 +31,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ActiveID = activeID;
         }
 
+        public EntityProxyInstanceID(EntityProxyInstanceID originalID, uint taskSetOwnerID)
+        {
+            Entity = originalID.Entity;
+            TaskSetOwnerID = taskSetOwnerID;
+            ActiveID = originalID.ActiveID;
+        }
+
         public bool Equals(EntityProxyInstanceID other)
         {
             return this == other;
@@ -48,7 +55,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{Entity.ToString()} - TaskSetOwnerID: {TaskSetOwnerID}";
+            return $"{Entity.ToString()} - TaskSetOwnerID: {TaskSetOwnerID}, ActiveID: {ActiveID}";
         }
 
         [BurstCompatible]
@@ -59,6 +66,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             fs.Append(Entity.ToFixedString());
             fs.Append((FixedString32Bytes)" - TaskSetOwnerID: ");
             fs.Append(TaskSetOwnerID);
+            fs.Append((FixedString32Bytes)", ActiveID: ");
+            fs.Append(ActiveID);
             return fs;
         }
     }
