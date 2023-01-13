@@ -54,8 +54,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ID = m_TaskDriverManagementSystem.GetNextID();
 
             TaskSet = new TaskSet(this);
-            
-            UnityEngine.Debug.Log($"{this}");
         }
 
         protected override void OnDestroy()

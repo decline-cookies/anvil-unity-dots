@@ -23,6 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private bool m_IsHardened;
 
         public CancelRequestsDataStream CancelRequestsDataStream { get; }
+        public CancelProgressDataStream CancelProgressDataStream { get; }
         public CancelCompleteDataStream CancelCompleteDataStream { get; }
 
         public NativeArray<CancelRequestContext> CancelRequestsContexts { get; private set; }
@@ -49,6 +50,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
             CancelCompleteDataStream = new CancelCompleteDataStream(taskSetOwner);
+            CancelProgressDataStream = new CancelProgressDataStream(taskSetOwner);
 
             //TODO: Build a Cancellation Data Structure
         }

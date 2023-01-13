@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             : base(taskSetOwner)
         {
             RequireDataStreamForCancelling(pendingCancelDataStream);
-            RequireCancelProgressLookup(taskSetOwner.TaskSet.CancelRequestsDataStream.ProgressLookupData);
+            RequireCancelProgressLookup(taskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData);
         }
 
         //*************************************************************************************************************

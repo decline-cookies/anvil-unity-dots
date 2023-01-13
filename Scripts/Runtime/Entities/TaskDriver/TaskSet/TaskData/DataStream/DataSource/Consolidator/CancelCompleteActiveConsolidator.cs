@@ -25,7 +25,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void WriteToActive(EntityProxyInstanceID id)
         {
-            UnityEngine.Debug.Log($"Cancel Completeing for - {id}");
             DeferredNativeArray<EntityProxyInstanceID> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceID>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Add(id);
         }

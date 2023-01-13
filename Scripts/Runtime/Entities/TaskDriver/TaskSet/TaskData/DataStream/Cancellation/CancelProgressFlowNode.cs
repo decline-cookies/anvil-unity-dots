@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_TaskSetOwner = taskSetOwner;
             m_Parent = parent;
 
-            m_ProgressLookupData = m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ProgressLookupData;
+            m_ProgressLookupData = m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
             m_CancelCompleteData = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.PendingData;
             m_CancelCompleteActiveID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID();
 
@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             if (m_Parent != null)
             {
-                m_ParentProgressLookupData = m_Parent.m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ProgressLookupData;
+                m_ParentProgressLookupData = m_Parent.m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
             }
         }
 
@@ -49,7 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.GetActiveID()} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ProgressLookupData.ID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID()}";
+            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.GetActiveID()} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.ID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID()}";
         }
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
@@ -131,7 +131,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     //If we're still processing we'll allow a Cancel Job to occur
                     if (isStillProcessing)
                     {
-                        UnityEngine.Debug.Log($"Still processing for {id.ToFixedString()} - Holding open");
                         //Flip us back to not processing. A CancelJob will switch this if we still need to process
                         isStillProcessing = false;
                         //If we have a parent, we need to hold it open until we complete
@@ -149,7 +148,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                     // - There wasn't any data for this id that was requested to cancel.
                     else
                     {
-                        UnityEngine.Debug.Log($"No longer processing for {id.ToFixedString()} - Completing");
                         //Remove ourselves from the Progress Lookup
                         m_ProgressLookup.Remove(id);
                         //Write ourselves to the Complete.

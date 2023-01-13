@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
         private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
         private readonly CancelRequestsDataSource m_CancelRequestsDataSource;
+        private readonly CancelProgressDataSource m_CancelProgressDataSource;
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
         private readonly List<CancelProgressFlow> m_CancelProgressFlows;
 
@@ -38,6 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_AllTaskDriverSystems = new HashSet<AbstractTaskDriverSystem>();
             m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
             m_CancelRequestsDataSource = new CancelRequestsDataSource(this);
+            m_CancelProgressDataSource = new CancelProgressDataSource(this);
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
         }
@@ -64,6 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
+            m_CancelProgressDataSource.Dispose();
             
             m_IDProvider.Dispose();
 
@@ -108,8 +111,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             
             //Harden the Cancellation data
             m_CancelRequestsDataSource.Harden();
+            m_CancelProgressDataSource.Harden();
             m_CancelCompleteDataSource.Harden();
-            
+
             //Construct the CancelProgressFlows
             foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
             {
@@ -123,12 +127,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
-
-            foreach (CancelProgressFlow cancelProgressFlow in m_CancelProgressFlows)
-            {
-                UnityEngine.Debug.Log(cancelProgressFlow);
-            }
-
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
@@ -152,6 +150,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public CancelCompleteDataSource GetCancelCompleteDataSource()
         {
             return m_CancelCompleteDataSource;
+        }
+
+        public CancelProgressDataSource GetCancelProgressDataSource()
+        {
+            return m_CancelProgressDataSource;
         }
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)

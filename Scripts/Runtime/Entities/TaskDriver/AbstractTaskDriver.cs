@@ -82,8 +82,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             ID = m_TaskDriverManagementSystem.GetNextID();
             m_TaskDriverManagementSystem.RegisterTaskDriver(this);
-
-            UnityEngine.Debug.Log($"{this}");
         }
 
         protected override void DisposeSelf()

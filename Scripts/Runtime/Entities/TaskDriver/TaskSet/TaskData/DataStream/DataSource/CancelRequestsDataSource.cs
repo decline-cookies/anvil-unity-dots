@@ -23,6 +23,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.HardenSelf();
             //We'll want to write to the Cancel Complete collection directly if we don't have to wait for explicit cancel jobs so we need SharedWrite Access
             AddConsolidationData(TaskDriverManagementSystem.GetCancelCompleteDataSource().PendingData, AccessType.SharedWrite);
+
+            //For each piece of data we want to get exclusive write access to the Progress lookup as well
+            foreach (AbstractData data in ActiveDataLookupByID.Values)
+            {
+                ActiveLookupData<EntityProxyInstanceID> progressLookupData = data.TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
+                AddConsolidationData(progressLookupData, AccessType.ExclusiveWrite);
+            }
+
             m_Consolidator = new CancelRequestsDataSourceConsolidator(PendingData, ActiveDataLookupByID);
         }
 
