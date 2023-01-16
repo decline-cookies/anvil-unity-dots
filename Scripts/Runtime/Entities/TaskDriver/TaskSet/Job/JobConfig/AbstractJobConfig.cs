@@ -274,7 +274,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             int index = 0;
             for (; index < m_SchedulingAccessWrappers.Count; ++index)
             {
-                m_AccessWrapperDependencies[index] = m_SchedulingAccessWrappers[index].Acquire();
+                m_AccessWrapperDependencies[index] = m_SchedulingAccessWrappers[index].AcquireAsync();
             }
 
             m_AccessWrapperDependencies[index] = dependsOn;
@@ -284,7 +284,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             foreach (AbstractAccessWrapper wrapper in m_SchedulingAccessWrappers)
             {
-                wrapper.Release(dependsOn);
+                wrapper.ReleaseAsync(dependsOn);
             }
 
             return dependsOn;
@@ -434,7 +434,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 return;
             }
             
-            //TODO: NEEDS PR?
+            //TODO: #140 - Detect common configuration issues and let the developer know
 
             // //Access checks
             // switch (wrapper.ID.Usage)

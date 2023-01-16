@@ -20,12 +20,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_EntityQueryNativeArray = entityQueryNativeArray;
         }
 
-        public sealed override JobHandle Acquire()
+        public sealed override JobHandle AcquireAsync()
         {
             return m_EntityQueryNativeArray.Acquire();
         }
 
-        public sealed override void Release(JobHandle dependsOn)
+        public sealed override void ReleaseAsync(JobHandle dependsOn)
         {
             m_EntityQueryNativeArray.Release(dependsOn);
         }

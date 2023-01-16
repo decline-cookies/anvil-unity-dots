@@ -20,8 +20,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Debug_SetWrapperType();
         }
 
-        public abstract JobHandle Acquire();
-        public abstract void Release(JobHandle dependsOn);
+        public abstract JobHandle AcquireAsync();
+        public abstract void ReleaseAsync(JobHandle dependsOn);
 
         //*************************************************************************************************************
         // SAFETY

@@ -5,7 +5,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    //TODO: NEEDS PR - Too much complexity that is not needed
+    //TODO: #137 - Too much complexity that is not needed
     internal class EntityProxyDataStream<TInstance> : AbstractDataStream,
                                                       IDriverDataStream<TInstance>,
                                                       ISystemDataStream<TInstance>

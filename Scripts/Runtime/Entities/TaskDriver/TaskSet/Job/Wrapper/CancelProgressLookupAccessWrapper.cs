@@ -17,12 +17,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ProgressLookup = m_CancelProgressLookupData.Lookup;
         }
 
-        public override JobHandle Acquire()
+        public override JobHandle AcquireAsync()
         {
             return m_CancelProgressLookupData.AcquireAsync(AccessType);
         }
 
-        public override void Release(JobHandle dependsOn)
+        public override void ReleaseAsync(JobHandle dependsOn)
         {
             m_CancelProgressLookupData.ReleaseAsync(dependsOn);
         }

@@ -24,13 +24,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return new CDFEWriter<T>(m_System);
         }
 
-        public override JobHandle Acquire()
+        public override JobHandle AcquireAsync()
         {
             //Do nothing, Unity's System will handle dependencies for us
             return default;
         }
 
-        public override void Release(JobHandle dependsOn)
+        public override void ReleaseAsync(JobHandle dependsOn)
         {
             //Do nothing - Unity's System will handle dependencies for us
         }

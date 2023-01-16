@@ -14,12 +14,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CancelRequestsDataStream = cancelRequestsDataStream;
         }
 
-        public override JobHandle Acquire()
+        public override JobHandle AcquireAsync()
         {
             return CancelRequestsDataStream.AcquirePendingAsync(AccessType);
         }
 
-        public override void Release(JobHandle dependsOn)
+        public override void ReleaseAsync(JobHandle dependsOn)
         {
             CancelRequestsDataStream.ReleasePendingAsync(dependsOn);
         }

@@ -19,12 +19,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_AccessControlledData = data;
         }
 
-        public sealed override JobHandle Acquire()
+        public sealed override JobHandle AcquireAsync()
         {
             return m_AccessControlledData.AcquireAsync(AccessType, out m_Data);
         }
 
-        public sealed override void Release(JobHandle dependsOn)
+        public sealed override void ReleaseAsync(JobHandle dependsOn)
         {
             m_AccessControlledData.ReleaseAsync(dependsOn);
         }

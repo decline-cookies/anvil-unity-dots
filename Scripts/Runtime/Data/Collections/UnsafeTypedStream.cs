@@ -15,6 +15,7 @@ using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    //TODO: #141 - CopyAsync methods
     //TODO: #15 - Investigate if there's any downfalls to this vs UnsafeStream. Maybe determinism?
     /// <summary>
     /// A collection that allows for parallel reading and writing.

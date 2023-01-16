@@ -8,7 +8,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
-    //TODO: NEEDS PR - Maybe we should have DriverTaskSet vs SystemTaskSet that extend AbstractTaskSet
+    //TODO: #138 - Maybe we should have DriverTaskSet vs SystemTaskSet that extend AbstractTaskSet
     internal class TaskSet : AbstractAnvilBase
     {
         private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             
             m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            //TODO: NEEDS PR - Move all Cancellation aspects into one class to make it easier/nicer to work with
+            //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
             
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
             CancelCompleteDataStream = new CancelCompleteDataStream(taskSetOwner);

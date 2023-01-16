@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
@@ -52,9 +53,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 List<AbstractDataStream> resolvableDataStreams = new List<AbstractDataStream>();
                 TaskSetOwner.AddResolvableDataStreamsTo(targetDefinition.Type, resolvableDataStreams);
-                //TODO: NEEDS PR - Safety ensure there are values
-
+                Debug_EnsureValuesArePresent(resolvableDataStreams);
                 m_ResolveTargetTypeLookup.CreateWritersForType(targetDefinition, resolvableDataStreams);
+                //TODO: #136 - Gross to access first element, we should be able to get direct access to the PendingData
                 AddResolveAccessWrapper(targetDefinition.Type, resolvableDataStreams[0]);
             }
         }
@@ -87,6 +88,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public ResolveTargetTypeLookup GetResolveTargetTypeLookup()
         {
             return m_ResolveTargetTypeLookup;
+        }
+        
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureValuesArePresent(List<AbstractDataStream> dataStreams)
+        {
+            if (dataStreams.Count <= 0)
+            {
+                throw new InvalidOperationException("Trying to get writers for resolvable data streams but none are present!");
+            }
         }
     }
 }

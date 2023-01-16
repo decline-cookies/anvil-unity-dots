@@ -201,7 +201,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //Harden our own TaskSet
             TaskSet.Harden();
-
+            
+            //TODO: #138 - Can we consolidate this into the TaskSet and have TaskSets aware of parenting instead
             m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0
                                 || TaskDriverSystem.HasCancellableData
                                 || m_SubTaskDrivers.Any(subtaskDriver => subtaskDriver.m_HasCancellableData);

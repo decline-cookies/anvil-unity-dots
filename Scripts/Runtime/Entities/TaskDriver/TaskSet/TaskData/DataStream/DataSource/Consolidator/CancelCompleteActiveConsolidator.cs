@@ -33,6 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         // SAFETY
         //*************************************************************************************************************
         
+        //TODO: #139 - Switch to ANVIL_DEBUG_SAFETY
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsurePointerNotNull(void* ptr)
         {

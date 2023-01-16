@@ -3,6 +3,8 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //TODO: Can we simplify this a lot and get rid of a bunch of special Access Wrapper types?
+    //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043593841
     internal class DataStreamActiveAccessWrapper<T> : AbstractDataStreamAccessWrapper<T>
         where T : unmanaged, IEntityProxyInstance
     {
@@ -13,12 +15,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
         }
 
-        public override JobHandle Acquire()
+        public override JobHandle AcquireAsync()
         {
             return DataStream.AcquireActiveAsync(AccessType);
         }
 
-        public override void Release(JobHandle dependsOn)
+        public override void ReleaseAsync(JobHandle dependsOn)
         {
             DataStream.ReleaseActiveAsync(dependsOn);
         }

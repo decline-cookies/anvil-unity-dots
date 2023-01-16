@@ -1,5 +1,4 @@
 using Anvil.Unity.DOTS.Data;
-using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -7,6 +6,10 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //TODO: #108 - Add profiling and debug string information, see if can be done without a ton of #IF Checks
+    //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043567688
+    //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043573642
+    
     [BurstCompatible]
     internal struct EntityProxyDataSourceConsolidator<TInstance> : IDisposable
         where TInstance : unmanaged, IEntityProxyInstance
