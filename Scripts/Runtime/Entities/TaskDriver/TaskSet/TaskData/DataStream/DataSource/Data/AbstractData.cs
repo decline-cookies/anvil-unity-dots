@@ -31,6 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             m_AccessController.Acquire(AccessType.Disposal);
             DisposeData();
+            PendingCancelActiveData?.Dispose();
             m_AccessController.Dispose();
             base.DisposeSelf();
         }

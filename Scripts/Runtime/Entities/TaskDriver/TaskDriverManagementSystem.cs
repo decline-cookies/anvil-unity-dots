@@ -63,6 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_EntityProxyDataSourcesByType.DisposeAllValuesAndClear();
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
+            m_CancelProgressFlows.DisposeAllAndTryClear();
             
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
