@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Anvil.CSharp.Logging;
 using Unity.Entities;
 using UnityEngine;
@@ -62,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities
     }
 
     /// <summary>
-    /// A collection of utilities to manipulate and augments <see cref="World"/>s.
+    /// A collection of utilities to manipulate and augment <see cref="World"/>s.
     /// The Anvil compliment to <see cref="ScriptBehaviourUpdateOrder"/>.
     /// </summary>
     public static class WorldUtil
@@ -70,6 +71,8 @@ namespace Anvil.Unity.DOTS.Entities
         // No need to reset between play sessions because PlayerLoop systems are stateless and
         // persist between sessions when domain reloading is disabled.
         private static bool s_AreCustomPlayerLoopPhasesAdded = false;
+
+        static WorldUtil() { }
 
         /// <summary>
         /// Add custom phases to the <see cref="PlayerLoop"/>.

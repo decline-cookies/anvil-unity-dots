@@ -1,6 +1,6 @@
-using UnityEngine;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 
 namespace Anvil.Unity.DOTS.Data
@@ -25,14 +25,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="length">The number of elements to clear.</param>
         public static unsafe void FloodClear<T>(this NativeArray<T> array, int startIndex, int length) where T : struct
         {
-            Debug.Assert(startIndex >= 0);
             Debug.Assert(startIndex < array.Length);
             Debug.Assert(startIndex + length <= array.Length);
 
-            int valSize = UnsafeUtility.SizeOf<T>();
-            void* startPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafePtr(array) + (valSize * startIndex);
-            int clearSize = valSize * length;
-            UnsafeUtility.MemClear(startPtr, clearSize);
+            UnsafeCollectionUtil.FloodClearBuffer<T>(array.GetUnsafePtr(), startIndex, length);
         }
 
         /// <summary>
@@ -52,15 +48,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="value">The value to set each element to.</param>
         public static unsafe void FloodSet<T>(this NativeArray<T> array, int startIndex, int length, T value) where T : struct
         {
-            Debug.Assert(startIndex >= 0);
             Debug.Assert(startIndex < array.Length);
             Debug.Assert(startIndex + length <= array.Length);
 
-            int valSize = UnsafeUtility.SizeOf<T>();
-            void* startPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafePtr(array) + (valSize * startIndex);
-            void* valPtr = UnsafeUtility.AddressOf(ref value);
-            UnsafeUtility.MemCpyReplicate(startPtr, valPtr, valSize, length);
+            UnsafeCollectionUtil.FloodSetBuffer(array.GetUnsafePtr(), startIndex, length, value);
         }
     }
 }
-

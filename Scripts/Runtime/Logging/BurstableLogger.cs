@@ -198,14 +198,17 @@ namespace Anvil.Unity.DOTS.Logging
         {
 #if UNITY_ASSERTIONS
             //Manually assert since Debug.Assert doesn't provide any useful information and does not support custom messages.
+
+            // Assume that message that was filled to capacity was truncated. It falsely errors when message length was
+            // exactly equal to capacity but it's the best we can do.
             if (message.Length == message.Capacity)
             {
-                UnityEngine.Debug.LogError($"The next logged message is too long and will be truncated. Consider using a larger FixedString type. MaxLength: {message.Capacity}");
+                UnityEngine.Debug.LogError($"The next logged message is too long and will be truncated. Consider using a larger FixedString type. MessageLength:{message.Length}, MaxLength: {message.Capacity}");
             }
 
             if (message.Length + MessagePrefix.Length > FixedString4096Bytes.UTF8MaxLengthInBytes)
             {
-                UnityEngine.Debug.LogError($"The next MessagePrefix + Message is larger than the largest fixed string({FixedString4096Bytes.UTF8MaxLengthInBytes}) and will be truncated. MessageLength:{message.Length} MessagePrefix: {MessagePrefix.Length}");
+                UnityEngine.Debug.LogError($"The next MessagePrefix + Message is larger than the largest fixed string({FixedString4096Bytes.UTF8MaxLengthInBytes}) and will be truncated. MessageLength:{message.Length}, MessagePrefix: {MessagePrefix.Length}");
             }
 #endif
         }

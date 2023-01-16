@@ -3,6 +3,7 @@ using Anvil.CSharp.Logging;
 using Anvil.Unity.Core;
 using Anvil.Unity.DOTS.Entities.Transform;
 using NUnit.Framework;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -45,11 +46,68 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             return RectUtil.AreEquivalent(a, b) ? 0 : 1;
         }
 
+        // ----- AddMissingStandardComponents ---- //
+        [Test]
+        public static void AddMissingStandardComponentsTest_NoComponents()
+        {
+            Assert.That(nameof(AddMissingStandardComponentsTest_NoComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
+
+            using World world = new World(nameof(TransformUtilTests) + "World");
+            EntityManager entityManager = world.EntityManager;
+            Entity entity = entityManager.CreateEntity();
+
+            TransformUtil.AddMissingStandardComponents(entity, entityManager);
+
+            Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(float3.zero));
+            Assert.That(entityManager.GetComponentData<Rotation>(entity).Value, Is.EqualTo(quaternion.identity));
+            Assert.That(entityManager.GetComponentData<Scale>(entity).Value, Is.EqualTo(1f));
+        }
+
+        [Test]
+        public static void AddMissingStandardComponentsTest_AllComponents()
+        {
+            Assert.That(nameof(AddMissingStandardComponentsTest_AllComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
+
+            using World world = new World(nameof(TransformUtilTests) + "World");
+            EntityManager entityManager = world.EntityManager;
+            Entity entity = entityManager.CreateEntity(typeof(Translation), typeof(Rotation), typeof(Scale));
+
+            entityManager.SetComponentData(entity, new Translation(){Value = new float3(5f)});
+            entityManager.SetComponentData(entity, new Rotation(){Value = quaternion.Euler(45f, 45f, 0f)});
+            entityManager.SetComponentData(entity, new Scale(){Value = 5f});
+            TransformUtil.AddMissingStandardComponents(entity, entityManager);
+
+            Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(new float3(5f)));
+            Assert.That(entityManager.GetComponentData<Rotation>(entity).Value, Is.EqualTo(quaternion.Euler(45f, 45f, 0f)));
+            Assert.That(entityManager.GetComponentData<Scale>(entity).Value, Is.EqualTo(5f));
+        }
+
+        [Test]
+        public static void AddMissingStandardComponentsTest_AllAltComponents()
+        {
+            Assert.That(nameof(AddMissingStandardComponentsTest_AllAltComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
+
+            using World world = new World(nameof(TransformUtilTests) + "World");
+            EntityManager entityManager = world.EntityManager;
+            Entity entity = entityManager.CreateEntity(typeof(Translation), typeof(CompositeRotation), typeof(NonUniformScale));
+
+            entityManager.SetComponentData(entity, new Translation(){Value = new float3(5f)});
+            entityManager.SetComponentData(entity, new CompositeRotation(){Value = float4x4.RotateX(45f)});
+            entityManager.SetComponentData(entity, new NonUniformScale(){Value = new float3(1f, 2f, 3f)});
+            TransformUtil.AddMissingStandardComponents(entity, entityManager);
+
+            Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(new float3(5f)));
+            Assert.That(entityManager.GetComponentData<CompositeRotation>(entity).Value, Is.EqualTo(float4x4.RotateX(45f)));
+            Assert.That(entityManager.GetComponentData<NonUniformScale>(entity).Value, Is.EqualTo(new float3(1f, 2f, 3f)));
+            Assert.That(entityManager.HasComponent<Rotation>(entity), Is.False);
+            Assert.That(entityManager.HasComponent<Scale>(entity), Is.False);
+        }
+
         // ----- ConvertWorldToLocalPoint ----- //
         [Test]
         public static void ConvertWorldToLocalPointTest_Identity()
         {
-            Assert.That(nameof(ConvertWorldToLocalPointTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint)));
+            Assert.That(nameof(ConvertWorldToLocalPointTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1, 1, 1);
@@ -78,7 +136,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalPointTest_Translate()
         {
-            Assert.That(nameof(ConvertWorldToLocalPointTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint)));
+            Assert.That(nameof(ConvertWorldToLocalPointTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1, 1, 1);
@@ -199,7 +257,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalPointTest_Rotate()
         {
-            Assert.That(nameof(ConvertWorldToLocalPointTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint)));
+            Assert.That(nameof(ConvertWorldToLocalPointTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1, 1, 1);
@@ -298,7 +356,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalPointTest_Scale()
         {
-            Assert.That(nameof(ConvertWorldToLocalPointTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint)));
+            Assert.That(nameof(ConvertWorldToLocalPointTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint) + "Test"));
 
             Regex invalidMatrixError_point = new Regex(@"This transform is invalid\. Returning a signed infinite position\.");
 
@@ -444,7 +502,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalPointTest_Compound()
         {
-            Assert.That(nameof(ConvertWorldToLocalPointTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint)));
+            Assert.That(nameof(ConvertWorldToLocalPointTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f, 1f, 1f);
@@ -491,7 +549,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldPointTest_Identity()
         {
-            Assert.That(nameof(ConvertLocalToWorldPointTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint)));
+            Assert.That(nameof(ConvertLocalToWorldPointTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1, 1, 1);
@@ -520,7 +578,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldPointTest_Translate()
         {
-            Assert.That(nameof(ConvertLocalToWorldPointTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint)));
+            Assert.That(nameof(ConvertLocalToWorldPointTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1, 1, 1);
@@ -637,7 +695,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldPointTest_Rotate()
         {
-            Assert.That(nameof(ConvertLocalToWorldPointTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint)));
+            Assert.That(nameof(ConvertLocalToWorldPointTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1, 1, 1);
@@ -731,7 +789,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldPointTest_Scale()
         {
-            Assert.That(nameof(ConvertLocalToWorldPointTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint)));
+            Assert.That(nameof(ConvertLocalToWorldPointTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint) + "Test"));
 
             Regex invalidMatrixError_point = new Regex(@"This transform is invalid\. Returning a signed infinite position\.");
 
@@ -871,7 +929,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldPointTest_Compound()
         {
-            Assert.That(nameof(ConvertLocalToWorldPointTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint)));
+            Assert.That(nameof(ConvertLocalToWorldPointTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldPoint) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f, 1f, 1f);
@@ -916,7 +974,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRotationTest_Rotate()
         {
-            Assert.That(nameof(ConvertWorldToLocalRotationTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRotation)));
+            Assert.That(nameof(ConvertWorldToLocalRotationTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRotation) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f, 1f, 1f);
@@ -1009,7 +1067,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRotationTest_Compound()
         {
-            Assert.That(nameof(ConvertWorldToLocalRotationTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRotation)));
+            Assert.That(nameof(ConvertWorldToLocalRotationTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRotation) + "Test"));
 
             Regex invalidMatrixError_rotate = new Regex(@"Transform is not valid\. Returning identity rotation\.");
 
@@ -1243,7 +1301,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRotationTest_Rotate()
         {
-            Assert.That(nameof(ConvertLocalToWorldRotationTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRotation)));
+            Assert.That(nameof(ConvertLocalToWorldRotationTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRotation) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f, 1f, 1f);
@@ -1324,7 +1382,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRotationTest_Compound()
         {
-            Assert.That(nameof(ConvertLocalToWorldRotationTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRotation)));
+            Assert.That(nameof(ConvertLocalToWorldRotationTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRotation) + "Test"));
 
             Regex invalidMatrixError_rotate = new Regex(@"Transform is not valid\. Returning identity rotation\.");
 
@@ -1553,7 +1611,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalScaleTest_Scale()
         {
-            Assert.That(nameof(ConvertWorldToLocalScaleTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalScale)));
+            Assert.That(nameof(ConvertWorldToLocalScaleTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalScale) + "Test"));
 
             Regex invalidMatrixError_scale = new Regex(@"This transform is invalid\. Returning a signed infinite scale\.");
             float3 point_zero = float3.zero;
@@ -1829,7 +1887,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalScaleTest_Compound()
         {
-            Assert.That(nameof(ConvertWorldToLocalScaleTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalScale)));
+            Assert.That(nameof(ConvertWorldToLocalScaleTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalScale) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f, 1f, 1f);
@@ -1944,7 +2002,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldScaleTest_Scale()
         {
-            Assert.That(nameof(ConvertLocalToWorldScaleTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldScale)));
+            Assert.That(nameof(ConvertLocalToWorldScaleTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldScale) + "Test"));
 
             Regex invalidMatrixError_scale = new Regex(@"This transform is invalid\. Returning a signed infinite scale\.");
             float3 point_zero = float3.zero;
@@ -2219,7 +2277,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldScaleTest_Compound()
         {
-            Assert.That(nameof(ConvertLocalToWorldScaleTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldScale)));
+            Assert.That(nameof(ConvertLocalToWorldScaleTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldScale) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f, 1f, 1f);
@@ -2334,7 +2392,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRectTest_Identity()
         {
-            Assert.That(nameof(ConvertWorldToLocalRectTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect)));
+            Assert.That(nameof(ConvertWorldToLocalRectTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f);
@@ -2384,7 +2442,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRectTest_Translate()
         {
-            Assert.That(nameof(ConvertWorldToLocalRectTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect)));
+            Assert.That(nameof(ConvertWorldToLocalRectTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f);
@@ -2534,7 +2592,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRectTest_Rotate()
         {
-            Assert.That(nameof(ConvertWorldToLocalRectTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect)));
+            Assert.That(nameof(ConvertWorldToLocalRectTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f);
@@ -2804,7 +2862,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRectTest_Scale()
         {
-            Assert.That(nameof(ConvertWorldToLocalRectTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect)));
+            Assert.That(nameof(ConvertWorldToLocalRectTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect) + "Test"));
 
             Regex invalidMatrixError_rect = new Regex(@"This transform is invalid\. Returning infinite min/max rect\.");
 
@@ -3216,7 +3274,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertWorldToLocalRectTest_Compound()
         {
-            Assert.That(nameof(ConvertWorldToLocalRectTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect)));
+            Assert.That(nameof(ConvertWorldToLocalRectTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertWorldToLocalRect) + "Test"));
 
             Rect rect_zero_zero = Rect.zero;
 
@@ -3365,7 +3423,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRectTest_Identity()
         {
-            Assert.That(nameof(ConvertLocalToWorldRectTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect)));
+            Assert.That(nameof(ConvertLocalToWorldRectTest_Identity), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f);
@@ -3415,7 +3473,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRectTest_Translate()
         {
-            Assert.That(nameof(ConvertLocalToWorldRectTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect)));
+            Assert.That(nameof(ConvertLocalToWorldRectTest_Translate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f);
@@ -3565,7 +3623,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRectTest_Rotate()
         {
-            Assert.That(nameof(ConvertLocalToWorldRectTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect)));
+            Assert.That(nameof(ConvertLocalToWorldRectTest_Rotate), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect) + "Test"));
 
             float3 point_zero = float3.zero;
             float3 point_one = new float3(1f);
@@ -3835,7 +3893,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRectTest_Scale()
         {
-            Assert.That(nameof(ConvertLocalToWorldRectTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect)));
+            Assert.That(nameof(ConvertLocalToWorldRectTest_Scale), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect) + "Test"));
 
             Regex invalidMatrixError_rect = new Regex(@"This transform is invalid\. Returning infinite min/max rect\.");
 
@@ -4247,7 +4305,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         [Test]
         public static void ConvertLocalToWorldRectTest_Compound()
         {
-            Assert.That(nameof(ConvertLocalToWorldRectTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect)));
+            Assert.That(nameof(ConvertLocalToWorldRectTest_Compound), Does.StartWith(nameof(TransformUtil.ConvertLocalToWorldRect) + "Test"));
 
             Rect rect_zero_zero = Rect.zero;
 

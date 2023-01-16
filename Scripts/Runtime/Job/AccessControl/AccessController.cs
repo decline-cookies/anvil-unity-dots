@@ -56,6 +56,11 @@ namespace Anvil.Unity.DOTS.Jobs
 
         private AcquisitionState m_State;
 
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+        private StackTrace m_LastAccessOperationStack;
+#endif
+
+
         public AccessController()
         {
         }
@@ -63,7 +68,7 @@ namespace Anvil.Unity.DOTS.Jobs
         protected override void DisposeSelf()
         {
             // NOTE: If these asserts trigger we should think about calling Complete() on these job handles.
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY
             if (!m_ExclusiveWriteDependency.IsCompleted)
             {
                 throw new InvalidOperationException("The exclusive write access dependency is not completed");
@@ -85,7 +90,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
         /// <summary>
         /// Resets the internal state of this <see cref="AccessController"/> so that it can
-        /// be used again. 
+        /// be used again.
         /// </summary>
         /// <remarks>
         /// Typically this is used in cases where the underlying data that you are using the
@@ -104,6 +109,54 @@ namespace Anvil.Unity.DOTS.Jobs
             m_State = AcquisitionState.Unacquired;
             m_ExclusiveWriteDependency = m_SharedWriteDependency = m_SharedReadDependency = initialDependency;
             m_LastHandleAcquired = default;
+        }
+
+        /// <summary>
+        /// Gets the current <see cref="JobHandle"/> that must be completed before the provided <see cref="AccessType"/>
+        /// may be performed without modifying the state of the controller.
+        /// This is the same <see cref="JobHandle"/> that would be returned by <see cref="AcquireAsync"/> when provided
+        /// the same parameter.
+        /// </summary>
+        /// <remarks>
+        /// Generally <see cref="AcquireAsync"/> should be used. This method is an advanced feature for specialized
+        /// situations like detecting if a value has been acquired for writing between calls.
+        /// </remarks>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// A <see cref="JobHandle"/> that needs to be completed before the requested access type would be valid.
+        /// </returns>
+        public JobHandle GetDependencyFor(AccessType accessType)
+        {
+            Debug.Assert(!IsDisposed);
+
+            return accessType switch
+            {
+                AccessType.Disposal => m_ExclusiveWriteDependency,
+                AccessType.ExclusiveWrite => m_ExclusiveWriteDependency,
+                AccessType.SharedWrite => m_SharedWriteDependency,
+                AccessType.SharedRead => m_SharedReadDependency,
+                _ => throw new ArgumentOutOfRangeException(nameof(accessType), accessType,
+                    $"Tried to get dependency with {nameof(AccessType)} of {accessType} but no code path satisfies!")
+            };
+        }
+
+        /// <summary>
+        /// Acquires access synchronously for a given <see cref="AccessType"/> and returns an <see cref="AccessHandle"/>.
+        /// This is the preferred method of synchronous access vs <see cref="Acquire"/>/<see cref="Release"/>.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="AccessHandle"/> is a safer way to synchronously maintain access to an
+        /// <see cref="AccessController{T}"/>. Paired with a using statement access to the controller will be released
+        /// when the handle falls out of scope.
+        /// </remarks>
+        /// <example>using var valueHandle = myAccessController.AcquireWithHandle(AccessType.SharedRead);</example>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// The <see cref="AccessHandle"/> that maintains access to the controller until disposed.
+        /// </returns>
+        public AccessHandle AcquireWithHandle(AccessType accessType)
+        {
+            return new AccessHandle(this, accessType);
         }
 
         /// <summary>
@@ -142,23 +195,31 @@ namespace Anvil.Unity.DOTS.Jobs
                     m_State = AcquisitionState.Disposing;
                     acquiredHandle = m_ExclusiveWriteDependency;
                     break;
+                
                 case AccessType.ExclusiveWrite:
                     m_State = AcquisitionState.ExclusiveWrite;
                     acquiredHandle = m_ExclusiveWriteDependency;
                     break;
+
                 case AccessType.SharedWrite:
                     m_State = AcquisitionState.SharedWrite;
                     acquiredHandle = m_SharedWriteDependency;
                     break;
+
                 case AccessType.SharedRead:
                     m_State = AcquisitionState.SharedRead;
                     acquiredHandle = m_SharedReadDependency;
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(accessType), accessType, $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
             }
 
+            //TODO: #129 - Remove once we have unit tests.
+            Debug.Assert(acquiredHandle.Equals(GetDependencyFor(accessType)));
+
             m_LastHandleAcquired = acquiredHandle;
+            CaptureAccessOperationStack();
 
             return acquiredHandle;
         }
@@ -198,30 +259,36 @@ namespace Anvil.Unity.DOTS.Jobs
                             = m_SharedReadDependency
                                 = releaseAccessDependency;
                     break;
+
                 case AcquisitionState.SharedWrite:
                     //If you were shared writing, then no one else can exclusive write or read until you're done
                     m_ExclusiveWriteDependency
                         = m_SharedReadDependency
                             = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
+
                 case AcquisitionState.SharedRead:
                     //If you were reading, then no one else can do any writing until your reading is done
                     m_ExclusiveWriteDependency
                         = m_SharedWriteDependency
                             = JobHandle.CombineDependencies(m_ExclusiveWriteDependency, releaseAccessDependency);
                     break;
+
                 case AcquisitionState.Disposing:
-                    throw new InvalidOperationException($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new InvalidOperationException($"Current state was {m_State}, no need to call {nameof(ReleaseAsync)}. Enable ANVIL_DEBUG_SAFETY for more info.");
+
                 case AcquisitionState.Unacquired:
-                    throw new InvalidOperationException($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ENABLE_UNITY_COLLECTIONS_CHECKS for more info.");
+                    throw new InvalidOperationException($"Current state was {m_State}, {nameof(ReleaseAsync)} was called multiple times. Enable ANVIL_DEBUG_SAFETY for more info.");
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(m_State), m_State, $"Tried to release but {nameof(m_State)} was {m_State} and no code path satisfies!");
             }
 
+            CaptureAccessOperationStack();
             m_State = AcquisitionState.Unacquired;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void ValidateAcquireState()
         {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
@@ -232,17 +299,23 @@ namespace Anvil.Unity.DOTS.Jobs
 
             if (m_State != AcquisitionState.Unacquired)
             {
-                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again.");
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again." +
+                                                    $"\n ----- Last Acquisition Stack -----" +
+                                                    $"\n {GetLastAccessOperationStack()}" +
+                                                    $"\n ----- END Last Acquisition Stack -----\n");
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void ValidateReleaseState(JobHandle releaseAccessDependency)
         {
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (m_State == AcquisitionState.Unacquired)
             {
-                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times.");
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times." +
+                                                    $"\n ----- Last Release Stack -----" +
+                                                    $"\n {GetLastAccessOperationStack()}" +
+                                                    $"\n ----- END Last Release Stack -----\n");
             }
 
             if (m_State == AcquisitionState.Disposing)
@@ -253,6 +326,57 @@ namespace Anvil.Unity.DOTS.Jobs
             if (!releaseAccessDependency.DependsOn(m_LastHandleAcquired))
             {
                 throw new InvalidOperationException($"Dependency Chain Broken: The {nameof(JobHandle)} passed into {nameof(ReleaseAsync)} is not part of the chain from the {nameof(JobHandle)} that was given in the last call to {nameof(AcquireAsync)}. Check to ensure your ordering of {nameof(AcquireAsync)} and {nameof(ReleaseAsync)} match.");
+            }
+        }
+
+        [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
+        private void CaptureAccessOperationStack()
+        {
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+            m_LastAccessOperationStack = new StackTrace(1, true);
+#endif
+        }
+
+        private string GetLastAccessOperationStack()
+        {
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+            return m_LastAccessOperationStack.ToString();
+#else
+            return "(unavailable - enable ANVIL_DEBUG_SAFETY_EXPENSIVE to record stack during access operations)";
+#endif
+        }
+
+
+        // ----- Inner Types ----- //
+        /// <summary>
+        /// A convenience type that provides a synchronous handle to the <see cref="AccessController"/> that is released
+        /// when disposed.
+        /// </summary>
+        /// <remarks>
+        /// This type is the equivalent of calling <see cref="AccessController.Acquire"/> and
+        /// <see cref="AccessController.Release"/> yourself but is intended to be used with a using statement so
+        /// that the handle is always released.
+        /// </remarks>
+        public readonly struct AccessHandle : IDisposable
+        {
+            private readonly AccessController m_Controller;
+
+
+            /// <summary>
+            /// Creates a new instance that gains synchronous access from the provided controller.
+            /// </summary>
+            /// <param name="access">The <see cref="AccessController"/> to acquire from.</param>
+            /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+            public AccessHandle(AccessController controller, AccessType accessType)
+            {
+                m_Controller = controller;
+                m_Controller.Acquire(accessType);
+            }
+
+            /// <inheritdoc cref="IDisposable"/>
+            public void Dispose()
+            {
+                m_Controller.Release();
             }
         }
     }
