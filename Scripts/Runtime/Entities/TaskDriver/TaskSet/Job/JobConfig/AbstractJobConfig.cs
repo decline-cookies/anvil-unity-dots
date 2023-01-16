@@ -17,14 +17,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     internal abstract class AbstractJobConfig : AbstractAnvilBase,
                                                 IJobConfig
     {
-        //TODO: Change to better description
         internal enum Usage
         {
+            //Using in the general context (read or write)
             Default,
+            //Using in an Updating context for data that can we resolved
             Update,
+            //Using in the context where it can be written to via a resolve
             Resolve,
+            //Using in the context for requesting a cancellation
             RequestCancel,
+            //Using in the context for when a cancellation is complete
             CancelComplete,
+            //Using in the context for doing the work to cancel 
             Cancelling
         }
 
@@ -123,13 +128,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
             return this;
         }
-        
-        // public IJobConfig RequireTaskDriverForRequestCancel(AbstractTaskDriver taskDriver)
-        // {
-        //     AddAccessWrapper(new CancelFlowAccessWrapper(taskDriver.TaskSet.CancelFlow, AccessType.SharedWrite, Usage.Write));
-        //     return this;
-        // }
-        //
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
@@ -339,12 +337,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return dataStreamPendingCancelActiveAccessWrapper.DataStream;
         }
 
-        // internal TaskDriverCancelFlow GetCancelFlow(Usage usage)
-        // {
-        //     CancelFlowAccessWrapper cancelFlowAccessWrapper = GetAccessWrapper<CancelFlowAccessWrapper>(usage);
-        //     return cancelFlowAccessWrapper.CancelFlow;
-        // }
-
         internal TData GetGenericData<TData>()
             where TData : struct
         {
@@ -442,7 +434,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 return;
             }
             
-            //TODO: Fix?
+            //TODO: NEEDS PR?
 
             // //Access checks
             // switch (wrapper.ID.Usage)

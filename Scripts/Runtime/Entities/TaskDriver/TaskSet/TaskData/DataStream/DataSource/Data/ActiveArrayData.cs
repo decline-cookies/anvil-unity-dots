@@ -27,7 +27,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public ActiveArrayData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour, AbstractData pendingCancelActiveData) : base(id, taskSetOwner, cancelBehaviour, pendingCancelActiveData)
         {
             m_Active = new DeferredNativeArray<T>(Allocator.Persistent);
-            //TODO: Make this part of the constructor
             m_Active.SetCapacity(INITIAL_SIZE);
             
             ScheduleInfo = m_Active.ScheduleInfo;

@@ -8,13 +8,10 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //TODO: NEEDS PR - Maybe we should have DriverTaskSet vs SystemTaskSet that extend AbstractTaskSet
     internal class TaskSet : AbstractAnvilBase
     {
-        private readonly List<AbstractDataStream> m_DataStreamsWithDefaultCancellation;
         private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
-        private readonly List<AbstractDataStream> m_DataStreamsWithNoCancellation;
-
-        private readonly List<AbstractDataStream> m_AllPublicDataStreams;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
@@ -41,18 +38,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             TaskSetOwner = taskSetOwner;
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
-
-            m_DataStreamsWithDefaultCancellation = new List<AbstractDataStream>();
+            
             m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
-            m_DataStreamsWithNoCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            m_AllPublicDataStreams = new List<AbstractDataStream>();
-
+            //TODO: NEEDS PR - Move all Cancellation aspects into one class to make it easier/nicer to work with
+            
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
             CancelCompleteDataStream = new CancelCompleteDataStream(taskSetOwner);
             CancelProgressDataStream = new CancelProgressDataStream(taskSetOwner);
-
-            //TODO: Build a Cancellation Data Structure
         }
 
         protected override void DisposeSelf()
@@ -95,10 +88,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             switch (cancelBehaviour)
             {
                 case CancelBehaviour.Default:
-                    m_DataStreamsWithDefaultCancellation.Add(dataStream);
                     break;
                 case CancelBehaviour.None:
-                    m_DataStreamsWithNoCancellation.Add(dataStream);
                     break;
                 case CancelBehaviour.Explicit:
                     m_DataStreamsWithExplicitCancellation.Add(dataStream);
@@ -108,7 +99,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             }
 
             m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
-            m_AllPublicDataStreams.Add(dataStream);
 
             return dataStream;
         }
@@ -215,8 +205,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Add the System
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
 
-            //We need to add a context for the System and the TaskDriver. 
-            //TODO: Elaborate on the reasoning
+            //We need to add a context for the System and the TaskDriver. When the System goes to update it's owned data, it doesn't know
+            //all the different TaskDriver CancelRequests to read from. It only reads from its own CancelRequest collection. 
             contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
             contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
 

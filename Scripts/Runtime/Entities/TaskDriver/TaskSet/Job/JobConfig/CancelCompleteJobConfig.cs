@@ -8,7 +8,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                        CancelCompleteDataStream cancelCompleteDataStream)
             : base(taskSetOwner)
         {
-            //TODO: Move into a function?
             AddAccessWrapper(new CancelCompleteActiveAccessWrapper(cancelCompleteDataStream, AccessType.SharedRead, Usage.CancelComplete));
         }
     }

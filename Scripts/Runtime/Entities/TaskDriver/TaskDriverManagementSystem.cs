@@ -28,8 +28,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private BulkJobScheduler<CancelProgressFlow> m_CancelProgressFlowBulkJobScheduler;
 
         private readonly IDProvider m_IDProvider;
-        
-
 
         public TaskDriverManagementSystem()
         {
@@ -83,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-
+            
             foreach (IDataSource dataSource in m_EntityProxyDataSourcesByType.Values)
             {
                 dataSource.Harden();

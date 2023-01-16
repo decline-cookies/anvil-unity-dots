@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// <see cref="AbstractTaskDriverSystem"/> or <see cref="AbstractTaskDriver"/> that it is associated with.
         /// </summary>
         public bool IsEnabled { get; set; }
-        
+
         /// <summary>
         /// A configuration helper that will run this job only once.
         /// After being run, it will set <see cref="IsEnabled"/> to false.
@@ -25,13 +25,13 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RunOnce();
-        
+
         /// <summary>
-        /// Specifies a <see cref="IDataStream{TInstance}"/> to be written to in a shared-write context.
+        /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
-        /// <param name="dataStream">The <see cref="IDataStream{TInstance}"/> to write to.</param>
+        /// <param name="dataStream">The <see cref="IAbstractDataStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data in
-        /// the <see cref="IDataStream{TInstance}"/></typeparam>
+        /// the <see cref="IAbstractDataStream{TInstance}"/></typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance;
@@ -121,6 +121,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData;
 
+        /// <summary>
+        /// Requests cancellation for specific <see cref="Entity"/> in a given <see cref="AbstractTaskDriver"/>
+        /// </summary>
+        /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to cancel.</param>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver);
 
         /// <summary>

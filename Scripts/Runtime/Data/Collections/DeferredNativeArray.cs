@@ -11,6 +11,8 @@ using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    //TODO: #99 - This class should be renamed and updated to reflect the List like functionality it now has.
+    
     /// <summary>
     /// Scheduling information for a <see cref="DeferredNativeArray{T}"/>
     /// </summary>
@@ -99,7 +101,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private static readonly int SIZE = UnsafeUtility.SizeOf<T>();
         private static readonly int ALIGNMENT = UnsafeUtility.AlignOf<T>();
-
+        
         internal static unsafe DeferredNativeArray<T> ReinterpretFromPointer(void* ptr)
         {
             Debug_EnsurePointerNotNull(ptr);
@@ -281,7 +283,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         /// <summary>
-        /// Disposes the collection
+        /// Disposes the collection and frees all memory
         /// </summary>
         [WriteAccessRequired]
         public unsafe void Dispose()
@@ -299,7 +301,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         /// <summary>
-        /// Clears all data in the collection
+        /// Clears all data in the collection, does not dispose of the underlying memory though.
         /// </summary>
         [WriteAccessRequired]
         public unsafe void Clear()
@@ -333,7 +335,7 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         /// <summary>
-        /// Schedules the clearing of the collections
+        /// Schedules the clearing of the collections, does not release the backing memory though
         /// </summary>
         /// <param name="inputDeps">The <see cref="JobHandle"/> to wait on before clearing.</param>
         /// <returns>A <see cref="JobHandle"/> for when clearing is complete</returns>
@@ -349,29 +351,11 @@ namespace Anvil.Unity.DOTS.Data
             return jobHandle;
         }
         
-        //TODO: #99 - Look at renaming this class or adjusting functionality?
         /// <summary>
-        /// Resets the outward facing length this <see cref="DeferredNativeArray{T}"/> reports.
+        /// Sets the desired capacity of the array. This will allocate new memory of the correct size and free any
+        /// old memory that was being used. If any elements were in the array, they will be copied into the new memory.
         /// </summary>
-        /// <remarks>
-        /// This is typically used for a case where the max size the <see cref="DeferredNativeArray{T}"/> could be
-        /// is known.
-        /// It gets allocated for that amount, ex: 10.
-        /// Candidates to be written to the array are processed and 7 of the 10 candidates are written, the other
-        /// three are discarded.
-        /// This function is then called to reset the length to be 7 since only the first 7 elements in the array
-        /// are valid.
-        /// </remarks>
-        /// <param name="newLength">The length to set to.</param>
-        public unsafe void ResetLengthTo(int newLength)
-        {
-            //Can't reset the length on an uncreated array
-            Debug.Assert(m_BufferInfo != null);
-            //Can't set the length to be larger than what has been allocated
-            Debug.Assert(newLength <= m_BufferInfo->Capacity);
-            m_BufferInfo->Length = newLength;
-        }
-
+        /// <param name="capacity">The desired size of the array</param>
         public unsafe void SetCapacity(int capacity)
         {
             Debug.Assert(m_BufferInfo != null);
@@ -390,7 +374,12 @@ namespace Anvil.Unity.DOTS.Data
             m_BufferInfo->Buffer = newMemory;
             m_BufferInfo->Capacity = capacity;
         }
-
+        
+        /// <summary>
+        /// Adds an element to next free spot in the array.
+        /// Will trigger a re-allocation if going above the current capacity.
+        /// </summary>
+        /// <param name="element">The element to add to the array</param>
         public unsafe void Add(T element)
         {
             //If we're going to go over, we need to reallocate

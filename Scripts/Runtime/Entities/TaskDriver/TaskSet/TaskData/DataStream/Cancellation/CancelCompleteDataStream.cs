@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         private readonly CancelCompleteDataSource m_DataSource;
         
-        //TODO: Gross, need to rearchitect DataStreams, better safety, expose only the Data
+        //TODO: NEEDS PR - Gross, need to rearchitect DataStreams, better safety, expose only the Data
         
         public ActiveArrayData<EntityProxyInstanceID> ActiveArrayData { get; }
         public PendingData<EntityProxyInstanceID> PendingData { get; }

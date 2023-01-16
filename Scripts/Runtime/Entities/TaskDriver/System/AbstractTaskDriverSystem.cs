@@ -1,4 +1,3 @@
-using Anvil.CSharp.Data;
 using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,15 +12,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
         private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
-        
+
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
-        private readonly TaskDriverManagementSystem m_TaskDriverManagementSystem;
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
-        
+
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
 
         public new World World { get; }
@@ -46,12 +44,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;
-            m_TaskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
 
-            
+
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
-            ID = m_TaskDriverManagementSystem.GetNextID();
+            ID = taskDriverManagementSystem.GetNextID();
 
             TaskSet = new TaskSet(this);
         }
@@ -106,7 +104,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                                                 scheduleJobFunction,
                                                 batchStrategy);
         }
-        
+
         public IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
                                                                                       JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
                                                                                       BatchStrategy batchStrategy)
@@ -136,6 +134,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 return;
             }
+
             m_IsHardened = true;
 
             //Harden our TaskSet
@@ -148,7 +147,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardenUpdatePhase();
             m_IsUpdatePhaseHardened = true;
-            
+
             //Create the Bulk Job Scheduler for any jobs to run during this System's Update phase
             List<AbstractJobConfig> jobConfigs = new List<AbstractJobConfig>();
             TaskSet.AddJobConfigsTo(jobConfigs);
@@ -198,7 +197,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 throw new InvalidOperationException($"Trying to Harden the Update Phase for {this} but {nameof(HardenUpdatePhase)} has already been called!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureHardened()
         {

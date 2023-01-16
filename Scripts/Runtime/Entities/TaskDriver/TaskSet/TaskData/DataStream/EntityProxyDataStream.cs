@@ -5,6 +5,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.Tasks
 {
+    //TODO: NEEDS PR - Too much complexity that is not needed
     internal class EntityProxyDataStream<TInstance> : AbstractDataStream,
                                                       IDriverDataStream<TInstance>,
                                                       ISystemDataStream<TInstance>
@@ -15,14 +16,14 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_PendingCancelActiveArrayData;
+        private readonly CancelBehaviour m_CancelBehaviour;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
-        public CancelBehaviour CancelBehaviour { get; }
-
+        
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(taskSetOwner)
         {
-            CancelBehaviour = cancelBehaviour;
+            m_CancelBehaviour = cancelBehaviour;
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 

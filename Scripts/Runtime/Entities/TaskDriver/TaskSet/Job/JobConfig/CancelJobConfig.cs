@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         private void RequireDataStreamForCancelling(EntityProxyDataStream<TInstance> pendingCancelDataStream)
         {
-            //When cancelling, we need to read from the pending cancel Active and write to the Pending
+            //When cancelling, we need to read from the pending cancel Active and write to the Pending for that type
             AddAccessWrapper(new DataStreamPendingCancelActiveAccessWrapper<TInstance>(pendingCancelDataStream, AccessType.SharedRead, Usage.Cancelling));
             AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>(pendingCancelDataStream, AccessType.SharedWrite, Usage.Cancelling));
         }

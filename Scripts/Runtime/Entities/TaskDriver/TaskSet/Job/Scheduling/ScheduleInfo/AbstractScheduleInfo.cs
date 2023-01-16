@@ -12,6 +12,16 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     {
         private const string UNKNOWN_DECLARING_TYPE = "unknown";
         
+        private static int ResolveBatchSize(BatchStrategy batchStrategy, int maxElementsPerChunk)
+        {
+            return batchStrategy switch
+            {
+                BatchStrategy.MaximizeChunk   => maxElementsPerChunk,
+                BatchStrategy.MaximizeThreads => 1,
+                _                             => throw new InvalidOperationException($"Tried to resolve batch size for {nameof(BatchStrategy)}.{batchStrategy} but no code path satisfies!")
+            };
+        }
+        
         /// <summary>
         /// The number of instances to process per batch.
         /// </summary>
@@ -25,16 +35,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             BatchSize = ResolveBatchSize(batchStrategy, maxElementsPerChunk);
         }
 
-        private int ResolveBatchSize(BatchStrategy batchStrategy, int maxElementsPerChunk)
-        {
-            return batchStrategy switch
-            {
-                BatchStrategy.MaximizeChunk   => maxElementsPerChunk,
-                BatchStrategy.MaximizeThreads => 1,
-                _                             => throw new InvalidOperationException($"Tried to resolve batch size for {nameof(BatchStrategy)}.{batchStrategy} but no code path satisfies!")
-            };
-        }
-        
         internal abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
         
     }

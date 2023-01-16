@@ -52,7 +52,9 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
         {
-            //TODO: Comment explanations
+            //TODO: NEEDS PR - Kinda gross
+            
+            //If we need to have an explicit unwinding to cancel, we need to create a second hidden piece of data to serve as the trigger
             ActiveArrayData<T> pendingCancelArrayData = null;
             if (cancelBehaviour is CancelBehaviour.Explicit)
             {
@@ -67,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner)
         {
-            //TODO: Comment explanations
+            //TODO: NEEDS PR - Lookup Data doesn't really get consolidated the same way
             ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelBehaviour.None);
             ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
             return activeLookupData;

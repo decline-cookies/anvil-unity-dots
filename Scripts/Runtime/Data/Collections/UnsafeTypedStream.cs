@@ -358,6 +358,7 @@ namespace Anvil.Unity.DOTS.Data
         /// Note: This will only be accurate if all write jobs have completed before calling this.
         /// </summary>
         /// <returns>The number of elements</returns>
+        [WriteAccessRequired]
         public int Count()
         {
             int count = 0;
@@ -375,6 +376,7 @@ namespace Anvil.Unity.DOTS.Data
         /// Note: This will only be accurate if all write jobs have completed before calling this.
         /// </summary>
         /// <returns>The total number of elements possible in the currently allocated memory</returns>
+        [WriteAccessRequired]
         public int Capacity()
         {
             int blocksAllocated = 0;
