@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             set => m_Logger = value;
         }
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
+#if ANVIL_DEBUG_SAFETY
         /// <inheritdoc cref="Dependency" />
         protected new JobHandle Dependency
         {
@@ -48,75 +48,6 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// Creates a new <see cref="AbstractAnvilSystemBase"/> instance.
         /// </summary>
-        public AbstractAnvilSystemBase() : base()
-        {
-        }
-
-        // ----- Copy From Buffers ----- //
-        /// <summary>
-        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to
-        /// a <see cref="NativeArray{T}" /> after <see cref="Dependency"/> has completed.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy to.</param>
-        /// <remarks>Actual copy is performed by <see cref="CopyFromSingletonBuffer{T}" /></remarks>
-        protected void CopyFromSingletonBufferAsync<T>(NativeArray<T> outputBuffer) where T : struct, IBufferElementData
-        {
-            Dependency = CopyFromSingletonBufferAsync<T>(Dependency, outputBuffer);
-        }
-
-        /// <summary>
-        /// Schedule a job to asynchronously copy a singleton <see cref="DynamicBuffer{T}" /> to
-        /// a <see cref="NativeArray{T}" /> after the provided <see cref="JobHandle"/> has completed.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
-        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy to.</param>
-        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
-        /// <remarks>Actual copy is performed by <see cref="CopyFromSingletonBuffer{T}" /></remarks>
-        protected JobHandle CopyFromSingletonBufferAsync<T>(in JobHandle dependsOn, in NativeArray<T> outputBuffer) where T : struct, IBufferElementData
-        {
-            EntityQuery query = GetEntityQuery(ComponentType.ReadOnly<T>());
-            CopyFromSingletonBuffer<T> job = new CopyFromSingletonBuffer<T>()
-            {
-                InputBufferTypeHandle = GetBufferTypeHandle<T>(),
-                OutputBuffer = outputBuffer
-            };
-            return job.Schedule(query, dependsOn);
-        }
-
-        // ----- Copy To Buffers ----- //
-        /// <summary>
-        /// Schedule a job to asynchronously copy a <see cref="NativeArray{T}" /> to a
-        /// singleton <see cref="DynamicBuffer{T}" /> after <see cref="Dependency"/> has completed.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="inputBuffer">The <see cref="NativeArray{T}" /> to copy from.</param>
-        /// <remarks>Actual copy is performed by <see cref="CopyToSingletonBuffer{T}" /></remarks>
-        protected void CopyToSingletonBufferAsync<T>(in NativeArray<T> inputBuffer) where T : struct, IBufferElementData
-        {
-            Dependency = CopyToSingletonBufferAsync<T>(Dependency, inputBuffer);
-        }
-
-        /// /// <summary>
-        /// Schedule a job to asynchronously copy a <see cref="NativeArray{T}" /> to a
-        /// singleton <see cref="DynamicBuffer{T}" /> after the provided <see cref="JobHandle"/> has completed.
-        /// </summary>
-        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
-        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
-        /// <param name="inputBuffer">The <see cref="NativeArray{T}" /> to copy from.</param>
-        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
-        /// <remarks>Actual copy is performed by <see cref="CopyToSingletonBuffer{T}" /></remarks>
-        protected JobHandle CopyToSingletonBufferAsync<T>(in JobHandle dependsOn, in NativeArray<T> inputBuffer) where T : struct, IBufferElementData
-        {
-            EntityQuery query = GetEntityQuery(ComponentType.ReadWrite<T>());
-            CopyToSingletonBuffer<T> job = new CopyToSingletonBuffer<T>()
-            {
-                InputBuffer = inputBuffer,
-                OutputBufferTypeHandle = GetBufferTypeHandle<T>()
-            };
-            return job.Schedule(query, dependsOn);
-        }
-
+        protected AbstractAnvilSystemBase() : base() { }
     }
 }

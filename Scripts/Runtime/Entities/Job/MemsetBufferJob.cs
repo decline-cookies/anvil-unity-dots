@@ -13,6 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}"/></typeparam>
     /// <remarks>The <see cref="DynamicBuffer{T}"/> compliment to <see cref="MemsetNativeArray{T}"/>.</remarks>
+    //TODO: #133 - Profile vs NativeArrayExtension.FloodSet. This probably isn't faster than FloodSetting in a job.
     [BurstCompile]
     public struct MemsetBufferJob<T> : IJobParallelForBatch where T : struct, IBufferElementData
     {
@@ -22,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
         //
         // Ex: We shouldn't split a set of 10 across 5 threads.
         //
-        // Re CacheSize: If generalizing to a 16kb cache size is good enough for Unity it's good 
+        // Re CacheSize: If generalizing to a 16kb cache size is good enough for Unity it's good
         // enough for us. If this isn't good enough #12 will allow us to get the actual cache size.
         private static readonly float MIN_BATCH_SIZE_PER_THREAD = math.max(1f, 16 * 1024 / (float)UnsafeUtility.SizeOf<T>());
 
@@ -34,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
         ///  - Minimizing the number of batches (there's overhead in each batch run)
         /// </summary>
         /// <remarks>
-        /// This approach minimizes frame time consumed not total computation time. 
+        /// This approach minimizes frame time consumed not total computation time.
         /// Single thread will always consume the fewest CPU cycles.
         /// </remarks>
         /// <param name="length">The total length of the data set</param>
