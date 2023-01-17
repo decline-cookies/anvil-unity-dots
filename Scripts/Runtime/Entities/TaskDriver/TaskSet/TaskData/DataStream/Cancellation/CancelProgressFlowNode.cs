@@ -66,12 +66,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             CheckCancelProgressJob checkCancelProgressJob = new CheckCancelProgressJob(m_ProgressLookupData.Lookup,
                                                                                        m_CancelCompleteData.PendingWriter,
                                                                                        m_CancelCompleteActiveID,
+                                                                                       m_ProgressLookupData.TaskSetOwner.ID,
                                                                                        m_Parent != null
                                                                                            ? m_ParentProgressLookupData.Lookup
-                                                                                           : default,
-                                                                                       m_Parent != null
-                                                                                           ? m_ParentProgressLookupData.TaskSetOwner.ID
-                                                                                           : 0);
+                                                                                           : default);
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
@@ -99,21 +97,21 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_CompleteWriter;
             private readonly uint m_CancelCompleteActiveID;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ParentProgressLookup;
-            private readonly uint m_ParentTaskSetOwnerID;
+            private readonly uint m_TaskSetOwnerID;
 
             private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_CompleteLaneWriter;
 
             public CheckCancelProgressJob(UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
                                           UnsafeTypedStream<EntityProxyInstanceID>.Writer completeWriter,
                                           uint cancelCompleteActiveID,
-                                          UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup,
-                                          uint parentTaskSetOwnerID)
+                                          uint taskSetOwnerID,
+                                          UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup)
             {
                 m_ProgressLookup = progressLookup;
                 m_CompleteWriter = completeWriter;
                 m_CancelCompleteActiveID = cancelCompleteActiveID;
                 m_ParentProgressLookup = parentProgressLookup;
-                m_ParentTaskSetOwnerID = parentTaskSetOwnerID;
+                m_TaskSetOwnerID = taskSetOwnerID;
 
                 m_NativeThreadIndex = UNSET_THREAD_INDEX;
                 m_CompleteLaneWriter = default;
@@ -123,36 +121,72 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
                 m_CompleteLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
+                
+                if (m_ParentProgressLookup.IsCreated)
+                {
+                    CheckCancelProgressWithParent();
+                }
+                else
+                {
+                    CheckCancelProgress();
+                }
+            }
 
+            private void CheckCancelProgressWithParent()
+            {
+                //We need to loop through the parent collection because if we are a System, then there could be 
+                //multiple TaskDrivers that have requested a cancel. If we iterate through ourself, we're going
+                //to accidentally mark things complete in different task drivers.
+                foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ParentProgressLookup)
+                {
+                    ref bool isParentProcessing = ref entry.Value;
+                    EntityProxyInstanceID id = new EntityProxyInstanceID(entry.Key, m_TaskSetOwnerID);
+                    
+                    bool willComplete = CheckIfWillComplete(m_ProgressLookup[id], ref id);
+                    if (!willComplete)
+                    {
+                        //If we aren't going to complete, then our parent needs to stay held open.
+                        //If we are going to complete, then we won't assume anything and leave it alone.
+                        //Our parent might have other children to wait on which will hold the parent open OR
+                        //our parent might have nothing, in which case we don't want to hold open for an unnecessary
+                        //extra frame.
+                        isParentProcessing = true;
+                    }
+                }
+            }
+
+            private void CheckCancelProgress()
+            {
+                //We don't have a parent so we must be the top level TaskDriver.
+                //We need to loop through ourselves instead.
                 foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ProgressLookup)
                 {
                     EntityProxyInstanceID id = entry.Key;
-                    ref bool isStillProcessing = ref entry.Value;
-                    //If we're still processing we'll allow a Cancel Job to occur
-                    if (isStillProcessing)
-                    {
-                        //Flip us back to not processing. A CancelJob will switch this if we still need to process
-                        isStillProcessing = false;
-                        //If we have a parent, we need to hold it open until we complete
-                        if (m_ParentProgressLookup.IsCreated)
-                        {
-                            EntityProxyInstanceID parentID = new EntityProxyInstanceID(id, m_ParentTaskSetOwnerID);
-                            m_ParentProgressLookup[parentID] = true;
-                        }
-                    }
-                    //If we're not processing then:
-                    // - All Cancel Jobs are complete 
-                    // OR
-                    // - There never were any Cancel Jobs to begin with
-                    // OR
-                    // - There wasn't any data for this id that was requested to cancel.
-                    else
-                    {
-                        //Remove ourselves from the Progress Lookup
-                        m_ProgressLookup.Remove(id);
-                        //Write ourselves to the Complete.
-                        m_CompleteLaneWriter.Write(new EntityProxyInstanceID(id.Entity, id.TaskSetOwnerID, m_CancelCompleteActiveID));
-                    }
+                    CheckIfWillComplete(entry.Value, ref id);
+                }
+            }
+
+            private bool CheckIfWillComplete(bool isStillProcessing, ref EntityProxyInstanceID id)
+            {
+                if (isStillProcessing)
+                {
+                    //Flip us back to not processing. A CancelJob will switch this if we still need to process
+                    m_ProgressLookup[id] = false;
+                    return false;
+                }
+                //If we're not processing then:
+                // - All Cancel Jobs are complete 
+                // OR
+                // - There never were any Cancel Jobs to begin with
+                // OR
+                // - There wasn't any data for this id that was requested to cancel.{
+                else
+                {
+                    //Remove ourselves from the Progress Lookup
+                    m_ProgressLookup.Remove(id);
+                    //Write ourselves to the Complete.
+                    m_CompleteLaneWriter.Write(new EntityProxyInstanceID(id.Entity, id.TaskSetOwnerID, m_CancelCompleteActiveID));
+                    return true;
                 }
             }
         }
