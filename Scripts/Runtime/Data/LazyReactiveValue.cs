@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Data
         private readonly UpdateValueDelegate m_UpdateValue;
 
         private TValue m_Value;
-        private TTriggerType m_LastDependencyHandle;
+        private TTriggerType m_LastTriggerValue;
 
         /// <summary>
         /// The value. This will always be up to date but may incur an update cost if the source has changed.
@@ -82,15 +82,15 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         public void UpdateIfDirty()
         {
-            TTriggerType currentReadHandle = m_GetCurrentTriggerValue();
+            TTriggerType currentTriggerValue = m_GetCurrentTriggerValue();
 
-            if (m_LastDependencyHandle.Equals(currentReadHandle))
+            if (m_LastTriggerValue.Equals(currentTriggerValue))
             {
                 return;
             }
 
             m_UpdateValue(ref m_Value);
-            m_LastDependencyHandle = currentReadHandle;
+            m_LastTriggerValue = currentTriggerValue;
         }
     }
 }
