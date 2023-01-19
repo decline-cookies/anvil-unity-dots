@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <summary>
     /// A collection of methods for dealing with unsafe collections and pointers to their data.
     /// </summary>
-    public class UnsafeCollectionUtil
+    public static class UnsafeCollectionUtil
     {
         /// <summary>
         /// Sets elements in a collection to their default value.

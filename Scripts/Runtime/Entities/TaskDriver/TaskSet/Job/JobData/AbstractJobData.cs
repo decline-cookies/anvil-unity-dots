@@ -107,6 +107,42 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return m_JobConfig.GetGenericData<TData>();
         }
 
+
+        public ThreadPersistentDataAccessor<TData> GetThreadPersistentDataAccessorForWriting<TData>()
+            where TData : unmanaged
+        {
+            ThreadPersistentData<TData> persistentData = m_JobConfig.GetThreadPersistentData<TData>();
+            return persistentData.CreateThreadPersistentDataAccessor();
+        }
+
+        public EntityPersistentDataReader<TData> GetEntityPersistentDataReader<TData>()
+            where TData : unmanaged
+        {
+            EntityPersistentData<TData> persistentData = m_JobConfig.GetEntityPersistentData<TData>();
+            return persistentData.CreateEntityPersistentDataReader();
+        }
+        
+        public EntityPersistentDataWriter<TData> GetEntityPersistentDataWriter<TData>()
+            where TData : unmanaged
+        {
+            EntityPersistentData<TData> persistentData = m_JobConfig.GetEntityPersistentData<TData>();
+            return persistentData.CreateEntityPersistentDataWriter();
+        }
+
+        public PersistentDataWriter<TData> GetPersistentDataWriter<TData>()
+            where TData : unmanaged
+        {
+            PersistentData<TData> persistentData = m_JobConfig.GetPersistentData<TData>();
+            return persistentData.CreatePersistentDataWriter();
+        }
+        
+        public PersistentDataReader<TData> GetPersistentDataReader<TData>()
+            where TData : unmanaged
+        {
+            PersistentData<TData> persistentData = m_JobConfig.GetPersistentData<TData>();
+            return persistentData.CreatePersistentDataReader();
+        }
+
         //*************************************************************************************************************
         // ENTITY QUERY
         //*************************************************************************************************************

@@ -91,5 +91,41 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             return this;
         }
+
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id)
+            where TData : unmanaged
+        {
+            return this;
+        }
+
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id)
+            where TData : unmanaged
+        {
+            return this;
+        }
+
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id)
+            where TData : unmanaged
+        {
+            return this;
+        }
+
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id)
+            where TData : unmanaged
+        {
+            return this;
+        }
+
+        public IJobConfig RequirePersistentDataForRead<TData>(string id)
+            where TData : unmanaged
+        {
+            return this;
+        }
+
+        public IJobConfig RequirePersistentDataForWrite<TData>(string id)
+            where TData : unmanaged
+        {
+            return this;
+        }
     }
 }

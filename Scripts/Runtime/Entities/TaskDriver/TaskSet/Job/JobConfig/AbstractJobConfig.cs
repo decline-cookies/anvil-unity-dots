@@ -220,6 +220,55 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             return this;
         }
 
+
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id)
+            where TData : unmanaged
+        {
+            ThreadPersistentData<TData> data = PersistentDataManager.GetThreadPersistentData<TData>(id);
+            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
+            return this;
+        }
+
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id)
+            where TData : unmanaged
+        {
+            ThreadPersistentData<TData> data = PersistentDataManager.GetThreadPersistentData<TData>(id);
+            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
+            return this;
+        }
+
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id)
+            where TData : unmanaged
+        {
+            EntityPersistentData<TData> data = PersistentDataManager.GetEntityPersistentData<TData>(id);
+            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
+            return this;
+        }
+
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id)
+            where TData : unmanaged
+        {
+            EntityPersistentData<TData> data = PersistentDataManager.GetEntityPersistentData<TData>(id);
+            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
+            return this;
+        }
+
+        public IJobConfig RequirePersistentDataForRead<TData>(string id)
+            where TData : unmanaged
+        {
+            PersistentData<TData> data = PersistentDataManager.GetPersistentData<TData>(id);
+            AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
+            return this;
+        }
+        
+        public IJobConfig RequirePersistentDataForWrite<TData>(string id)
+            where TData : unmanaged
+        {
+            PersistentData<TData> data = PersistentDataManager.GetPersistentData<TData>(id);
+            AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
+            return this;
+        }
+
         //*************************************************************************************************************
         // HARDEN
         //*************************************************************************************************************
@@ -342,6 +391,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             GenericDataAccessWrapper<TData> genericDataAccessWrapper = GetAccessWrapper<GenericDataAccessWrapper<TData>>(Usage.Default);
             return genericDataAccessWrapper.Data;
+        }
+
+        internal ThreadPersistentData<TData> GetThreadPersistentData<TData>()
+            where TData : unmanaged
+        {
+            PersistentDataAccessWrapper<ThreadPersistentData<TData>> persistentDataAccessWrapper = GetAccessWrapper<PersistentDataAccessWrapper<ThreadPersistentData<TData>>>(Usage.Default);
+            return persistentDataAccessWrapper.PersistentData;
+        }
+
+        internal EntityPersistentData<TData> GetEntityPersistentData<TData>()
+            where TData : unmanaged
+        {
+            PersistentDataAccessWrapper<EntityPersistentData<TData>> persistentDataAccessWrapper = GetAccessWrapper<PersistentDataAccessWrapper<EntityPersistentData<TData>>>(Usage.Default);
+            return persistentDataAccessWrapper.PersistentData;
+        }
+        
+        internal PersistentData<TData> GetPersistentData<TData>()
+            where TData : unmanaged
+        {
+            PersistentDataAccessWrapper<PersistentData<TData>> persistentDataAccessWrapper = GetAccessWrapper<PersistentDataAccessWrapper<PersistentData<TData>>>(Usage.Default);
+            return persistentDataAccessWrapper.PersistentData;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery()
