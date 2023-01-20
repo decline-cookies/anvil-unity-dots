@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
     /// <summary>
     /// A replacement for <see cref="IJobFor"/> when the number of work items is not known at Schedule time
     /// and you are using a <see cref="DeferredNativeArray{T}"/>
-    /// This is specific to a context where the data is being updated.
+    /// This is specific to a context where the data is being read.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
     [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<,>))]
