@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public UnsafeTypedStream<T>.Writer PendingWriter { get; }
         public unsafe void* PendingWriterPointer { get; }
 
-        public unsafe PendingData(uint id) : base(id, null, CancelBehaviour.None, null)
+        public unsafe PendingData(uint id) : base(id, null, CancelRequestBehaviour.Ignore, null)
         {
             m_Pending = new UnsafeTypedStream<T>(Allocator.Persistent);
             PendingWriter = m_Pending.AsWriter();

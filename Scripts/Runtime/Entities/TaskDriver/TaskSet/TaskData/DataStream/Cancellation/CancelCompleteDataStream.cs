@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             PendingWriter = m_DataSource.PendingWriter;
             PendingData = m_DataSource.PendingData;
             
-            ActiveArrayData = m_DataSource.CreateActiveArrayData(TaskSetOwner, CancelBehaviour.None);
+            ActiveArrayData = m_DataSource.CreateActiveArrayData(TaskSetOwner, CancelRequestBehaviour.Ignore);
             ScheduleInfo = ActiveArrayData.ScheduleInfo;
         }
 

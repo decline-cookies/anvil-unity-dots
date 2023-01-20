@@ -3,9 +3,8 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
-    /// Triggering specific <see cref="AbstractJobData"/> for use when triggering a job based
-    /// of when a <see cref="AbstractTaskDriver"/> has completed the cancellation for an
-    /// <see cref="Entity"/>
+    /// Specific <see cref="AbstractJobData"/> for Jobs that have been triggered by the completion of cancelling
+    /// instances in an <see cref="AbstractTaskDriver"/>.
     /// </summary>
     public class CancelCompleteJobData : AbstractJobData
     {

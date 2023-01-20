@@ -112,17 +112,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return subTaskDriver;
         }
 
-        protected ISystemDataStream<TInstance> CreateSystemDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
+        protected ISystemDataStream<TInstance> CreateSystemDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            ISystemDataStream<TInstance> dataStream = TaskDriverSystem.GetOrCreateDataStream<TInstance>(this, cancelBehaviour);
+            ISystemDataStream<TInstance> dataStream = TaskDriverSystem.GetOrCreateDataStream<TInstance>(this, cancelRequestBehaviour);
             return dataStream;
         }
 
-        protected IDriverDataStream<TInstance> CreateDriverDataStream<TInstance>(CancelBehaviour cancelBehaviour = CancelBehaviour.Default)
+        protected IDriverDataStream<TInstance> CreateDriverDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelBehaviour);
+            IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour);
             return dataStream;
         }
 

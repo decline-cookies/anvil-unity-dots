@@ -16,18 +16,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_PendingCancelActiveArrayData;
-        private readonly CancelBehaviour m_CancelBehaviour;
+        private readonly CancelRequestBehaviour m_CancelRequestBehaviour;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
         
-        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(taskSetOwner)
+        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(taskSetOwner)
         {
-            m_CancelBehaviour = cancelBehaviour;
+            m_CancelRequestBehaviour = cancelRequestBehaviour;
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
-            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelBehaviour);
+            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour);
 
             if (m_ActiveArrayData.PendingCancelActiveData != null)
             {

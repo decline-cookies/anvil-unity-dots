@@ -69,33 +69,33 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             dataStreams.Add(dataStream);
         }
 
-        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Type instanceType = typeof(TInstance);
             if (!m_PublicDataStreamsByType.TryGetValue(instanceType, out AbstractDataStream dataStream))
             {
-                dataStream = CreateDataStream<TInstance>(cancelBehaviour);
+                dataStream = CreateDataStream<TInstance>(cancelRequestBehaviour);
             }
 
             return (EntityProxyDataStream<TInstance>)dataStream;
         }
 
-        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelBehaviour);
-            switch (cancelBehaviour)
+            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour);
+            switch (cancelRequestBehaviour)
             {
-                case CancelBehaviour.Default:
+                case CancelRequestBehaviour.Delete:
                     break;
-                case CancelBehaviour.None:
+                case CancelRequestBehaviour.Ignore:
                     break;
-                case CancelBehaviour.Explicit:
+                case CancelRequestBehaviour.Unwind:
                     m_DataStreamsWithExplicitCancellation.Add(dataStream);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(cancelBehaviour), cancelBehaviour, null);
+                    throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
 
             m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);

@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Active;
         }
 
-        public ActiveArrayData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour, AbstractData pendingCancelActiveData) : base(id, taskSetOwner, cancelBehaviour, pendingCancelActiveData)
+        public ActiveArrayData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData) : base(id, taskSetOwner, cancelRequestBehaviour, pendingCancelActiveData)
         {
             m_Active = new DeferredNativeArray<T>(Allocator.Persistent);
             m_Active.SetCapacity(INITIAL_SIZE);
