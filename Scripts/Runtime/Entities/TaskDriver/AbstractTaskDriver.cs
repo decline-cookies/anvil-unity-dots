@@ -10,11 +10,14 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
-    /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
-    /// The goal of a TaskDriver is to convert specific data into general data that the corresponding
-    /// <see cref="AbstractTaskDriverSystem"/> will process en mass and in parallel. The results of that general processing
-    /// are then picked up by the TaskDriver to be converted to specific data again and passed on to a sub task driver
-    /// or to another general system. 
+    /// Given a "Task" to complete, the TaskDriver handles ensuring it is populated, processed and completed by
+    /// defining the data needed, any subtasks to accomplish and the Unity Jobs to do the work required.
+    /// TaskDrivers are contextual, meaning that the work they accomplish is unique to their usage in different parts
+    /// of an application or as different sub task drivers as part of larger, more complex Task Drivers. 
+    /// The goal of a TaskDriver is to convert the specific contextual data into general agnostic data that the corresponding
+    /// <see cref="AbstractTaskDriverSystem"/> will process in parallel. The results of that system processing
+    /// are then picked up by the TaskDriver to be converted to specific contextual data again and passed on to
+    /// a sub task driver or to another system. 
     /// </summary>
     public abstract class AbstractTaskDriver : AbstractAnvilBase,
                                                ITaskSetOwner
