@@ -49,12 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [BurstCompatible]
         public FixedString64Bytes ToFixedString()
         {
-            FixedString64Bytes fs = new FixedString64Bytes();
-            fs.Append((FixedString32Bytes)"TypeID: ");
-            fs.Append(TypeID);
-            fs.Append((FixedString32Bytes)" - TaskSetOwnerID: ");
-            fs.Append(TaskSetOwnerID);
-            return fs;
+            return new FixedString64Bytes(ToString());;
         }
     }
 }

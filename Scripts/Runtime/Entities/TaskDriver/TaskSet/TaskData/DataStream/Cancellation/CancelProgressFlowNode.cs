@@ -54,6 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
         {
+            //TODO: #136 - Potentially have the Acquire grant access to the data within
             m_Dependencies[0] = dependsOn;
             m_Dependencies[1] = m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite);
             m_Dependencies[2] = m_CancelCompleteData.AcquireAsync(AccessType.SharedWrite);

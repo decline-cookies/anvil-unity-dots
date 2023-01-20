@@ -13,7 +13,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private DeferredNativeArray<T> m_Active;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
-
+        
+        //TODO: #136 - Clean up food for thought - https://github.com/decline-cookies/anvil-unity-dots/pull/142#discussion_r1082756502
         public NativeArray<T> DeferredJobArray
         {
             get => m_Active.AsDeferredJobArray();

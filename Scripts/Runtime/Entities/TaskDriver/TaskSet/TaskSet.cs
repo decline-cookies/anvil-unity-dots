@@ -88,7 +88,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             switch (cancelRequestBehaviour)
             {
                 case CancelRequestBehaviour.Delete:
-                    break;
                 case CancelRequestBehaviour.Ignore:
                     break;
                 case CancelRequestBehaviour.Unwind:
