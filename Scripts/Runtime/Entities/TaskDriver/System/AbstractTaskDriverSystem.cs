@@ -21,7 +21,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_HasCancellableData;
 
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
-
+        
+        //Note - This represents the World that was passed in by the TaskDriver during this system's construction.
+        //Normally a system doesn't get a World until OnCreate is called and the System.World will return null. 
+        //We need a valid World in the constructor so we get one and assign it to this property instead.
         public new World World { get; }
         public TaskSet TaskSet { get; }
         public uint ID { get; }
@@ -54,6 +57,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskSet = new TaskSet(this);
         }
 
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            Debug_EnsureWorldsAreTheSame();
+        }
+
         protected override void OnDestroy()
         {
             //We don't own the TaskDrivers registered here, so we won't dispose them
@@ -83,6 +92,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
+        //We only want to register Jobs to the System once. However we still want to preserve the API in the TaskDriver.
+        //If we have two or more TaskDrivers, we are guaranteed to have configured our System Jobs already configured.
+        private bool HaveSystemLevelJobsBeenConfigured()
+        {
+            return m_TaskDrivers.Count >= 2;
+        }
+
         //*************************************************************************************************************
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
@@ -92,10 +108,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                                       BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            //We only want to register Jobs to the System once. However we still want to preserve the API in the TaskDriver.
-            //If we have two or more TaskDrivers, we are guaranteed to have configured our System Jobs so we can just return 
-            //a NO-OP job config that does nothing.
-            if (m_TaskDrivers.Count >= 2)
+            //If we've already configured our system level jobs, we don't want to create duplicates so we return
+            //the NO-OP config so that the API is preserved but it does nothing.
+            if (HaveSystemLevelJobsBeenConfigured())
             {
                 return NO_OP_JOB_CONFIG;
             }
@@ -110,10 +125,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                                       BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            //We only want to register Jobs to the System once. However we still want to preserve the API in the TaskDriver.
-            //If we have two or more TaskDrivers, we are guaranteed to have configured our System Jobs so we can just return 
-            //a NO-OP job config that does nothing.
-            if (m_TaskDrivers.Count >= 2)
+            //If we've already configured our system level jobs, we don't want to create duplicates so we return
+            //the NO-OP config so that the API is preserved but it does nothing.
+            if (HaveSystemLevelJobsBeenConfigured())
             {
                 return NO_OP_JOB_CONFIG;
             }
@@ -204,6 +218,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (!m_IsHardened)
             {
                 throw new InvalidOperationException($"Expected {this} to be Hardened but it hasn't yet!");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureWorldsAreTheSame()
+        {
+            if (World != base.World)
+            {
+                throw new InvalidOperationException($"The passed in World {World} is not the same as the automatically assigned one {base.World} in {nameof(OnCreate)}!");
             }
         }
     }
