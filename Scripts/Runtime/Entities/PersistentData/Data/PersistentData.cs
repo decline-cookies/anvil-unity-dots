@@ -1,4 +1,4 @@
-using Anvil.Unity.DOTS.Entities.Tasks;
+using Anvil.Unity.DOTS.Entities.TaskDriver;
 
 namespace Anvil.Unity.DOTS.Entities
 {
