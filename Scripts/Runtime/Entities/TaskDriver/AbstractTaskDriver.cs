@@ -153,9 +153,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // JOB CONFIGURATION - DRIVER LEVEL
         //*************************************************************************************************************
-
+        
+        /// <summary>
+        /// Configures a Job that is triggered by instances being present in the passed in <see cref="IDriverDataStream{TInstance}"/>
+        /// </summary>
+        /// <param name="dataStream">The <see cref="IDriverDataStream{TInstance}"/> to trigger the job off of.</param>
+        /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
+        /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
+        /// <typeparam name="TInstance">The type of instance contained in the <see cref="IDriverDataStream{TInstance}"/></typeparam>
+        /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
         public IJobConfig ConfigureDriverJobTriggeredBy<TInstance>(IDriverDataStream<TInstance> dataStream,
-                                                                   in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
+                                                                   JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
                                                                    BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -163,7 +171,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                    scheduleJobFunction,
                                                    batchStrategy);
         }
-
+        
+        /// <summary>
+        /// Configures a Job that is triggered by <see cref="Entity"/> or <see cref="IComponentData"/> being
+        /// present in the passed in <see cref="EntityQuery"/>
+        /// </summary>
+        /// <param name="entityQuery">The <see cref="EntityQuery"/> to trigger the job off of.</param>
+        /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
+        /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
+        /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
         public IJobConfig ConfigureDriverJobTriggeredBy(EntityQuery entityQuery,
                                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
                                                         BatchStrategy batchStrategy)
@@ -172,8 +188,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                    scheduleJobFunction,
                                                    batchStrategy);
         }
-
-        public IJobConfig ConfigureDriverJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        
+        /// <summary>
+        /// Configures a Job that is triggered by the cancellation of instances in this <see cref="AbstractTaskDriver"/>
+        /// completing.
+        /// </summary>
+        /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
+        /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
+        /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
+        public IJobConfig ConfigureDriverJobWhenCancelComplete(JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
                                                                BatchStrategy batchStrategy)
         {
             return TaskSet.ConfigureJobWhenCancelComplete(scheduleJobFunction,
