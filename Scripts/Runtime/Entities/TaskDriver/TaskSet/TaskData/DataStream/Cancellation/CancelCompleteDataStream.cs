@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelCompleteDataStream : AbstractDataStream
     {
@@ -11,6 +11,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly CancelCompleteDataSource m_DataSource;
         
         //TODO: #137 - Gross, need to rearchitect DataStreams, better safety, expose only the Data
+        
+        public override uint ActiveID
+        {
+            get => ActiveArrayData.ID;
+        }
         
         public ActiveArrayData<EntityProxyInstanceID> ActiveArrayData { get; }
         public PendingData<EntityProxyInstanceID> PendingData { get; }
@@ -25,15 +30,10 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             PendingWriter = m_DataSource.PendingWriter;
             PendingData = m_DataSource.PendingData;
             
-            ActiveArrayData = m_DataSource.CreateActiveArrayData(TaskSetOwner, CancelBehaviour.None);
+            ActiveArrayData = m_DataSource.CreateActiveArrayData(TaskSetOwner, CancelRequestBehaviour.Ignore);
             ScheduleInfo = ActiveArrayData.ScheduleInfo;
         }
 
-        public override uint GetActiveID()
-        {
-            return ActiveArrayData.ID;
-        }
-        
         public JobHandle AcquireActiveAsync(AccessType accessType)
         {
             return ActiveArrayData.AcquireAsync(accessType);

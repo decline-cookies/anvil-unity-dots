@@ -1,12 +1,12 @@
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
-    /// Represents a read only reference to a <see cref="Entity"/> that has completed
+    /// Represents a read only reference to an <see cref="Entity"/> that has completed
     /// it's cancellation work.
-    /// To be used in jobs that only allows for reading of this data.
+    /// To be used in jobs that only allow reading of this data.
     /// </summary>
     [BurstCompatible]
     public readonly struct CancelCompleteReader

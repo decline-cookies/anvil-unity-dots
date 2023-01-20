@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Util;
 using System;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
     internal readonly struct ResolveTargetID : IEquatable<ResolveTargetID>
@@ -49,12 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [BurstCompatible]
         public FixedString64Bytes ToFixedString()
         {
-            FixedString64Bytes fs = new FixedString64Bytes();
-            fs.Append((FixedString32Bytes)"TypeID: ");
-            fs.Append(TypeID);
-            fs.Append((FixedString32Bytes)" - TaskSetOwnerID: ");
-            fs.Append(TaskSetOwnerID);
-            return fs;
+            return new FixedString64Bytes(ToString());;
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Linq;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #108 - Custom Profiling -  https://github.com/decline-cookies/anvil-unity-dots/pull/111
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
@@ -63,11 +63,11 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
             m_CancelProgressFlows.DisposeAllAndTryClear();
-            
+
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
             m_CancelProgressDataSource.Dispose();
-            
+
             m_IDProvider.Dispose();
 
             base.OnDestroy();
@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            
+
             foreach (IDataSource dataSource in m_EntityProxyDataSourcesByType.Values)
             {
                 dataSource.Harden();
@@ -92,10 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             //For all the TaskDrivers, filter to find the ones that don't have Parents.
             //Those are our top level TaskDrivers
-            foreach (AbstractTaskDriver taskDriver in m_AllTaskDrivers.Where(taskDriver => taskDriver.Parent == null))
-            {
-                m_TopLevelTaskDrivers.Add(taskDriver);
-            }
+            m_TopLevelTaskDrivers.AddRange(m_AllTaskDrivers.Where(taskDriver => taskDriver.Parent == null));
 
             //Then tell each top level Task Driver to Harden - This will Harden the associated sub task driver and the Task Driver System
             foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
@@ -108,23 +105,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 taskDriverSystem.HardenUpdatePhase();
             }
-            
+
             //Harden the Cancellation data
             m_CancelRequestsDataSource.Harden();
             m_CancelProgressDataSource.Harden();
             m_CancelCompleteDataSource.Harden();
 
-            //Construct the CancelProgressFlows
-            foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
-            {
-                //Only create a CancelFlow if we have cancellable data
-                if (!((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
-                {
-                    continue;
-                }
-                CancelProgressFlow cancelProgressFlow = new CancelProgressFlow(topLevelTaskDriver);
-                m_CancelProgressFlows.Add(cancelProgressFlow);
-            }
+            //Construct the CancelProgressFlows - Only create them if there is cancellable data
+            m_CancelProgressFlows.AddRange(m_TopLevelTaskDrivers.Where((topLevelTaskDriver) => ((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
+                                                                .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
         }
@@ -159,6 +148,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
+            Debug_EnsureNotHardened();
             m_AllTaskDrivers.Add(taskDriver);
             m_AllTaskDriverSystems.Add(taskDriver.TaskDriverSystem);
         }
@@ -166,7 +156,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         protected sealed override void OnUpdate()
         {
             JobHandle dependsOn = Dependency;
-            
+
             //When someone has requested a cancel for a specific TaskDriver, that request is immediately propagated
             //down the entire chain to every Sub TaskDriver and their governing systems. So the first thing we need to
             //do is consolidate all the CancelRequestDataStreams so the lookups are all properly populated.
@@ -199,7 +189,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+                throw new InvalidOperationException($"Expected {this} to not yet be Hardened but {nameof(Harden)} has already been called!");
             }
         }
     }

@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class NoOpJobConfig : IResolvableJobConfigRequirements
     {

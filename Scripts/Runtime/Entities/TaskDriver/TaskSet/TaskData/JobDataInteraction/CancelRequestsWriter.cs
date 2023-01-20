@@ -5,7 +5,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Job-Safe struct to allow for requesting the cancellation by <see cref="Entity"/>

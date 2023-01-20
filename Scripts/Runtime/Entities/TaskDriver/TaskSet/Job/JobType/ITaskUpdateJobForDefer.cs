@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// A replacement for <see cref="IJobFor"/> when the number of work items is not known at Schedule time

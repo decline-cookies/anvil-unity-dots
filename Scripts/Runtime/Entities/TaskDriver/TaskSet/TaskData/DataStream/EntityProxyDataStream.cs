@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #137 - Too much complexity that is not needed
     internal class EntityProxyDataStream<TInstance> : AbstractDataStream,
@@ -16,18 +16,23 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_PendingCancelActiveArrayData;
-        private readonly CancelBehaviour m_CancelBehaviour;
+        private readonly CancelRequestBehaviour m_CancelRequestBehaviour;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
         
-        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(taskSetOwner)
+        public override uint ActiveID
         {
-            m_CancelBehaviour = cancelBehaviour;
+            get => m_ActiveArrayData.ID;
+        }
+        
+        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(taskSetOwner)
+        {
+            m_CancelRequestBehaviour = cancelRequestBehaviour;
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
-            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelBehaviour);
+            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour);
 
             if (m_ActiveArrayData.PendingCancelActiveData != null)
             {
@@ -55,11 +60,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public void ReleasePendingAsync(JobHandle dependsOn)
         {
             m_DataSource.ReleasePendingAsync(dependsOn);
-        }
-
-        public sealed override uint GetActiveID()
-        {
-            return m_ActiveArrayData.ID;
         }
 
         public JobHandle AcquireActiveAsync(AccessType accessType)

@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class EntityProxyDataSource<TInstance> : AbstractDataSource<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             foreach (AbstractData data in ActiveDataLookupByID.Values)
             {
                 //If this piece of data can be cancelled, we need to be able to read the associated Cancel Request lookup
-                if (data.CancelBehaviour is CancelBehaviour.Default or CancelBehaviour.Explicit)
+                if (data.CancelRequestBehaviour is CancelRequestBehaviour.Delete or CancelRequestBehaviour.Unwind)
                 {
                     AddConsolidationData(data.TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData, AccessType.SharedRead);
                 }

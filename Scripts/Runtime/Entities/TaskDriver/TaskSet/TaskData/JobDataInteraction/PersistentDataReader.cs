@@ -1,6 +1,6 @@
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
     public struct PersistentDataReader<TData>

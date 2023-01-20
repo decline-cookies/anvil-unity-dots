@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
     internal unsafe struct EntityProxyActiveConsolidator<TInstance>
@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ActiveBufferPointer;
         [NativeDisableUnsafePtrRestriction] private readonly void* m_PendingCancelActiveBufferPointer;
         private readonly uint m_PendingCancelActiveID;
-        private readonly CancelBehaviour m_CancelBehaviour;
+        private readonly CancelRequestBehaviour m_CancelRequestBehaviour;
 
 
         public EntityProxyActiveConsolidator(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData) : this()
@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
                 m_PendingCancelActiveID = pendingCancelActiveData.ID;
             }
             
-            m_CancelBehaviour = activeArrayData.CancelBehaviour;
+            m_CancelRequestBehaviour = activeArrayData.CancelRequestBehaviour;
             m_CancelRequestsLookup = activeArrayData.TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData.Lookup;
         }
 
@@ -52,19 +52,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public void WriteToActive(EntityProxyInstanceWrapper<TInstance> instance)
         {
-            switch (m_CancelBehaviour)
+            switch (m_CancelRequestBehaviour)
             {
-                case CancelBehaviour.Default:
+                case CancelRequestBehaviour.Delete:
                     WriteToActiveWithDefaultCancel(ref instance);
                     break;
-                case CancelBehaviour.Explicit:
+                case CancelRequestBehaviour.Unwind:
                     WriteToActiveWithExplicitCancel(ref instance);
                     break;
-                case CancelBehaviour.None:
+                case CancelRequestBehaviour.Ignore:
                     WriteInstanceToActive(ref instance);
                     break;
                 default:
-                    throw new InvalidOperationException($"No code path satisfies! {m_CancelBehaviour}");
+                    throw new InvalidOperationException($"No code path satisfies! {m_CancelRequestBehaviour}");
             }
         }
 

@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using System;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class PendingData<T> : AbstractData
         where T : unmanaged, IEquatable<T>
@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public UnsafeTypedStream<T>.Writer PendingWriter { get; }
         public unsafe void* PendingWriterPointer { get; }
 
-        public unsafe PendingData(uint id) : base(id, null, CancelBehaviour.None, null)
+        public unsafe PendingData(uint id) : base(id, null, CancelRequestBehaviour.Ignore, null)
         {
             m_Pending = new UnsafeTypedStream<T>(Allocator.Persistent);
             PendingWriter = m_Pending.AsWriter();

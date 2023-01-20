@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System.Reflection;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal interface IDataSource : IAnvilDisposable
     {

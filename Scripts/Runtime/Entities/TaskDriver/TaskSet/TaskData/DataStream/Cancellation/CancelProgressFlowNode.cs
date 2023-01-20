@@ -7,7 +7,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelProgressFlowNode : AbstractAnvilBase
     {
@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
             m_ProgressLookupData = m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
             m_CancelCompleteData = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.PendingData;
-            m_CancelCompleteActiveID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID();
+            m_CancelCompleteActiveID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.ActiveID;
 
 
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
@@ -49,11 +49,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public override string ToString()
         {
-            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.GetActiveID()} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.ID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID()}";
+            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveID} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.ID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.ActiveID}";
         }
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
         {
+            //TODO: #136 - Potentially have the Acquire grant access to the data within
             m_Dependencies[0] = dependsOn;
             m_Dependencies[1] = m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite);
             m_Dependencies[2] = m_CancelCompleteData.AcquireAsync(AccessType.SharedWrite);

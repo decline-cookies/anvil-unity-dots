@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
     internal struct CancelRequestsActiveConsolidator
@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             {
                 CancelCompleteDataStream cancelCompleteDataStream = taskSetOwner.TaskSet.CancelCompleteDataStream;
                 m_CompleteWriter = cancelCompleteDataStream.PendingWriter;
-                m_CompleteActiveID = cancelCompleteDataStream.GetActiveID();
+                m_CompleteActiveID = cancelCompleteDataStream.ActiveID;
             }
         }
 

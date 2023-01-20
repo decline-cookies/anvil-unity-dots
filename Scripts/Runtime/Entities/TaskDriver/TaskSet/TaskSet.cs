@@ -6,7 +6,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #138 - Maybe we should have DriverTaskSet vs SystemTaskSet that extend AbstractTaskSet
     internal class TaskSet : AbstractAnvilBase
@@ -69,33 +69,32 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             dataStreams.Add(dataStream);
         }
 
-        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Type instanceType = typeof(TInstance);
             if (!m_PublicDataStreamsByType.TryGetValue(instanceType, out AbstractDataStream dataStream))
             {
-                dataStream = CreateDataStream<TInstance>(cancelBehaviour);
+                dataStream = CreateDataStream<TInstance>(cancelRequestBehaviour);
             }
 
             return (EntityProxyDataStream<TInstance>)dataStream;
         }
 
-        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelBehaviour cancelBehaviour)
+        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelBehaviour);
-            switch (cancelBehaviour)
+            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour);
+            switch (cancelRequestBehaviour)
             {
-                case CancelBehaviour.Default:
+                case CancelRequestBehaviour.Delete:
+                case CancelRequestBehaviour.Ignore:
                     break;
-                case CancelBehaviour.None:
-                    break;
-                case CancelBehaviour.Explicit:
+                case CancelRequestBehaviour.Unwind:
                     m_DataStreamsWithExplicitCancellation.Add(dataStream);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(cancelBehaviour), cancelBehaviour, null);
+                    throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
 
             m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
@@ -200,15 +199,15 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private void AddCancelRequestContextsTo(List<CancelRequestContext> contexts)
         {
             //Add ourself
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.GetActiveID()));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.ActiveID));
 
             //Add the System
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
 
             //We need to add a context for the System and the TaskDriver. When the System goes to update it's owned data, it doesn't know
             //all the different TaskDriver CancelRequests to read from. It only reads from its own CancelRequest collection. 
-            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
+            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
 
             //Add all SubTask Drivers and their systems
             foreach (AbstractTaskDriver taskDriver in TaskSetOwner.SubTaskDrivers)
