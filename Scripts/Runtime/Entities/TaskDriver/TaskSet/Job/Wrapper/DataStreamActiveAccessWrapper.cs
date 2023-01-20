@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: Can we simplify this a lot and get rid of a bunch of special Access Wrapper types?
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043593841

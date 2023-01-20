@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Specific scheduling information for a <see cref="DataStreamJobConfig{TInstance}"/>

@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// An <see cref="IAbstractDataStream{TInstance}"/> that is owned by a <see cref="AbstractTaskDriver"/>.

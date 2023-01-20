@@ -3,7 +3,7 @@ using System;
 using Unity.Collections;
 using Unity.Mathematics;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class ActiveArrayData<T> : AbstractData
         where T : unmanaged, IEquatable<T>
@@ -13,7 +13,8 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private DeferredNativeArray<T> m_Active;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
-
+        
+        //TODO: #136 - Clean up food for thought - https://github.com/decline-cookies/anvil-unity-dots/pull/142#discussion_r1082756502
         public NativeArray<T> DeferredJobArray
         {
             get => m_Active.AsDeferredJobArray();
@@ -24,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             get => m_Active;
         }
 
-        public ActiveArrayData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour, AbstractData pendingCancelActiveData) : base(id, taskSetOwner, cancelBehaviour, pendingCancelActiveData)
+        public ActiveArrayData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData) : base(id, taskSetOwner, cancelRequestBehaviour, pendingCancelActiveData)
         {
             m_Active = new DeferredNativeArray<T>(Allocator.Persistent);
             m_Active.SetCapacity(INITIAL_SIZE);

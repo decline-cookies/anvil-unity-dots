@@ -1,7 +1,7 @@
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Specific scheduling information for a <see cref="EntityQueryJobConfig"/>

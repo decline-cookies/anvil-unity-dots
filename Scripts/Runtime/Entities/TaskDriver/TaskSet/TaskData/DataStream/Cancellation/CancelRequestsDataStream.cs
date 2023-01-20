@@ -1,12 +1,17 @@
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelRequestsDataStream : AbstractDataStream
     {
         private readonly CancelRequestsDataSource m_DataSource;
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
+        
+        public override uint ActiveID
+        {
+            get => ActiveLookupData.ID;
+        }
 
         public CancelRequestsDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
@@ -16,11 +21,6 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
         }
 
-        public override uint GetActiveID()
-        {
-            return ActiveLookupData.ID;
-        }
-        
         public JobHandle AcquirePendingAsync(AccessType accessType)
         {
             return m_DataSource.AcquirePendingAsync(accessType);

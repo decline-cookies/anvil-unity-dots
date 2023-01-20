@@ -1,7 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class DataStreamPendingCancelActiveAccessWrapper<T> : AbstractDataStreamAccessWrapper<T>
         where T : unmanaged, IEntityProxyInstance

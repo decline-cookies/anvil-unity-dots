@@ -1,6 +1,6 @@
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Cancelling specific <see cref="AbstractJobData"/> for use when cancelling instances of data in a data stream.

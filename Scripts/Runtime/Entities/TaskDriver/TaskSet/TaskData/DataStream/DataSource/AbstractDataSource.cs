@@ -8,7 +8,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal abstract class AbstractDataSource<T> : AbstractAnvilBase,
                                                     IDataSource
@@ -50,18 +50,18 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             base.DisposeSelf();
         }
 
-        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour)
+        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour)
         {
             //TODO: #136 - Kinda gross, we shouldn't know about Cancelling here.
             
             //If we need to have an explicit unwinding to cancel, we need to create a second hidden piece of data to serve as the trigger
             ActiveArrayData<T> pendingCancelArrayData = null;
-            if (cancelBehaviour is CancelBehaviour.Explicit)
+            if (cancelRequestBehaviour is CancelRequestBehaviour.Unwind)
             {
-                pendingCancelArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelBehaviour.None, null);
+                pendingCancelArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore, null);
             }
             
-            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelBehaviour, pendingCancelArrayData);
+            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelRequestBehaviour, pendingCancelArrayData);
             ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
 
             return activeArrayData;
@@ -69,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
 
         public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner)
         {
-            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelBehaviour.None);
+            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore);
             ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
             return activeLookupData;
         }

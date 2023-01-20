@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Triggering specific <see cref="AbstractJobData"/> for use when triggering the job based on an <see cref="EntityQuery"/>

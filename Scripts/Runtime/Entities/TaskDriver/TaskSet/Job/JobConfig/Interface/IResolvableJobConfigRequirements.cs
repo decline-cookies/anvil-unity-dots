@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Represents a configuration object for a Job that will be run through the Task system.

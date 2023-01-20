@@ -1,6 +1,6 @@
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Represents a read only reference to a <see cref="IAbstractDataStream{TInstance}"/>

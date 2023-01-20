@@ -3,7 +3,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class ActiveLookupData<T> : AbstractData
         where T : unmanaged, IEquatable<T>
@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         
         public UnsafeParallelHashMap<T, bool> Lookup { get; }
 
-        public ActiveLookupData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour) : base(id, taskSetOwner, cancelBehaviour, null)
+        public ActiveLookupData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(id, taskSetOwner, cancelRequestBehaviour, null)
         {
             Lookup = new UnsafeParallelHashMap<T, bool>(INITIAL_SIZE, Allocator.Persistent);
         }

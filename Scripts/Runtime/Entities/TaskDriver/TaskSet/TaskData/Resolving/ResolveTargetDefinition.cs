@@ -1,6 +1,6 @@
 using System;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class ResolveTargetDefinition
     {

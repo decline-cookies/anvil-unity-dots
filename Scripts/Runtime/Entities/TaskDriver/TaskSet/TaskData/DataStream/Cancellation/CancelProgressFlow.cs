@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    public class CancelProgressFlow : AbstractAnvilBase
+    internal class CancelProgressFlow : AbstractAnvilBase
     {
         public static readonly BulkScheduleDelegate<CancelProgressFlow> SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<CancelProgressFlow>(nameof(Schedule), BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -25,20 +25,12 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             //Build up the hierarchy of when things should be scheduled so that the bottom most get a chance first
             //This will ensure the order of jobs executed to allow for possible 1 frame bubble up of completes
             BuildSchedulingHierarchy(topLevelTaskDriver, 0, null);
+
+            //Get all the jobs for updating progress back in order of execution to ensure that progress propagates
+            //up the chain correctly
+            m_OrderedBulkJobSchedulers = CreateOrderedBulkJobSchedulers();
             
-            int maxDepth = m_CancelFlowHierarchy.Count - 1;
-
-            List<BulkJobScheduler<CancelProgressFlowNode>> orderedBulkJobSchedulers = new List<BulkJobScheduler<CancelProgressFlowNode>>();
-
-            for (int depth = maxDepth; depth >= 0; --depth)
-            {
-                List<CancelProgressFlowNode> cancelProgressFlowNodesAtDepth = m_CancelFlowHierarchy[depth];
-                BulkJobScheduler<CancelProgressFlowNode> bulkJobScheduler = new BulkJobScheduler<CancelProgressFlowNode>(cancelProgressFlowNodesAtDepth.ToArray());
-                orderedBulkJobSchedulers.Add(bulkJobScheduler);
-            }
-
-            m_OrderedBulkJobSchedulers = orderedBulkJobSchedulers.ToArray();
-
+            //TODO: #108 - Lazy create this as needed if that's the case when decorating the job.
             m_DebugString = BuildDebugString();
         }
 
@@ -53,6 +45,27 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         public override string ToString()
         {
             return m_DebugString;
+        }
+
+        private BulkJobScheduler<CancelProgressFlowNode>[] CreateOrderedBulkJobSchedulers()
+        {
+            List<BulkJobScheduler<CancelProgressFlowNode>> orderedBulkJobSchedulers = new List<BulkJobScheduler<CancelProgressFlowNode>>();
+            
+            //In order for cancel progress to propagate correctly, we need to first check our deepest nodes in the chain
+            //and they will write to their parents if we should keep waiting for the cancellation to be complete or not.
+            //This builds up the order in which we need to execute those jobs so that we're doing it in the most 
+            //efficient manner yet still preserving the integrity of the chain. A complete can cascade from the lowest 
+            //level up to the top in one frame this way.
+            
+            int maxDepth = m_CancelFlowHierarchy.Count - 1;
+            for (int depth = maxDepth; depth >= 0; --depth)
+            {
+                List<CancelProgressFlowNode> cancelProgressFlowNodesAtDepth = m_CancelFlowHierarchy[depth];
+                BulkJobScheduler<CancelProgressFlowNode> bulkJobScheduler = new BulkJobScheduler<CancelProgressFlowNode>(cancelProgressFlowNodesAtDepth.ToArray());
+                orderedBulkJobSchedulers.Add(bulkJobScheduler);
+            }
+
+            return orderedBulkJobSchedulers.ToArray();
         }
 
         private string BuildDebugString()

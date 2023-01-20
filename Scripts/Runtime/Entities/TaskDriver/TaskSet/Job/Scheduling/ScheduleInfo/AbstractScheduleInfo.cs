@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Scheduling info for a <see cref="AbstractJobConfig"/> for use with a <see cref="JobConfigScheduleDelegates"/>

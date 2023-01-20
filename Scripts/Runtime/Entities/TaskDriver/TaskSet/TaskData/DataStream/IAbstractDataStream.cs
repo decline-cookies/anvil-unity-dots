@@ -1,7 +1,7 @@
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
-    /// An <see cref="IAbstractDataStream"/> typed to specific <see cref="IEntityProxyInstance"/>
+    /// An <see cref="IAbstractDataStream"/> typed to a specific <see cref="IEntityProxyInstance"/>
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
     public interface IAbstractDataStream<TInstance> : IAbstractDataStream

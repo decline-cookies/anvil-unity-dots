@@ -4,7 +4,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Too many responsibilities
     internal abstract class AbstractData : AbstractAnvilBase
@@ -12,19 +12,19 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
         private readonly AccessController m_AccessController;
         
         public uint ID { get; }
-        public CancelBehaviour CancelBehaviour { get; }
+        public CancelRequestBehaviour CancelRequestBehaviour { get; }
         
         public ITaskSetOwner TaskSetOwner { get; }
         
         public AbstractData PendingCancelActiveData { get; }
         
 
-        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelBehaviour cancelBehaviour, AbstractData pendingCancelActiveData)
+        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData)
         {
             m_AccessController = new AccessController();
             ID = id;
             TaskSetOwner = taskSetOwner;
-            CancelBehaviour = cancelBehaviour;
+            CancelRequestBehaviour = cancelRequestBehaviour;
             PendingCancelActiveData = pendingCancelActiveData;
         }
 
