@@ -21,6 +21,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
         
+        public override uint ActiveID
+        {
+            get => m_ActiveArrayData.ID;
+        }
+        
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(taskSetOwner)
         {
             m_CancelRequestBehaviour = cancelRequestBehaviour;
@@ -55,11 +60,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public void ReleasePendingAsync(JobHandle dependsOn)
         {
             m_DataSource.ReleasePendingAsync(dependsOn);
-        }
-
-        public sealed override uint GetActiveID()
-        {
-            return m_ActiveArrayData.ID;
         }
 
         public JobHandle AcquireActiveAsync(AccessType accessType)

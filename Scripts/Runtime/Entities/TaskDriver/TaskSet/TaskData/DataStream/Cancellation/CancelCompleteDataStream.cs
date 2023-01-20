@@ -12,6 +12,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         
         //TODO: #137 - Gross, need to rearchitect DataStreams, better safety, expose only the Data
         
+        public override uint ActiveID
+        {
+            get => ActiveArrayData.ID;
+        }
+        
         public ActiveArrayData<EntityProxyInstanceID> ActiveArrayData { get; }
         public PendingData<EntityProxyInstanceID> PendingData { get; }
         public UnsafeTypedStream<EntityProxyInstanceID>.Writer PendingWriter { get; }
@@ -29,11 +34,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ScheduleInfo = ActiveArrayData.ScheduleInfo;
         }
 
-        public override uint GetActiveID()
-        {
-            return ActiveArrayData.ID;
-        }
-        
         public JobHandle AcquireActiveAsync(AccessType accessType)
         {
             return ActiveArrayData.AcquireAsync(accessType);

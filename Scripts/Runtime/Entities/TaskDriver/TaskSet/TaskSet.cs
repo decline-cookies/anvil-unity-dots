@@ -200,15 +200,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private void AddCancelRequestContextsTo(List<CancelRequestContext> contexts)
         {
             //Add ourself
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.GetActiveID()));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.ActiveID));
 
             //Add the System
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
 
             //We need to add a context for the System and the TaskDriver. When the System goes to update it's owned data, it doesn't know
             //all the different TaskDriver CancelRequests to read from. It only reads from its own CancelRequest collection. 
-            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.GetActiveID()));
+            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
 
             //Add all SubTask Drivers and their systems
             foreach (AbstractTaskDriver taskDriver in TaskSetOwner.SubTaskDrivers)

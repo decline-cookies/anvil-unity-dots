@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             foreach (AbstractDataStream dataStream in dataStreams)
             {
                 ResolveTargetID targetID = new ResolveTargetID(targetDefinition.TypeID, dataStream.TaskSetOwner.ID);
-                ResolveTargetWriteData resolveTargetWriteData = new ResolveTargetWriteData(targetDefinition.PendingWriterPointerAddress, dataStream.GetActiveID());
+                ResolveTargetWriteData resolveTargetWriteData = new ResolveTargetWriteData(targetDefinition.PendingWriterPointerAddress, dataStream.ActiveID);
                 Debug_EnsureNotPresent(targetID);
                 m_ResolveTargetWriteDataByID.Add(targetID, resolveTargetWriteData);
             }

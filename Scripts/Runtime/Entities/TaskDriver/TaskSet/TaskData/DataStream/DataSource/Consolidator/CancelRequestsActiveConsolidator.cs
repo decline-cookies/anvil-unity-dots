@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelCompleteDataStream cancelCompleteDataStream = taskSetOwner.TaskSet.CancelCompleteDataStream;
                 m_CompleteWriter = cancelCompleteDataStream.PendingWriter;
-                m_CompleteActiveID = cancelCompleteDataStream.GetActiveID();
+                m_CompleteActiveID = cancelCompleteDataStream.ActiveID;
             }
         }
 

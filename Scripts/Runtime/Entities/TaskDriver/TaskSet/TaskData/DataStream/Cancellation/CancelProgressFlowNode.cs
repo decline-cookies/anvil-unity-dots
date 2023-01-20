@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_ProgressLookupData = m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
             m_CancelCompleteData = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.PendingData;
-            m_CancelCompleteActiveID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID();
+            m_CancelCompleteActiveID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.ActiveID;
 
 
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
@@ -49,7 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.GetActiveID()} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.ID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.GetActiveID()}";
+            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveID} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.ID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.ActiveID}";
         }
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)

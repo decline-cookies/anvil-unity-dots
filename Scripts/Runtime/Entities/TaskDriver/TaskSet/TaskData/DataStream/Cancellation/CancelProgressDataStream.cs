@@ -2,6 +2,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelProgressDataStream : AbstractDataStream
     {
+        public override uint ActiveID
+        {
+            get => ActiveLookupData.ID;
+        }
+
         private readonly CancelProgressDataSource m_DataSource;
         
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
@@ -12,11 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_DataSource = taskDriverManagementSystem.GetCancelProgressDataSource();
 
             ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
-        }
-
-        public override uint GetActiveID()
-        {
-            return ActiveLookupData.ID;
         }
     }
 }

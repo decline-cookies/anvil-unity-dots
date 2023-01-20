@@ -7,7 +7,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    public class CancelProgressFlow : AbstractAnvilBase
+    internal class CancelProgressFlow : AbstractAnvilBase
     {
         public static readonly BulkScheduleDelegate<CancelProgressFlow> SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<CancelProgressFlow>(nameof(Schedule), BindingFlags.Instance | BindingFlags.NonPublic);
 
