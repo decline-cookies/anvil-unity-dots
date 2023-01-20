@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// An <see cref="IAbstractDataStream"/> typed to specific <see cref="IEntityProxyInstance"/>

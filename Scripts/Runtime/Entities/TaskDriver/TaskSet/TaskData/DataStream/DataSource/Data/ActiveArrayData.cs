@@ -3,7 +3,7 @@ using System;
 using Unity.Collections;
 using Unity.Mathematics;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class ActiveArrayData<T> : AbstractData
         where T : unmanaged, IEquatable<T>

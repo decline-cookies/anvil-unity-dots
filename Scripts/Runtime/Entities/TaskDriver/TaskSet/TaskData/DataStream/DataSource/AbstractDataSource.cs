@@ -8,7 +8,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal abstract class AbstractDataSource<T> : AbstractAnvilBase,
                                                     IDataSource

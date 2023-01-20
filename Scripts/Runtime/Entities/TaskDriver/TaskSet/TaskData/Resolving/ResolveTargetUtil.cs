@@ -6,7 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using UnityEngine;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
     internal static class ResolveTargetUtil

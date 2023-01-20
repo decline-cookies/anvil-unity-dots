@@ -5,7 +5,7 @@ using System.Diagnostics;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
                                                                ITaskSetOwner

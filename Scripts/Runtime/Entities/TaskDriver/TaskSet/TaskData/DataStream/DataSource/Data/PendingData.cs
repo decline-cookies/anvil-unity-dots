@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using System;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class PendingData<T> : AbstractData
         where T : unmanaged, IEquatable<T>

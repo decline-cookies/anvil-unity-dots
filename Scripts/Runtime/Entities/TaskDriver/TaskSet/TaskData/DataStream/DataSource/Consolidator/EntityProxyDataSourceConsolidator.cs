@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #108 - Add profiling and debug string information, see if can be done without a ton of #IF Checks
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043567688

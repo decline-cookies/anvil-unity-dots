@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class DataStreamJobConfig<TInstance> : AbstractJobConfig
         where TInstance : unmanaged, IEntityProxyInstance

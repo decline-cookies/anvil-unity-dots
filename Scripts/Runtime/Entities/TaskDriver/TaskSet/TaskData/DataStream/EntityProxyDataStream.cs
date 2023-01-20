@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #137 - Too much complexity that is not needed
     internal class EntityProxyDataStream<TInstance> : AbstractDataStream,

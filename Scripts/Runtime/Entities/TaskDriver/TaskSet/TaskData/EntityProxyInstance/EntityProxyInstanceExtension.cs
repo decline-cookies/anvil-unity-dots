@@ -1,4 +1,4 @@
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Helper methods when working with <see cref="IEntityProxyInstance"/> in jobs.
@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             Resolve(instance, ref resolvedInstance, ref updater);
         }
 
-        /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.Tasks.DataStreamUpdater{TInstance})"/>
+        /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.TaskDriver.DataStreamUpdater{TInstance})"/>
         public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
                                                                   ref TResolveTargetType resolvedInstance,
                                                                   ref DataStreamUpdater<TInstance> updater)
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.Tasks
             updater.Resolve(ref resolvedInstance);
         }
 
-        /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.Tasks.DataStreamCancellationUpdater{TInstance})"/>
+        /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.TaskDriver.DataStreamCancellationUpdater{TInstance})"/>
         public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
                                                                   ref TResolveTargetType resolvedInstance,
                                                                   ref DataStreamCancellationUpdater<TInstance> updater)

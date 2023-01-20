@@ -4,7 +4,7 @@ using System;
 using System.Diagnostics;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Job-Safe struct to allow for updating an instance of data

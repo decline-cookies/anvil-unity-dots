@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal partial class TaskDriverSystem<TTaskDriverType> : AbstractTaskDriverSystem
         where TTaskDriverType : AbstractTaskDriver

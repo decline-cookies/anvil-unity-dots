@@ -4,7 +4,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Too many responsibilities
     internal abstract class AbstractData : AbstractAnvilBase

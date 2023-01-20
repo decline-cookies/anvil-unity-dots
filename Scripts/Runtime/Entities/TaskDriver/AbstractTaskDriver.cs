@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.Tasks
+namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Represents a context specific Task done via Jobs over a wide array of multiple instances of data.
