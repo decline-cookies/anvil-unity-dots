@@ -1,11 +1,12 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
-    /// A replacement for <see cref="IJobFor"/> when the number of work items is not known at Schedule time
+    /// A replacement for <see cref="IAnvilJobForDefer"/> when the number of work items is not known at Schedule time
     /// and you are using a <see cref="DeferredNativeArray{T}"/>
     /// This is specific to a context where the data is being read.
     /// </summary>

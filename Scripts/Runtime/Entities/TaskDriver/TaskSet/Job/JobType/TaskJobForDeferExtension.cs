@@ -19,17 +19,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            void* atomicSafetyHandlePtr = null;
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            atomicSafetyHandlePtr = scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr;
-#endif
-
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-            
+
             WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
-                                                                                                  ref scheduleInfo);
+                                                                                                  scheduleInfo);
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
@@ -40,7 +34,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       scheduleInfo.BatchSize,
                                                                       scheduleInfo.DeferredNativeArrayScheduleInfo.BufferPtr,
-                                                                      atomicSafetyHandlePtr);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                                                                      scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr
+#else
+                                                                      null
+#endif
+                                                                     );
 
             return dependsOn;
         }
@@ -73,7 +72,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
             public WrapperJobStruct(ref TJob jobData,
-                                    ref DataStreamScheduleInfo<TInstance> scheduleInfo)
+                                    DataStreamScheduleInfo<TInstance> scheduleInfo)
             {
                 JobData = jobData;
                 Reader = scheduleInfo.Reader;
@@ -110,16 +109,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 ref TJob jobData = ref wrapperData.JobData;
                 ref DataStreamActiveReader<TInstance> reader = ref wrapperData.Reader;
-                
+
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
-                while (true)
+                while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                 {
-                    if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
-                    {
-                        return;
-                    }
-
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif

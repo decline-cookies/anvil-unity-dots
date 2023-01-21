@@ -94,13 +94,8 @@ namespace Anvil.Unity.DOTS.Jobs
                 ref TJob jobData = ref wrapperData.JobData;
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
-                while (true)
+                while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                 {
-                    if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
-                    {
-                        return;
-                    }
-
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif

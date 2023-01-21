@@ -20,12 +20,6 @@ namespace Anvil.Unity.DOTS.Jobs
                                                               JobHandle dependsOn = default)
             where TJob : struct, IAnvilJobForDefer
         {
-            void* atomicSafetyHandlePtr = null;
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            atomicSafetyHandlePtr = scheduleInfo.SafetyHandlePtr;
-#endif
-
             IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
 
@@ -35,12 +29,16 @@ namespace Anvil.Unity.DOTS.Jobs
                                                                                                          reflectionData,
                                                                                                          dependsOn,
                                                                                                          ScheduleMode.Parallel);
-
-
+            
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       batchSize,
                                                                       scheduleInfo.BufferPtr,
-                                                                      atomicSafetyHandlePtr);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                                                                      scheduleInfo.SafetyHandlePtr
+#else
+                                                                      null
+#endif
+                                                                     );
 
             return dependsOn;
         }
@@ -106,13 +104,8 @@ namespace Anvil.Unity.DOTS.Jobs
                 ref TJob jobData = ref wrapperData.JobData;
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
-                while (true)
+                while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                 {
-                    if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
-                    {
-                        return;
-                    }
-
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
