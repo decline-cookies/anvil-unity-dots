@@ -52,6 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour)
         {
+            Debug_EnsureNotHardened();
             //TODO: #136 - Kinda gross, we shouldn't know about Cancelling here.
             
             //If we need to have an explicit unwinding to cancel, we need to create a second hidden piece of data to serve as the trigger
@@ -69,6 +70,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner)
         {
+            Debug_EnsureNotHardened();
             ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore);
             ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
             return activeLookupData;
@@ -163,7 +165,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             if (m_IsHardened)
             {
-                throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+                throw new InvalidOperationException($"Expected {this} to not be hardened but {nameof(Harden)} has already been called!");
             }
         }
         
