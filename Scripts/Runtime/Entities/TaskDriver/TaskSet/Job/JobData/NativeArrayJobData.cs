@@ -1,5 +1,4 @@
 using Unity.Collections;
-using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -10,11 +9,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     public class NativeArrayJobData<T> : AbstractJobData
         where T : struct
     {
-        private readonly NativeArrayJobConfig<T> m_JobConfig;
-
         internal NativeArrayJobData(NativeArrayJobConfig<T> jobConfig) : base(jobConfig)
         {
-            m_JobConfig = jobConfig;
         }
     }
 }

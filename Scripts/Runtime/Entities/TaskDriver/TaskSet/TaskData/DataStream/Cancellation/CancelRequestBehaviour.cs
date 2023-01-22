@@ -1,3 +1,5 @@
+using Unity.Entities;
+
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     public enum CancelRequestBehaviour
@@ -18,9 +20,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// survive one iteration of the consolidation phase.
         /// </summary>
         /// <remarks>
-        /// A rare case but used in situations where custom cancel result data is needed.
-        /// For example, a Timer that when cancelled wants to communicate how much time was left
-        /// on the Timer. 
+        /// A rare case but used in situations where data should not be removed if a cancel request for that
+        /// <see cref="Entity"/> is received. 
         /// </remarks>
         Ignore,
         /// <summary>
