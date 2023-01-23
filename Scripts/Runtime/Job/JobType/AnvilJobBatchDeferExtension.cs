@@ -19,12 +19,6 @@ namespace Anvil.Unity.DOTS.Jobs
                                                            JobHandle dependsOn = default)
             where TJob : struct, IAnvilJobBatchDefer
         {
-            void* atomicSafetyHandlePtr = null;
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            atomicSafetyHandlePtr = scheduleInfo.SafetyHandlePtr;
-#endif
-
             IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
 
@@ -38,7 +32,12 @@ namespace Anvil.Unity.DOTS.Jobs
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       batchSize,
                                                                       scheduleInfo.BufferPtr,
-                                                                      atomicSafetyHandlePtr);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                                                                      scheduleInfo.SafetyHandlePtr
+#else
+                                                                      null
+#endif
+                                                                     );
 
             return dependsOn;
         }
@@ -46,7 +45,7 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // STATIC HELPERS
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void ValidateReflectionData(IntPtr reflectionData)
         {
@@ -84,8 +83,8 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             // ReSharper disable once StaticMemberInGenericType
             internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob>),
-                                                                                                    typeof(TJob),
-                                                                                                    (ExecuteJobFunction)Execute);
+                                                                                                      typeof(TJob),
+                                                                                                      (ExecuteJobFunction)Execute);
 
 
             private delegate void ExecuteJobFunction(ref WrapperJobStruct<TJob> wrapperData,
@@ -105,13 +104,8 @@ namespace Anvil.Unity.DOTS.Jobs
                 ref TJob jobData = ref wrapperData.JobData;
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
-                while (true)
+                while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                 {
-                    if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
-                    {
-                        return;
-                    }
-
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif

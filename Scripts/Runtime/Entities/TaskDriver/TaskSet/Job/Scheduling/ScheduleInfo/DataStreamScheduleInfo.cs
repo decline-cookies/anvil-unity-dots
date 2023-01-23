@@ -17,8 +17,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
         /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
-        
-        //TODO: #103 - Add custom job type and implicit Reader
+
+        internal DataStreamActiveReader<TInstance> Reader
+        {
+            get => m_JobData.GetDataStreamReader<TInstance>();
+        }
 
         internal DataStreamScheduleInfo(DataStreamJobData<TInstance> jobData,
                                         EntityProxyDataStream<TInstance> dataStream,

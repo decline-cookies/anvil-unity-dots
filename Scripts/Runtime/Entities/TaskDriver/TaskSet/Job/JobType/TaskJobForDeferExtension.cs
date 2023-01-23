@@ -7,21 +7,21 @@ using Unity.Jobs.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    public static class TaskUpdateJobForDeferExtension
+    public static class TaskJobForDeferExtension
     {
         //*************************************************************************************************************
         // SCHEDULING
         //*************************************************************************************************************
 
         public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
-                                                                         UpdateDataStreamScheduleInfo<TInstance> scheduleInfo,
+                                                                         DataStreamScheduleInfo<TInstance> scheduleInfo,
                                                                          JobHandle dependsOn = default)
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-            
+
             WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
                                                                                                   scheduleInfo);
 
@@ -29,6 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                                                          reflectionData,
                                                                                                          dependsOn,
                                                                                                          ScheduleMode.Parallel);
+
 
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       scheduleInfo.BatchSize,
@@ -61,20 +62,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         internal struct WrapperJobStruct<TJob, TInstance>
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
 
             internal TJob JobData;
-            internal DataStreamUpdater<TInstance> Updater;
+            internal DataStreamActiveReader<TInstance> Reader;
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
             public WrapperJobStruct(ref TJob jobData,
-                                    UpdateDataStreamScheduleInfo<TInstance> scheduleInfo)
+                                    DataStreamScheduleInfo<TInstance> scheduleInfo)
             {
                 JobData = jobData;
-                Updater = scheduleInfo.Updater;
+                Reader = scheduleInfo.Reader;
                 NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
             }
         }
@@ -83,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // PRODUCER
         //*************************************************************************************************************
         private struct WrapperJobProducer<TJob, TInstance>
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
             // ReSharper disable once StaticMemberInGenericType
@@ -107,21 +108,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                               int jobIndex)
             {
                 ref TJob jobData = ref wrapperData.JobData;
-                ref DataStreamUpdater<TInstance> updater = ref wrapperData.Updater;
+                ref DataStreamActiveReader<TInstance> reader = ref wrapperData.Reader;
 
-                updater.InitForThread(wrapperData.NativeThreadIndex);
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
                 while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                 {
-                    
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif
 
                     for (int i = beginIndex; i < endIndex; ++i)
                     {
-                        jobData.Execute(updater[i], ref updater);
+                        jobData.Execute(reader[i]);
                     }
                 }
             }
