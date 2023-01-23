@@ -1,4 +1,7 @@
+using Anvil.Unity.DOTS.Data;
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -59,6 +62,77 @@ namespace Anvil.Unity.DOTS.Entities
         public static ComponentDataFromSingleEntity<T> GetComponentDataFromSingleEntity<T>(this ComponentSystemBase system, Entity entity, bool isReadOnly) where T : struct, IComponentData
         {
             return system.GetComponentDataFromEntity<T>(isReadOnly).ForSingleEntity(entity);
+        }
+
+        /// <summary>
+        /// Schedule a job to asynchronously copy a <see cref="DynamicBuffer{T}" /> to
+        /// a <see cref="NativeArray{T}" /> after the provided <see cref="JobHandle"/> has completed.
+        /// </summary>
+        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
+        /// <param name="fromEntity">The entity with the buffer to to read from.</param>
+        /// <param name="outputBuffer">The <see cref="NativeArray{T}" /> to copy to.</param>
+        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
+        /// <remarks>
+        /// Actual copy is performed by <see cref="CopyBufferToNativeArray{T}" />. This is just a convenience method.
+        /// </remarks>
+        public static JobHandle CopyBufferToNativeArray<T>(this ComponentSystemBase system, in JobHandle dependsOn, Entity fromEntity, in NativeArray<T> outputBuffer) where T : struct, IBufferElementData
+        {
+            CopyBufferToNativeArray<T> job = new CopyBufferToNativeArray<T>()
+            {
+                InputBufferFromEntity = system.GetBufferFromEntity<T>(true).ForSingleEntity(fromEntity),
+                OutputBuffer = outputBuffer
+            };
+
+            return job.Schedule(dependsOn);
+        }
+
+        /// <summary>
+        /// Schedule a job to asynchronously copy a <see cref="DynamicBuffer{T}" /> to
+        /// a <see cref="DeferredNativeArray{T}" /> after the provided <see cref="JobHandle"/> has completed.
+        /// </summary>
+        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
+        /// <param name="fromEntity">The entity with the buffer to to read from.</param>
+        /// <param name="outputBuffer">The <see cref="DeferredNativeArray{T}" /> to copy to.</param>
+        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
+        /// <remarks>
+        /// Actual copy is performed by <see cref="CopyBufferToDeferredNativeArray{T}" />. This is just a convenience
+        /// method.
+        /// </remarks>
+        public static JobHandle CopyBufferToDeferredNativeArray<T>(this ComponentSystemBase system, in JobHandle dependsOn, Entity fromEntity, in DeferredNativeArray<T> outputBuffer) where T : unmanaged, IBufferElementData
+        {
+            CopyBufferToDeferredNativeArray<T> job = new CopyBufferToDeferredNativeArray<T>()
+            {
+                InputBufferFromEntity = system.GetBufferFromEntity<T>(true).ForSingleEntity(fromEntity),
+                OutputBuffer = outputBuffer
+            };
+
+            return job.Schedule(dependsOn);
+        }
+
+        // ----- Copy To Buffer ----- //
+        /// /// <summary>
+        /// Schedule a job to asynchronously copy a <see cref="NativeArray{T}" /> to a <see cref="DynamicBuffer{T}" />
+        /// after the provided <see cref="JobHandle"/> has completed.
+        /// </summary>
+        /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}" />.</typeparam>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait for.</param>
+        /// <param name="inputBuffer">The <see cref="NativeArray{T}" /> to copy from.</param>
+        /// <param name="toEntity">The entity with the buffer to write to.</param>
+        /// <returns>A <see cref="JobHandle"/> that represents when the buffer copy is complete.</returns>
+        /// <remarks>
+        /// Actual copy is performed by <see cref="CopyNativeArrayToBuffer{T}" />. This is just a convenience method.
+        /// </remarks>
+        public static JobHandle CopyNativeArrayToBuffer<T>(this ComponentSystemBase system, in JobHandle dependsOn, in NativeArray<T> inputBuffer, Entity toEntity) where T : struct, IBufferElementData
+        {
+            CopyNativeArrayToBuffer<T> job = new CopyNativeArrayToBuffer<T>()
+            {
+                InputBuffer = inputBuffer,
+                OutputBufferFromEntity = system.GetBufferFromEntity<T>(false).ForSingleEntity(toEntity)
+            };
+
+            return job.Schedule(dependsOn);
         }
     }
 }
