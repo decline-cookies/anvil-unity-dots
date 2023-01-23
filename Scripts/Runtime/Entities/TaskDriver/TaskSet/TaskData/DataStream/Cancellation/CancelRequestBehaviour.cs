@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Instead of being deleted like in <see cref="Delete"/>
         /// it is copied to an internal, cancel specific, <see cref="IAbstractDataStream"/> that
         /// can be used to explicitly cancel. This allows for custom jobs to run on
-        /// cancelled data to gracefully unwind.
+        /// cancelled data to gracefully unwind over one or many frames.
         /// </remarks>
         Unwind
     }
