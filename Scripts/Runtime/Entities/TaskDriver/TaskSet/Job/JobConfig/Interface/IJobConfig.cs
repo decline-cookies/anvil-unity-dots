@@ -18,10 +18,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <summary>
         /// A configuration helper that will run this job only once.
-        /// After being run, it will set <see cref="IsEnabled"/> to false.
+        /// It will set <see cref="IsEnabled"/> to true, and then after being run,
+        /// it will set <see cref="IsEnabled"/> to false.
         /// </summary>
         /// <remarks>
-        /// This is useful for the initial setup jobs.
+        /// This is useful for the initial setup jobs or to run once after making some structural changes.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RunOnce();

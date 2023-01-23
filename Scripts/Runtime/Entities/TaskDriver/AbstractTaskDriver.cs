@@ -57,7 +57,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-
+        Logger ITaskSetOwner.TaskSetOwnerLogger
+        {
+            get => Logger;
+        }
+        
         protected AbstractTaskDriver(World world)
         {
             World = world;

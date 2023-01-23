@@ -1,3 +1,4 @@
+using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -14,6 +15,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public List<AbstractTaskDriver> SubTaskDrivers { get; }
         
         public bool HasCancellableData { get; }
+        
+        public Logger TaskSetOwnerLogger { get; }
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams);
     }
