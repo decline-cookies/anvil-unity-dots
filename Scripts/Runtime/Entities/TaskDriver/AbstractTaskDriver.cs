@@ -62,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected AbstractTaskDriver(World world)
         {
             World = world;
-            TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = TaskDriverManagementSystem.GetOrCreateForWorld(world);
 
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
