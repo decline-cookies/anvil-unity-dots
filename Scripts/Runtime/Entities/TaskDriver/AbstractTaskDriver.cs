@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -23,6 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                ITaskSetOwner
     {
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
+        private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
 
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly uint m_ID;
@@ -60,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected AbstractTaskDriver(World world)
         {
             World = world;
-            TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = TaskDriverManagementSystem.GetOrCreateForWorld(world);
 
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
@@ -75,7 +77,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
                 World.AddSystem(TaskDriverSystem);
-                World.GetOrCreateSystem<SimulationSystemGroup>().AddSystemToUpdateList(TaskDriverSystem);
+                ComponentSystemGroup systemGroup = GetSystemGroup();
+                systemGroup.AddSystemToUpdateList(TaskDriverSystem);
             }
 
             TaskDriverSystem.RegisterTaskDriver(this);
@@ -97,6 +100,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}|{m_ID}";
+        }
+
+        private ComponentSystemGroup GetSystemGroup()
+        {
+            Type systemGroupType = GetSystemGroupType();
+            if (!COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(systemGroupType))
+            {
+                throw new InvalidOperationException($"Tried to get the {COMPONENT_SYSTEM_GROUP_TYPE.GetReadableName()} for {this} but {systemGroupType.GetReadableName()} is not a valid group type!");
+            }
+
+            return (ComponentSystemGroup)World.GetOrCreateSystem(systemGroupType);
+        }
+
+        private Type GetSystemGroupType()
+        {
+            Type type = GetType();
+            UpdateInGroupAttribute updateInGroupAttribute = type.GetCustomAttribute<UpdateInGroupAttribute>();
+            return updateInGroupAttribute == null
+                ? typeof(SimulationSystemGroup)
+                : updateInGroupAttribute.GroupType;
         }
 
         //*************************************************************************************************************
