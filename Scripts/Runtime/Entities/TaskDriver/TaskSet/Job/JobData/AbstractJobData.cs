@@ -17,8 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Reference to the <see cref="World"/> this job will be running in.
         /// </summary>
         public World World { get; }
-        
-        public Logger TaskSetOwnerLogger { get; }
 
         /// <summary>
         /// Convenience helper to get the <see cref="TimeData"/> for delta time and other related functions.
@@ -27,9 +25,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => ref World.Time;
         }
-
-        
-
 
         protected AbstractJobData(IJobConfig jobConfig)
         {
@@ -126,7 +121,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityPersistentData<TData> persistentData = m_JobConfig.GetEntityPersistentData<TData>();
             return persistentData.CreateEntityPersistentDataReader();
         }
-        
+
         public EntityPersistentDataWriter<TData> GetEntityPersistentDataWriter<TData>()
             where TData : unmanaged
         {
@@ -140,7 +135,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             PersistentData<TData> persistentData = m_JobConfig.GetPersistentData<TData>();
             return persistentData.CreatePersistentDataWriter();
         }
-        
+
         public PersistentDataReader<TData> GetPersistentDataReader<TData>()
             where TData : unmanaged
         {
