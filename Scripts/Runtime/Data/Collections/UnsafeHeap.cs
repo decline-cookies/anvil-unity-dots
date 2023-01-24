@@ -11,14 +11,14 @@ namespace Anvil.Unity.DOTS.Data
     //NOTE - Taken from: https://github.com/Amarcolina/NativeHeap (MIT LICENCE)
     //This is a lightly cleaned up version of NativeHeap from Amarcolina that removes
     //any safety aspects so that it can be used inside a different Native Collection.
-    
+
     /// <summary>
     /// This is a basic implementation of the MinHeap/MaxHeap data structure.  It allows you
     /// to insert objects into the container with a O(log(n)) cost per item, and it allows you
     /// to extract the min/max from the container with a O(log(n)) cost per item.
     /// 
     /// This implementation provides the ability to remove items from the middle of the container
-    /// as well.  This is a critical operation when implementing algorithms like astar.  When an
+    /// as well.  This is a critical operation when implementing algorithms like A*.  When an
     /// item is added to the container, an index is returned which can be used to later remove
     /// the item no matter where it is in the heap, for the same cost of removing it if it was
     /// popped normally.
@@ -32,6 +32,11 @@ namespace Anvil.Unity.DOTS.Data
     /// For convenience, this library contains the Min and Max comparer, which provide
     /// comparisons for all built in primitives.
     /// </summary>
+    /// <remarks>
+    /// This collection doesn't have the usual safety checks that other collections in Anvil have
+    /// because we copy/pasted and "it just works(TM)".
+    /// TODO: #151 - Implementing PriorityQueue will supersede this class, so not worth adding safety checks
+    /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
     [StructLayout(LayoutKind.Sequential)]
     public struct UnsafeHeap<T, TComparer> : IDisposable
@@ -446,143 +451,13 @@ namespace Anvil.Unity.DOTS.Data
                 m_Data->Table[node.TableIndex].HeapIndex = insertIndex;
             }
         }
-        
+
         /// <summary>
         /// Represents an index into the Heap
         /// </summary>
         public struct UnsafeHeapIndex
         {
             internal int TableIndex;
-        }
-
-        /// <summary>
-        /// Comparer that returns the larger of two values
-        /// </summary>
-        public struct Max : IComparer<byte>,
-                            IComparer<ushort>,
-                            IComparer<short>,
-                            IComparer<uint>,
-                            IComparer<int>,
-                            IComparer<ulong>,
-                            IComparer<long>,
-                            IComparer<float>,
-                            IComparer<double>,
-                            IComparer<decimal>
-        {
-            public int Compare(byte x, byte y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(ushort x, ushort y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(short x, short y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(uint x, uint y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(int x, int y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(ulong x, ulong y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(long x, long y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(float x, float y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(double x, double y)
-            {
-                return y.CompareTo(x);
-            }
-
-            public int Compare(decimal x, decimal y)
-            {
-                return y.CompareTo(x);
-            }
-        }
-
-        /// <summary>
-        /// Comparer that returns the smallest of two values
-        /// </summary>
-        public struct Min : IComparer<byte>,
-                            IComparer<ushort>,
-                            IComparer<short>,
-                            IComparer<uint>,
-                            IComparer<int>,
-                            IComparer<ulong>,
-                            IComparer<long>,
-                            IComparer<float>,
-                            IComparer<double>,
-                            IComparer<decimal>
-        {
-            public int Compare(byte x, byte y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(ushort x, ushort y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(short x, short y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(uint x, uint y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(int x, int y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(ulong x, ulong y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(long x, long y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(float x, float y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(double x, double y)
-            {
-                return x.CompareTo(y);
-            }
-
-            public int Compare(decimal x, decimal y)
-            {
-                return x.CompareTo(y);
-            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -605,6 +480,136 @@ namespace Anvil.Unity.DOTS.Data
             public int Capacity;
             public unsafe void* Heap;
             public unsafe TableValue* Table;
+        }
+    }
+
+    /// <summary>
+    /// Comparer that returns the larger of two values
+    /// </summary>
+    public struct Max : IComparer<byte>,
+                        IComparer<ushort>,
+                        IComparer<short>,
+                        IComparer<uint>,
+                        IComparer<int>,
+                        IComparer<ulong>,
+                        IComparer<long>,
+                        IComparer<float>,
+                        IComparer<double>,
+                        IComparer<decimal>
+    {
+        public int Compare(byte x, byte y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(ushort x, ushort y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(short x, short y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(uint x, uint y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(int x, int y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(ulong x, ulong y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(long x, long y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(float x, float y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(double x, double y)
+        {
+            return y.CompareTo(x);
+        }
+
+        public int Compare(decimal x, decimal y)
+        {
+            return y.CompareTo(x);
+        }
+    }
+
+    /// <summary>
+    /// Comparer that returns the smallest of two values
+    /// </summary>
+    public struct Min : IComparer<byte>,
+                        IComparer<ushort>,
+                        IComparer<short>,
+                        IComparer<uint>,
+                        IComparer<int>,
+                        IComparer<ulong>,
+                        IComparer<long>,
+                        IComparer<float>,
+                        IComparer<double>,
+                        IComparer<decimal>
+    {
+        public int Compare(byte x, byte y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(ushort x, ushort y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(short x, short y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(uint x, uint y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(int x, int y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(ulong x, ulong y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(long x, long y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(float x, float y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(double x, double y)
+        {
+            return x.CompareTo(y);
+        }
+
+        public int Compare(decimal x, decimal y)
+        {
+            return x.CompareTo(y);
         }
     }
 }
