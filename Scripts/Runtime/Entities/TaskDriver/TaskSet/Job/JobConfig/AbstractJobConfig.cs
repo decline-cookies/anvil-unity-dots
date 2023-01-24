@@ -94,6 +94,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <inheritdoc cref="IJobConfig.RunOnce"/>
         public IJobConfig RunOnce()
         {
+            IsEnabled = true;
             m_ShouldDisableAfterNextRun = true;
             return this;
         }

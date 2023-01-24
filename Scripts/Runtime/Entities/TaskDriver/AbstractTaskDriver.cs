@@ -26,10 +26,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly uint m_ID;
-        
+
         private bool m_IsHardened;
         private bool m_HasCancellableData;
-        
+
         /// <summary>
         /// Reference to the associated <see cref="World"/>
         /// </summary>
@@ -57,7 +57,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-
         protected AbstractTaskDriver(World world)
         {
             World = world;
@@ -68,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Type taskDriverType = GetType();
             Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
-            
+
             //If this is the first TaskDriver of this type, then the System will have been created for this World.
             TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
             //If not, then we will want to explicitly create it and ensure it is part of the lifecycle.
@@ -153,7 +152,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // JOB CONFIGURATION - DRIVER LEVEL
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Configures a Job that is triggered by instances being present in the passed in <see cref="IDriverDataStream{TInstance}"/>
         /// </summary>
@@ -171,7 +170,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                    scheduleJobFunction,
                                                    batchStrategy);
         }
-        
+
         /// <summary>
         /// Configures a Job that is triggered by <see cref="Entity"/> or <see cref="IComponentData"/> being
         /// present in the passed in <see cref="EntityQuery"/>
@@ -188,7 +187,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                    scheduleJobFunction,
                                                    batchStrategy);
         }
-        
+
         /// <summary>
         /// Configures a Job that is triggered by the cancellation of instances in this <see cref="AbstractTaskDriver"/>
         /// completing.
@@ -227,7 +226,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             //Harden our own TaskSet
             TaskSet.Harden();
-            
+
             //TODO: #138 - Can we consolidate this into the TaskSet and have TaskSets aware of parenting instead
             m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0
                                 || TaskDriverSystem.HasCancellableData

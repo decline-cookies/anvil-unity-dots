@@ -25,7 +25,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => ref World.Time;
         }
 
-
         protected AbstractJobData(IJobConfig jobConfig)
         {
             m_JobConfig = (AbstractJobConfig)jobConfig;
@@ -121,7 +120,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityPersistentData<TData> persistentData = m_JobConfig.GetEntityPersistentData<TData>();
             return persistentData.CreateEntityPersistentDataReader();
         }
-        
+
         public EntityPersistentDataWriter<TData> GetEntityPersistentDataWriter<TData>()
             where TData : unmanaged
         {
@@ -135,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             PersistentData<TData> persistentData = m_JobConfig.GetPersistentData<TData>();
             return persistentData.CreatePersistentDataWriter();
         }
-        
+
         public PersistentDataReader<TData> GetPersistentDataReader<TData>()
             where TData : unmanaged
         {

@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_HasCancellableData;
 
         public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
-        
+
         //Note - This represents the World that was passed in by the TaskDriver during this system's construction.
         //Normally a system doesn't get a World until OnCreate is called and the System.World will return null. 
         //We need a valid World in the constructor so we get one and assign it to this property instead.
@@ -42,7 +42,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 return m_HasCancellableData;
             }
         }
-
 
         protected AbstractTaskDriverSystem(World world)
         {
@@ -220,7 +219,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Expected {this} to be Hardened but it hasn't yet!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureWorldsAreTheSame()
         {
