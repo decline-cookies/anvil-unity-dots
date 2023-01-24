@@ -1,4 +1,3 @@
-using Anvil.CSharp.Logging;
 using Unity.Collections;
 using Unity.Core;
 using Unity.Entities;
