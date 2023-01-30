@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Specific scheduling information for a <see cref="CancelJobConfig{TInstance}"/>
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
-    public class CancelDataStreamScheduleInfo<TInstance> : AbstractScheduleInfo
+    public class CancelScheduleInfo<TInstance> : AbstractScheduleInfo
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly CancelJobData<TInstance> m_JobData;
@@ -24,10 +24,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_JobData.GetDataStreamCancellationUpdater();
         }
 
-        internal CancelDataStreamScheduleInfo(CancelJobData<TInstance> jobData,
-                                              EntityProxyDataStream<TInstance> pendingCancelDataStream,
-                                              BatchStrategy batchStrategy,
-                                              JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
+        internal CancelScheduleInfo(CancelJobData<TInstance> jobData,
+                                    EntityProxyDataStream<TInstance> pendingCancelDataStream,
+                                    BatchStrategy batchStrategy,
+                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method,
                    batchStrategy,
                    EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)

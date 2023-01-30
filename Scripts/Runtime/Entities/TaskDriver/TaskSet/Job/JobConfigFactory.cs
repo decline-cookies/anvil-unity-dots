@@ -41,10 +41,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             UpdateJobData<TInstance> jobData = new UpdateJobData<TInstance>(jobConfig);
 
-            UpdateDataStreamScheduleInfo<TInstance> scheduleInfo = new UpdateDataStreamScheduleInfo<TInstance>(jobData,
-                                                                                                               dataStream,
-                                                                                                               batchStrategy,
-                                                                                                               scheduleJobFunction);
+            UpdateScheduleInfo<TInstance> scheduleInfo = new UpdateScheduleInfo<TInstance>(jobData,
+                                                                                           dataStream,
+                                                                                           batchStrategy,
+                                                                                           scheduleJobFunction);
 
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }
@@ -60,10 +60,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             CancelJobData<TInstance> jobData = new CancelJobData<TInstance>(jobConfig);
 
-            CancelDataStreamScheduleInfo<TInstance> scheduleInfo = new CancelDataStreamScheduleInfo<TInstance>(jobData,
-                                                                                                               pendingCancelDataStream,
-                                                                                                               batchStrategy,
-                                                                                                               scheduleJobFunction);
+            CancelScheduleInfo<TInstance> scheduleInfo = new CancelScheduleInfo<TInstance>(jobData,
+                                                                                           pendingCancelDataStream,
+                                                                                           batchStrategy,
+                                                                                           scheduleJobFunction);
 
             return FinalizeJobConfig(jobConfig, scheduleInfo);
         }

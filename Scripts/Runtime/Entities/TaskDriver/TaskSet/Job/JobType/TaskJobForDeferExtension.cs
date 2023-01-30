@@ -12,10 +12,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // SCHEDULING
         //*************************************************************************************************************
-
-        public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
+        
+        public static JobHandle Schedule<TJob, TInstance>(this TJob jobData,
+                                                          DataStreamScheduleInfo<TInstance> scheduleInfo,
+                                                          JobHandle dependsOn = default)
+            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return InternalSchedule(jobData,
+                                    scheduleInfo,
+                                    dependsOn,
+                                    ScheduleMode.Single,
+                                    int.MaxValue);
+        }
+        
+        public static JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
+                                                                  DataStreamScheduleInfo<TInstance> scheduleInfo,
+                                                                  JobHandle dependsOn = default)
+            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return InternalSchedule(jobData,
+                                    scheduleInfo,
+                                    dependsOn,
+                                    ScheduleMode.Parallel,
+                                    scheduleInfo.BatchSize);
+        }
+        
+        public static unsafe JobHandle InternalSchedule<TJob, TInstance>(this TJob jobData,
                                                                          DataStreamScheduleInfo<TInstance> scheduleInfo,
-                                                                         JobHandle dependsOn = default)
+                                                                         JobHandle dependsOn,
+                                                                         ScheduleMode scheduleMode,
+                                                                         int batchSize)
             where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -28,11 +56,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
                                                                                                          dependsOn,
-                                                                                                         ScheduleMode.Parallel);
+                                                                                                         scheduleMode);
 
 
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
-                                                                      scheduleInfo.BatchSize,
+                                                                      batchSize,
                                                                       scheduleInfo.DeferredNativeArrayScheduleInfo.BufferPtr,
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                                                                       scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr

@@ -14,10 +14,36 @@ namespace Anvil.Unity.DOTS.Jobs
         // SCHEDULING
         //*************************************************************************************************************
 
-        public static unsafe JobHandle ScheduleParallel<TJob>(this TJob jobData,
-                                                              DeferredNativeArrayScheduleInfo scheduleInfo,
-                                                              int batchSize,
-                                                              JobHandle dependsOn = default)
+        public static JobHandle Schedule<TJob>(this TJob jobData,
+                                               DeferredNativeArrayScheduleInfo scheduleInfo,
+                                               JobHandle dependsOn = default)
+            where TJob : struct, IAnvilJobForDefer
+        {
+            return InternalSchedule(jobData,
+                                    scheduleInfo,
+                                    dependsOn,
+                                    ScheduleMode.Single,
+                                    int.MaxValue);
+        }
+
+        public static JobHandle ScheduleParallel<TJob>(this TJob jobData,
+                                                       DeferredNativeArrayScheduleInfo scheduleInfo,
+                                                       int batchSize,
+                                                       JobHandle dependsOn = default)
+            where TJob : struct, IAnvilJobForDefer
+        {
+            return InternalSchedule(jobData,
+                                    scheduleInfo,
+                                    dependsOn,
+                                    ScheduleMode.Parallel,
+                                    batchSize);
+        }
+
+        private static unsafe JobHandle InternalSchedule<TJob>(this TJob jobData,
+                                                               DeferredNativeArrayScheduleInfo scheduleInfo,
+                                                               JobHandle dependsOn,
+                                                               ScheduleMode scheduleMode,
+                                                               int batchSize)
             where TJob : struct, IAnvilJobForDefer
         {
             IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
@@ -28,8 +54,8 @@ namespace Anvil.Unity.DOTS.Jobs
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
                                                                                                          dependsOn,
-                                                                                                         ScheduleMode.Parallel);
-            
+                                                                                                         scheduleMode);
+
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
                                                                       batchSize,
                                                                       scheduleInfo.BufferPtr,
@@ -46,7 +72,7 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // STATIC HELPERS
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void ValidateReflectionData(IntPtr reflectionData)
         {
@@ -83,9 +109,9 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             // ReSharper disable once StaticMemberInGenericType
             internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob>),
-                                                                                                     typeof(TJob),
-                                                                                                     (ExecuteJobFunction)Execute);
-            
+                                                                                                      typeof(TJob),
+                                                                                                      (ExecuteJobFunction)Execute);
+
 
             private delegate void ExecuteJobFunction(ref WrapperJobStruct<TJob> jobData,
                                                      IntPtr additionalPtr,
