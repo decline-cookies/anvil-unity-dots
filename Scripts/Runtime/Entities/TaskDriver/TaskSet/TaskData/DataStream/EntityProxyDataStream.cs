@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
@@ -16,7 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_PendingCancelActiveArrayData;
-        private readonly CancelRequestBehaviour m_CancelRequestBehaviour;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
@@ -28,7 +28,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(taskSetOwner)
         {
-            m_CancelRequestBehaviour = cancelRequestBehaviour;
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
@@ -52,31 +51,61 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_PendingCancelActiveArrayData = systemDataStream.m_PendingCancelActiveArrayData;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquirePendingAsync(AccessType accessType)
         {
             return m_DataSource.AcquirePendingAsync(accessType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleasePendingAsync(JobHandle dependsOn)
         {
             m_DataSource.ReleasePendingAsync(dependsOn);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AcquirePending(AccessType accessType)
+        {
+            m_DataSource.AcquirePending(accessType);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReleasePending()
+        {
+            m_DataSource.ReleasePending();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquireActiveAsync(AccessType accessType)
         {
             return m_ActiveArrayData.AcquireAsync(accessType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleaseActiveAsync(JobHandle dependsOn)
         {
             m_ActiveArrayData.ReleaseAsync(dependsOn);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AcquireActive(AccessType accessType)
+        {
+            m_ActiveArrayData.Acquire(accessType);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReleaseActive()
+        {
+            m_ActiveArrayData.Release();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquirePendingCancelActiveAsync(AccessType accessType)
         {
             return m_ActiveArrayData.PendingCancelActiveData.AcquireAsync(accessType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleasePendingCancelActiveAsync(JobHandle dependsOn)
         {
             m_ActiveArrayData.PendingCancelActiveData.ReleaseAsync(dependsOn);
@@ -107,6 +136,62 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                 m_PendingCancelActiveArrayData.DeferredJobArray,
                                                                 resolveTargetTypeLookup,
                                                                 cancelProgressLookup);
+        }
+        
+        //*************************************************************************************************************
+        // IABSTRACT DATA STREAM INTERFACE
+        //*************************************************************************************************************
+        
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquireActiveReaderAsync"/>
+        public DataStreamActiveReader<TInstance> AcquireActiveReaderAsync()
+        {
+            AcquireActiveAsync(AccessType.SharedRead);
+            return CreateDataStreamActiveReader();
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.ReleaseActiveReaderAsync"/>
+        public void ReleaseActiveReaderAsync(JobHandle dependsOn)
+        {
+            ReleaseActiveAsync(dependsOn);
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquireActiveReader"/>
+        public DataStreamActiveReader<TInstance> AcquireActiveReader()
+        {
+            AcquireActive(AccessType.SharedRead);
+            return CreateDataStreamActiveReader();
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.ReleaseActiveReader"/>
+        public void ReleaseActiveReader()
+        {
+            ReleaseActive();
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquirePendingWriterAsync"/>
+        public DataStreamPendingWriter<TInstance> AcquirePendingWriterAsync()
+        {
+            AcquirePendingAsync(AccessType.SharedWrite);
+            return CreateDataStreamPendingWriter();
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.ReleasePendingWriterAsync"/>
+        public void ReleasePendingWriterAsync(JobHandle dependsOn)
+        {
+            ReleasePendingAsync(dependsOn);
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquirePendingWriter"/>
+        public DataStreamPendingWriter<TInstance> AcquirePendingWriter()
+        {
+            AcquirePending(AccessType.SharedWrite);
+            return CreateDataStreamPendingWriter();
+        }
+
+        /// <inheritdoc cref="IAbstractDataStream{TInstance}.ReleasePendingWriter"/>
+        public void ReleasePendingWriter()
+        {
+            ReleasePending();
         }
     }
 }

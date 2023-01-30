@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System.Runtime.CompilerServices;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -33,25 +34,53 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ActiveArrayData = m_DataSource.CreateActiveArrayData(TaskSetOwner, CancelRequestBehaviour.Ignore);
             ScheduleInfo = ActiveArrayData.ScheduleInfo;
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquireActiveAsync(AccessType accessType)
         {
             return ActiveArrayData.AcquireAsync(accessType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleaseActiveAsync(JobHandle dependsOn)
         {
             ActiveArrayData.ReleaseAsync(dependsOn);
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AcquireActive(AccessType accessType)
+        {
+            ActiveArrayData.Acquire(accessType);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReleaseActive()
+        {
+            ActiveArrayData.Release();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquirePendingAsync(AccessType accessType)
         {
             return m_DataSource.AcquirePendingAsync(accessType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleasePendingAsync(JobHandle dependsOn)
         {
             m_DataSource.ReleasePendingAsync(dependsOn);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AcquirePending(AccessType accessType)
+        {
+            m_DataSource.AcquirePendingAsync(accessType);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReleasePending()
+        {
+            m_DataSource.ReleasePending();
         }
         
         public CancelCompleteReader CreateCancelCompleteReader()

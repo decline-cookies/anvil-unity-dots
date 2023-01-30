@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -227,6 +228,90 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
         //TODO: #73 - Implement other job types
+        
+        //*************************************************************************************************************
+        // EXTERNAL USAGE
+        //*************************************************************************************************************
+        
+        /// <summary>
+        /// Gets a <see cref="CancelCompleteReader"/> for use in a job outside the Task Driver context.
+        /// Requires a call to <see cref="ReleaseCancelCompleteReaderAsync"/> after scheduling the job.
+        /// </summary>
+        /// <returns>The <see cref="CancelCompleteReader"/></returns>
+        public CancelCompleteReader AcquireCancelCompleteReaderAsync()
+        {
+            return TaskSet.AcquireCancelCompleteReaderAsync();
+        }
+        
+        /// <summary>
+        /// Allows other jobs to use the underlying data for the <see cref="CancelCompleteReader"/>
+        /// and ensures data integrity across those other usages.
+        /// </summary>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> that used this data.</param>
+        public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
+        {
+            TaskSet.ReleaseCancelCompleteReaderAsync(dependsOn);
+        }
+        
+        /// <summary>
+        /// Gets a <see cref="CancelCompleteReader"/> for use on the main thread outside the Task Driver
+        /// context.
+        /// Requires a call to <see cref="ReleaseCancelCompleteReader"/> when done.
+        /// </summary>
+        /// <returns>The <see cref="CancelCompleteReader"/></returns>
+        public CancelCompleteReader AcquireCancelCompleteReader()
+        {
+            return TaskSet.AcquireCancelCompleteReader();
+        }
+        
+        /// <summary>
+        /// Allows other jobs or code to use to underlying data for the <see cref="CancelCompleteReader"/>
+        /// and ensures data integrity across those other usages.
+        /// </summary>
+        public void ReleaseCancelCompleteReader()
+        {
+            TaskSet.ReleaseCancelCompleteReader();
+        }
+        
+        /// <summary>
+        /// Gets a <see cref="CancelRequestsWriter"/> for use in a job outside the Task Driver context.
+        /// Requires a call to <see cref="ReleaseCancelRequestsWriterAsync"/> after scheduling the job.
+        /// </summary>
+        /// <returns>The <see cref="CancelRequestsWriter"/></returns>
+        public CancelRequestsWriter AcquireCancelRequestsWriterAsync()
+        {
+            return TaskSet.AcquireCancelRequestsWriterAsync();
+        }
+        
+        /// <summary>
+        /// Allows other jobs to use the underlying data for the <see cref="CancelRequestsWriter"/>
+        /// and ensures data integrity across those other usages.
+        /// </summary>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> that used this data.</param>
+        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
+        {
+            TaskSet.ReleaseCancelRequestsWriterAsync(dependsOn);
+        }
+        
+        /// <summary>
+        /// Gets a <see cref="CancelRequestsWriter"/> for use on the main thread outside the Task Driver
+        /// context.
+        /// Requires a call to <see cref="ReleaseCancelRequestsWriter"/> when done.
+        /// </summary>
+        /// <returns>The <see cref="CancelRequestsWriter"/></returns>
+        public CancelRequestsWriter AcquireCancelRequestsWriter()
+        {
+            return TaskSet.AcquireCancelRequestsWriter();
+        }
+        
+        /// <summary>
+        /// Allows other jobs or code to use to underlying data for the <see cref="CancelRequestsWriter"/>
+        /// and ensures data integrity across those other usages.
+        /// </summary>
+        public void ReleaseCancelRequestsWriter()
+        {
+            TaskSet.ReleaseCancelRequestsWriter();
+        }
 
         //*************************************************************************************************************
         // HARDENING

@@ -1,10 +1,12 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -214,6 +216,51 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 taskDriver.TaskSet.AddCancelRequestContextsTo(contexts);
             }
+        }
+        
+        
+        public CancelCompleteReader AcquireCancelCompleteReaderAsync()
+        {
+            CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
+            return CancelCompleteDataStream.CreateCancelCompleteReader();
+        }
+
+        public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
+        {
+            CancelCompleteDataStream.ReleaseActiveAsync(dependsOn);
+        }
+
+        public CancelCompleteReader AcquireCancelCompleteReader()
+        {
+            CancelCompleteDataStream.AcquireActive(AccessType.SharedRead);
+            return CancelCompleteDataStream.CreateCancelCompleteReader();
+        }
+
+        public void ReleaseCancelCompleteReader()
+        {
+            CancelCompleteDataStream.ReleaseActive();
+        }
+
+        public CancelRequestsWriter AcquireCancelRequestsWriterAsync()
+        {
+            CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
+            return CancelRequestsDataStream.CreateCancelRequestsWriter();
+        }
+
+        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
+        {
+            CancelRequestsDataStream.ReleasePendingAsync(dependsOn);
+        }
+
+        public CancelRequestsWriter AcquireCancelRequestsWriter()
+        {
+            CancelRequestsDataStream.AcquirePending(AccessType.SharedWrite);
+            return CancelRequestsDataStream.CreateCancelRequestsWriter();
+        }
+
+        public void ReleaseCancelRequestsWriter()
+        {
+            CancelRequestsDataStream.ReleasePending();
         }
 
         //*************************************************************************************************************

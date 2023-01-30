@@ -54,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Called once per thread to allow for initialization of state in the job
+        /// Call once to initialize the state of this writer for the thread it is running on.
         /// </summary>
         /// <remarks>
         /// In most cases this will be called automatically by the Anvil Job type. If using this in a vanilla Unity
@@ -66,6 +66,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureInitThreadOnlyCalledOnce();
 
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
+            m_PendingLaneWriter = m_PendingWriter.AsLaneWriter(m_LaneIndex);
+        }
+        
+        /// <summary>
+        /// Call once to initialize the state of this writer for main thread usage.
+        /// </summary>
+        public void InitForMainThread()
+        {
+            Debug_EnsureInitThreadOnlyCalledOnce();
+            m_LaneIndex = ParallelAccessUtil.CollectionIndexForMainThread();
             m_PendingLaneWriter = m_PendingWriter.AsLaneWriter(m_LaneIndex);
         }
 
@@ -88,6 +98,30 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                                 m_TaskSetOwnerID,
                                                                                 m_ActiveID,
                                                                                 ref instance));
+        }
+
+        /// <summary>
+        /// Adds the instance to the <see cref="IAbstractDataStream{TInstance}"/>'s
+        /// underlying pending collection to be added the next time the data is consolidated.
+        /// </summary>
+        /// <param name="instance">The <see cref="IEntityProxyInstance"/></param>
+        /// <param name="laneIndex">
+        /// The collection index to use based on the thread this writer is being
+        /// used on. <see cref="ParallelAccessUtil"/> to get the correct index.
+        /// </param>
+        public void Add(TInstance instance, int laneIndex)
+        {
+            Add(ref instance, laneIndex);
+        }
+
+        /// <inheritdoc cref="Add(TInstance, int)"/>
+        public void Add(ref TInstance instance, int laneIndex)
+        {
+            m_PendingWriter.AsLaneWriter(laneIndex)
+                           .Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
+                                                                            m_TaskSetOwnerID,
+                                                                            m_ActiveID,
+                                                                            ref instance));
         }
 
 
@@ -127,7 +161,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == WriterState.Uninitialized)
             {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to add an element.");
+                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to add an element. Or call {nameof(Add)} with the explicit lane index.");
             }
 #endif
         }
