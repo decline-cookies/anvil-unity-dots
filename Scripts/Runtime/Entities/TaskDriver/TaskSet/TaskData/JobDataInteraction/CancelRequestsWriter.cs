@@ -14,13 +14,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     public struct CancelRequestsWriter
     {
         private const int UNSET_LANE_INDEX = -1;
-        
+
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_PendingWriter;
         [ReadOnly] private readonly NativeArray<CancelRequestContext> m_CancelRequestContexts;
 
         private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
-        
+
         internal CancelRequestsWriter(UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingWriter, NativeArray<CancelRequestContext> cancelRequestContexts) : this()
         {
             m_PendingWriter = pendingWriter;
@@ -49,6 +49,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
+        /// Call once to initialize the state of this writer for main thread usage.
+        /// </summary>
+        public void InitForMainThread()
+        {
+            Debug_EnsureInitThreadOnlyCalledOnce();
+            m_LaneIndex = ParallelAccessUtil.CollectionIndexForMainThread();
+            m_PendingLaneWriter = m_PendingWriter.AsLaneWriter(m_LaneIndex);
+        }
+
+        /// <summary>
         /// Requests the cancellation of a TaskDriver flow for a specific <see cref="Entity"/>
         /// </summary>
         /// <param name="entity">The <see cref="Entity"/> to use for cancellation</param>
@@ -67,6 +77,31 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
         
+        /// <summary>
+        /// Requests the cancellation of a TaskDriver flow for a specific <see cref="Entity"/>
+        /// </summary>
+        /// <param name="entity">The <see cref="Entity"/> to use for cancellation</param>
+        /// <param name="laneIndex">
+        /// The collection index to use based on the thread this writer is being
+        /// used on. <see cref="ParallelAccessUtil"/> to get the correct index.
+        /// </param>
+        public void RequestCancel(Entity entity, int laneIndex)
+        {
+            RequestCancel(ref entity, laneIndex);
+        }
+        
+        /// <inheritdoc cref="RequestCancel(Entity, int)"/>
+        public void RequestCancel(ref Entity entity, int laneIndex)
+        {
+            foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
+            {
+                m_PendingWriter.AsLaneWriter(laneIndex)
+                               .Write(new EntityProxyInstanceID(entity,
+                                                                cancelRequestContext.TaskSetOwnerID,
+                                                                cancelRequestContext.ActiveID));
+            }
+        }
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -88,7 +123,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_State = WriterState.Uninitialized;
 #endif
         }
-        
+
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureCanCancel()
@@ -96,7 +131,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == WriterState.Uninitialized)
             {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to request a cancel");
+                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to request a cancel. Or call {nameof(RequestCancel)} with the explicit lane index.");
             }
 #endif
         }

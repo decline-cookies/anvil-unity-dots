@@ -5,6 +5,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Jobs;
 
@@ -76,14 +77,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return activeLookupData;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquirePendingAsync(AccessType accessType)
         {
             return PendingData.AcquireAsync(accessType);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleasePendingAsync(JobHandle dependsOn)
         {
             PendingData.ReleaseAsync(dependsOn);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AcquirePending(AccessType accessType)
+        {
+            PendingData.Acquire(accessType);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReleasePending()
+        {
+            PendingData.Release();
         }
 
         public void Harden()

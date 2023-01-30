@@ -55,5 +55,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Acquire(AccessType accessType)
+        { 
+            m_AccessController.Acquire(accessType);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Release()
+        {
+            m_AccessController.Release();
+        }
     }
 }
