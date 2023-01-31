@@ -12,26 +12,53 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // SCHEDULING
         //*************************************************************************************************************
+        public static JobHandle Schedule<TJob, TInstance>(this TJob jobData,
+                                                          UpdateScheduleInfo<TInstance> scheduleInfo,
+                                                          JobHandle dependsOn = default)
+            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return InternalSchedule(jobData,
+                                    scheduleInfo,
+                                    dependsOn,
+                                    ScheduleMode.Single,
+                                    int.MaxValue);
+        }
 
-        public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
-                                                                         UpdateDataStreamScheduleInfo<TInstance> scheduleInfo,
-                                                                         JobHandle dependsOn = default)
+        public static JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
+                                                                  UpdateScheduleInfo<TInstance> scheduleInfo,
+                                                                  JobHandle dependsOn = default)
+            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return InternalSchedule(jobData,
+                                    scheduleInfo,
+                                    dependsOn,
+                                    ScheduleMode.Parallel,
+                                    scheduleInfo.BatchSize);
+        }
+
+        private static unsafe JobHandle InternalSchedule<TJob, TInstance>(TJob jobData,
+                                                                          UpdateScheduleInfo<TInstance> scheduleInfo,
+                                                                          JobHandle dependsOn,
+                                                                          ScheduleMode scheduleMode,
+                                                                          int batchSize)
             where TJob : struct, ITaskUpdateJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-            
+
             WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
                                                                                                   scheduleInfo);
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
                                                                                                          reflectionData,
                                                                                                          dependsOn,
-                                                                                                         ScheduleMode.Parallel);
+                                                                                                         scheduleMode);
 
             dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
-                                                                      scheduleInfo.BatchSize,
+                                                                      batchSize,
                                                                       scheduleInfo.DeferredNativeArrayScheduleInfo.BufferPtr,
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                                                                       scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr
@@ -71,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
             public WrapperJobStruct(ref TJob jobData,
-                                    UpdateDataStreamScheduleInfo<TInstance> scheduleInfo)
+                                    UpdateScheduleInfo<TInstance> scheduleInfo)
             {
                 JobData = jobData;
                 Updater = scheduleInfo.Updater;
@@ -114,7 +141,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                 while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
                 {
-                    
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif

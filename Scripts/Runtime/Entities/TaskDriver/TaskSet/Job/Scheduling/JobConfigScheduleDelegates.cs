@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(JobHandle jobHandle,
                                                                        UpdateJobData<TInstance> jobData,
-                                                                       UpdateDataStreamScheduleInfo<TInstance> scheduleInfo)
+                                                                       UpdateScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
         public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle,
                                                                        CancelJobData<TInstance> jobData,
-                                                                       CancelDataStreamScheduleInfo<TInstance> scheduleInfo)
+                                                                       CancelScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
     }
 }
