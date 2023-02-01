@@ -19,14 +19,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public void PrepareForConsolidation()
         {
-            DeferredNativeArray<EntityProxyInstanceID> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceID>.ReinterpretFromPointer(m_ActiveBufferPointer);
+            DeferredNativeArray<EntityProxyInstanceWrapper<CancelCompleted>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<CancelCompleted>>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Clear();
         }
 
-        public void WriteToActive(EntityProxyInstanceID id)
+        public void WriteToActive(EntityProxyInstanceWrapper<CancelCompleted> wrapper)
         {
-            DeferredNativeArray<EntityProxyInstanceID> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceID>.ReinterpretFromPointer(m_ActiveBufferPointer);
-            deferredNativeArray.Add(id);
+            DeferredNativeArray<EntityProxyInstanceWrapper<CancelCompleted>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<CancelCompleted>>.ReinterpretFromPointer(m_ActiveBufferPointer);
+            deferredNativeArray.Add(wrapper);
         }
         
         //*************************************************************************************************************

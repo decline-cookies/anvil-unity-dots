@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelCompleteDataStream : AbstractDataStream
     {
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceID>();
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceWrapper<CancelCompleted>>();
 
         private readonly CancelCompleteDataSource m_DataSource;
         
@@ -18,9 +18,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => ActiveArrayData.ID;
         }
         
-        public ActiveArrayData<EntityProxyInstanceID> ActiveArrayData { get; }
-        public PendingData<EntityProxyInstanceID> PendingData { get; }
-        public UnsafeTypedStream<EntityProxyInstanceID>.Writer PendingWriter { get; }
+        public ActiveArrayData<EntityProxyInstanceWrapper<CancelCompleted>> ActiveArrayData { get; }
+        public PendingData<EntityProxyInstanceWrapper<CancelCompleted>> PendingData { get; }
+        public UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>>.Writer PendingWriter { get; }
         
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
 

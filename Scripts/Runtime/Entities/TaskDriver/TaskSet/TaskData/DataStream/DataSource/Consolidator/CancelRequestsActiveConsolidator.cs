@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_RequestLookup;
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
-        private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_CompleteWriter;
+        private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>>.Writer m_CompleteWriter;
         private readonly uint m_CompleteActiveID;
 
         public CancelRequestsActiveConsolidator(UnsafeParallelHashMap<EntityProxyInstanceID, bool> requestLookup,
@@ -55,8 +55,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
             else
             {
-                UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter completeLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
-                completeLaneWriter.Write(new EntityProxyInstanceID(id.Entity, id.TaskSetOwnerID, m_CompleteActiveID));
+                UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>>.LaneWriter completeLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
+                //Write ourselves to the Complete.
+                CancelCompleted cancelCompleted = new CancelCompleted(id.Entity);
+                completeLaneWriter.Write(new EntityProxyInstanceWrapper<CancelCompleted>(id.Entity, 
+                                                                                         id.TaskSetOwnerID, 
+                                                                                         m_CompleteActiveID, 
+                                                                                         ref cancelCompleted));
             }
         }
     }

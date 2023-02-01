@@ -3,7 +3,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class CancelCompleteDataSource : AbstractDataSource<EntityProxyInstanceID>
+    internal class CancelCompleteDataSource : AbstractDataSource<EntityProxyInstanceWrapper<CancelCompleted>>
     {
         private CancelCompleteDataSourceConsolidator m_Consolidator;
         public CancelCompleteDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)

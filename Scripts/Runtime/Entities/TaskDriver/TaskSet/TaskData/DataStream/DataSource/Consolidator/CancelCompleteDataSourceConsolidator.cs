@@ -9,10 +9,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     [BurstCompatible]
     internal struct CancelCompleteDataSourceConsolidator : IDisposable
     {
-        private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
+        private UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>> m_Pending;
         private UnsafeParallelHashMap<uint, CancelCompleteActiveConsolidator> m_ActiveConsolidatorsByID;
 
-        public unsafe CancelCompleteDataSourceConsolidator(PendingData<EntityProxyInstanceID> pendingData, Dictionary<uint, AbstractData> dataMapping) : this()
+        public unsafe CancelCompleteDataSourceConsolidator(PendingData<EntityProxyInstanceWrapper<CancelCompleted>> pendingData, Dictionary<uint, AbstractData> dataMapping) : this()
         {
             m_Pending = pendingData.Pending;
             m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, CancelCompleteActiveConsolidator>(dataMapping.Count, Allocator.Persistent);
@@ -39,10 +39,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 entry.Value.PrepareForConsolidation();
             }
 
-            foreach (EntityProxyInstanceID id in m_Pending)
+            foreach (EntityProxyInstanceWrapper<CancelCompleted> wrapper in m_Pending)
             {
-                CancelCompleteActiveConsolidator cancelCompleteActiveConsolidator = m_ActiveConsolidatorsByID[id.ActiveID];
-                cancelCompleteActiveConsolidator.WriteToActive(id);
+                CancelCompleteActiveConsolidator cancelCompleteActiveConsolidator = m_ActiveConsolidatorsByID[wrapper.InstanceID.ActiveID];
+                cancelCompleteActiveConsolidator.WriteToActive(wrapper);
             }
 
             m_Pending.Clear();
