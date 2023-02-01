@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Data;
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return taskDriverManagementSystem;
         }
-        
+
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
@@ -35,6 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly CancelProgressDataSource m_CancelProgressDataSource;
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
         private readonly List<CancelProgressFlow> m_CancelProgressFlows;
+        private readonly Dictionary<Type, AccessController> m_UnityEntityDataAccessControllers;
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
@@ -54,6 +56,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressDataSource = new CancelProgressDataSource(this);
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
+            m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
         }
 
         protected override void OnStartRunning()
@@ -76,6 +79,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
             m_CancelProgressFlows.DisposeAllAndTryClear();
+            m_UnityEntityDataAccessControllers.DisposeAllValuesAndClear();
 
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
@@ -164,6 +168,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureNotHardened();
             m_AllTaskDrivers.Add(taskDriver);
             m_AllTaskDriverSystems.Add(taskDriver.TaskDriverSystem);
+        }
+
+        public AccessController GetOrCreateCDFEAccessController<T>()
+            where T : struct, IComponentData
+        {
+            return GetOrCreateUnityEntityDataAccessController(typeof(T));
+        }
+
+        public AccessController GetOrCreateDBFEAccessController<T>()
+            where T : struct, IBufferElementData
+        {
+            return GetOrCreateUnityEntityDataAccessController(typeof(T));
+        }
+        
+        private AccessController GetOrCreateUnityEntityDataAccessController(Type type)
+        {
+            if (!m_UnityEntityDataAccessControllers.TryGetValue(type, out AccessController accessController))
+            {
+                accessController = new AccessController();
+                m_UnityEntityDataAccessControllers.Add(type, accessController);
+            }
+
+            return accessController;
         }
 
         protected sealed override void OnUpdate()
