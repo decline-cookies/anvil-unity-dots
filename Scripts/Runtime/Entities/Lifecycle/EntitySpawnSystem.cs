@@ -52,19 +52,53 @@ namespace Anvil.Unity.DOTS.Entities
         public void Spawn<TEntitySpawnDefinition>(TEntitySpawnDefinition spawnDefinition)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
+            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
             entitySpawner.Spawn(spawnDefinition);
 
             Enabled = true;
             m_ActiveEntitySpawners.Add(entitySpawner);
         }
 
-        public void Spawn<TEntitySpawnDefinition>(TEntitySpawnDefinition spawnDefinition, Entity prototype)
+        public void Spawn<TEntitySpawnDefinition>(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
-            entitySpawner.Spawn(spawnDefinition, prototype);
+            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            entitySpawner.Spawn(spawnDefinitions);
+            
+            Enabled = true;
+            m_ActiveEntitySpawners.Add(entitySpawner);
+        }
 
+        public void Spawn<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            NativeArray<TEntitySpawnDefinition> nativeArraySpawnDefinitions = new NativeArray<TEntitySpawnDefinition>(spawnDefinitions.Count, Allocator.Temp);
+            int index = 0;
+            foreach (TEntitySpawnDefinition spawnDefinition in spawnDefinitions)
+            {
+                nativeArraySpawnDefinitions[index] = spawnDefinition;
+                index++;
+            }
+
+            Spawn(nativeArraySpawnDefinitions);
+        }
+
+        public void Spawn<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            entitySpawner.Spawn(prototype, spawnDefinition, shouldDestroyPrototype);
+        
+            Enabled = true;
+            m_ActiveEntitySpawners.Add(entitySpawner);
+        }
+
+        public void Spawn<TEntitySpawnDefinition>(Entity prototype, ICollection<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            entitySpawner.Spawn(prototype, spawnDefinitions, shouldDestroyPrototype);
+            
             Enabled = true;
             m_ActiveEntitySpawners.Add(entitySpawner);
         }
@@ -72,8 +106,15 @@ namespace Anvil.Unity.DOTS.Entities
         public Entity SpawnImmediate<TEntitySpawnDefinition>(TEntitySpawnDefinition spawnDefinition)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
+            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
             return entitySpawner.SpawnImmediate(spawnDefinition);
+        }
+        
+        public Entity SpawnImmediate<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype = false)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            return entitySpawner.SpawnImmediate(prototype, spawnDefinition, shouldDestroyPrototype);
         }
 
         //TODO: Implement Off thread spawning
@@ -95,7 +136,7 @@ namespace Anvil.Unity.DOTS.Entities
             foreach (IEntitySpawner entitySpawner in m_ActiveEntitySpawners)
             {
                 EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
-                dependencies[index] = entitySpawner.Schedule(dependsOn, ecb, entityArchetypesLookup);
+                dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb, entityArchetypesLookup);
                 index++;
             }
 
@@ -104,22 +145,26 @@ namespace Anvil.Unity.DOTS.Entities
             m_CommandBufferSystem.AddJobHandleForProducer(dependsOn);
             return dependsOn;
         }
-
-        private EntitySpawner<TEntitySpawnDefinition> GetOrCreateEntitySpawner<TEntitySpawnDefinition>()
+        
+        private TEntitySpawner GetOrCreateEntitySpawner<TEntitySpawner, TEntitySpawnDefinition>()
+            where TEntitySpawner : IEntitySpawner, new()
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
+            Type spawnerType = typeof(TEntitySpawner);
             Type definitionType = typeof(TEntitySpawnDefinition);
             // ReSharper disable once InvertIf
-            if (!m_EntitySpawners.TryGetValue(definitionType, out IEntitySpawner entitySpawner))
+            if (!m_EntitySpawners.TryGetValue(spawnerType, out IEntitySpawner entitySpawner))
             {
                 // ReSharper disable once SuggestVarOrType_SimpleTypes
                 using var handle = m_EntityArchetypes.AcquireWithHandle(AccessType.ExclusiveWrite);
                 CreateEntityArchetypeForDefinition(definitionType, handle.Value, out EntityArchetype entityArchetype, out long entityArchetypeHash);
-                entitySpawner = new EntitySpawner<TEntitySpawnDefinition>(EntityManager, entityArchetype, entityArchetypeHash);
-                m_EntitySpawners.Add(definitionType, entitySpawner);
+                entitySpawner = new TEntitySpawner();
+                entitySpawner.Init(EntityManager,
+                                   entityArchetype);
+                m_EntitySpawners.Add(spawnerType, entitySpawner);
             }
 
-            return (EntitySpawner<TEntitySpawnDefinition>)entitySpawner;
+            return (TEntitySpawner)entitySpawner;
         }
 
         private void CreateEntityArchetypeForDefinition(Type definitionType, 
@@ -127,6 +172,12 @@ namespace Anvil.Unity.DOTS.Entities
                                                         out EntityArchetype entityArchetype,
                                                         out long entityArchetypeHash)
         {
+            entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
+            if (entityArchetypesLookup.TryGetValue(entityArchetypeHash, out entityArchetype))
+            {
+                return;
+            }
+
             if (!definitionType.IsValueType)
             {
                 throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should be a readonly struct but it is not.");
@@ -154,7 +205,6 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             entityArchetype = EntityManager.CreateArchetype((ComponentType[])componentsField.GetValue(null));
-            entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
             entityArchetypesLookup.Add(entityArchetypeHash, entityArchetype);
         }
     }

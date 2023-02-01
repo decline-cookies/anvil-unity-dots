@@ -53,6 +53,11 @@ namespace Anvil.Unity.DOTS.Entities
             Enabled = true;
         }
 
+        public void DestroyImmediate(Entity entity)
+        {
+            EntityManager.DestroyEntity(entity);
+        }
+
         protected override void OnUpdate()
         {
             Dependency = Schedule(Dependency);
