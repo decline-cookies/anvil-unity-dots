@@ -13,11 +13,16 @@ namespace Anvil.Unity.DOTS.Entities
     internal class EntitySpawnerWithPrototype<TEntitySpawnDefinition> : AbstractEntitySpawner<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
-        private readonly AccessControlledValue<NativeParallelHashSet<Entity>> m_PrototypesToDestroy;
+        private readonly AccessControlledValue<UnsafeTypedStream<Entity>> m_PrototypesToDestroy;
+        private readonly UnsafeTypedStream<Entity>.LaneWriter m_MainThreadPrototypesWriter;
 
         public EntitySpawnerWithPrototype()
         {
-            m_PrototypesToDestroy = new AccessControlledValue<NativeParallelHashSet<Entity>>(new NativeParallelHashSet<Entity>(8, Allocator.Persistent));
+            m_PrototypesToDestroy = new AccessControlledValue<UnsafeTypedStream<Entity>>(new UnsafeTypedStream<Entity>(Allocator.Persistent));
+            // ReSharper disable once SuggestVarOrType_SimpleTypes
+            using var handle = m_PrototypesToDestroy.AcquireWithHandle(AccessType.ExclusiveWrite);
+            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+            m_MainThreadPrototypesWriter = handle.Value.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
         }
 
         protected override void DisposeSelf()
@@ -30,8 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             // ReSharper disable once SuggestVarOrType_SimpleTypes
             using var prototypes = m_PrototypesToDestroy.AcquireWithHandle(AccessType.ExclusiveWrite);
-            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-            prototypes.Value.Add(prototype);
+            m_MainThreadPrototypesWriter.Write(prototype);
         }
 
         public void Spawn(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
@@ -81,12 +85,12 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn, 
-                                                      in UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Reader reader, 
+                                                      UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions, 
                                                       ref EntityCommandBuffer ecb)
         {
-            JobHandle prototypesHandle = m_PrototypesToDestroy.AcquireAsync(AccessType.ExclusiveWrite, out NativeParallelHashSet<Entity> prototypes);
+            JobHandle prototypesHandle = m_PrototypesToDestroy.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<Entity> prototypes);
             dependsOn = JobHandle.CombineDependencies(prototypesHandle, dependsOn);
-            SpawnJob job = new SpawnJob(reader,
+            SpawnJob job = new SpawnJob(spawnDefinitions,
                                         ref ecb,
                                         prototypes);
 
@@ -103,34 +107,54 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompile]
         private struct SpawnJob : IJob
         {
-            [ReadOnly] private readonly UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Reader m_SpawnDefinitionReader;
-            private NativeParallelHashSet<Entity> m_PrototypesToDestroy;
+            [ReadOnly] private UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;
+            private UnsafeTypedStream<Entity> m_PrototypesToDestroy;
 
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJob(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Reader spawnDefinitionReader, 
+            public SpawnJob(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions, 
                             ref EntityCommandBuffer ecb,
-                            NativeParallelHashSet<Entity> prototypesToDestroy)
+                            UnsafeTypedStream<Entity> prototypesToDestroy)
             {
-                m_SpawnDefinitionReader = spawnDefinitionReader;
+                m_SpawnDefinitions = spawnDefinitions;
                 m_ECB = ecb;
                 m_PrototypesToDestroy = prototypesToDestroy;
             }
 
             public void Execute()
             {
-                foreach (EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition> wrapper in m_SpawnDefinitionReader)
+                foreach (EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition> wrapper in m_SpawnDefinitions)
                 {
                     Entity entity = m_ECB.Instantiate(wrapper.Prototype);
                     // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
                     wrapper.EntitySpawnDefinition.PopulateOnEntity(entity, ref m_ECB);
                 }
 
+                m_SpawnDefinitions.Clear();
+
                 foreach (Entity entity in m_PrototypesToDestroy)
                 {
                     m_ECB.DestroyEntity(entity);
                 }
+                
+                m_PrototypesToDestroy.Clear();
             }
+        }
+    }
+    
+    //*************************************************************************************************************
+    // WRAPPER
+    //*************************************************************************************************************
+    internal struct EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>
+        where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+    {
+        public readonly Entity Prototype;
+        public readonly TEntitySpawnDefinition EntitySpawnDefinition;
+        public EntityPrototypeDefinitionWrapper(Entity prototype, 
+                                                TEntitySpawnDefinition entitySpawnDefinition)
+        {
+            Prototype = prototype;
+            EntitySpawnDefinition = entitySpawnDefinition;
         }
     }
 }

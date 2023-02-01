@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using JetBrains.Annotations;
 using Unity.Burst;
 using Unity.Collections;
@@ -36,11 +37,23 @@ namespace Anvil.Unity.DOTS.Entities
             return entity;
         }
 
+        public JobHandle AcquireEntitySpawnWriterAsync(out EntitySpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
+        {
+            JobHandle dependsOn = AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<TEntitySpawnDefinition> definitionsToSpawn);
+            entitySpawnWriter = new EntitySpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter());
+            return dependsOn;
+        }
+
+        public void ReleaseEntitySpawnWriterAsync(JobHandle dependsOn)
+        {
+            ReleaseAsync(dependsOn);
+        }
+
         protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn,
-                                                      in UnsafeTypedStream<TEntitySpawnDefinition>.Reader reader,
+                                                      UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
                                                       ref EntityCommandBuffer ecb)
         {
-            SpawnJob job = new SpawnJob(reader,
+            SpawnJob job = new SpawnJob(spawnDefinitions,
                                         EntityArchetype,
                                         ref ecb);
 
@@ -55,27 +68,29 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompile]
         private struct SpawnJob : IJob
         {
-            [ReadOnly] private readonly UnsafeTypedStream<TEntitySpawnDefinition>.Reader m_SpawnDefinitionReader;
+            [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
             [ReadOnly] private readonly EntityArchetype m_Archetype;
             
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJob(UnsafeTypedStream<TEntitySpawnDefinition>.Reader spawnDefinitionReader,
+            public SpawnJob(UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
                             EntityArchetype archetype,
                             ref EntityCommandBuffer ecb)
             {
-                m_SpawnDefinitionReader = spawnDefinitionReader;
+                m_SpawnDefinitions = spawnDefinitions;
                 m_Archetype = archetype;
                 m_ECB = ecb;
             }
 
             public void Execute()
             {
-                foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitionReader)
+                foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitions)
                 {
                     Entity entity = m_ECB.CreateEntity(m_Archetype);
                     spawnDefinition.PopulateOnEntity(entity, ref m_ECB);
                 }
+                
+                m_SpawnDefinitions.Clear();
             }
         }
     }

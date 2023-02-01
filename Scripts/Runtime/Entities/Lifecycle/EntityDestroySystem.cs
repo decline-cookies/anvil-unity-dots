@@ -1,6 +1,8 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -10,13 +12,16 @@ namespace Anvil.Unity.DOTS.Entities
 {
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(EntitySpawnSystem))]
+    [UseCommandBufferSystem(typeof(EndSimulationEntityCommandBufferSystem))]
     public class EntityDestroySystem : AbstractAnvilSystemBase
     {
         private readonly AccessControlledValue<UnsafeTypedStream<Entity>> m_EntitiesToDestroy;
         private readonly UnsafeTypedStream<Entity>.LaneWriter m_MainThreadLaneWriter;
         private readonly UnsafeTypedStream<Entity>.Reader m_Reader;
+        private readonly Type m_CommandBufferSystemType;
         
-        private EndSimulationEntityCommandBufferSystem m_CommandBufferSystem;
+        private EntityCommandBufferSystem m_CommandBufferSystem;
+        
 
         [SuppressMessage("ReSharper", "PossiblyImpureMethodCallOnReadonlyVariable")]
         public EntityDestroySystem()
@@ -26,13 +31,15 @@ namespace Anvil.Unity.DOTS.Entities
             using var handle = m_EntitiesToDestroy.AcquireWithHandle(AccessType.ExclusiveWrite);
             m_MainThreadLaneWriter = handle.Value.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
             m_Reader = handle.Value.AsReader();
+
+            m_CommandBufferSystemType = GetType().GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
         }
 
         protected override void OnCreate()
         {
             base.OnCreate();
             
-            m_CommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+            m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(m_CommandBufferSystemType);
 
             //Default to being off, a call to Destroy will enable it
             Enabled = false;
