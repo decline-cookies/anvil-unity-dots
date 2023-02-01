@@ -12,12 +12,12 @@ namespace Anvil.Unity.DOTS.Entities
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
 
-        public void Spawn(TEntitySpawnDefinition spawnDefinition)
+        public void SpawnDeferred(TEntitySpawnDefinition spawnDefinition)
         {
             InternalSpawn(spawnDefinition);
         }
 
-        public void Spawn(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
+        public void SpawnDeferred(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
         {
             InternalSpawn(spawnDefinitions);
         }

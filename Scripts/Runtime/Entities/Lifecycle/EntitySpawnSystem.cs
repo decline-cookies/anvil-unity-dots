@@ -48,28 +48,31 @@ namespace Anvil.Unity.DOTS.Entities
             m_EntitySpawners.DisposeAllValuesAndClear();
             base.OnDestroy();
         }
-
-        public void Spawn<TEntitySpawnDefinition>(TEntitySpawnDefinition spawnDefinition)
+        
+        //*************************************************************************************************************
+        // SPAWN DEFERRED
+        //*************************************************************************************************************
+        public void SpawnDeferred<TEntitySpawnDefinition>(TEntitySpawnDefinition spawnDefinition)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
-            entitySpawner.Spawn(spawnDefinition);
+            entitySpawner.SpawnDeferred(spawnDefinition);
 
             Enabled = true;
             m_ActiveEntitySpawners.Add(entitySpawner);
         }
 
-        public void Spawn<TEntitySpawnDefinition>(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
+        public void SpawnDeferred<TEntitySpawnDefinition>(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
-            entitySpawner.Spawn(spawnDefinitions);
+            entitySpawner.SpawnDeferred(spawnDefinitions);
             
             Enabled = true;
             m_ActiveEntitySpawners.Add(entitySpawner);
         }
 
-        public void Spawn<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
+        public void SpawnDeferred<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             NativeArray<TEntitySpawnDefinition> nativeArraySpawnDefinitions = new NativeArray<TEntitySpawnDefinition>(spawnDefinitions.Count, Allocator.Temp);
@@ -80,10 +83,13 @@ namespace Anvil.Unity.DOTS.Entities
                 index++;
             }
 
-            Spawn(nativeArraySpawnDefinitions);
+            SpawnDeferred(nativeArraySpawnDefinitions);
         }
-
-        public void Spawn<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
+        
+        //*************************************************************************************************************
+        // SPAWN DEFERRED WITH PROTOTYPE
+        //*************************************************************************************************************
+        public void SpawnDeferred<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
@@ -93,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_ActiveEntitySpawners.Add(entitySpawner);
         }
 
-        public void Spawn<TEntitySpawnDefinition>(Entity prototype, ICollection<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
+        public void SpawnDeferred<TEntitySpawnDefinition>(Entity prototype, ICollection<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
@@ -102,6 +108,10 @@ namespace Anvil.Unity.DOTS.Entities
             Enabled = true;
             m_ActiveEntitySpawners.Add(entitySpawner);
         }
+        
+        //*************************************************************************************************************
+        // SPAWN IMMEDIATE
+        //*************************************************************************************************************
 
         public Entity SpawnImmediate<TEntitySpawnDefinition>(TEntitySpawnDefinition spawnDefinition)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
@@ -110,6 +120,11 @@ namespace Anvil.Unity.DOTS.Entities
             return entitySpawner.SpawnImmediate(spawnDefinition);
         }
         
+        //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
+
+        //*************************************************************************************************************
+        // SPAWN IMMEDIATE WITH PROTOTYPE
+        //*************************************************************************************************************
         public Entity SpawnImmediate<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype = false)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -117,7 +132,7 @@ namespace Anvil.Unity.DOTS.Entities
             return entitySpawner.SpawnImmediate(prototype, spawnDefinition, shouldDestroyPrototype);
         }
 
-        //TODO: Implement Off thread spawning
+        //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
 
         protected override void OnUpdate()
         {
