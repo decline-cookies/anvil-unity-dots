@@ -20,25 +20,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
-        
+
         public override uint ActiveID
         {
             get => m_ActiveArrayData.ID;
         }
-        
+
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
         public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }
-        
+
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
-            
-            //TODO: #136 - Not good to expose these just for the CancelComplete case.
-            PendingWriter = m_DataSource.PendingWriter;
-            PendingData = m_DataSource.PendingData;
-            
+
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour);
 
             if (m_ActiveArrayData.PendingCancelActiveData != null)
@@ -57,15 +53,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ScheduleInfo = systemDataStream.ScheduleInfo;
             PendingCancelScheduleInfo = systemDataStream.PendingCancelScheduleInfo;
             m_PendingCancelActiveArrayData = systemDataStream.m_PendingCancelActiveArrayData;
+
+            //TODO: #136 - Not good to expose these just for the CancelComplete case.
+            PendingData = systemDataStream.PendingData;
+            PendingWriter = systemDataStream.PendingWriter;
         }
 
         //TODO: #137 - Gross!!! This is a special case only for CancelComplete
-        protected EntityProxyDataStream(ITaskSetOwner taskSetOwner) :base(taskSetOwner)
+        protected EntityProxyDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetCancelCompleteDataSource() as EntityProxyDataSource<TInstance>;
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, CancelRequestBehaviour.Ignore);
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
+
+            //TODO: #136 - Not good to expose these just for the CancelComplete case.
+            PendingWriter = m_DataSource.PendingWriter;
+            PendingData = m_DataSource.PendingData;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -154,11 +158,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                 resolveTargetTypeLookup,
                                                                 cancelProgressLookup);
         }
-        
+
         //*************************************************************************************************************
         // IABSTRACT DATA STREAM INTERFACE
         //*************************************************************************************************************
-        
+
         /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquireActiveReaderAsync"/>
         public JobHandle AcquireActiveReaderAsync(out DataStreamActiveReader<TInstance> reader)
         {
