@@ -236,7 +236,17 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // SPAWN IN A JOB WITH PROTOTYPE
         //*************************************************************************************************************
-
+        
+        /// <summary>
+        /// Returns a <see cref="EntityPrototypeSpawnWriter{TEntitySpawnDefinition}"/> to enable queueing
+        /// up <see cref="IEntitySpawnDefinition"/>s to spawn during the system's update phase while in a job.
+        /// </summary>
+        /// <param name="entitySpawnWriter">The <see cref="EntityPrototypeSpawnWriter{TEntitySpawnDefinition}"/> to use</param>
+        /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>
+        /// A <see cref="JobHandle"/> representing when the <see cref="EntityPrototypeSpawnWriter{TEntitySpawnDefinition}"/>
+        /// can be used.
+        /// </returns>
         public JobHandle AcquireEntityPrototypeSpawnWriterAsync<TEntitySpawnDefinition>(out EntityPrototypeSpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -247,6 +257,12 @@ namespace Anvil.Unity.DOTS.Entities
             return entitySpawner.AcquireEntitySpawnWriterAsync(out entitySpawnWriter);
         }
 
+        /// <summary>
+        /// Allows the system to know when other jobs have finished trying to queue
+        /// up <see cref="IEntitySpawnDefinition"/>s to be spawned.
+        /// </summary>
+        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait on</param>
+        /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         public void ReleaseEntityPrototypeSpawnWriterAsync<TEntitySpawnDefinition>(JobHandle dependsOn)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
