@@ -161,7 +161,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            EntityPrototypeSpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntityPrototypeSpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
             entitySpawner.Spawn(prototype, spawnDefinition, shouldDestroyPrototype);
 
             Enabled = true;
@@ -187,11 +187,25 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred<TEntitySpawnDefinition>(Entity prototype, ICollection<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            EntityPrototypeSpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntityPrototypeSpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
             entitySpawner.Spawn(prototype, spawnDefinitions, shouldDestroyPrototype);
 
             Enabled = true;
             m_ActiveEntitySpawners.Add(entitySpawner);
+        }
+        
+        public JobHandle AcquireEntityPrototypeSpawnWriterAsync<TEntitySpawnDefinition>(out EntityPrototypeSpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntityPrototypeSpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntityPrototypeSpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            return entitySpawner.AcquireEntitySpawnWriterAsync(out entitySpawnWriter);
+        }
+
+        public void ReleaseEntityPrototypeSpawnWriterAsync<TEntitySpawnDefinition>(JobHandle dependsOn)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntityPrototypeSpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntityPrototypeSpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            entitySpawner.ReleaseEntitySpawnWriterAsync(dependsOn);
         }
 
         //*************************************************************************************************************
@@ -241,7 +255,7 @@ namespace Anvil.Unity.DOTS.Entities
         public Entity SpawnImmediate<TEntitySpawnDefinition>(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype = false)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawnerWithPrototype<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawnerWithPrototype<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
+            EntityPrototypeSpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntityPrototypeSpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
             return entitySpawner.SpawnImmediate(prototype, spawnDefinition, shouldDestroyPrototype);
         }
 

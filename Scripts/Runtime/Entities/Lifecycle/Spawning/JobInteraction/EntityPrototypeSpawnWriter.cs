@@ -9,27 +9,32 @@ namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Helper for queuing up <see cref="Entity"/>s to Spawn in a job based on
-    /// passed in <see cref="IEntitySpawnDefinition"/>s.
+    /// passed in <see cref="IEntitySpawnDefinition"/>s. Uses a prototype <see cref="Entity"/> to clone.
     /// </summary>
     /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/> to spawn.</typeparam>
     [BurstCompatible]
-    public struct EntitySpawnWriter<TEntitySpawnDefinition>
+    public struct EntityPrototypeSpawnWriter<TEntitySpawnDefinition>
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TEntitySpawnDefinition>.Writer m_Writer;
+        [ReadOnly] private readonly UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Writer m_Writer;
+        [ReadOnly] private readonly UnsafeTypedStream<Entity>.Writer m_PrototypesToDestroyWriter;
 
-        private UnsafeTypedStream<TEntitySpawnDefinition>.LaneWriter m_LaneWriter;
+        private UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.LaneWriter m_LaneWriter;
+        private UnsafeTypedStream<Entity>.LaneWriter m_PrototypesToDestroyLaneWriter;
         private int m_LaneIndex;
 
-        internal EntitySpawnWriter(UnsafeTypedStream<TEntitySpawnDefinition>.Writer writer) : this()
+        internal EntityPrototypeSpawnWriter(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Writer writer,
+                                            UnsafeTypedStream<Entity>.Writer prototypesToDestroyWriter) : this()
         {
             m_Writer = writer;
+            m_PrototypesToDestroyWriter = prototypesToDestroyWriter;
 
             m_LaneWriter = default;
+            m_PrototypesToDestroyLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
-            
+
             Debug_InitializeWriterState();
         }
 
@@ -42,6 +47,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureInitThreadOnlyCalledOnce();
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_LaneWriter = m_Writer.AsLaneWriter(m_LaneIndex);
+            m_PrototypesToDestroyLaneWriter = m_PrototypesToDestroyWriter.AsLaneWriter(m_LaneIndex);
         }
 
         /// <summary>
@@ -52,46 +58,64 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureInitThreadOnlyCalledOnce();
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForMainThread();
             m_LaneWriter = m_Writer.AsLaneWriter(m_LaneIndex);
+            m_PrototypesToDestroyLaneWriter = m_PrototypesToDestroyWriter.AsLaneWriter(m_LaneIndex);
         }
 
         /// <summary>
         /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned
         /// later on by the <see cref="EntitySpawnSystem"/>
         /// </summary>
+        /// <param name="prototype">The prototype <see cref="Entity"/> to clone.</param>
         /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
-        public void Add(TEntitySpawnDefinition definition)
+        /// <param name="shouldDestroyPrototype">
+        /// If true, will destroy the prototype <see cref="Entity"/> after creation.
+        /// </param>
+        public void Add(Entity prototype, TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
         {
-            Add(ref definition);
+            Add(prototype, ref definition, shouldDestroyPrototype);
         }
 
-        /// <inheritdoc cref="Add(TEntitySpawnDefinition)"/>
-        public void Add(ref TEntitySpawnDefinition definition)
+        /// <inheritdoc cref="Add(Entity, TEntitySpawnDefinition, bool)"/>
+        public void Add(Entity prototype, ref TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
         {
             Debug_EnsureCanAdd();
-            m_LaneWriter.Write(ref definition);
+            m_LaneWriter.Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
+            if (shouldDestroyPrototype)
+            {
+                m_PrototypesToDestroyLaneWriter.Write(prototype);
+            }
         }
-        
+
         /// <summary>
         /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned later on by
         /// the <see cref="EntitySpawnSystem"/>
         /// </summary>
+        /// <param name="prototype">The prototype <see cref="Entity"/> to clone.</param>
         /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
         /// <param name="laneIndex">
         /// The collection index to use based on the thread this writer is being
         /// used on. <see cref="ParallelAccessUtil"/> to get the correct index.
         /// </param>
-        public void Add(TEntitySpawnDefinition definition, int laneIndex)
+        /// <param name="shouldDestroyPrototype">
+        /// If true, will destroy the prototype <see cref="Entity"/> after creation.
+        /// </param>
+        public void Add(Entity prototype, TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
-            Add(ref definition, laneIndex);
+            Add(prototype, ref definition, laneIndex, shouldDestroyPrototype);
         }
 
-        /// <inheritdoc cref="Add(TEntitySpawnDefinition, int)"/>
-        public void Add(ref TEntitySpawnDefinition definition, int laneIndex)
+        /// <inheritdoc cref="Add(Entity, TEntitySpawnDefinition, int, bool)"/>
+        public void Add(Entity prototype, ref TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
             m_Writer.AsLaneWriter(laneIndex)
-                    .Write(ref definition);
+                    .Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
+            if (shouldDestroyPrototype)
+            {
+                m_PrototypesToDestroyWriter.AsLaneWriter(laneIndex)
+                                           .Write(prototype);
+            }
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -113,7 +137,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_State = WriterState.Uninitialized;
 #endif
         }
-        
+
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureCanAdd()

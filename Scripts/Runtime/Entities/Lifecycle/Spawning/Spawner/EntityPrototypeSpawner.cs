@@ -10,13 +10,13 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     [UsedImplicitly]
-    internal class EntitySpawnerWithPrototype<TEntitySpawnDefinition> : AbstractEntitySpawner<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>
+    internal class EntityPrototypeSpawner<TEntitySpawnDefinition> : AbstractEntitySpawner<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
         private readonly AccessControlledValue<UnsafeTypedStream<Entity>> m_PrototypesToDestroy;
         private readonly UnsafeTypedStream<Entity>.LaneWriter m_MainThreadPrototypesWriter;
 
-        public EntitySpawnerWithPrototype()
+        public EntityPrototypeSpawner()
         {
             m_PrototypesToDestroy = new AccessControlledValue<UnsafeTypedStream<Entity>>(new UnsafeTypedStream<Entity>(Allocator.Persistent));
             // ReSharper disable once SuggestVarOrType_SimpleTypes
@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void Spawn(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
         {
-            InternalSpawn(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, spawnDefinition));
+            InternalSpawn(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref spawnDefinition));
             if (shouldDestroyPrototype)
             {
                 MarkPrototypeToBeDestroyed(prototype);
@@ -56,8 +56,9 @@ namespace Anvil.Unity.DOTS.Entities
                 nativeArraySpawnDefinitions[index] = new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, spawnDefinition);
                 index++;
             }
+
             InternalSpawn(nativeArraySpawnDefinitions);
-            
+
             if (shouldDestroyPrototype)
             {
                 MarkPrototypeToBeDestroyed(prototype);
@@ -78,14 +79,28 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 ecb.DestroyEntity(prototype);
             }
-            
+
             ecb.Playback(EntityManager);
             ecb.Dispose();
             return entity;
         }
+        
+        public JobHandle AcquireEntitySpawnWriterAsync(out EntityPrototypeSpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
+        {
+            JobHandle dependsOnDefinitions = AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> definitionsToSpawn);
+            JobHandle dependsOnPrototypes = m_PrototypesToDestroy.AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<Entity> prototypes);
+            entitySpawnWriter = new EntityPrototypeSpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter(),
+                                                                                       prototypes.AsWriter());
+            return JobHandle.CombineDependencies(dependsOnDefinitions, dependsOnPrototypes);
+        }
 
-        protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn, 
-                                                      UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions, 
+        public void ReleaseEntitySpawnWriterAsync(JobHandle dependsOn)
+        {
+            ReleaseAsync(dependsOn);
+        }
+
+        protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn,
+                                                      UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
                                                       ref EntityCommandBuffer ecb)
         {
             JobHandle prototypesHandle = m_PrototypesToDestroy.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<Entity> prototypes);
@@ -98,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_PrototypesToDestroy.ReleaseAsync(dependsOn);
             return dependsOn;
         }
-        
+
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
@@ -112,7 +127,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJob(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions, 
+            public SpawnJob(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
                             ref EntityCommandBuffer ecb,
                             UnsafeTypedStream<Entity> prototypesToDestroy)
             {
@@ -136,12 +151,12 @@ namespace Anvil.Unity.DOTS.Entities
                 {
                     m_ECB.DestroyEntity(entity);
                 }
-                
+
                 m_PrototypesToDestroy.Clear();
             }
         }
     }
-    
+
     //*************************************************************************************************************
     // WRAPPER
     //*************************************************************************************************************
@@ -150,11 +165,17 @@ namespace Anvil.Unity.DOTS.Entities
     {
         public readonly Entity Prototype;
         public readonly TEntitySpawnDefinition EntitySpawnDefinition;
-        public EntityPrototypeDefinitionWrapper(Entity prototype, 
-                                                TEntitySpawnDefinition entitySpawnDefinition)
+
+        public EntityPrototypeDefinitionWrapper(Entity prototype,
+                                                ref TEntitySpawnDefinition entitySpawnDefinition)
         {
             Prototype = prototype;
             EntitySpawnDefinition = entitySpawnDefinition;
+        }
+
+        public EntityPrototypeDefinitionWrapper(Entity prototype,
+                                                TEntitySpawnDefinition entitySpawnDefinition) : this(prototype, ref entitySpawnDefinition)
+        {
         }
     }
 }
