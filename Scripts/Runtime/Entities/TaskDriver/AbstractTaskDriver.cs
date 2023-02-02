@@ -219,7 +219,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobWhenCancelComplete(JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        public IJobConfig ConfigureDriverJobWhenCancelComplete(JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
                                                                BatchStrategy batchStrategy)
         {
             return TaskSet.ConfigureJobWhenCancelComplete(scheduleJobFunction,
@@ -234,17 +234,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         
         /// <summary>
-        /// Gets a <see cref="CancelCompleteReader"/> for use in a job outside the Task Driver context.
+        /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseCancelCompleteReaderAsync"/> after scheduling the job.
         /// </summary>
-        /// <returns>The <see cref="CancelCompleteReader"/></returns>
-        public CancelCompleteReader AcquireCancelCompleteReaderAsync()
+        /// <returns>The <see cref="DataStreamActiveReader{CancelComplete}"/></returns>
+        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReaderAsync()
         {
             return TaskSet.AcquireCancelCompleteReaderAsync();
         }
         
         /// <summary>
-        /// Allows other jobs to use the underlying data for the <see cref="CancelCompleteReader"/>
+        /// Allows other jobs to use the underlying data for the <see cref="DataStreamActiveReader{CancelComplete}"/>
         /// and ensures data integrity across those other usages.
         /// </summary>
         /// <param name="dependsOn">The <see cref="JobHandle"/> that used this data.</param>
@@ -254,18 +254,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
         
         /// <summary>
-        /// Gets a <see cref="CancelCompleteReader"/> for use on the main thread outside the Task Driver
+        /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use on the main thread outside the Task Driver
         /// context.
         /// Requires a call to <see cref="ReleaseCancelCompleteReader"/> when done.
         /// </summary>
-        /// <returns>The <see cref="CancelCompleteReader"/></returns>
-        public CancelCompleteReader AcquireCancelCompleteReader()
+        /// <returns>The <see cref="DataStreamActiveReader{CancelComplete}"/></returns>
+        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
         {
             return TaskSet.AcquireCancelCompleteReader();
         }
         
         /// <summary>
-        /// Allows other jobs or code to use to underlying data for the <see cref="CancelCompleteReader"/>
+        /// Allows other jobs or code to use to underlying data for the <see cref="DataStreamActiveReader{CancelComplete}"/>
         /// and ensures data integrity across those other usages.
         /// </summary>
         public void ReleaseCancelCompleteReader()

@@ -2,7 +2,7 @@ using Anvil.Unity.DOTS.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class CancelCompleteJobConfig : AbstractJobConfig
+    internal class CancelCompleteJobConfig : DataStreamJobConfig<CancelComplete>
     {
         public CancelCompleteJobConfig(ITaskSetOwner taskSetOwner,
                                        CancelCompleteDataStream cancelCompleteDataStream)

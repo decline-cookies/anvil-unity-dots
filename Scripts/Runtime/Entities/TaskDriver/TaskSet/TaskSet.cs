@@ -168,7 +168,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryComponentJobConfig;
         }
 
-        public IJobConfig ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        public IJobConfig ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
                                                          BatchStrategy batchStrategy)
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
@@ -219,10 +219,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
         
         
-        public CancelCompleteReader AcquireCancelCompleteReaderAsync()
+        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReaderAsync()
         {
             CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateCancelCompleteReader();
+            return CancelCompleteDataStream.CreateDataStreamActiveReader();
         }
 
         public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
@@ -230,10 +230,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelCompleteDataStream.ReleaseActiveAsync(dependsOn);
         }
 
-        public CancelCompleteReader AcquireCancelCompleteReader()
+        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
         {
             CancelCompleteDataStream.AcquireActive(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateCancelCompleteReader();
+            return CancelCompleteDataStream.CreateDataStreamActiveReader();
         }
 
         public void ReleaseCancelCompleteReader()

@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly CancelProgressFlowNode m_Parent;
         private readonly ActiveLookupData<EntityProxyInstanceID> m_ProgressLookupData;
         private readonly ActiveLookupData<EntityProxyInstanceID> m_ParentProgressLookupData;
-        private readonly PendingData<EntityProxyInstanceWrapper<CancelCompleted>> m_CancelCompleteData;
+        private readonly PendingData<EntityProxyInstanceWrapper<CancelComplete>> m_CancelCompleteData;
         private readonly uint m_CancelCompleteActiveID;
 
         private NativeArray<JobHandle> m_Dependencies;
@@ -95,15 +95,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
-            [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>>.Writer m_CompleteWriter;
+            [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer m_CompleteWriter;
             private readonly uint m_CancelCompleteActiveID;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ParentProgressLookup;
             private readonly uint m_TaskSetOwnerID;
 
-            private UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>>.LaneWriter m_CompleteLaneWriter;
+            private UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.LaneWriter m_CompleteLaneWriter;
 
             public CheckCancelProgressJob(UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
-                                          UnsafeTypedStream<EntityProxyInstanceWrapper<CancelCompleted>>.Writer completeWriter,
+                                          UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer completeWriter,
                                           uint cancelCompleteActiveID,
                                           uint taskSetOwnerID,
                                           UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup)
@@ -186,11 +186,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     //Remove ourselves from the Progress Lookup
                     m_ProgressLookup.Remove(id);
                     //Write ourselves to the Complete.
-                    CancelCompleted cancelCompleted = new CancelCompleted(id.Entity);
-                    m_CompleteLaneWriter.Write(new EntityProxyInstanceWrapper<CancelCompleted>(id.Entity, 
+                    CancelComplete cancelComplete = new CancelComplete(id.Entity);
+                    m_CompleteLaneWriter.Write(new EntityProxyInstanceWrapper<CancelComplete>(id.Entity, 
                                                                                                id.TaskSetOwnerID, 
                                                                                                m_CancelCompleteActiveID, 
-                                                                                               ref cancelCompleted));
+                                                                                               ref cancelComplete));
                     return true;
                 }
             }
