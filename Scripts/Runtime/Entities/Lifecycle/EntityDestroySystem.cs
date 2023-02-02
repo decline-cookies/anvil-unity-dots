@@ -35,6 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly UnsafeTypedStream<Entity>.LaneWriter m_MainThreadLaneWriter;
         private readonly Type m_CommandBufferSystemType;
         private readonly Type m_SystemGroupType;
+        private readonly EntityTypeHandle m_EntityTypeHandle;
         
         private EntityCommandBufferSystem m_CommandBufferSystem;
         
@@ -57,6 +58,8 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnCreate();
             
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(m_CommandBufferSystemType);
+            
+            // m_EntityTypeHandle = 
 
             //We could be created for a different world in which case we won't be in the groups update loop. 
             //This ensures that we are added if we aren't there. If we are there, the function early returns
@@ -89,6 +92,18 @@ namespace Anvil.Unity.DOTS.Entities
             // ReSharper disable once SuggestVarOrType_SimpleTypes
             using var handle = m_EntitiesToDestroy.AcquireWithHandle(AccessType.SharedWrite);
             m_MainThreadLaneWriter.Write(entity);
+        }
+
+        public void DestroyDeferred(EntityQuery entityQuery)
+        {
+            Enabled = true;
+            EntityTypeHandle entityTypeHandle = EntityManager.GetEntityTypeHandle();
+            ComponentTypeHandle<> t = EntityManager.GetComponentTypeHandle<>()
+
+            NativeArray<ArchetypeChunk> chunks = entityQuery.CreateArchetypeChunkArrayAsync(Allocator.TempJob, out JobHandle dependsOn);
+            NativeArray<Entity> entities = chunks[0].GetNativeArray(entityTypeHandle);
+            
+            entityQuery.Dispose();
         }
         
         //TODO: Implement a DestroyDeferred that takes in a NativeArray or ICollection if needed.
@@ -194,6 +209,16 @@ namespace Anvil.Unity.DOTS.Entities
                 m_ECB.DestroyEntity(entitiesToDestroy);
                 m_EntitiesToDestroy.Clear();
             }
+        }
+        
+        //*************************************************************************************************************
+        // WRAPPER
+        //*************************************************************************************************************
+
+        private class DestroyQuery
+        {
+            public readonly EntityQuery EntityQuery;
+            public readonly bool ShouldDisposeQuery;
         }
     }
 }
