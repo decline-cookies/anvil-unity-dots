@@ -12,7 +12,6 @@ namespace Anvil.Unity.DOTS.Entities
     internal class EntitySpawner<TEntitySpawnDefinition> : AbstractEntitySpawner<TEntitySpawnDefinition>
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
-
         public void SpawnDeferred(TEntitySpawnDefinition spawnDefinition)
         {
             InternalSpawn(spawnDefinition);
@@ -22,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             InternalSpawn(spawnDefinitions);
         }
-        
+
         public Entity SpawnImmediate(TEntitySpawnDefinition spawnDefinition)
         {
             EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -53,11 +52,23 @@ namespace Anvil.Unity.DOTS.Entities
                                                       UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
                                                       ref EntityCommandBuffer ecb)
         {
-            SpawnJob job = new SpawnJob(spawnDefinitions,
-                                        EntityArchetype,
-                                        ref ecb);
+            //TODO: #86 - Remove once we don't have to switch with BURST
+            if (MustDisableBurst)
+            {
+                SpawnJobNoBurst job = new SpawnJobNoBurst(spawnDefinitions,
+                                                          EntityArchetype,
+                                                          ref ecb);
 
-            return job.Schedule(dependsOn);
+                return job.Schedule(dependsOn);
+            }
+            else
+            {
+                SpawnJob job = new SpawnJob(spawnDefinitions,
+                                            EntityArchetype,
+                                            ref ecb);
+
+                return job.Schedule(dependsOn);
+            }
         }
 
         //*************************************************************************************************************
@@ -70,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
             [ReadOnly] private readonly EntityArchetype m_Archetype;
-            
+
             private EntityCommandBuffer m_ECB;
 
             public SpawnJob(UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
@@ -89,7 +100,35 @@ namespace Anvil.Unity.DOTS.Entities
                     Entity entity = m_ECB.CreateEntity(m_Archetype);
                     spawnDefinition.PopulateOnEntity(entity, ref m_ECB);
                 }
-                
+
+                m_SpawnDefinitions.Clear();
+            }
+        }
+
+        private struct SpawnJobNoBurst : IJob
+        {
+            [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
+            [ReadOnly] private readonly EntityArchetype m_Archetype;
+
+            private EntityCommandBuffer m_ECB;
+
+            public SpawnJobNoBurst(UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
+                                   EntityArchetype archetype,
+                                   ref EntityCommandBuffer ecb)
+            {
+                m_SpawnDefinitions = spawnDefinitions;
+                m_Archetype = archetype;
+                m_ECB = ecb;
+            }
+
+            public void Execute()
+            {
+                foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitions)
+                {
+                    Entity entity = m_ECB.CreateEntity(m_Archetype);
+                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB);
+                }
+
                 m_SpawnDefinitions.Clear();
             }
         }

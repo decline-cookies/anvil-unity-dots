@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Dispose();
             return entity;
         }
-        
+
         public JobHandle AcquireEntitySpawnWriterAsync(out EntityPrototypeSpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
         {
             JobHandle dependsOnDefinitions = AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> definitionsToSpawn);
@@ -105,11 +105,25 @@ namespace Anvil.Unity.DOTS.Entities
         {
             JobHandle prototypesHandle = m_PrototypesToDestroy.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<Entity> prototypes);
             dependsOn = JobHandle.CombineDependencies(prototypesHandle, dependsOn);
-            SpawnJob job = new SpawnJob(spawnDefinitions,
-                                        ref ecb,
-                                        prototypes);
 
-            dependsOn = job.Schedule(dependsOn);
+            //TODO: #86 - Remove once we don't have to switch with BURST
+            if (MustDisableBurst)
+            {
+                SpawnJobNoBurst job = new SpawnJobNoBurst(spawnDefinitions,
+                                                          ref ecb,
+                                                          prototypes);
+
+                dependsOn = job.Schedule(dependsOn);
+            }
+            else
+            {
+                SpawnJob job = new SpawnJob(spawnDefinitions,
+                                            ref ecb,
+                                            prototypes);
+
+                dependsOn = job.Schedule(dependsOn);
+            }
+
             m_PrototypesToDestroy.ReleaseAsync(dependsOn);
             return dependsOn;
         }
@@ -130,6 +144,42 @@ namespace Anvil.Unity.DOTS.Entities
             public SpawnJob(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
                             ref EntityCommandBuffer ecb,
                             UnsafeTypedStream<Entity> prototypesToDestroy)
+            {
+                m_SpawnDefinitions = spawnDefinitions;
+                m_ECB = ecb;
+                m_PrototypesToDestroy = prototypesToDestroy;
+            }
+
+            public void Execute()
+            {
+                foreach (EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition> wrapper in m_SpawnDefinitions)
+                {
+                    Entity entity = m_ECB.Instantiate(wrapper.Prototype);
+                    // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+                    wrapper.EntitySpawnDefinition.PopulateOnEntity(entity, ref m_ECB);
+                }
+
+                m_SpawnDefinitions.Clear();
+
+                foreach (Entity entity in m_PrototypesToDestroy)
+                {
+                    m_ECB.DestroyEntity(entity);
+                }
+
+                m_PrototypesToDestroy.Clear();
+            }
+        }
+
+        private struct SpawnJobNoBurst : IJob
+        {
+            [ReadOnly] private UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;
+            private UnsafeTypedStream<Entity> m_PrototypesToDestroy;
+
+            private EntityCommandBuffer m_ECB;
+
+            public SpawnJobNoBurst(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+                                   ref EntityCommandBuffer ecb,
+                                   UnsafeTypedStream<Entity> prototypesToDestroy)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_ECB = ecb;

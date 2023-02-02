@@ -2,6 +2,7 @@ using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -19,6 +20,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected EntityArchetype EntityArchetype { get; private set; }
         
+        protected bool MustDisableBurst { get; private set; }
+        
         protected AbstractEntitySpawner()
         {
             m_DefinitionsToSpawn = new AccessControlledValue<UnsafeTypedStream<T>>(new UnsafeTypedStream<T>(Allocator.Persistent));
@@ -32,6 +35,14 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntityManager = entityManager;
             EntityArchetype = entityArchetype;
+            
+            //TODO: #86 - When upgrading to Entities 1.0 we can use an unmanaged shared component which will let us use the job in burst
+            NativeArray<ComponentType> componentTypes = EntityArchetype.GetComponentTypes(Allocator.Temp);
+            foreach (ComponentType componentType in componentTypes.Where(componentType => componentType.IsSharedComponent))
+            {
+                MustDisableBurst = true;
+                break;
+            }
         }
 
         protected override void DisposeSelf()
