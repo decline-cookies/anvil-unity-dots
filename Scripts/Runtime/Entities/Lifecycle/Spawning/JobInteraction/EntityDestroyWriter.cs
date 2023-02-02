@@ -8,23 +8,20 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// Helper for queuing up <see cref="Entity"/>s to Spawn in a job based on
-    /// passed in <see cref="IEntitySpawnDefinition"/>s.
-    /// Entities will be spawned later on via the <see cref="EntitySpawnSystem"/>
+    /// Helper for queuing up <see cref="Entity"/>s to Destroy in a job.
+    /// Entities will be Destroyed later on via the <see cref="EntityDestroySystem"/>
     /// </summary>
-    /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/> to spawn.</typeparam>
     [BurstCompatible]
-    public struct EntitySpawnWriter<TEntitySpawnDefinition>
-        where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+    public struct EntityDestroyWriter
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TEntitySpawnDefinition>.Writer m_Writer;
+        [ReadOnly] private readonly UnsafeTypedStream<Entity>.Writer m_Writer;
 
-        private UnsafeTypedStream<TEntitySpawnDefinition>.LaneWriter m_LaneWriter;
+        private UnsafeTypedStream<Entity>.LaneWriter m_LaneWriter;
         private int m_LaneIndex;
 
-        internal EntitySpawnWriter(UnsafeTypedStream<TEntitySpawnDefinition>.Writer writer) : this()
+        internal EntityDestroyWriter(UnsafeTypedStream<Entity>.Writer writer) : this()
         {
             m_Writer = writer;
 
@@ -54,45 +51,33 @@ namespace Anvil.Unity.DOTS.Entities
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForMainThread();
             m_LaneWriter = m_Writer.AsLaneWriter(m_LaneIndex);
         }
-
-        /// <summary>
-        /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned
-        /// later on by the <see cref="EntitySpawnSystem"/>
-        /// </summary>
-        /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
-        public void SpawnDeferred(TEntitySpawnDefinition definition)
-        {
-            SpawnDeferred(ref definition);
-        }
-
-        /// <inheritdoc cref="SpawnDeferred"/>
-        public void SpawnDeferred(ref TEntitySpawnDefinition definition)
-        {
-            Debug_EnsureCanAdd();
-            m_LaneWriter.Write(ref definition);
-        }
         
         /// <summary>
-        /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned later on by
-        /// the <see cref="EntitySpawnSystem"/>
+        /// Adds the <see cref="Entity"/> to the queue to be destroyed
+        /// later on by the <see cref="EntityDestroySystem"/>
         /// </summary>
-        /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
+        /// <param name="entity">The <see cref="Entity"/> to destroy</param>
+        public void DestroyDeferred(Entity entity)
+        {
+            Debug_EnsureCanAdd();
+            m_LaneWriter.Write(ref entity);
+        }
+
+        /// <summary>
+        /// Adds the <see cref="Entity"/> to the queue to be destroyed
+        /// later on by the <see cref="EntityDestroySystem"/>
+        /// </summary>
+        /// <param name="entity">The <see cref="Entity"/> to destroy</param>
         /// <param name="laneIndex">
         /// The collection index to use based on the thread this writer is being
         /// used on. <see cref="ParallelAccessUtil"/> to get the correct index.
         /// </param>
-        public void SpawnDeferred(TEntitySpawnDefinition definition, int laneIndex)
-        {
-            SpawnDeferred(ref definition, laneIndex);
-        }
-
-        /// <inheritdoc cref="SpawnDeferred(TEntitySpawnDefinition,int)"/>
-        public void SpawnDeferred(ref TEntitySpawnDefinition definition, int laneIndex)
+        public void DestroyDeferred(Entity entity, int laneIndex)
         {
             m_Writer.AsLaneWriter(laneIndex)
-                    .Write(ref definition);
+                    .Write(ref entity);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -122,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == WriterState.Uninitialized)
             {
-                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to add an element. Or call {nameof(SpawnDeferred)} with the explicit lane index.");
+                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to add an element. Or call {nameof(DestroyDeferred)} with the explicit lane index.");
             }
 #endif
         }

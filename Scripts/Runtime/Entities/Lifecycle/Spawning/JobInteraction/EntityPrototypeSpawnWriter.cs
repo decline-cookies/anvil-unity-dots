@@ -10,6 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// Helper for queuing up <see cref="Entity"/>s to Spawn in a job based on
     /// passed in <see cref="IEntitySpawnDefinition"/>s. Uses a prototype <see cref="Entity"/> to clone.
+    /// Entities will be spawned later on via the <see cref="EntitySpawnSystem"/>
     /// </summary>
     /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/> to spawn.</typeparam>
     [BurstCompatible]
@@ -70,13 +71,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="shouldDestroyPrototype">
         /// If true, will destroy the prototype <see cref="Entity"/> after creation.
         /// </param>
-        public void Add(Entity prototype, TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
+        public void SpawnDeferred(Entity prototype, TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
         {
-            Add(prototype, ref definition, shouldDestroyPrototype);
+            SpawnDeferred(prototype, ref definition, shouldDestroyPrototype);
         }
 
-        /// <inheritdoc cref="Add(Entity, TEntitySpawnDefinition, bool)"/>
-        public void Add(Entity prototype, ref TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
+        /// <inheritdoc cref="SpawnDeferred(Entity,TEntitySpawnDefinition,bool)"/>
+        public void SpawnDeferred(Entity prototype, ref TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
         {
             Debug_EnsureCanAdd();
             m_LaneWriter.Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
@@ -99,13 +100,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="shouldDestroyPrototype">
         /// If true, will destroy the prototype <see cref="Entity"/> after creation.
         /// </param>
-        public void Add(Entity prototype, TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
+        public void SpawnDeferred(Entity prototype, TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
-            Add(prototype, ref definition, laneIndex, shouldDestroyPrototype);
+            SpawnDeferred(prototype, ref definition, laneIndex, shouldDestroyPrototype);
         }
 
-        /// <inheritdoc cref="Add(Entity, TEntitySpawnDefinition, int, bool)"/>
-        public void Add(Entity prototype, ref TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
+        /// <inheritdoc cref="SpawnDeferred(Entity,TEntitySpawnDefinition,int,bool)"/>
+        public void SpawnDeferred(Entity prototype, ref TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
             m_Writer.AsLaneWriter(laneIndex)
                     .Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
@@ -145,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == WriterState.Uninitialized)
             {
-                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to add an element. Or call {nameof(Add)} with the explicit lane index.");
+                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to add an element. Or call {nameof(SpawnDeferred)} with the explicit lane index.");
             }
 #endif
         }
