@@ -9,10 +9,5 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             RequireDataStreamForRead(dataStream);
         }
-        
-        protected DataStreamJobConfig(ITaskSetOwner taskSetOwner)
-            : base(taskSetOwner)
-        {
-        }
     }
 }
