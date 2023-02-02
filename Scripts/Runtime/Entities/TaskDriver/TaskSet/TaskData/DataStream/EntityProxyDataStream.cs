@@ -160,10 +160,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         
         /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquireActiveReaderAsync"/>
-        public DataStreamActiveReader<TInstance> AcquireActiveReaderAsync()
+        public JobHandle AcquireActiveReaderAsync(out DataStreamActiveReader<TInstance> reader)
         {
-            AcquireActiveAsync(AccessType.SharedRead);
-            return CreateDataStreamActiveReader();
+            JobHandle dependsOn = AcquireActiveAsync(AccessType.SharedRead);
+            reader = CreateDataStreamActiveReader();
+            return dependsOn;
         }
 
         /// <inheritdoc cref="IAbstractDataStream{TInstance}.ReleaseActiveReaderAsync"/>
@@ -186,10 +187,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <inheritdoc cref="IAbstractDataStream{TInstance}.AcquirePendingWriterAsync"/>
-        public DataStreamPendingWriter<TInstance> AcquirePendingWriterAsync()
+        public JobHandle AcquirePendingWriterAsync(out DataStreamPendingWriter<TInstance> writer)
         {
-            AcquirePendingAsync(AccessType.SharedWrite);
-            return CreateDataStreamPendingWriter();
+            JobHandle dependsOn = AcquirePendingAsync(AccessType.SharedWrite);
+            writer = CreateDataStreamPendingWriter();
+            return dependsOn;
         }
 
         /// <inheritdoc cref="IAbstractDataStream{TInstance}.ReleasePendingWriterAsync"/>

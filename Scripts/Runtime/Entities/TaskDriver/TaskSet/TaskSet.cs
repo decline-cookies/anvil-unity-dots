@@ -219,10 +219,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
         
         
-        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReaderAsync()
+        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
         {
-            CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateDataStreamActiveReader();
+            JobHandle dependsOn = CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
+            cancelCompleteReader = CancelCompleteDataStream.CreateDataStreamActiveReader();
+            return dependsOn;
         }
 
         public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
@@ -241,10 +242,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelCompleteDataStream.ReleaseActive();
         }
 
-        public CancelRequestsWriter AcquireCancelRequestsWriterAsync()
+        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
         {
-            CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
-            return CancelRequestsDataStream.CreateCancelRequestsWriter();
+            JobHandle dependsOn = CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
+            cancelRequestsWriter = CancelRequestsDataStream.CreateCancelRequestsWriter();
+            return dependsOn;
         }
 
         public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)

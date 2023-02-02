@@ -237,10 +237,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseCancelCompleteReaderAsync"/> after scheduling the job.
         /// </summary>
-        /// <returns>The <see cref="DataStreamActiveReader{CancelComplete}"/></returns>
-        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReaderAsync()
+        /// <param name="cancelCompleteReader">The <see cref="DataStreamActiveReader{CancelComplete}"/></param>
+        /// <returns>A <see cref="JobHandle"/> to wait on</returns>
+        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
         {
-            return TaskSet.AcquireCancelCompleteReaderAsync();
+            return TaskSet.AcquireCancelCompleteReaderAsync(out cancelCompleteReader);
         }
         
         /// <summary>
@@ -277,10 +278,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets a <see cref="CancelRequestsWriter"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseCancelRequestsWriterAsync"/> after scheduling the job.
         /// </summary>
-        /// <returns>The <see cref="CancelRequestsWriter"/></returns>
-        public CancelRequestsWriter AcquireCancelRequestsWriterAsync()
+        /// <param name="cancelRequestsWriter">The <see cref="CancelRequestsWriter"/></param>
+        /// <returns>A <see cref="JobHandle"/> to wait on</returns>
+        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
         {
-            return TaskSet.AcquireCancelRequestsWriterAsync();
+            return TaskSet.AcquireCancelRequestsWriterAsync(out cancelRequestsWriter);
         }
         
         /// <summary>
