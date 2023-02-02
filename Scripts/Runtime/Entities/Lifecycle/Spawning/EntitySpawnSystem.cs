@@ -37,13 +37,17 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly Dictionary<Type, IEntitySpawner> m_EntitySpawners;
         private readonly HashSet<IEntitySpawner> m_ActiveEntitySpawners;
         private readonly Type m_CommandBufferSystemType;
+        private readonly Type m_SystemGroupType;
 
         public EntitySpawnSystem()
         {
             m_EntitySpawners = new Dictionary<Type, IEntitySpawner>();
             m_ActiveEntitySpawners = new HashSet<IEntitySpawner>();
             m_EntityArchetypes = new AccessControlledValue<NativeParallelHashMap<long, EntityArchetype>>(new NativeParallelHashMap<long, EntityArchetype>(ChunkUtil.MaxElementsPerChunk<EntityArchetype>(), Allocator.Persistent));
-            m_CommandBufferSystemType = GetType().GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
+
+            Type type = GetType();
+            m_CommandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
+            m_SystemGroupType = type.GetCustomAttribute<UpdateInGroupAttribute>().GroupType;
         }
 
         protected override void OnCreate()
@@ -51,6 +55,11 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnCreate();
 
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(m_CommandBufferSystemType);
+            
+            //We could be created for a different world in which case we won't be in the groups update loop. 
+            //This ensures that we are added if we aren't there. If we are there, the function early returns
+            ComponentSystemGroup systemGroup = (ComponentSystemGroup)World.GetExistingSystem(m_SystemGroupType);
+            systemGroup.AddSystemToUpdateList(this);
 
             //Default to being off, a call to a SpawnDeferred function will enable it
             Enabled = false;
