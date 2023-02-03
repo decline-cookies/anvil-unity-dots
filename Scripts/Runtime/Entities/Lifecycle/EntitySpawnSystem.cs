@@ -28,9 +28,6 @@ namespace Anvil.Unity.DOTS.Entities
     [UseCommandBufferSystem(typeof(EndSimulationEntityCommandBufferSystem))]
     public partial class EntitySpawnSystem : AbstractAnvilSystemBase
     {
-        private const string COMPONENTS_FIELD_NAME = "COMPONENTS";
-        private static readonly Type COMPONENT_TYPE_ARRAY = typeof(ComponentType[]);
-
         private EntityCommandBufferSystem m_CommandBufferSystem;
         private readonly AccessControlledValue<NativeParallelHashMap<long, EntityArchetype>> m_EntityArchetypes;
 
@@ -368,7 +365,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 // ReSharper disable once SuggestVarOrType_SimpleTypes
                 using var handle = m_EntityArchetypes.AcquireWithHandle(AccessType.ExclusiveWrite);
-                CreateEntityArchetypeForDefinition(definitionType, handle.Value, out EntityArchetype entityArchetype, out long entityArchetypeHash);
+                CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(handle.Value, out EntityArchetype entityArchetype, out long entityArchetypeHash);
                 entitySpawner = new TEntitySpawner();
                 entitySpawner.Init(EntityManager,
                                    entityArchetype);
@@ -378,11 +375,12 @@ namespace Anvil.Unity.DOTS.Entities
             return (TEntitySpawner)entitySpawner;
         }
 
-        private void CreateEntityArchetypeForDefinition(Type definitionType,
-                                                        NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup,
-                                                        out EntityArchetype entityArchetype,
-                                                        out long entityArchetypeHash)
+        private void CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup,
+                                                                                out EntityArchetype entityArchetype,
+                                                                                out long entityArchetypeHash)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
+            Type definitionType = typeof(TEntitySpawnDefinition);
             entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
             if (entityArchetypesLookup.TryGetValue(entityArchetypeHash, out entityArchetype))
             {
@@ -404,18 +402,8 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should be readonly but it is not.");
             }
 
-            FieldInfo componentsField = definitionType.GetField(COMPONENTS_FIELD_NAME, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            if (componentsField == null)
-            {
-                throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should have a `public static readonly ComponentType[] {COMPONENTS_FIELD_NAME}` field to define the Component Types on the Entity. Please add this.");
-            }
-
-            if (componentsField.FieldType != COMPONENT_TYPE_ARRAY)
-            {
-                throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} has a static field called {COMPONENTS_FIELD_NAME} but it is of type {componentsField.FieldType.GetReadableName()} and it must be {COMPONENT_TYPE_ARRAY.GetReadableName()}");
-            }
-
-            entityArchetype = EntityManager.CreateArchetype((ComponentType[])componentsField.GetValue(null));
+            TEntitySpawnDefinition defaultInstance = default;
+            entityArchetype = EntityManager.CreateArchetype(defaultInstance.RequiredComponents);
             entityArchetypesLookup.Add(entityArchetypeHash, entityArchetype);
         }
     }

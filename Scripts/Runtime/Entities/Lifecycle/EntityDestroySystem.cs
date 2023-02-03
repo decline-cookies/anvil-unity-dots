@@ -224,11 +224,11 @@ namespace Anvil.Unity.DOTS.Entities
                 JobHandle jobHandle = dependencies[i] = destroyQueryJob.Schedule(JobHandle.CombineDependencies(dependsOn, toNativeArrayHandle));
                 entities.Dispose(jobHandle);
 
-                // if (destroyQuery.ShouldDisposeQuery)
-                // {
-                //     // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-                //     destroyQuery.EntityQuery.Dispose();
-                // }
+                if (destroyQuery.ShouldDisposeQuery)
+                {
+                    // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+                    destroyQuery.EntityQuery.Dispose();
+                }
             }
 
             dependsOn = JobHandle.CombineDependencies(dependencies);

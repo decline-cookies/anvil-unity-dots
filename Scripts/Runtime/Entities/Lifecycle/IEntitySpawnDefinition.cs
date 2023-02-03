@@ -8,11 +8,10 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>
     /// There are two parts to an Entity Spawn Definition.
-    /// 
-    /// The first is a <code>public static readonly ComponentType[] COMPONENTS</code>
-    /// field to define the structure of the <see cref="Entity"/> with the different
-    /// components needed. The <see cref="EntitySpawnSystem"/> will enforce this via runtime
-    /// checks and give helpful error messages.
+    ///
+    /// The first is the <see cref="RequiredComponents"/> function that returns the structure of
+    /// the <see cref="Entity"/> with the different components needed. Best practice is to define via a
+    /// static readonly array and then return that via the instance getter.
     /// <example>
     /// public static readonly ComponentType[] COMPONENTS = new ComponentType[]
     /// {
@@ -23,6 +22,11 @@ namespace Anvil.Unity.DOTS.Entities
     ///     typeof(ActorGridRotation), 
     ///     typeof(IsSelected)
     /// };
+    ///
+    /// public ComponentType[] RequiredComponents
+    /// {
+    ///     get => COMPONENTS;
+    /// }
     /// </example>
     /// 
     /// Inheritance and composition can be achieved by mixing different
@@ -61,6 +65,12 @@ namespace Anvil.Unity.DOTS.Entities
     /// </remarks>
     public interface IEntitySpawnDefinition
     {
+        /// <summary>
+        /// Returns the array of required component types to added to the <see cref="Entity"/> that make up its
+        /// <see cref="EntityArchetype"/>
+        /// </summary>
+        public ComponentType[] RequiredComponents { get; }
+        
         /// <summary>
         /// Called automatically when spawning to populate a newly created <see cref="Entity"/>
         /// with the data needed.
