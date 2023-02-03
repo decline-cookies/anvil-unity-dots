@@ -6,6 +6,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
+    //TODO: #136 - Maybe have this implement IEntityProxyInstance. https://github.com/decline-cookies/anvil-unity-dots/pull/157#discussion_r1093730973
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityProxyInstanceID : IEquatable<EntityProxyInstanceID>

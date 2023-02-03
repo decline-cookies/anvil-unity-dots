@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public static CancelCompleteJobConfig CreateCancelCompleteJobConfig(ITaskSetOwner taskSetOwner,
                                                                             CancelCompleteDataStream cancelCompleteDataStream,
-                                                                            JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+                                                                            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
                                                                             BatchStrategy batchStrategy)
         {
             CancelCompleteJobConfig jobConfig = new CancelCompleteJobConfig(taskSetOwner,

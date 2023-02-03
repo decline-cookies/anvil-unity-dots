@@ -27,8 +27,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Resolve,
             //Using in the context for requesting a cancellation
             RequestCancel,
-            //Using in the context for when a cancellation is complete
-            CancelComplete,
             //Using in the context for doing the work to cancel 
             Cancelling
         }
@@ -346,12 +344,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             JobConfigDataID id = new JobConfigDataID(typeof(TWrapper), usage);
             Debug_EnsureWrapperExists(id);
             return (TWrapper)m_AccessWrappers[id];
-        }
-
-        internal CancelCompleteDataStream GetCancelCompleteDataStream()
-        {
-            CancelCompleteActiveAccessWrapper cancelCompleteActiveAccessWrapper = GetAccessWrapper<CancelCompleteActiveAccessWrapper>(Usage.CancelComplete);
-            return cancelCompleteActiveAccessWrapper.CancelCompleteDataStream;
         }
 
         internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup()

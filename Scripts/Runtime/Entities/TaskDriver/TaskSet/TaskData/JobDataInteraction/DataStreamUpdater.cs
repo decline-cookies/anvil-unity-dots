@@ -162,7 +162,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but that element didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Continue)} on a {instance} but our state is {m_State}. Most likely {nameof(Continue)} was called twice or {nameof(Resolve)} was called already for this instance. Alternatively, this instance may not belong to this {nameof(DataStreamUpdater<TInstance>)}");
             }
 
             m_State = UpdaterState.Ready;
@@ -181,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             if (m_State == UpdaterState.Ready)
             {
-                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} for an element that didn't come from this {nameof(DataStreamUpdater<TInstance>)}. Please ensure that the indexer was called first.");
+                throw new InvalidOperationException($"Attempting to call {nameof(Resolve)} on an instance but our state is {m_State}. Most likely {nameof(Resolve)} was called twice or {nameof(Continue)} was called already for this instance. Alternatively, this instance may not belong to this {nameof(DataStreamUpdater<TInstance>)}");
             }
 
             if (m_State != UpdaterState.Modifying)
