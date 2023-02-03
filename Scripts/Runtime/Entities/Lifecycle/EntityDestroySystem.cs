@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Unity.Burst;
@@ -35,8 +36,8 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly UnsafeTypedStream<Entity>.LaneWriter m_MainThreadLaneWriter;
         private readonly Type m_CommandBufferSystemType;
         private readonly Type m_SystemGroupType;
-        private readonly EntityTypeHandle m_EntityTypeHandle;
-        
+        private readonly List<DestroyQuery> m_DestroyQueries;
+
         private EntityCommandBufferSystem m_CommandBufferSystem;
         
         
@@ -51,6 +52,8 @@ namespace Anvil.Unity.DOTS.Entities
             Type type = GetType();
             m_CommandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
             m_SystemGroupType = type.GetCustomAttribute<UpdateInGroupAttribute>().GroupType;
+
+            m_DestroyQueries = new List<DestroyQuery>();
         }
 
         protected override void OnCreate()
@@ -58,8 +61,6 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnCreate();
             
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(m_CommandBufferSystemType);
-            
-            // m_EntityTypeHandle = 
 
             //We could be created for a different world in which case we won't be in the groups update loop. 
             //This ensures that we are added if we aren't there. If we are there, the function early returns
@@ -93,17 +94,21 @@ namespace Anvil.Unity.DOTS.Entities
             using var handle = m_EntitiesToDestroy.AcquireWithHandle(AccessType.SharedWrite);
             m_MainThreadLaneWriter.Write(entity);
         }
-
-        public void DestroyDeferred(EntityQuery entityQuery)
+        
+        /// <summary>
+        /// Destroys any <see cref="Entity"/>s that match the passed in <see cref="EntityQuery"/> later on when
+        /// the associated <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <param name="entityQuery">The <see cref="EntityQuery"/> to use to find the <see cref="Entity"/></param>
+        /// <param name="shouldDisposeQuery">
+        /// If true, will dispose the <see cref="EntityQuery"/> after destroying
+        /// the entities.
+        /// </param>
+        public void DestroyDeferred(EntityQuery entityQuery, bool shouldDisposeQuery)
         {
+            //By using this, we're writing immediately, but will need to execute later on when the system runs.
             Enabled = true;
-            EntityTypeHandle entityTypeHandle = EntityManager.GetEntityTypeHandle();
-            ComponentTypeHandle<> t = EntityManager.GetComponentTypeHandle<>()
-
-            NativeArray<ArchetypeChunk> chunks = entityQuery.CreateArchetypeChunkArrayAsync(Allocator.TempJob, out JobHandle dependsOn);
-            NativeArray<Entity> entities = chunks[0].GetNativeArray(entityTypeHandle);
-            
-            entityQuery.Dispose();
+            m_DestroyQueries.Add(new DestroyQuery(entityQuery, shouldDisposeQuery));
         }
         
         //TODO: Implement a DestroyDeferred that takes in a NativeArray or ICollection if needed.
@@ -123,6 +128,21 @@ namespace Anvil.Unity.DOTS.Entities
             EntityManager.DestroyEntity(entity);
         }
         
+        /// <summary>
+        /// Destroys any <see cref="Entity"/>'s that match the passed in <see cref="EntityQuery"/> immediately.
+        /// </summary>
+        /// <param name="entityQuery">The <see cref="EntityQuery"/> to find the <see cref="Entity"/>s to destroy</param>
+        /// <param name="shouldDisposeQuery">If true, will dispose the query after destroy the entities</param>
+        public void DestroyImmediate(EntityQuery entityQuery, bool shouldDisposeQuery)
+        {
+            //No enabling of the system since we're executing immediately
+            EntityManager.DestroyEntity(entityQuery);
+            if (shouldDisposeQuery)
+            {
+                entityQuery.Dispose();
+            }
+        }
+
         //TODO: Implement a DestroyImmediate that takes in a NativeArray or ICollection if needed.
         
         
@@ -164,24 +184,65 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnUpdate()
         {
-            Dependency = Schedule(Dependency);
+            Dependency = ScheduleDestroyJobs(Dependency);
 
             Enabled = false;
         }
 
-        private JobHandle Schedule(JobHandle dependsOn)
+        private JobHandle ScheduleDestroyJobs(JobHandle dependsOn)
+        {
+            JobHandle destroyHandle = ScheduleDestroy(dependsOn);
+            JobHandle destroyQueriesHandle = ScheduleDestroyQueries(dependsOn);
+            
+            return JobHandle.CombineDependencies(destroyHandle, destroyQueriesHandle);
+        }
+
+        private JobHandle ScheduleDestroy(JobHandle dependsOn)
         {
             EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
             JobHandle entitiesToDestroyHandle = m_EntitiesToDestroy.AcquireAsync(AccessType.SharedRead, out UnsafeTypedStream<Entity> entitiesToDestroy);
 
             DestroyJob job = new DestroyJob(entitiesToDestroy,
-                                            ecb);
+                                            ref ecb);
             
             dependsOn = JobHandle.CombineDependencies(entitiesToDestroyHandle, dependsOn);
             dependsOn = job.Schedule(dependsOn);
             
             m_EntitiesToDestroy.ReleaseAsync(dependsOn);
             m_CommandBufferSystem.AddJobHandleForProducer(dependsOn);
+            
+            return dependsOn;
+        }
+
+        private JobHandle ScheduleDestroyQueries(JobHandle dependsOn)
+        {
+            if (m_DestroyQueries.Count == 0)
+            {
+                return dependsOn;
+            }
+
+            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(m_DestroyQueries.Count, Allocator.Temp);
+            for (int i = 0; i < dependencies.Length; ++i)
+            {
+                EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
+                DestroyQuery destroyQuery = m_DestroyQueries[i];
+                // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+                NativeArray<Entity> entities = destroyQuery.EntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle toNativeArrayHandle);
+                DestroyQueryJob destroyQueryJob = new DestroyQueryJob(entities, ref ecb);
+                JobHandle jobHandle = dependencies[i] = destroyQueryJob.Schedule(JobHandle.CombineDependencies(dependsOn, toNativeArrayHandle));
+                entities.Dispose(jobHandle);
+
+                // if (destroyQuery.ShouldDisposeQuery)
+                // {
+                //     // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+                //     destroyQuery.EntityQuery.Dispose();
+                // }
+            }
+
+            dependsOn = JobHandle.CombineDependencies(dependencies);
+            m_CommandBufferSystem.AddJobHandleForProducer(dependsOn);
+            
+            m_DestroyQueries.Clear();
             
             return dependsOn;
         }
@@ -197,7 +258,7 @@ namespace Anvil.Unity.DOTS.Entities
             
             private EntityCommandBuffer m_ECB;
 
-            public DestroyJob(UnsafeTypedStream<Entity> entitiesToDestroy, EntityCommandBuffer ecb)
+            public DestroyJob(UnsafeTypedStream<Entity> entitiesToDestroy, ref EntityCommandBuffer ecb)
             {
                 m_EntitiesToDestroy = entitiesToDestroy;
                 m_ECB = ecb;
@@ -211,14 +272,39 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
         
+        [BurstCompile]
+        private struct DestroyQueryJob : IJob
+        {
+            [ReadOnly] private readonly NativeArray<Entity> m_EntitiesToDestroy;
+
+            private EntityCommandBuffer m_ECB;
+
+            public DestroyQueryJob(NativeArray<Entity> entitiesToDestroy, ref EntityCommandBuffer ecb)
+            {
+                m_EntitiesToDestroy = entitiesToDestroy;
+                m_ECB = ecb;
+            }
+
+            public void Execute()
+            {
+                m_ECB.DestroyEntity(m_EntitiesToDestroy);
+            }
+        }
+        
         //*************************************************************************************************************
         // WRAPPER
         //*************************************************************************************************************
 
-        private class DestroyQuery
+        private readonly struct DestroyQuery
         {
             public readonly EntityQuery EntityQuery;
             public readonly bool ShouldDisposeQuery;
+
+            public DestroyQuery(EntityQuery entityQuery, bool shouldDisposeQuery)
+            {
+                EntityQuery = entityQuery;
+                ShouldDisposeQuery = shouldDisposeQuery;
+            }
         }
     }
 }
