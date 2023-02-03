@@ -168,7 +168,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryComponentJobConfig;
         }
 
-        public IJobConfig ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
+        public IJobConfig ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
                                                          BatchStrategy batchStrategy)
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
@@ -219,10 +219,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
         
         
-        public CancelCompleteReader AcquireCancelCompleteReaderAsync()
+        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
         {
-            CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateCancelCompleteReader();
+            JobHandle dependsOn = CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
+            cancelCompleteReader = CancelCompleteDataStream.CreateDataStreamActiveReader();
+            return dependsOn;
         }
 
         public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
@@ -230,10 +231,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelCompleteDataStream.ReleaseActiveAsync(dependsOn);
         }
 
-        public CancelCompleteReader AcquireCancelCompleteReader()
+        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
         {
             CancelCompleteDataStream.AcquireActive(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateCancelCompleteReader();
+            return CancelCompleteDataStream.CreateDataStreamActiveReader();
         }
 
         public void ReleaseCancelCompleteReader()
@@ -241,10 +242,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelCompleteDataStream.ReleaseActive();
         }
 
-        public CancelRequestsWriter AcquireCancelRequestsWriterAsync()
+        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
         {
-            CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
-            return CancelRequestsDataStream.CreateCancelRequestsWriter();
+            JobHandle dependsOn = CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
+            cancelRequestsWriter = CancelRequestsDataStream.CreateCancelRequestsWriter();
+            return dependsOn;
         }
 
         public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)

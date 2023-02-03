@@ -13,8 +13,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets a <see cref="DataStreamActiveReader{TInstance}"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseActiveReaderAsync"/> after scheduling the job.
         /// </summary>
-        /// <returns>The <see cref="DataStreamActiveReader{TInstance}"/></returns>
-        public DataStreamActiveReader<TInstance> AcquireActiveReaderAsync();
+        /// <param name="reader">The <see cref="DataStreamActiveReader{TInstance}"/></param>
+        /// <returns>A <see cref="JobHandle"/> to wait on</returns>
+        public JobHandle AcquireActiveReaderAsync(out DataStreamActiveReader<TInstance> reader);
         /// <summary>
         /// Allows other jobs to use the underlying data for the <see cref="DataStreamActiveReader{TInstance}"/>
         /// and ensures data integrity across those other usages.
@@ -38,8 +39,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets a <see cref="DataStreamPendingWriter{TInstance}"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleasePendingWriterAsync"/> after scheduling the job.
         /// </summary>
-        /// <returns>The <see cref="DataStreamPendingWriter{TInstance}"/></returns>
-        public DataStreamPendingWriter<TInstance> AcquirePendingWriterAsync();
+        /// <param name="writer">The <see cref="DataStreamPendingWriter{TInstance}"/></param>
+        /// <returns>The <see cref="JobHandle"/> to wait on</returns>
+        public JobHandle AcquirePendingWriterAsync(out DataStreamPendingWriter<TInstance> writer);
         /// <summary>
         /// Allows other jobs to use the underlying data for the <see cref="DataStreamPendingWriter{TInstance}"/>
         /// and ensures data integrity across those other usages.
