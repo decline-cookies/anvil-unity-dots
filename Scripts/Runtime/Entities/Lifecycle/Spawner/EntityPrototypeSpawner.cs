@@ -14,15 +14,10 @@ namespace Anvil.Unity.DOTS.Entities
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
         private readonly AccessControlledValue<UnsafeTypedStream<Entity>> m_PrototypesToDestroy;
-        private readonly UnsafeTypedStream<Entity>.LaneWriter m_MainThreadPrototypesWriter;
 
         public EntityPrototypeSpawner()
         {
             m_PrototypesToDestroy = new AccessControlledValue<UnsafeTypedStream<Entity>>(new UnsafeTypedStream<Entity>(Allocator.Persistent));
-            // ReSharper disable once SuggestVarOrType_SimpleTypes
-            using var handle = m_PrototypesToDestroy.AcquireWithHandle(AccessType.ExclusiveWrite);
-            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-            m_MainThreadPrototypesWriter = handle.Value.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
         }
 
         protected override void DisposeSelf()
@@ -34,8 +29,9 @@ namespace Anvil.Unity.DOTS.Entities
         private void MarkPrototypeToBeDestroyed(Entity prototype)
         {
             // ReSharper disable once SuggestVarOrType_SimpleTypes
-            using var prototypes = m_PrototypesToDestroy.AcquireWithHandle(AccessType.ExclusiveWrite);
-            m_MainThreadPrototypesWriter.Write(prototype);
+            using var handle = m_PrototypesToDestroy.AcquireWithHandle(AccessType.ExclusiveWrite);
+            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+            handle.Value.AsLaneWriter(MainThreadIndex).Write(prototype);
         }
 
         public void Spawn(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)

@@ -14,7 +14,6 @@ namespace Anvil.Unity.DOTS.Entities
         where T : unmanaged
     {
         private readonly AccessControlledValue<UnsafeTypedStream<T>> m_DefinitionsToSpawn;
-        private readonly UnsafeTypedStream<T>.LaneWriter m_MainThreadLaneWriter;
 
         protected EntityManager EntityManager { get; private set; }
 
@@ -22,13 +21,12 @@ namespace Anvil.Unity.DOTS.Entities
         
         protected bool MustDisableBurst { get; private set; }
         
+        protected int MainThreadIndex { get; }
+        
         protected AbstractEntitySpawner()
         {
             m_DefinitionsToSpawn = new AccessControlledValue<UnsafeTypedStream<T>>(new UnsafeTypedStream<T>(Allocator.Persistent));
-            // ReSharper disable once SuggestVarOrType_SimpleTypes
-            using var handle = m_DefinitionsToSpawn.AcquireWithHandle(AccessType.ExclusiveWrite);
-            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-            m_MainThreadLaneWriter = handle.Value.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
+            MainThreadIndex = ParallelAccessUtil.CollectionIndexForMainThread();
         }
 
         public void Init(EntityManager entityManager, EntityArchetype entityArchetype)
@@ -55,16 +53,19 @@ namespace Anvil.Unity.DOTS.Entities
         {
             // ReSharper disable once SuggestVarOrType_SimpleTypes
             using var handle = m_DefinitionsToSpawn.AcquireWithHandle(AccessType.SharedWrite);
-            m_MainThreadLaneWriter.Write(element);
+            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+            handle.Value.AsLaneWriter(MainThreadIndex).Write(ref element);
         }
 
         protected void InternalSpawn(NativeArray<T> elements)
         {
             // ReSharper disable once SuggestVarOrType_SimpleTypes
             using var handle = m_DefinitionsToSpawn.AcquireWithHandle(AccessType.SharedWrite);
+            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+            UnsafeTypedStream<T>.LaneWriter laneWriter = handle.Value.AsLaneWriter(MainThreadIndex);
             foreach (T element in elements)
             {
-                m_MainThreadLaneWriter.Write(element);
+                laneWriter.Write(element);
             }
         }
 
