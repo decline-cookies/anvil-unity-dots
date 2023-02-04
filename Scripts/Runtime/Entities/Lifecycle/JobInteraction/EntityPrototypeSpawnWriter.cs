@@ -91,6 +91,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned later on by
         /// the <see cref="EntitySpawnSystem"/>
         /// </summary>
+        /// <remarks>
+        /// Useful when in a job that only operates on each index or Entity like Entities.ForEach.
+        /// There is no opportunity to call <see cref="InitForThread"/> at the start and you can't call
+        /// it multiple times. 
+        /// </remarks>
         /// <param name="prototype">The prototype <see cref="Entity"/> to clone.</param>
         /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
         /// <param name="laneIndex">

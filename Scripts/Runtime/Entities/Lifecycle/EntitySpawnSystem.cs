@@ -47,14 +47,7 @@ namespace Anvil.Unity.DOTS.Entities
             
             Type type = GetType();
             Type commandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
-            Type systemGroupType = type.GetCustomAttribute<UpdateInGroupAttribute>().GroupType;
-
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(commandBufferSystemType);
-            
-            //We could be created for a different world in which case we won't be in the group's update loop. 
-            //This ensures that we are added if we aren't there. If we are there, the function early returns
-            ComponentSystemGroup systemGroup = (ComponentSystemGroup)World.GetExistingSystem(systemGroupType);
-            systemGroup.AddSystemToUpdateList(this);
 
             //Default to being off, a call to a SpawnDeferred function will enable it
             Enabled = false;
@@ -343,6 +336,10 @@ namespace Anvil.Unity.DOTS.Entities
             int index = 0;
             foreach (IEntitySpawner entitySpawner in m_ActiveEntitySpawners)
             {
+                //Normally for each ECB created, you want to add the job handle for producer to the command buffer
+                //system. However, we know that all these handles will be combined, so we can just do one call at the
+                //end of the function. Creating here and passing into the Schedule function allows us to see the 
+                //creation and AddJobHandleForProducer calls close by so we know we're adhering to the "pattern".
                 EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
                 dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb, entityArchetypesLookup);
                 index++;
