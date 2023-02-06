@@ -93,6 +93,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void ReleaseEntitySpawnWriterAsync(JobHandle dependsOn)
         {
             ReleaseAsync(dependsOn);
+            m_PrototypesToDestroy.ReleaseAsync(dependsOn);
         }
 
         protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn,
