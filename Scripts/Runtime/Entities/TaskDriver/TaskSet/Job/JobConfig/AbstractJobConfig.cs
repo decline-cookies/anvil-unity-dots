@@ -107,15 +107,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureWrapperValidity(accessWrapper.ID);
             Debug_EnsureWrapperUsage(accessWrapper);
-
-            //Only allow one wrapper per type for DataStream Pending Access since they will all try to acquire/release
-            //the same DataSource instance.
-            if (accessWrapper is IDataStreamPendingAccessWrapper pendingAccessWrapper
-             && !m_PendingAccessWrapperTypes.Add(accessWrapper.ID.AccessWrapperType))
-            {
-                return;
-            }
-
+            
             m_AccessWrappers.Add(accessWrapper.ID, accessWrapper);
         }
 
@@ -299,6 +291,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
             {
+                //Only allow one wrapper per type for DataStream Pending Access since they will all try to acquire/release
+                //the same DataSource instance.
+                if (wrapper is IDataStreamPendingAccessWrapper pendingAccessWrapper
+                 && !m_PendingAccessWrapperTypes.Add(wrapper.ID.AccessWrapperType))
+                {
+                    continue;
+                }
                 m_SchedulingAccessWrappers.Add(wrapper);
             }
 
