@@ -15,19 +15,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase
     {
-        public static TaskDriverManagementSystem GetOrCreateForWorld(World world)
-        {
-            TaskDriverManagementSystem taskDriverManagementSystem = world.GetExistingSystem<TaskDriverManagementSystem>();
-            if (taskDriverManagementSystem == null)
-            {
-                taskDriverManagementSystem = new TaskDriverManagementSystem();
-                world.AddSystem(taskDriverManagementSystem);
-                world.GetOrCreateSystem<InitializationSystemGroup>().AddSystemToUpdateList(taskDriverManagementSystem);
-            }
-
-            return taskDriverManagementSystem;
-        }
-
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
         private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
