@@ -21,12 +21,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             //Using in the general context (read or write)
             Default,
+
             //Using in an Updating context for data that can we resolved
             Update,
+
             //Using in the context where it can be written to via a resolve
             Resolve,
+
             //Using in the context for requesting a cancellation
             RequestCancel,
+
             //Using in the context for doing the work to cancel 
             Cancelling
         }
@@ -49,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get;
             set;
         }
-        
+
         internal ITaskSetOwner TaskSetOwner { get; }
 
 
@@ -101,13 +105,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureWrapperValidity(accessWrapper.ID);
             Debug_EnsureWrapperUsage(accessWrapper);
+
             m_AccessWrappers.Add(accessWrapper.ID, accessWrapper);
         }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
-        
+
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -131,21 +136,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
-        
+
         public IJobConfig RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead, Usage.Default));
             return this;
         }
-        
+
         public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));
             return this;
         }
-        
+
         public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
             where TData : struct
         {
@@ -156,12 +161,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
-        
+
         public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeArray(entityQuery));
         }
-        
+
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData
         {
@@ -192,7 +197,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
         }
-        
+
         public IJobConfig RequireCDFEForWrite<T>()
             where T : struct, IComponentData
         {
@@ -203,7 +208,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
-        
+
         public IJobConfig RequireDBFEForRead<T>()
             where T : struct, IBufferElementData
         {
@@ -211,7 +216,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return this;
         }
-        
+
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData
         {
@@ -259,7 +264,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
             return this;
         }
-        
+
         public IJobConfig RequirePersistentDataForWrite<TData>(string id)
             where TData : unmanaged
         {
@@ -282,8 +287,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             HardenConfig();
 
+            HashSet<Type> pendingAccessWrapperTypes = new HashSet<Type>();
+
             foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
             {
+                //Only allow one wrapper per type for DataStream Pending Access since they will all try to acquire/release
+                //the same DataSource instance.
+                if (wrapper is IDataStreamPendingAccessWrapper
+                 && !pendingAccessWrapperTypes.Add(wrapper.ID.AccessWrapperType))
+                {
+                    continue;
+                }
+
                 m_SchedulingAccessWrappers.Add(wrapper);
             }
 
@@ -364,7 +379,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             DataStreamPendingAccessWrapper<TInstance> dataStreamAccessWrapper = GetAccessWrapper<DataStreamPendingAccessWrapper<TInstance>>(usage);
             return dataStreamAccessWrapper.DataStream;
         }
-        
+
         internal EntityProxyDataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -399,7 +414,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             PersistentDataAccessWrapper<EntityPersistentData<TData>> persistentDataAccessWrapper = GetAccessWrapper<PersistentDataAccessWrapper<EntityPersistentData<TData>>>(Usage.Default);
             return persistentDataAccessWrapper.PersistentData;
         }
-        
+
         internal PersistentData<TData> GetPersistentData<TData>()
             where TData : unmanaged
         {
@@ -496,7 +511,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 return;
             }
-            
+
             //TODO: #140 - Detect common configuration issues and let the developer know
 
             // //Access checks
