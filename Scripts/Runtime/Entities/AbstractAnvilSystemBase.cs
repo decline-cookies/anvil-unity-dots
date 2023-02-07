@@ -59,7 +59,11 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            
+            EnsureSystemIsInUpdateGroup();
+        }
+
+        private void EnsureSystemIsInUpdateGroup()
+        {
             //We could be created for a different world in which case we won't be in the group's update loop. 
             //First we try to get the group attribute
             Type type = GetType();
