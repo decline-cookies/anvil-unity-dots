@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_CDFE = system.GetComponentDataFromEntity<T>(true);
         }
-        
+
         /// <summary>
         /// Gets the <typeparamref name="T"/> that corresponds to the passed <see cref="Entity"/>
         /// </summary>
@@ -27,5 +27,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_CDFE[entity];
         }
+
+        /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>
+        public bool HasComponent(Entity entity) => m_CDFE.HasComponent(entity);
     }
 }
