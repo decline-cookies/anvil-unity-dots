@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <see cref="NativeDisableContainerSafetyRestrictionAttribute"/> applied meaning that Unity will not issue
     /// safety warnings when using it in jobs. This is because there might be many jobs of the same type but
     /// representing different <see cref="AbstractTaskDriver"/>s and Unity's safety system gets upset if you straddle
-    /// across the jobs. 
+    /// across the jobs.
     /// </remarks>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to update.</typeparam>
     [BurstCompatible]
@@ -37,5 +37,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_CDFE[entity];
             set => m_CDFE[entity] = value;
         }
+
+        /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>
+        public bool HasComponent(Entity entity) => m_CDFE.HasComponent(entity);
     }
 }
