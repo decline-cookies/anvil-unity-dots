@@ -40,7 +40,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
-        private readonly HashSet<Type> m_PendingAccessWrapperTypes;
         private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
 
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
@@ -64,7 +63,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskSetOwner = taskSetOwner;
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
-            m_PendingAccessWrapperTypes = new HashSet<Type>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
         }
 
@@ -107,7 +105,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureWrapperValidity(accessWrapper.ID);
             Debug_EnsureWrapperUsage(accessWrapper);
-            
+
             m_AccessWrappers.Add(accessWrapper.ID, accessWrapper);
         }
 
@@ -289,15 +287,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             HardenConfig();
 
+            HashSet<Type> pendingAccessWrapperTypes = new HashSet<Type>();
+
             foreach (AbstractAccessWrapper wrapper in m_AccessWrappers.Values)
             {
                 //Only allow one wrapper per type for DataStream Pending Access since they will all try to acquire/release
                 //the same DataSource instance.
-                if (wrapper is IDataStreamPendingAccessWrapper pendingAccessWrapper
-                 && !m_PendingAccessWrapperTypes.Add(wrapper.ID.AccessWrapperType))
+                if (wrapper is IDataStreamPendingAccessWrapper
+                 && !pendingAccessWrapperTypes.Add(wrapper.ID.AccessWrapperType))
                 {
                     continue;
                 }
+
                 m_SchedulingAccessWrappers.Add(wrapper);
             }
 
