@@ -1,6 +1,5 @@
 using System;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.Collections
 {
@@ -23,7 +22,7 @@ namespace Anvil.Unity.Collections
             where TKey : struct, IEquatable<TKey>
             where TValue : struct
         {
-            return map.m_HashMapData.m_AllocatorLabel.ToAllocator;
+            return map.m_HashMapData.GetAllocator();
         }
 
         /// <summary>
@@ -34,11 +33,11 @@ namespace Anvil.Unity.Collections
         /// <param name="result">The array to write the keys into.</param>
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
-        public static unsafe void GetKeyArray<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeArray<TKey> result)
+        public static void GetKeyArray<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeArray<TKey> result)
             where TKey : struct, IEquatable<TKey>
             where TValue : struct
         {
-            UnsafeParallelHashMapData.GetKeyArray(map.m_HashMapData.m_Buffer, result);
+            map.m_HashMapData.GetKeyArray(result);
         }
 
         /// <summary>
@@ -49,11 +48,11 @@ namespace Anvil.Unity.Collections
         /// <param name="result">The array to write the values into.</param>
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
-        public static unsafe void GetValueArray<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeArray<TValue> result)
+        public static void GetValueArray<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeArray<TValue> result)
             where TKey : struct, IEquatable<TKey>
             where TValue : struct
         {
-            UnsafeParallelHashMapData.GetValueArray(map.m_HashMapData.m_Buffer, result);
+            map.m_HashMapData.GetValueArray(result);
         }
 
         /// <summary>
@@ -64,11 +63,11 @@ namespace Anvil.Unity.Collections
         /// <param name="result">The array to write the key value pairs into.</param>
         /// <typeparam name="TKey">The key type</typeparam>
         /// <typeparam name="TValue">The value type</typeparam>
-        public static unsafe void GetKeyValueArrays<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeKeyValueArrays<TKey, TValue> result)
+        public static void GetKeyValueArrays<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeKeyValueArrays<TKey, TValue> result)
             where TKey : struct, IEquatable<TKey>
             where TValue : struct
         {
-            UnsafeParallelHashMapData.GetKeyValueArrays(map.m_HashMapData.m_Buffer, result);
+            map.m_HashMapData.GetKeyValueArrays(result);
         }
     }
 }
