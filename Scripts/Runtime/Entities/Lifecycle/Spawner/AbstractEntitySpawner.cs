@@ -1,7 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Unity.Collections;
 using Unity.Entities;

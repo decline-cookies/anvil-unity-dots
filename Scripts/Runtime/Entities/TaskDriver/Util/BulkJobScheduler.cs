@@ -1,6 +1,5 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 
