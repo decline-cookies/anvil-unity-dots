@@ -1,10 +1,12 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -38,11 +40,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskSetOwner = taskSetOwner;
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
-            
+
             m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
-            
+
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
             CancelCompleteDataStream = new CancelCompleteDataStream(taskSetOwner);
             CancelProgressDataStream = new CancelProgressDataStream(taskSetOwner);
@@ -90,9 +92,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 case CancelRequestBehaviour.Delete:
                 case CancelRequestBehaviour.Ignore:
                     break;
+
                 case CancelRequestBehaviour.Unwind:
                     m_DataStreamsWithExplicitCancellation.Add(dataStream);
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
@@ -107,71 +111,111 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             jobConfigs.AddRange(m_JobConfigs);
         }
 
-        public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(IAbstractDataStream<TInstance> dataStream,
-                                                                                JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                                BatchStrategy batchStrategy)
+        public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(
+            IAbstractDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
-            UpdateJobConfig<TInstance> updateJobConfig = JobConfigFactory.CreateUpdateJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+            UpdateJobConfig<TInstance> updateJobConfig
+                = JobConfigFactory.CreateUpdateJobConfig(
+                    TaskSetOwner,
+                    (EntityProxyDataStream<TInstance>)dataStream,
+                    scheduleJobFunction,
+                    batchStrategy);
             m_JobConfigs.Add(updateJobConfig);
+
             return updateJobConfig;
         }
 
-        public IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(IAbstractDataStream<TInstance> pendingCancelDataStream,
-                                                                                JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                                BatchStrategy batchStrategy)
+        public IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(
+            IAbstractDataStream<TInstance> pendingCancelDataStream,
+            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
-            CancelJobConfig<TInstance> cancelJobConfig = JobConfigFactory.CreateCancelJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)pendingCancelDataStream, scheduleJobFunction, batchStrategy);
+            CancelJobConfig<TInstance> cancelJobConfig
+                = JobConfigFactory.CreateCancelJobConfig(
+                    TaskSetOwner,
+                    (EntityProxyDataStream<TInstance>)pendingCancelDataStream,
+                    scheduleJobFunction,
+                    batchStrategy);
             m_JobConfigs.Add(cancelJobConfig);
+
             return cancelJobConfig;
         }
 
-        public IJobConfig ConfigureJobTriggeredBy<TInstance>(IAbstractDataStream<TInstance> dataStream,
-                                                             JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
-                                                             BatchStrategy batchStrategy)
+        public IJobConfig ConfigureJobTriggeredBy<TInstance>(
+            IAbstractDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
-            DataStreamJobConfig<TInstance> dataStreamJobConfig = JobConfigFactory.CreateDataStreamJobConfig(TaskSetOwner, (EntityProxyDataStream<TInstance>)dataStream, scheduleJobFunction, batchStrategy);
+            DataStreamJobConfig<TInstance> dataStreamJobConfig
+                = JobConfigFactory.CreateDataStreamJobConfig(
+                    TaskSetOwner,
+                    (EntityProxyDataStream<TInstance>)dataStream,
+                    scheduleJobFunction,
+                    batchStrategy);
             m_JobConfigs.Add(dataStreamJobConfig);
+
             return dataStreamJobConfig;
         }
 
-        public IJobConfig ConfigureJobTriggeredBy(EntityQuery entityQuery,
-                                                  JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
-                                                  BatchStrategy batchStrategy)
+        public IJobConfig ConfigureJobTriggeredBy(
+            EntityQuery entityQuery,
+            JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
+            BatchStrategy batchStrategy)
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
-            EntityQueryJobConfig entityQueryJobConfig = JobConfigFactory.CreateEntityQueryJobConfig(TaskSetOwner, entityQuery, scheduleJobFunction, batchStrategy);
+            EntityQueryJobConfig entityQueryJobConfig = JobConfigFactory.CreateEntityQueryJobConfig(
+                TaskSetOwner,
+                entityQuery,
+                scheduleJobFunction,
+                batchStrategy);
             m_JobConfigs.Add(entityQueryJobConfig);
+
             return entityQueryJobConfig;
         }
 
-        public IJobConfig ConfigureJobTriggeredBy<T>(EntityQuery entityQuery,
-                                                     JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
-                                                     BatchStrategy batchStrategy)
+        public IJobConfig ConfigureJobTriggeredBy<T>(
+            EntityQuery entityQuery,
+            JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where T : struct, IComponentData
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
-            EntityQueryComponentJobConfig<T> entityQueryComponentJobConfig = JobConfigFactory.CreateEntityQueryComponentJobConfig(TaskSetOwner, entityQuery, scheduleJobFunction, batchStrategy);
+            EntityQueryComponentJobConfig<T> entityQueryComponentJobConfig
+                = JobConfigFactory.CreateEntityQueryComponentJobConfig(
+                    TaskSetOwner,
+                    entityQuery,
+                    scheduleJobFunction,
+                    batchStrategy);
             m_JobConfigs.Add(entityQueryComponentJobConfig);
+
             return entityQueryComponentJobConfig;
         }
 
-        public IJobConfig ConfigureJobWhenCancelComplete(in JobConfigScheduleDelegates.ScheduleCancelCompleteJobDelegate scheduleJobFunction,
-                                                         BatchStrategy batchStrategy)
+        public IJobConfig ConfigureJobWhenCancelComplete(
+            in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
+            BatchStrategy batchStrategy)
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
-            CancelCompleteJobConfig cancelCompleteJobConfig = JobConfigFactory.CreateCancelCompleteJobConfig(TaskSetOwner, CancelCompleteDataStream, scheduleJobFunction, batchStrategy);
+            CancelCompleteJobConfig cancelCompleteJobConfig
+                = JobConfigFactory.CreateCancelCompleteJobConfig(
+                    TaskSetOwner,
+                    CancelCompleteDataStream,
+                    scheduleJobFunction,
+                    batchStrategy);
             m_JobConfigs.Add(cancelCompleteJobConfig);
             return cancelCompleteJobConfig;
         }
@@ -205,7 +249,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
 
             //We need to add a context for the System and the TaskDriver. When the System goes to update it's owned data, it doesn't know
-            //all the different TaskDriver CancelRequests to read from. It only reads from its own CancelRequest collection. 
+            //all the different TaskDriver CancelRequests to read from. It only reads from its own CancelRequest collection.
             contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
             contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
 
@@ -214,6 +258,53 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 taskDriver.TaskSet.AddCancelRequestContextsTo(contexts);
             }
+        }
+
+
+        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
+        {
+            JobHandle dependsOn = CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
+            cancelCompleteReader = CancelCompleteDataStream.CreateDataStreamActiveReader();
+            return dependsOn;
+        }
+
+        public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
+        {
+            CancelCompleteDataStream.ReleaseActiveAsync(dependsOn);
+        }
+
+        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
+        {
+            CancelCompleteDataStream.AcquireActive(AccessType.SharedRead);
+            return CancelCompleteDataStream.CreateDataStreamActiveReader();
+        }
+
+        public void ReleaseCancelCompleteReader()
+        {
+            CancelCompleteDataStream.ReleaseActive();
+        }
+
+        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
+        {
+            JobHandle dependsOn = CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
+            cancelRequestsWriter = CancelRequestsDataStream.CreateCancelRequestsWriter();
+            return dependsOn;
+        }
+
+        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
+        {
+            CancelRequestsDataStream.ReleasePendingAsync(dependsOn);
+        }
+
+        public CancelRequestsWriter AcquireCancelRequestsWriter()
+        {
+            CancelRequestsDataStream.AcquirePending(AccessType.SharedWrite);
+            return CancelRequestsDataStream.CreateCancelRequestsWriter();
+        }
+
+        public void ReleaseCancelRequestsWriter()
+        {
+            CancelRequestsDataStream.ReleasePending();
         }
 
         //*************************************************************************************************************

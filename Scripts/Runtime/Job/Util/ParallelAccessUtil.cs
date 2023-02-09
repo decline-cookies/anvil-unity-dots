@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Linq;
 using Unity.Burst;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -33,20 +31,19 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <seealso cref="https://docs.unity3d.com/Packages/com.unity.burst@1.7/manual/docs/AdvancedUsages.html#shared-static"/>
         /// </remarks>
         private static readonly SharedStatic<int> JOB_WORKER_MAXIMUM_COUNT = SharedStatic<int>.GetOrCreate<JobWorkerMaximumCountKeyContext>();
+
         // ReSharper disable once ConvertToStaticClass
         // ReSharper disable once ClassNeverInstantiated.Local
         private sealed class JobWorkerMaximumCountKeyContext
         {
-            private JobWorkerMaximumCountKeyContext()
-            {
-            }
+            private JobWorkerMaximumCountKeyContext() { }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
             JOB_WORKER_MAXIMUM_COUNT.Data = JobsUtility.JobWorkerMaximumCount;
-            //Why plus 2? Because sometimes Unity will put your jobs on the main thread and also an additional 
+            //Why plus 2? Because sometimes Unity will put your jobs on the main thread and also an additional
             //profiler thread outside the job worker threads.
             CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 2;
 
@@ -65,11 +62,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// etc
         /// It's the number of separate "buckets" that can be written to in parallel.
         /// </remarks>
-        public static int CollectionSizeForMaxThreads
-        {
-            get;
-            private set;
-        }
+        public static int CollectionSizeForMaxThreads { get; private set; }
 
         /// <summary>
         /// Returns the correct index for the collection based on the <paramref name="nativeThreadIndex"/> passed in.
@@ -111,7 +104,7 @@ namespace Anvil.Unity.DOTS.Jobs
         public static int CollectionIndexForThread(int nativeThreadIndex)
         {
             DetectMultipleXThreads(nativeThreadIndex);
-            Debug.Assert(nativeThreadIndex is > 0 and <= JobsUtility.MaxJobThreadCount);
+            Debug_EnsureNativeThreadIndexIsValid(nativeThreadIndex);
             return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
         }
 
@@ -130,18 +123,28 @@ namespace Anvil.Unity.DOTS.Jobs
             return mainThreadIndex;
         }
 
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private static void Debug_EnsureNativeThreadIndexIsValid(int nativeThreadIndex)
+        {
+            if (nativeThreadIndex is <= 0 or > JobsUtility.MaxJobThreadCount)
+            {
+                throw new InvalidOperationException($"Native Thread Index is {nativeThreadIndex}! Did you call {nameof(CollectionIndexForThread)} instead of {nameof(CollectionIndexForMainThread)}?");
+            }
+        }
+
 
         [BurstDiscard]
         [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
         private static void DetectMultipleXThreads(int nativeThreadIndex)
         {
-// HACK: This shouldn't be required in addition to the `Conditional` attribute above but Unity's build system doesn't
-// seem to respect the attribute.
 #if ANVIL_DEBUG_SAFETY_EXPENSIVE
             ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
 #endif
         }
-
     }
 
 #if ANVIL_DEBUG_SAFETY_EXPENSIVE
@@ -154,7 +157,7 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             s_ThreadIndicesSeen.Clear();
         }
-    
+
         //TODO: #84 - This is actually never getting called when in Burst. BurstDiscard removes when in Burst. Fix.
         [BurstDiscard]
         public static void DetectMultipleXThreads(int nativeThreadIndex, int maxSize)

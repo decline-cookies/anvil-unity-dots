@@ -1,14 +1,8 @@
-using Anvil.Unity.DOTS.Jobs;
-
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class CancelCompleteJobConfig : AbstractJobConfig
+    internal class CancelCompleteJobConfig : DataStreamJobConfig<CancelComplete>
     {
-        public CancelCompleteJobConfig(ITaskSetOwner taskSetOwner,
-                                       CancelCompleteDataStream cancelCompleteDataStream)
-            : base(taskSetOwner)
-        {
-            AddAccessWrapper(new CancelCompleteActiveAccessWrapper(cancelCompleteDataStream, AccessType.SharedRead, Usage.CancelComplete));
-        }
+        public CancelCompleteJobConfig(ITaskSetOwner taskSetOwner, CancelCompleteDataStream cancelCompleteDataStream)
+            : base(taskSetOwner, cancelCompleteDataStream) { }
     }
 }

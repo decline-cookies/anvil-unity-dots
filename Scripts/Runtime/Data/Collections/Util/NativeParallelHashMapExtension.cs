@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
         /// <returns>True if a key-value pair was removed.</returns>
-        public static bool Remove<TKey,TValue>(this NativeParallelHashMap<TKey,TValue> map, TKey key, out TValue value)
+        public static bool Remove<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, TKey key, out TValue value)
             where TKey : struct, IEquatable<TKey>
             where TValue : struct
         {

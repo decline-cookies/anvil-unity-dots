@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Specific scheduling information for a <see cref="UpdateJobConfig{TInstance}"/>
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
-    public class UpdateDataStreamScheduleInfo<TInstance> : AbstractScheduleInfo
+    public class UpdateScheduleInfo<TInstance> : AbstractScheduleInfo
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly UpdateJobData<TInstance> m_JobData;
@@ -23,13 +23,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_JobData.GetDataStreamUpdater();
         }
 
-        internal UpdateDataStreamScheduleInfo(UpdateJobData<TInstance> jobData,
-                                              EntityProxyDataStream<TInstance> dataStream,
-                                              BatchStrategy batchStrategy,
-                                              JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction)
-            : base(scheduleJobFunction.Method,
-                   batchStrategy,
-                   EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
+        internal UpdateScheduleInfo(
+            UpdateJobData<TInstance> jobData,
+            EntityProxyDataStream<TInstance> dataStream,
+            BatchStrategy batchStrategy,
+            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction)
+            : base(scheduleJobFunction.Method, batchStrategy, EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;

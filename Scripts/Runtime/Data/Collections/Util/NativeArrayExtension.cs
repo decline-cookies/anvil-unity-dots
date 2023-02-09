@@ -15,7 +15,9 @@ namespace Anvil.Unity.DOTS.Data
         /// </summary>
         /// <typeparam name="T">The element type of the collection.</typeparam>
         /// <param name="array">The collection to flood clear.</param>
-        public static unsafe void FloodClear<T>(this NativeArray<T> array) where T : struct => array.FloodClear(0, array.Length);
+        public static unsafe void FloodClear<T>(this NativeArray<T> array) where T : struct
+            => array.FloodClear(0, array.Length);
+
         /// <summary>
         /// Sets a range of elements in a collection to their default value.
         /// </summary>
@@ -37,7 +39,9 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="T">The element type of the collection.</typeparam>
         /// <param name="array">The collection to flood set.</param>
         /// <param name="value">The value to set each element to.</param>
-        public static unsafe void FloodSet<T>(this NativeArray<T> array, T value) where T : struct => array.FloodSet(0, array.Length, value);
+        public static unsafe void FloodSet<T>(this NativeArray<T> array, T value) where T : struct
+            => array.FloodSet(0, array.Length, value);
+
         /// <summary>
         /// Sets a range of elements in a collection to a given value.
         /// </summary>

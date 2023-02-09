@@ -13,34 +13,68 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SCHEDULING
         //*************************************************************************************************************
 
-        public static unsafe JobHandle ScheduleParallel<TJob, TInstance>(this TJob jobData,
-                                                                         CancelDataStreamScheduleInfo<TInstance> scheduleInfo,
-                                                                         JobHandle dependsOn = default)
+        public static JobHandle Schedule<TJob, TInstance>(
+            this TJob jobData,
+            CancelScheduleInfo<TInstance> scheduleInfo,
+            JobHandle dependsOn = default)
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            void* atomicSafetyHandlePtr = null;
+            return InternalSchedule(
+                jobData,
+                scheduleInfo,
+                dependsOn,
+                ScheduleMode.Single,
+                int.MaxValue);
+        }
 
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            atomicSafetyHandlePtr = scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr;
-#endif
+        public static JobHandle ScheduleParallel<TJob, TInstance>(
+            this TJob jobData,
+            CancelScheduleInfo<TInstance> scheduleInfo,
+            JobHandle dependsOn = default)
+            where TJob : struct, ITaskCancelJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return InternalSchedule(
+                jobData,
+                scheduleInfo,
+                dependsOn,
+                ScheduleMode.Parallel,
+                scheduleInfo.BatchSize);
+        }
 
+        private static unsafe JobHandle InternalSchedule<TJob, TInstance>(
+            this TJob jobData,
+            CancelScheduleInfo<TInstance> scheduleInfo,
+            JobHandle dependsOn,
+            ScheduleMode scheduleMode,
+            int batchSize)
+            where TJob : struct, ITaskCancelJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-            
-            WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(ref jobData,
-                                                                                                  ref scheduleInfo);
 
-            JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
-                                                                                                         reflectionData,
-                                                                                                         dependsOn,
-                                                                                                         ScheduleMode.Parallel);
+            WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(
+                ref jobData,
+                scheduleInfo);
 
+            JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(
+                UnsafeUtility.AddressOf(ref wrapperData),
+                reflectionData,
+                dependsOn,
+                ScheduleMode.Single);
 
-            dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParameters,
-                                                                      scheduleInfo.BatchSize,
-                                                                      scheduleInfo.DeferredNativeArrayScheduleInfo.BufferPtr,
-                                                                      atomicSafetyHandlePtr);
+            dependsOn = JobsUtility.ScheduleParallelForDeferArraySize(
+                ref scheduleParameters,
+                batchSize,
+                scheduleInfo.DeferredNativeArrayScheduleInfo.BufferPtr,
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                scheduleInfo.DeferredNativeArrayScheduleInfo.SafetyHandlePtr
+#else
+                                                                      null
+#endif
+            );
 
             return dependsOn;
         }
@@ -72,8 +106,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             internal DataStreamCancellationUpdater<TInstance> CancellationUpdater;
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
-            public WrapperJobStruct(ref TJob jobData,
-                                    ref CancelDataStreamScheduleInfo<TInstance> scheduleInfo)
+            public WrapperJobStruct(ref TJob jobData, CancelScheduleInfo<TInstance> scheduleInfo)
             {
                 JobData = jobData;
                 CancellationUpdater = scheduleInfo.CancellationUpdater;
@@ -89,40 +122,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TInstance : unmanaged, IEntityProxyInstance
         {
             // ReSharper disable once StaticMemberInGenericType
-            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob, TInstance>),
-                                                                                                      typeof(TJob),
-                                                                                                      (ExecuteJobFunction)Execute);
+            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(
+                typeof(WrapperJobStruct<TJob, TInstance>),
+                typeof(TJob),
+                (ExecuteJobFunction)Execute);
 
 
-            private delegate void ExecuteJobFunction(ref WrapperJobStruct<TJob, TInstance> jobData,
-                                                     IntPtr additionalPtr,
-                                                     IntPtr bufferRangePatchData,
-                                                     ref JobRanges ranges,
-                                                     int jobIndex);
+            private delegate void ExecuteJobFunction(
+                ref WrapperJobStruct<TJob, TInstance> jobData,
+                IntPtr additionalPtr,
+                IntPtr bufferRangePatchData,
+                ref JobRanges ranges,
+                int jobIndex);
 
 
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Required by Burst.")]
-            public static unsafe void Execute(ref WrapperJobStruct<TJob, TInstance> wrapperData,
-                                              IntPtr additionalPtr,
-                                              IntPtr bufferRangePatchData,
-                                              ref JobRanges ranges,
-                                              int jobIndex)
+            public static unsafe void Execute(
+                ref WrapperJobStruct<TJob, TInstance> wrapperData,
+                IntPtr additionalPtr,
+                IntPtr bufferRangePatchData,
+                ref JobRanges ranges,
+                int jobIndex)
             {
                 ref TJob jobData = ref wrapperData.JobData;
                 ref DataStreamCancellationUpdater<TInstance> cancellationUpdater = ref wrapperData.CancellationUpdater;
-                
+
                 cancellationUpdater.InitForThread(wrapperData.NativeThreadIndex);
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
-                
-                //TODO: Low Priority - #85 - Add some job safety checks
-                
-                while (true)
-                {
-                    if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
-                    {
-                        return;
-                    }
 
+                //TODO: Low Priority - #85 - Add some job safety checks
+
+                while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
+                {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), beginIndex, endIndex - beginIndex);
 #endif

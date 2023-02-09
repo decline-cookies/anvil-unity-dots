@@ -1,5 +1,4 @@
 using Anvil.Unity.DOTS.Jobs;
-using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -8,9 +7,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public EntityProxyDataStream<T> DataStream { get; }
 
-        protected AbstractDataStreamAccessWrapper(EntityProxyDataStream<T> dataStream,
-                                                  AccessType accessType,
-                                                  AbstractJobConfig.Usage usage) : base(accessType, usage)
+        protected AbstractDataStreamAccessWrapper(EntityProxyDataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage)
+            : base(accessType, usage)
         {
             DataStream = dataStream;
         }

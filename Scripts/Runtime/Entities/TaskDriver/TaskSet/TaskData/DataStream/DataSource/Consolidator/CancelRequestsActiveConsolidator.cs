@@ -8,16 +8,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal struct CancelRequestsActiveConsolidator
     {
         private const uint UNSET_COMPLETE_ACTIVE_ID = default;
-        
+
         private readonly bool m_HasCancellableData;
-        
+
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_RequestLookup;
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
-        private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_CompleteWriter;
+        private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer m_CompleteWriter;
         private readonly uint m_CompleteActiveID;
 
-        public CancelRequestsActiveConsolidator(UnsafeParallelHashMap<EntityProxyInstanceID, bool> requestLookup,
-                                                ITaskSetOwner taskSetOwner)
+        public CancelRequestsActiveConsolidator(
+            UnsafeParallelHashMap<EntityProxyInstanceID, bool> requestLookup,
+            ITaskSetOwner taskSetOwner)
         {
             m_RequestLookup = requestLookup;
             m_HasCancellableData = taskSetOwner.HasCancellableData;
@@ -50,13 +51,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (m_HasCancellableData)
             {
                 //We have something that wants to cancel, so we assume that it will get processed this frame.
-                //If nothing processes it, it will auto-complete the next frame. 
+                //If nothing processes it, it will auto-complete the next frame.
                 m_ProgressLookup.TryAdd(id, true);
             }
             else
             {
-                UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter completeLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
-                completeLaneWriter.Write(new EntityProxyInstanceID(id.Entity, id.TaskSetOwnerID, m_CompleteActiveID));
+                UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.LaneWriter completeLaneWriter
+                    = m_CompleteWriter.AsLaneWriter(laneIndex);
+                //Write ourselves to the Complete.
+                CancelComplete cancelComplete = new CancelComplete(id.Entity);
+                completeLaneWriter.Write(
+                    new EntityProxyInstanceWrapper<CancelComplete>(
+                        id.Entity,
+                        id.TaskSetOwnerID,
+                        m_CompleteActiveID,
+                        ref cancelComplete));
             }
         }
     }

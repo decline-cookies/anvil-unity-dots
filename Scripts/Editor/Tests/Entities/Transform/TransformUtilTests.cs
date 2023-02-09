@@ -28,14 +28,17 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         {
             return math.all(a.IsApproximately(b)) ? 0 : 1;
         }
+
         private static int EqualityWithTolerance(float4 a, float4 b)
         {
             return math.all(a.IsApproximately(b)) ? 0 : 1;
         }
+
         private static int EqualityWithTolerance(float3x3 a, float3x3 b)
         {
             return a.IsApproximately(b).Equals(new bool3x3(true)) ? 0 : 1;
         }
+
         private static int EqualityWithTolerance(quaternion a, quaternion b)
         {
             return EqualityWithTolerance(a.value, b.value);
@@ -72,9 +75,9 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             EntityManager entityManager = world.EntityManager;
             Entity entity = entityManager.CreateEntity(typeof(Translation), typeof(Rotation), typeof(Scale));
 
-            entityManager.SetComponentData(entity, new Translation(){Value = new float3(5f)});
-            entityManager.SetComponentData(entity, new Rotation(){Value = quaternion.Euler(45f, 45f, 0f)});
-            entityManager.SetComponentData(entity, new Scale(){Value = 5f});
+            entityManager.SetComponentData(entity, new Translation() { Value = new float3(5f) });
+            entityManager.SetComponentData(entity, new Rotation() { Value = quaternion.Euler(45f, 45f, 0f) });
+            entityManager.SetComponentData(entity, new Scale() { Value = 5f });
             TransformUtil.AddMissingStandardComponents(entity, entityManager);
 
             Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(new float3(5f)));
@@ -91,9 +94,9 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             EntityManager entityManager = world.EntityManager;
             Entity entity = entityManager.CreateEntity(typeof(Translation), typeof(CompositeRotation), typeof(NonUniformScale));
 
-            entityManager.SetComponentData(entity, new Translation(){Value = new float3(5f)});
-            entityManager.SetComponentData(entity, new CompositeRotation(){Value = float4x4.RotateX(45f)});
-            entityManager.SetComponentData(entity, new NonUniformScale(){Value = new float3(1f, 2f, 3f)});
+            entityManager.SetComponentData(entity, new Translation() { Value = new float3(5f) });
+            entityManager.SetComponentData(entity, new CompositeRotation() { Value = float4x4.RotateX(45f) });
+            entityManager.SetComponentData(entity, new NonUniformScale() { Value = new float3(1f, 2f, 3f) });
             TransformUtil.AddMissingStandardComponents(entity, entityManager);
 
             Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(new float3(5f)));
@@ -151,19 +154,19 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             float4x4 worldToLocal_TranslatedOne = math.inverse(localToWorld_TranslatedOne.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, point_zero), Is.EqualTo(-point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, point_seven), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, point_sevenXY), Is.EqualTo(point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, -point_one), Is.EqualTo(-point_one-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, -point_seven), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, point_seven), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, point_sevenXY), Is.EqualTo(point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, -point_one), Is.EqualTo(-point_one - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, -point_seven), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedOne, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, point_zero), Is.EqualTo(-point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, point_seven), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, point_sevenXY), Is.EqualTo(point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, -point_one), Is.EqualTo(-point_one-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, -point_seven), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, point_seven), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, point_sevenXY), Is.EqualTo(point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, -point_one), Is.EqualTo(-point_one - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, -point_seven), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedOne, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedNegativeOne = new LocalToWorld()
@@ -172,20 +175,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_TranslatedNegativeOne = math.inverse(localToWorld_TranslatedNegativeOne.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_zero), Is.EqualTo(point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_one), Is.EqualTo(point_one+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_seven), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_sevenXY), Is.EqualTo(point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_one), Is.EqualTo(point_one + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_seven), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, point_sevenXY), Is.EqualTo(point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, -point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, -point_seven), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, -point_sevenXY), Is.EqualTo(-point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, -point_seven), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne, -point_sevenXY), Is.EqualTo(-point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_zero), Is.EqualTo(point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_one), Is.EqualTo(point_one+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_seven), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_sevenXY), Is.EqualTo(point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_one), Is.EqualTo(point_one + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_seven), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, point_sevenXY), Is.EqualTo(point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, -point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, -point_seven), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, -point_sevenXY), Is.EqualTo(-point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, -point_seven), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeOne, -point_sevenXY), Is.EqualTo(-point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedSeven = new LocalToWorld()
@@ -194,20 +197,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_TranslatedSeven = math.inverse(localToWorld_TranslatedSeven.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, point_zero), Is.EqualTo(-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, point_one), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, point_one), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, point_sevenXY), Is.EqualTo(point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, -point_one), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, -point_seven), Is.EqualTo(-point_seven-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, -point_one), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, -point_seven), Is.EqualTo(-point_seven - point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, point_zero), Is.EqualTo(-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, point_one), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, point_one), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, point_sevenXY), Is.EqualTo(point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, -point_one), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, -point_seven), Is.EqualTo(-point_seven-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, -point_one), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, -point_seven), Is.EqualTo(-point_seven - point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedNegativeSeven = new LocalToWorld()
@@ -216,20 +219,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_TranslatedNegativeSeven = math.inverse(localToWorld_TranslatedNegativeSeven.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_zero), Is.EqualTo(point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_one), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_seven), Is.EqualTo(point_seven+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_sevenXY), Is.EqualTo(point_sevenXY+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, -point_one), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_one), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_seven), Is.EqualTo(point_seven + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, point_sevenXY), Is.EqualTo(point_sevenXY + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, -point_one), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, -point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, -point_sevenXY), Is.EqualTo(point_seven-point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeSeven, -point_sevenXY), Is.EqualTo(point_seven - point_sevenXY).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_zero), Is.EqualTo(point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_one), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_seven), Is.EqualTo(point_seven+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_sevenXY), Is.EqualTo(point_sevenXY+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, -point_one), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_one), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_seven), Is.EqualTo(point_seven + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, point_sevenXY), Is.EqualTo(point_sevenXY + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, -point_one), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, -point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, -point_sevenXY), Is.EqualTo(point_seven-point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedNegativeSeven, -point_sevenXY), Is.EqualTo(point_seven - point_sevenXY).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedSevenXY = new LocalToWorld()
@@ -238,20 +241,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_TranslatedSevenXY = math.inverse(localToWorld_TranslatedSevenXY.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, point_zero), Is.EqualTo(-point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, point_one), Is.EqualTo(-point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, point_seven), Is.EqualTo(point_seven-point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, point_one), Is.EqualTo(-point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, point_seven), Is.EqualTo(point_seven - point_sevenXY).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, point_sevenXY), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, -point_one), Is.EqualTo(-point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, -point_seven), Is.EqualTo(-point_seven-point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, -point_one), Is.EqualTo(-point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, -point_seven), Is.EqualTo(-point_seven - point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSevenXY, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_sevenXY).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, point_zero), Is.EqualTo(-point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, point_one), Is.EqualTo(-point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, point_seven), Is.EqualTo(point_seven-point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, point_one), Is.EqualTo(-point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, point_seven), Is.EqualTo(point_seven - point_sevenXY).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, point_sevenXY), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, -point_one), Is.EqualTo(-point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, -point_seven), Is.EqualTo(-point_seven-point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, -point_one), Is.EqualTo(-point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, -point_seven), Is.EqualTo(-point_seven - point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_TranslatedSevenXY, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_sevenXY).Using<float3>(EqualityWithTolerance));
         }
 
         [Test]
@@ -341,16 +344,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_RotatedZX45 = math.inverse(localToWorld_RotatedZX45.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, point_one), Is.EqualTo(new float3(1.70710683f,0.292893201f,0f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, point_seven), Is.EqualTo(new float3(11.9497471f,2.0502522f,0f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, -point_one), Is.EqualTo(new float3(-1.70710683f,-0.292893201f,0f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, -point_seven), Is.EqualTo(new float3(-11.9497471f,-2.0502522f,0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, point_one), Is.EqualTo(new float3(1.70710683f, 0.292893201f, 0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, point_seven), Is.EqualTo(new float3(11.9497471f, 2.0502522f, 0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, -point_one), Is.EqualTo(new float3(-1.70710683f, -0.292893201f, 0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_RotatedZX45, -point_seven), Is.EqualTo(new float3(-11.9497471f, -2.0502522f, 0f)).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, point_one), Is.EqualTo(new float3(1.70710683f,0.292893201f,0f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, point_seven), Is.EqualTo(new float3(11.9497471f,2.0502522f,0f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, -point_one), Is.EqualTo(new float3(-1.70710683f,-0.292893201f,0f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, -point_seven), Is.EqualTo(new float3(-11.9497471f,-2.0502522f,0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, point_one), Is.EqualTo(new float3(1.70710683f, 0.292893201f, 0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, point_seven), Is.EqualTo(new float3(11.9497471f, 2.0502522f, 0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, -point_one), Is.EqualTo(new float3(-1.70710683f, -0.292893201f, 0f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_RotatedZX45, -point_seven), Is.EqualTo(new float3(-11.9497471f, -2.0502522f, 0f)).Using<float3>(EqualityWithTolerance));
         }
 
         [Test]
@@ -367,38 +370,38 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_Scaled2 = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_zero, quaternion.identity, point_one*2f)
+                Value = float4x4.TRS(point_zero, quaternion.identity, point_one * 2f)
             };
             float4x4 worldToLocal_Scaled2 = math.inverse(localToWorld_Scaled2.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, point_one), Is.EqualTo(point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, point_seven), Is.EqualTo(point_seven/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, -point_one), Is.EqualTo(-point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, -point_seven), Is.EqualTo(-point_seven/2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, point_one), Is.EqualTo(point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, point_seven), Is.EqualTo(point_seven / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, -point_one), Is.EqualTo(-point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Scaled2, -point_seven), Is.EqualTo(-point_seven / 2f).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, point_one), Is.EqualTo(point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, point_seven), Is.EqualTo(point_seven/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, -point_one), Is.EqualTo(-point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, -point_seven), Is.EqualTo(-point_seven/2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, point_one), Is.EqualTo(point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, point_seven), Is.EqualTo(point_seven / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, -point_one), Is.EqualTo(-point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_Scaled2, -point_seven), Is.EqualTo(-point_seven / 2f).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_ScaledNegative2 = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_zero, quaternion.identity, point_one*-2f)
+                Value = float4x4.TRS(point_zero, quaternion.identity, point_one * -2f)
             };
             float4x4 worldToLocal_ScaledNegative2 = math.inverse(localToWorld_ScaledNegative2.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, point_one), Is.EqualTo(-point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, point_seven), Is.EqualTo(-point_seven/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, -point_one), Is.EqualTo(point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, -point_seven), Is.EqualTo(point_seven/2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, point_one), Is.EqualTo(-point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, point_seven), Is.EqualTo(-point_seven / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, -point_one), Is.EqualTo(point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledNegative2, -point_seven), Is.EqualTo(point_seven / 2f).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, point_one), Is.EqualTo(-point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, point_seven), Is.EqualTo(-point_seven/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, -point_one), Is.EqualTo(point_one/2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, -point_seven), Is.EqualTo(point_seven/2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, point_one), Is.EqualTo(-point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, point_seven), Is.EqualTo(-point_seven / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, -point_one), Is.EqualTo(point_one / 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledNegative2, -point_seven), Is.EqualTo(point_seven / 2f).Using<float3>(EqualityWithTolerance));
 
 
             float3 scaleZ2 = new float3(point_one.xy, 2f);
@@ -408,16 +411,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_ScaledZ2 = math.inverse(localToWorld_ScaledZ2.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, point_one), Is.EqualTo(point_one/scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, point_seven), Is.EqualTo(point_seven/scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, -point_one), Is.EqualTo(-point_one/scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, -point_seven), Is.EqualTo(-point_seven/scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, point_one), Is.EqualTo(point_one / scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, point_seven), Is.EqualTo(point_seven / scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, -point_one), Is.EqualTo(-point_one / scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZ2, -point_seven), Is.EqualTo(-point_seven / scaleZ2).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, point_one), Is.EqualTo(point_one/scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, point_seven), Is.EqualTo(point_seven/scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, -point_one), Is.EqualTo(-point_one/scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, -point_seven), Is.EqualTo(-point_seven/scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, point_one), Is.EqualTo(point_one / scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, point_seven), Is.EqualTo(point_seven / scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, -point_one), Is.EqualTo(-point_one / scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZ2, -point_seven), Is.EqualTo(-point_seven / scaleZ2).Using<float3>(EqualityWithTolerance));
 
 
             float3 scaleZNegative2 = new float3(point_one.xy, -2f);
@@ -427,16 +430,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_ScaledZNegative2 = math.inverse(localToWorld_ScaledZNegative2.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, point_one), Is.EqualTo(point_one/scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, point_seven), Is.EqualTo(point_seven/scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, -point_one), Is.EqualTo(-point_one/scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, -point_seven), Is.EqualTo(-point_seven/scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, point_one), Is.EqualTo(point_one / scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, point_seven), Is.EqualTo(point_seven / scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, -point_one), Is.EqualTo(-point_one / scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZNegative2, -point_seven), Is.EqualTo(-point_seven / scaleZNegative2).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, point_one), Is.EqualTo(point_one/scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, point_seven), Is.EqualTo(point_seven/scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, -point_one), Is.EqualTo(-point_one/scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, -point_seven), Is.EqualTo(-point_seven/scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, point_one), Is.EqualTo(point_one / scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, point_seven), Is.EqualTo(point_seven / scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, -point_one), Is.EqualTo(-point_one / scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZNegative2, -point_seven), Is.EqualTo(-point_seven / scaleZNegative2).Using<float3>(EqualityWithTolerance));
 
 
             float3 scaleZXOnePointFive = new float3(1.5f, 1f, 1.5f);
@@ -446,16 +449,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_ScaledZXOnePointFive = math.inverse(localToWorld_ScaledZXOnePointFive.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, point_one), Is.EqualTo(point_one/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, point_seven), Is.EqualTo(point_seven/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, -point_one), Is.EqualTo(-point_one/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, -point_seven), Is.EqualTo(-point_seven/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, point_one), Is.EqualTo(point_one / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, point_seven), Is.EqualTo(point_seven / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, -point_one), Is.EqualTo(-point_one / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_ScaledZXOnePointFive, -point_seven), Is.EqualTo(-point_seven / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, point_one), Is.EqualTo(point_one/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, point_seven), Is.EqualTo(point_seven/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, -point_one), Is.EqualTo(-point_one/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, -point_seven), Is.EqualTo(-point_seven/scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, point_one), Is.EqualTo(point_one / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, point_seven), Is.EqualTo(point_seven / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, -point_one), Is.EqualTo(-point_one / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_ScaledZXOnePointFive, -point_seven), Is.EqualTo(-point_seven / scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_zero = new LocalToWorld()
@@ -478,8 +481,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_point);
             Assert.That(
                 TransformUtil.ConvertWorldToLocalPoint(localToWorld_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-                );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
 
             LogAssert.Expect(LogType.Error, invalidMatrixError_point);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_zero, point_zero), Is.EqualTo(point_zero));
@@ -494,8 +496,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_point);
             Assert.That(
                 TransformUtil.ConvertWorldToLocalPoint(worldToLocal_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-            );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
             Logger.Debug("END: Expected error messages.");
         }
 
@@ -511,7 +512,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_Compound = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_sevenXY, quaternion.Euler(math.radians(45), 0, math.radians(45)), point_one*2f)
+                Value = float4x4.TRS(point_sevenXY, quaternion.Euler(math.radians(45), 0, math.radians(45)), point_one * 2f)
             };
             float4x4 worldToLocal_Compound = math.inverse(localToWorld_Compound.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_Compound, point_zero), Is.EqualTo(new float3(-4.22487354f, 0.7248739f, 2.47487402f)).Using<float3>(EqualityWithTolerance));
@@ -529,18 +530,18 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_CompoundNegative = new LocalToWorld()
             {
-                Value = float4x4.TRS(-point_sevenXY, quaternion.Euler(math.radians(-45), 0, math.radians(-45)), point_one*-2f)
+                Value = float4x4.TRS(-point_sevenXY, quaternion.Euler(math.radians(-45), 0, math.radians(-45)), point_one * -2f)
             };
             float4x4 worldToLocal_CompoundNegative = math.inverse(localToWorld_CompoundNegative.Value);
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_CompoundNegative, point_zero), Is.EqualTo(new float3(-0.724873781f, -4.22487402f, -2.47487402f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_CompoundNegative, point_one), Is.EqualTo(new float3(-1.07842731f, -4.57842731f, -3.18198061f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_CompoundNegative, point_seven), Is.EqualTo(new float3(-3.19974756f,-6.69974804f,-7.42462158f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_CompoundNegative, point_seven), Is.EqualTo(new float3(-3.19974756f, -6.69974804f, -7.42462158f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_CompoundNegative, -point_one), Is.EqualTo(new float3(-0.371320248f, -3.87132072f, -1.76776719f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_CompoundNegative, -point_seven), Is.EqualTo(new float3(1.75f, -1.75f, 2.47487378f)).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, point_zero), Is.EqualTo(new float3(-0.724873781f, -4.22487402f, -2.47487402f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, point_one), Is.EqualTo(new float3(-1.07842731f, -4.57842731f, -3.18198061f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, point_seven), Is.EqualTo(new float3(-3.19974756f,-6.69974804f,-7.42462158f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, point_seven), Is.EqualTo(new float3(-3.19974756f, -6.69974804f, -7.42462158f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, -point_one), Is.EqualTo(new float3(-0.371320248f, -3.87132072f, -1.76776719f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertWorldToLocalPoint(worldToLocal_CompoundNegative, -point_seven), Is.EqualTo(new float3(1.75f, -1.75f, 2.47487378f)).Using<float3>(EqualityWithTolerance));
         }
@@ -592,20 +593,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_one, quaternion.identity, point_one)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_zero), Is.EqualTo(point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_one), Is.EqualTo(point_one+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_seven), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_sevenXY), Is.EqualTo(point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_one), Is.EqualTo(point_one + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_seven), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, point_sevenXY), Is.EqualTo(point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, -point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, -point_seven), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, -point_sevenXY), Is.EqualTo(-point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, -point_seven), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne, -point_sevenXY), Is.EqualTo(-point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_zero), Is.EqualTo(point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_one), Is.EqualTo(point_one+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_seven), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_sevenXY), Is.EqualTo(point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_one), Is.EqualTo(point_one + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_seven), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, point_sevenXY), Is.EqualTo(point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, -point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, -point_seven), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, -point_seven), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedOne.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY + point_one).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedNegativeOne = new LocalToWorld()
@@ -614,19 +615,19 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, point_zero), Is.EqualTo(-point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, point_seven), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, point_sevenXY), Is.EqualTo(point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, -point_one), Is.EqualTo(-point_one-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, -point_seven), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, point_seven), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, point_sevenXY), Is.EqualTo(point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, -point_one), Is.EqualTo(-point_one - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, -point_seven), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, point_zero), Is.EqualTo(-point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, point_one), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, point_seven), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne.Value, point_sevenXY), Is.EqualTo(point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, -point_one), Is.EqualTo(-point_one-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, -point_seven), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, point_seven), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne.Value, point_sevenXY), Is.EqualTo(point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, -point_one), Is.EqualTo(-point_one - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeOne.Value, -point_seven), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedNegativeOne.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedSeven = new LocalToWorld()
@@ -634,20 +635,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_seven, quaternion.identity, point_one)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_zero), Is.EqualTo(point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_one), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_seven), Is.EqualTo(point_seven+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_sevenXY), Is.EqualTo(point_sevenXY+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, -point_one), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_one), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_seven), Is.EqualTo(point_seven + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, point_sevenXY), Is.EqualTo(point_sevenXY + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, -point_one), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, -point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY+point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY + point_seven).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, point_zero), Is.EqualTo(point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, point_one), Is.EqualTo(point_seven+point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, point_seven), Is.EqualTo(point_seven+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven.Value, point_sevenXY), Is.EqualTo(point_sevenXY+point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, -point_one), Is.EqualTo(point_seven-point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, point_one), Is.EqualTo(point_seven + point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, point_seven), Is.EqualTo(point_seven + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven.Value, point_sevenXY), Is.EqualTo(point_sevenXY + point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, -point_one), Is.EqualTo(point_seven - point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSeven.Value, -point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY+point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalPoint(localToWorld_TranslatedSeven.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY + point_seven).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedNegativeSeven = new LocalToWorld()
@@ -655,20 +656,20 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(-point_seven, quaternion.identity, point_one)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, point_zero), Is.EqualTo(-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, point_one), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, point_one), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, point_sevenXY), Is.EqualTo(point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, -point_one), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, -point_seven), Is.EqualTo(-point_seven-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, point_sevenXY), Is.EqualTo(point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, -point_one), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, -point_seven), Is.EqualTo(-point_seven - point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, point_zero), Is.EqualTo(-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, point_one), Is.EqualTo(-point_seven+point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, point_one), Is.EqualTo(-point_seven + point_one).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, point_seven), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, point_sevenXY), Is.EqualTo(point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, -point_one), Is.EqualTo(-point_seven-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, -point_seven), Is.EqualTo(-point_seven-point_seven).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, point_sevenXY), Is.EqualTo(point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, -point_one), Is.EqualTo(-point_seven - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, -point_seven), Is.EqualTo(-point_seven - point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedNegativeSeven.Value, -point_sevenXY), Is.EqualTo(-point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_TranslatedSevenXY = new LocalToWorld()
@@ -676,19 +677,19 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_sevenXY, quaternion.identity, point_one)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_zero), Is.EqualTo(point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_one), Is.EqualTo(point_one+point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_seven), Is.EqualTo(point_seven+point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_sevenXY), Is.EqualTo(point_sevenXY+point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, -point_one), Is.EqualTo(point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, -point_seven), Is.EqualTo(point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_one), Is.EqualTo(point_one + point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_seven), Is.EqualTo(point_seven + point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, point_sevenXY), Is.EqualTo(point_sevenXY + point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, -point_one), Is.EqualTo(point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, -point_seven), Is.EqualTo(point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY, -point_sevenXY), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_zero), Is.EqualTo(point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_one), Is.EqualTo(point_one+point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_seven), Is.EqualTo(point_seven+point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_sevenXY), Is.EqualTo(point_sevenXY+point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, -point_one), Is.EqualTo(point_sevenXY-point_one).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, -point_seven), Is.EqualTo(point_sevenXY-point_seven).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_one), Is.EqualTo(point_one + point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_seven), Is.EqualTo(point_seven + point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, point_sevenXY), Is.EqualTo(point_sevenXY + point_sevenXY).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, -point_one), Is.EqualTo(point_sevenXY - point_one).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, -point_seven), Is.EqualTo(point_sevenXY - point_seven).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_TranslatedSevenXY.Value, -point_sevenXY), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
         }
 
@@ -774,16 +775,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_zero, quaternion.Euler(math.radians(45), 0, math.radians(45)), point_one)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, point_one), Is.EqualTo(new float3(0f,0.292893201f,1.70710683f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, point_seven), Is.EqualTo(new float3(0f,2.0502522f,11.9497471f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, -point_one), Is.EqualTo(new float3(0f,-0.292893201f,-1.70710683f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, -point_seven), Is.EqualTo(new float3(0f,-2.0502522f,-11.9497471f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, point_one), Is.EqualTo(new float3(0f, 0.292893201f, 1.70710683f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, point_seven), Is.EqualTo(new float3(0f, 2.0502522f, 11.9497471f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, -point_one), Is.EqualTo(new float3(0f, -0.292893201f, -1.70710683f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45, -point_seven), Is.EqualTo(new float3(0f, -2.0502522f, -11.9497471f)).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, point_one), Is.EqualTo(new float3(0f,0.292893201f,1.70710683f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, point_seven), Is.EqualTo(new float3(0f,2.0502522f,11.9497471f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, -point_one), Is.EqualTo(new float3(0f,-0.292893201f,-1.70710683f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, -point_seven), Is.EqualTo(new float3(0f,-2.0502522f,-11.9497471f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, point_one), Is.EqualTo(new float3(0f, 0.292893201f, 1.70710683f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, point_seven), Is.EqualTo(new float3(0f, 2.0502522f, 11.9497471f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, -point_one), Is.EqualTo(new float3(0f, -0.292893201f, -1.70710683f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_RotatedZX45.Value, -point_seven), Is.EqualTo(new float3(0f, -2.0502522f, -11.9497471f)).Using<float3>(EqualityWithTolerance));
         }
 
         [Test]
@@ -800,36 +801,36 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_Scaled2 = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_zero, quaternion.identity, point_one*2f)
+                Value = float4x4.TRS(point_zero, quaternion.identity, point_one * 2f)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, point_one), Is.EqualTo(point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, point_seven), Is.EqualTo(point_seven*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, -point_one), Is.EqualTo(-point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, -point_seven), Is.EqualTo(-point_seven*2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, point_one), Is.EqualTo(point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, point_seven), Is.EqualTo(point_seven * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, -point_one), Is.EqualTo(-point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2, -point_seven), Is.EqualTo(-point_seven * 2f).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, point_one), Is.EqualTo(point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, point_seven), Is.EqualTo(point_seven*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, -point_one), Is.EqualTo(-point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, -point_seven), Is.EqualTo(-point_seven*2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, point_one), Is.EqualTo(point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, point_seven), Is.EqualTo(point_seven * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, -point_one), Is.EqualTo(-point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Scaled2.Value, -point_seven), Is.EqualTo(-point_seven * 2f).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_ScaledNegative2 = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_zero, quaternion.identity, point_one*-2f)
+                Value = float4x4.TRS(point_zero, quaternion.identity, point_one * -2f)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, point_one), Is.EqualTo(-point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, point_seven), Is.EqualTo(-point_seven*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, -point_one), Is.EqualTo(point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, -point_seven), Is.EqualTo(point_seven*2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, point_one), Is.EqualTo(-point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, point_seven), Is.EqualTo(-point_seven * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, -point_one), Is.EqualTo(point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2, -point_seven), Is.EqualTo(point_seven * 2f).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, point_one), Is.EqualTo(-point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, point_seven), Is.EqualTo(-point_seven*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, -point_one), Is.EqualTo(point_one*2f).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, -point_seven), Is.EqualTo(point_seven*2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, point_one), Is.EqualTo(-point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, point_seven), Is.EqualTo(-point_seven * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, -point_one), Is.EqualTo(point_one * 2f).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledNegative2.Value, -point_seven), Is.EqualTo(point_seven * 2f).Using<float3>(EqualityWithTolerance));
 
 
             float3 scaleZ2 = new float3(point_one.xy, 2f);
@@ -838,16 +839,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_zero, quaternion.identity, scaleZ2)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, point_one), Is.EqualTo(point_one*scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, point_seven), Is.EqualTo(point_seven*scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, -point_one), Is.EqualTo(-point_one*scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, -point_seven), Is.EqualTo(-point_seven*scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, point_one), Is.EqualTo(point_one * scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, point_seven), Is.EqualTo(point_seven * scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, -point_one), Is.EqualTo(-point_one * scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2, -point_seven), Is.EqualTo(-point_seven * scaleZ2).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, point_one), Is.EqualTo(point_one*scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, point_seven), Is.EqualTo(point_seven*scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, -point_one), Is.EqualTo(-point_one*scaleZ2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, -point_seven), Is.EqualTo(-point_seven*scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, point_one), Is.EqualTo(point_one * scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, point_seven), Is.EqualTo(point_seven * scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, -point_one), Is.EqualTo(-point_one * scaleZ2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZ2.Value, -point_seven), Is.EqualTo(-point_seven * scaleZ2).Using<float3>(EqualityWithTolerance));
 
 
             float3 scaleZNegative2 = new float3(point_one.xy, -2f);
@@ -856,16 +857,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_zero, quaternion.identity, scaleZNegative2)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, point_one), Is.EqualTo(point_one*scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, point_seven), Is.EqualTo(point_seven*scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, -point_one), Is.EqualTo(-point_one*scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, -point_seven), Is.EqualTo(-point_seven*scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, point_one), Is.EqualTo(point_one * scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, point_seven), Is.EqualTo(point_seven * scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, -point_one), Is.EqualTo(-point_one * scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2, -point_seven), Is.EqualTo(-point_seven * scaleZNegative2).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, point_one), Is.EqualTo(point_one*scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, point_seven), Is.EqualTo(point_seven*scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, -point_one), Is.EqualTo(-point_one*scaleZNegative2).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, -point_seven), Is.EqualTo(-point_seven*scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, point_one), Is.EqualTo(point_one * scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, point_seven), Is.EqualTo(point_seven * scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, -point_one), Is.EqualTo(-point_one * scaleZNegative2).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZNegative2.Value, -point_seven), Is.EqualTo(-point_seven * scaleZNegative2).Using<float3>(EqualityWithTolerance));
 
 
             float3 scaleZXOnePointFive = new float3(1.5f, 1f, 1.5f);
@@ -874,16 +875,16 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
                 Value = float4x4.TRS(point_zero, quaternion.identity, scaleZXOnePointFive)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, point_one), Is.EqualTo(point_one*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, point_seven), Is.EqualTo(point_seven*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, -point_one), Is.EqualTo(-point_one*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, -point_seven), Is.EqualTo(-point_seven*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, point_one), Is.EqualTo(point_one * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, point_seven), Is.EqualTo(point_seven * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, -point_one), Is.EqualTo(-point_one * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive, -point_seven), Is.EqualTo(-point_seven * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, point_zero), Is.EqualTo(point_zero).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, point_one), Is.EqualTo(point_one*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, point_seven), Is.EqualTo(point_seven*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, -point_one), Is.EqualTo(-point_one*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, -point_seven), Is.EqualTo(-point_seven*scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, point_one), Is.EqualTo(point_one * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, point_seven), Is.EqualTo(point_seven * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, -point_one), Is.EqualTo(-point_one * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_ScaledZXOnePointFive.Value, -point_seven), Is.EqualTo(-point_seven * scaleZXOnePointFive).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_zero = new LocalToWorld()
@@ -905,8 +906,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_point);
             Assert.That(
                 TransformUtil.ConvertLocalToWorldPoint(localToWorld_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-                );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
 
             LogAssert.Expect(LogType.Error, invalidMatrixError_point);
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_zero.Value, point_zero), Is.EqualTo(point_zero));
@@ -921,8 +921,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_point);
             Assert.That(
                 TransformUtil.ConvertLocalToWorldPoint(localToWorld_zero.Value, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-            );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
             Logger.Debug("END: Expected error messages.");
         }
 
@@ -938,24 +937,24 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_Compound = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_sevenXY, quaternion.Euler(math.radians(45), 0, math.radians(45)), point_one*2f)
+                Value = float4x4.TRS(point_sevenXY, quaternion.Euler(math.radians(45), 0, math.radians(45)), point_one * 2f)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound, point_zero), Is.EqualTo(point_sevenXY).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound, point_one), Is.EqualTo(new float3(7f, 7.58578634f, 3.41421366f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound, point_seven), Is.EqualTo(new float3(7f, 11.1005039f, 23.8994942f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound, -point_one), Is.EqualTo(new float3(7f,6.41421366f, -3.41421366f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound, -point_one), Is.EqualTo(new float3(7f, 6.41421366f, -3.41421366f)).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound, -point_seven), Is.EqualTo(new float3(7f, 2.89949608f, -23.8994942f)).Using<float3>(EqualityWithTolerance));
 
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, point_zero), Is.EqualTo(point_sevenXY).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, point_one), Is.EqualTo(new float3(7 ,7.58578634f, 3.41421366f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, point_seven), Is.EqualTo(new float3(7 ,11.1005039f, 23.8994942f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, -point_one), Is.EqualTo(new float3(7 ,6.41421366f, -3.41421366f)).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, -point_seven), Is.EqualTo(new float3(7 ,2.89949608f, -23.8994942f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, point_one), Is.EqualTo(new float3(7, 7.58578634f, 3.41421366f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, point_seven), Is.EqualTo(new float3(7, 11.1005039f, 23.8994942f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, -point_one), Is.EqualTo(new float3(7, 6.41421366f, -3.41421366f)).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_Compound.Value, -point_seven), Is.EqualTo(new float3(7, 2.89949608f, -23.8994942f)).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_CompoundNegative = new LocalToWorld()
             {
-                Value = float4x4.TRS(-point_sevenXY, quaternion.Euler(math.radians(-45), 0, math.radians(-45)), point_one*-2f)
+                Value = float4x4.TRS(-point_sevenXY, quaternion.Euler(math.radians(-45), 0, math.radians(-45)), point_one * -2f)
             };
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_CompoundNegative, point_zero), Is.EqualTo(-point_sevenXY).Using<float3>(EqualityWithTolerance));
             Assert.That(TransformUtil.ConvertLocalToWorldPoint(localToWorld_CompoundNegative, point_one), Is.EqualTo(new float3(-9.82842731f, -8.41421318f, -1.41421366f)).Using<float3>(EqualityWithTolerance));
@@ -1086,51 +1085,41 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_compound = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one*2f)
+                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one * 2f)
             };
             float4x4 worldToLocal_compound = math.inverse(localToWorld_compound.Value);
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound, quaternion.identity),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, quaternion.identity)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, quaternion.identity)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound, rotation_ninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound, rotation_Zninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound, rotation_fortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound, rotation_ZfortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance));
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound, quaternion.identity),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, quaternion.identity)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, quaternion.identity)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound, rotation_ninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound, rotation_Zninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound, rotation_fortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound, rotation_ZfortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive_inverse, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_compound_negativeZ = new LocalToWorld()
@@ -1142,45 +1131,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound_negativeZ, quaternion.identity)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound_negativeZ, rotation_ninety)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound_negativeZ, rotation_Zninety)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound_negativeZ, rotation_fortyFive)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(localToWorld_compound_negativeZ, rotation_ZfortyFive)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound_negativeZ, quaternion.identity)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound_negativeZ, rotation_ninety)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound_negativeZ, rotation_Zninety)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound_negativeZ, rotation_fortyFive)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound_negativeZ, rotation_ZfortyFive)), worldToLocal_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_compound_zeroScale = new LocalToWorld()
@@ -1402,49 +1381,39 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_compound = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one*2f)
+                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one * 2f)
             };
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound, quaternion.identity),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, quaternion.identity)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, quaternion.identity)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound, rotation_ninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound, rotation_Zninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound, rotation_fortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound, rotation_ZfortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance));
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound.Value, quaternion.identity),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, quaternion.identity)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, quaternion.identity)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound.Value, rotation_ninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound.Value, rotation_Zninety),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_Zninety)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound.Value, rotation_fortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_fortyFive)).Using<quaternion>(EqualityWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound.Value, rotation_ZfortyFive),
-                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul(rotation_XZ_fortyFive, rotation_ZfortyFive)).Using<quaternion>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_compound_negativeZ = new LocalToWorld()
@@ -1456,45 +1425,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeZ, quaternion.identity)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance)
-                );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeZ, rotation_ninety)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeZ, rotation_Zninety)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeZ, rotation_fortyFive)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorld_compound_negativeZ, rotation_ZfortyFive)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound_negativeZ, quaternion.identity)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(quaternion.identity))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound_negativeZ, rotation_ninety)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound_negativeZ, rotation_Zninety)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_Zninety))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound_negativeZ, rotation_fortyFive)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_fortyFive))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound_negativeZ, rotation_ZfortyFive)), localToWorld_compound_negativeZScale),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, new float3x3(rotation_ZfortyFive))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_compound_zeroScale = new LocalToWorld()
@@ -1645,17 +1604,17 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 worldToLocal_two = math.inverse(localToWorld_two.Value);
 
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_one), Is.EqualTo(point_one/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_two), Is.EqualTo(point_two/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, -point_one), Is.EqualTo(-point_one/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, -point_two), Is.EqualTo(-point_two/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_zero), Is.EqualTo(point_zero/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_one), Is.EqualTo(point_one / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_two), Is.EqualTo(point_two / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, -point_one), Is.EqualTo(-point_one / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, -point_two), Is.EqualTo(-point_two / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(localToWorld_two, point_zero), Is.EqualTo(point_zero / point_two).Using<float3>(EqualityWithTolerance));
 
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_one), Is.EqualTo(point_one/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_two), Is.EqualTo(point_two/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, -point_one), Is.EqualTo(-point_one/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, -point_two), Is.EqualTo(-point_two/point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_zero), Is.EqualTo(point_zero/point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_one), Is.EqualTo(point_one / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_two), Is.EqualTo(point_two / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, -point_one), Is.EqualTo(-point_one / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, -point_two), Is.EqualTo(-point_two / point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_two, point_zero), Is.EqualTo(point_zero / point_two).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_negativeOne = new LocalToWorld()
@@ -1667,45 +1626,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeOne, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeOne, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_negativeTwo = new LocalToWorld()
@@ -1717,45 +1666,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_negativeTwo, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_negativeTwo, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_zero = new LocalToWorld()
@@ -1778,8 +1717,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_scale);
             Assert.That(
                 TransformUtil.ConvertWorldToLocalScale(localToWorld_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-                );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
 
             LogAssert.Expect(LogType.Error, invalidMatrixError_scale);
             Assert.That(TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, point_one), Is.EqualTo(point_infinity));
@@ -1794,8 +1732,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_scale);
             Assert.That(
                 TransformUtil.ConvertWorldToLocalScale(worldToLocal_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-            );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
             Logger.Debug("END: Expected error messages.");
 
 
@@ -1881,7 +1818,6 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             //     math.mul(worldToLocal_nonUniformRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_nonUniform, point_zero))),
             //     Is.EqualTo(math.mul((float3x3)worldToLocal_nonUniform, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
             // );
-
         }
 
         [Test]
@@ -1900,52 +1836,42 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_compound = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one*2f)
+                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one * 2f)
             };
             float4x4 worldToLocal_compound = math.inverse(localToWorld_compound.Value);
             float3x3 worldToLocal_compound_rotation = new float3x3(TransformUtil.ConvertWorldToLocalRotation(worldToLocal_compound, quaternion.identity));
 
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_rotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_compound_negativeZ = new LocalToWorld()
@@ -1957,45 +1883,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound_negativeZ, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound_negativeZ, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound_negativeZ, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound_negativeZ, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(localToWorld_compound_negativeZ, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound_negativeZ, point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound_negativeZ, point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound_negativeZ, -point_one))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound_negativeZ, -point_two))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(worldToLocal_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertWorldToLocalScale(worldToLocal_compound_negativeZ, point_zero))),
-                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)worldToLocal_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
         }
 
         // ----- ConvertLocalToWorldScale ----- //
@@ -2036,17 +1952,17 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
             float4x4 localToWorldMatrix_two = localToWorld_two.Value;
 
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, point_one), Is.EqualTo(point_one*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, point_two), Is.EqualTo(point_two*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, -point_one), Is.EqualTo(-point_one*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, -point_two), Is.EqualTo(-point_two*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, point_zero), Is.EqualTo(point_zero*point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, point_one), Is.EqualTo(point_one * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, point_two), Is.EqualTo(point_two * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, -point_one), Is.EqualTo(-point_one * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, -point_two), Is.EqualTo(-point_two * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorld_two, point_zero), Is.EqualTo(point_zero * point_two).Using<float3>(EqualityWithTolerance));
 
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, point_one), Is.EqualTo(point_one*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, point_two), Is.EqualTo(point_two*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, -point_one), Is.EqualTo(-point_one*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, -point_two), Is.EqualTo(-point_two*point_two).Using<float3>(EqualityWithTolerance));
-            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, point_zero), Is.EqualTo(point_zero*point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, point_one), Is.EqualTo(point_one * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, point_two), Is.EqualTo(point_two * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, -point_one), Is.EqualTo(-point_one * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, -point_two), Is.EqualTo(-point_two * point_two).Using<float3>(EqualityWithTolerance));
+            Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_two, point_zero), Is.EqualTo(point_zero * point_two).Using<float3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_negativeOne = new LocalToWorld()
@@ -2058,45 +1974,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeOne, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeOne, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeOne, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeOne, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeOne, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeOne, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeOne, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeOne, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeOne, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeOneRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeOne, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeOne, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_negativeTwo = new LocalToWorld()
@@ -2108,45 +2014,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeTwo, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeTwo, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeTwo, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeTwo, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_negativeTwo, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeTwo, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeTwo, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeTwo, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeTwo, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_negativeTwoRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_negativeTwo, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_negativeTwo, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_zero = new LocalToWorld()
@@ -2169,8 +2065,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_scale);
             Assert.That(
                 TransformUtil.ConvertLocalToWorldScale(localToWorld_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-                );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
 
             LogAssert.Expect(LogType.Error, invalidMatrixError_scale);
             Assert.That(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_zero, point_one), Is.EqualTo(point_infinity));
@@ -2185,8 +2080,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             LogAssert.Expect(LogType.Error, invalidMatrixError_scale);
             Assert.That(
                 TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_zero, new float3(2, -2, 0)),
-                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0))
-            );
+                Is.EqualTo(new float3(float.PositiveInfinity, float.NegativeInfinity, 0)));
             Logger.Debug("END: Expected error messages.");
 
 
@@ -2290,52 +2184,42 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             LocalToWorld localToWorld_compound = new LocalToWorld()
             {
-                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one*2f)
+                Value = float4x4.TRS(point_sevenXY, rotation_XZ_fortyFive, point_one * 2f)
             };
             float4x4 localToWorldMatrix_compound = localToWorld_compound.Value;
             float3x3 localToWorld_compound_rotation = new float3x3(TransformUtil.ConvertLocalToWorldRotation(localToWorldMatrix_compound, quaternion.identity));
 
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_rotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
 
             LocalToWorld localToWorld_compound_negativeZ = new LocalToWorld()
@@ -2347,45 +2231,35 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound_negativeZ, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound_negativeZ, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound_negativeZ, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound_negativeZ, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorld_compound_negativeZ, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
 
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeZ, point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeZ, point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeZ, -point_one))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_one))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeZ, -point_two))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(-point_two))).Using<float3x3>(EqualityWithTolerance));
             Assert.That(
                 math.mul(localToWorld_compound_negativeZRotation, float3x3.Scale(TransformUtil.ConvertLocalToWorldScale(localToWorldMatrix_compound_negativeZ, point_zero))),
-                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance)
-            );
+                Is.EqualTo(math.mul((float3x3)localToWorldMatrix_compound_negativeZ, float3x3.Scale(point_zero))).Using<float3x3>(EqualityWithTolerance));
         }
 
         // ----- ConvertWorldToLocalRect ----- //
@@ -2477,56 +2351,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_zero_zero),
-                Is.EqualTo(new Rect(rect_zero_zero.position - localToWorld_translateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_zero.position - localToWorld_translateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_seven_seven),
-                Is.EqualTo(new Rect(rect_seven_seven.position - localToWorld_translateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_seven.position - localToWorld_translateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_zero_one),
-                Is.EqualTo(new Rect(rect_zero_one.position - localToWorld_translateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_one.position - localToWorld_translateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(rect_seven_negativeSeven.position - localToWorld_translateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_negativeSeven.position - localToWorld_translateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(rect_zero_oneSeven.position - localToWorld_translateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_oneSeven.position - localToWorld_translateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(rect_zero_sevenOne.position - localToWorld_translateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_sevenOne.position - localToWorld_translateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position - localToWorld_translateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position - localToWorld_translateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position - localToWorld_translateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position - localToWorld_translateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(rect_negativeOffset_seven.position - localToWorld_translateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_seven.position - localToWorld_translateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position - localToWorld_translateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position - localToWorld_translateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_centered_seven),
-                Is.EqualTo(new Rect(rect_centered_seven.position - localToWorld_translateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_seven.position - localToWorld_translateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(rect_centered_negativeSeven.position - localToWorld_translateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativeSeven.position - localToWorld_translateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_translate, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position - localToWorld_translateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position - localToWorld_translateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_negativeTranslate = new LocalToWorld()
@@ -2537,56 +2398,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_zero_zero),
-                Is.EqualTo(new Rect(rect_zero_zero.position - localToWorld_negativeTranslateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_zero.position - localToWorld_negativeTranslateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_seven_seven),
-                Is.EqualTo(new Rect(rect_seven_seven.position - localToWorld_negativeTranslateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_seven.position - localToWorld_negativeTranslateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_zero_one),
-                Is.EqualTo(new Rect(rect_zero_one.position - localToWorld_negativeTranslateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_one.position - localToWorld_negativeTranslateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(rect_seven_negativeSeven.position - localToWorld_negativeTranslateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_negativeSeven.position - localToWorld_negativeTranslateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(rect_zero_oneSeven.position - localToWorld_negativeTranslateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_oneSeven.position - localToWorld_negativeTranslateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(rect_zero_sevenOne.position - localToWorld_negativeTranslateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_sevenOne.position - localToWorld_negativeTranslateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position - localToWorld_negativeTranslateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position - localToWorld_negativeTranslateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position - localToWorld_negativeTranslateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position - localToWorld_negativeTranslateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(rect_negativeOffset_seven.position - localToWorld_negativeTranslateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_seven.position - localToWorld_negativeTranslateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position - localToWorld_negativeTranslateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position - localToWorld_negativeTranslateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_centered_seven),
-                Is.EqualTo(new Rect(rect_centered_seven.position - localToWorld_negativeTranslateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_seven.position - localToWorld_negativeTranslateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(rect_centered_negativeSeven.position - localToWorld_negativeTranslateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativeSeven.position - localToWorld_negativeTranslateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_negativeTranslate, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position - localToWorld_negativeTranslateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position - localToWorld_negativeTranslateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance));
         }
 
         [Test]
@@ -2630,56 +2478,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_seven_seven),
-                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_zero_one),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_ninety, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_rotate_fortyFive = new LocalToWorld
@@ -2689,56 +2524,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_seven_seven),
-                Is.EqualTo(new Rect(9.474874f, 1.449748f, 9.474874f, 4.525125f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(9.474874f, 1.449748f, 9.474874f, 4.525125f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_zero_one),
-                Is.EqualTo(new Rect(0f, -0.1464466f, 1.353553f, 0.6464465f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -0.1464466f, 1.353553f, 0.6464465f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, -1.025126f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -1.025126f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(0f, -0.1464466f, 4.353553f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -0.1464466f, 4.353553f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(0f, -1.025126f, 6.474874f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -1.025126f, 6.474874f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-4.353553f, -3.5f, 4.353553f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-4.353553f, -3.5f, 4.353553f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-6.474874f, -0.4999999f, 6.474874f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-6.474874f, -0.4999999f, 6.474874f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-18.94975f, -5.974873f, 9.474874f, 4.525125f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-18.94975f, -5.974873f, 9.474874f, 4.525125f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-28.42462f, -8.449746f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-28.42462f, -8.449746f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_centered_seven),
-                Is.EqualTo(new Rect(-4.737437f, -2.262563f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-4.737437f, -2.262563f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-14.21231f, -4.737437f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14.21231f, -4.737437f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_fortyFive, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-10.71231f, -1.237437f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.71231f, -1.237437f, 9.474874f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_rotate_Xninety = new LocalToWorld
@@ -2748,56 +2570,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_seven_seven),
-                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_zero_one),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Xninety, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_rotate_Zninety = new LocalToWorld
@@ -2807,56 +2616,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_seven_seven),
-                Is.EqualTo(new Rect(6.999999f, -14f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(6.999999f, -14f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_zero_one),
-                Is.EqualTo(new Rect(0f, -1f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -1f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, -7.000002f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -7.000002f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(0f, -1.000001f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -1.000001f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(0f, -7.000001f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -7.000001f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-7.000001f, 0f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7.000001f, 0f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-1f, 0f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1f, 0f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-14f, 7.000002f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14f, 7.000002f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-21f, 14f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-21f, 14f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.500001f, -3.500001f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.500001f, -3.500001f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-10.5f, 3.500001f, 7f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 3.500001f, 7f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_rotate_Zninety, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-3.5f, 3.5f, 7.000001f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, 3.5f, 7.000001f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
         }
 
         [Test]
@@ -2891,7 +2687,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             float3 scale_two = new float3(2f);
             float3 scale_negativeTwo = -scale_two;
-            float3 scale_twoNegativeZ = new float3(2f,2f,-2f);
+            float3 scale_twoNegativeZ = new float3(2f, 2f, -2f);
             float3 scale_ZnegativeTwo = new float3(point_one.xy, -2f);
             float3 scale_ZXonePointFive = new float3(1.5f, 1f, 1.5f);
             float3 scale_zero = float3.zero;
@@ -2903,57 +2699,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_seven_seven),
-                 Is.EqualTo(new Rect(3.5f, 3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 0.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-0.5f, -3.5f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-3.5f, -0.5f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-7f, -7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-10.5f, -10.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_centered_seven),
-                 Is.EqualTo(new Rect(-1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-5.25f, -5.25f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-5.25f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_seven_seven),
+                Is.EqualTo(new Rect(3.5f, 3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 0.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-0.5f, -3.5f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-3.5f, -0.5f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-7f, -7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-10.5f, -10.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_centered_seven),
+                Is.EqualTo(new Rect(-1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-5.25f, -5.25f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_two, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-5.25f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_negativeTwo = new LocalToWorld()
@@ -2962,57 +2745,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_seven_seven),
-                 Is.EqualTo(new Rect(-7f, -7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_one),
-                 Is.EqualTo(new Rect(-0.5f, -0.5f, 0.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(-3.5f, -3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(-0.5f, -3.5f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(-3.5f, -0.5f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(3.5f, 3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(7f, 7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_centered_seven),
-                 Is.EqualTo(new Rect(-1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(1.75f, 1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_seven_seven),
+                Is.EqualTo(new Rect(-7f, -7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_one),
+                Is.EqualTo(new Rect(-0.5f, -0.5f, 0.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(-3.5f, -3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(-0.5f, -3.5f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(-3.5f, -0.5f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(3.5f, 3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(7f, 7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_centered_seven),
+                Is.EqualTo(new Rect(-1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(1.75f, 1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_negativeTwo, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_twoNegativeZ = new LocalToWorld()
@@ -3021,57 +2791,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_seven_seven),
-                 Is.EqualTo(new Rect(3.5f, 3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 0.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-0.5f, -3.5f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-3.5f, -0.5f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-7f, -7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-10.5f, -10.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_centered_seven),
-                 Is.EqualTo(new Rect(-1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-5.25f, -5.25f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-5.25f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_seven_seven),
+                Is.EqualTo(new Rect(3.5f, 3.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 0.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-0.5f, -3.5f, 0.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-3.5f, -0.5f, 3.5f, 0.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-7f, -7f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-10.5f, -10.5f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_centered_seven),
+                Is.EqualTo(new Rect(-1.75f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-5.25f, -5.25f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_twoNegativeZ, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-5.25f, -1.75f, 3.5f, 3.5f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_ZnegativeTwo = new LocalToWorld()
@@ -3080,57 +2837,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_seven_seven),
-                 Is.EqualTo(new Rect(7f, 7f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-1f, -7f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-7f, -1f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-14f, -14f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-21f, -21f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_centered_seven),
-                 Is.EqualTo(new Rect(-3.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-10.5f, -10.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-10.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_seven_seven),
+                Is.EqualTo(new Rect(7f, 7f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-1f, -7f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-7f, -1f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-14f, -14f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-21f, -21f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_centered_seven),
+                Is.EqualTo(new Rect(-3.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-10.5f, -10.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-10.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_ZXonePointFive = new LocalToWorld()
@@ -3139,57 +2883,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_seven_seven),
-                 Is.EqualTo(new Rect(4.666667f, 7f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 0.6666667f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 0.6666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 4.666667f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-0.6666667f, -7f, 0.6666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-4.666667f, -1f, 4.666667f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-9.333334f, -14f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-14f, -21f, 4.666666f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_centered_seven),
-                 Is.EqualTo(new Rect(-2.333333f, -3.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-7f, -10.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-7f, -3.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_seven_seven),
+                Is.EqualTo(new Rect(4.666667f, 7f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 0.6666667f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 0.6666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 4.666667f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-0.6666667f, -7f, 0.6666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-4.666667f, -1f, 4.666667f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-9.333334f, -14f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-14f, -21f, 4.666666f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_centered_seven),
+                Is.EqualTo(new Rect(-2.333333f, -3.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-7f, -10.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_ZXonePointFive, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-7f, -3.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_zero = new LocalToWorld()
@@ -3205,70 +2936,57 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             Logger.Debug("BEGIN: Expected error messages.");
             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_zero),
-                 Is.EqualTo(rect_infinity)
-                 );
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_zero),
+                Is.EqualTo(rect_infinity));
             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_seven_seven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_one),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_seven_negativeSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_oneSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_sevenOne),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_negativeOneSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_negativeSevenOne),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_negativeOffset_seven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_centered_seven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_centered_negativeSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_seven_seven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_one),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_seven_negativeSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_oneSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_sevenOne),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_negativeOneSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_zero_negativeSevenOne),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_negativeOffset_seven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_centered_seven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_centered_negativeSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_scale_zero, rect_centered_negativePositiveSeven),
-                Is.EqualTo(rect_infinity)
-                 );
-             Logger.Debug("END: Expected error messages.");
+                Is.EqualTo(rect_infinity));
+            Logger.Debug("END: Expected error messages.");
         }
 
         [Test]
@@ -3308,56 +3026,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_zero_zero),
-                Is.EqualTo(new Rect(6.316583f, -2.474874f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(6.316583f, -2.474874f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_seven_seven),
-                Is.EqualTo(new Rect(-6.316583f, -1.025126f, 6.316583f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-6.316583f, -1.025126f, 6.316583f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_zero_one),
-                Is.EqualTo(new Rect(5.414214f, -2.62132f, 0.9023685f, 0.6464467f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(5.414214f, -2.62132f, 0.9023685f, 0.6464467f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, -3.5f, 6.316583f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -3.5f, 6.316583f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(3.414214f, -2.62132f, 2.902369f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.414214f, -2.62132f, 2.902369f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(2f, -3.5f, 4.316583f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(2f, -3.5f, 4.316583f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(6.316583f, -5.974873f, 2.902369f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(6.316583f, -5.974873f, 2.902369f, 3.646446f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(6.316583f, -2.974874f, 4.316583f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(6.316583f, -2.974874f, 4.316583f, 1.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(12.63317f, -8.449746f, 6.316584f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(12.63317f, -8.449746f, 6.316584f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(18.94975f, -10.92462f, 6.316582f, 4.525125f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(18.94975f, -10.92462f, 6.316582f, 4.525125f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_centered_seven),
-                Is.EqualTo(new Rect(3.158291f, -4.737437f, 6.316583f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.158291f, -4.737437f, 6.316583f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(9.474874f, -7.21231f, 6.316582f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(9.474874f, -7.21231f, 6.316582f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compound, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(7.141541f, -3.71231f, 6.316582f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7.141541f, -3.71231f, 6.316582f, 4.525126f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_compoundNegative = new LocalToWorld
@@ -3367,56 +3072,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_zero_zero),
-                Is.EqualTo(new Rect(3.299832f, -7f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.299832f, -7f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_seven_seven),
-                Is.EqualTo(new Rect(5.916246f, -21f, 4.666667f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(5.916246f, -21f, 4.666667f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_zero_one),
-                Is.EqualTo(new Rect(3.202201f, -8f, 0.666667f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.202201f, -8f, 0.666667f, 1f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(2.616414f, -14f, 4.666666f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(2.616414f, -14f, 4.666666f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(2.616414f, -11f, 1.252453f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(2.616414f, -11f, 1.252453f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(3.202201f, -11f, 4.08088f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.202201f, -11f, 4.08088f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(2.730796f, -7f, 1.252453f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(2.730796f, -7f, 1.252453f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-0.6834174f, -7f, 4.08088f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-0.6834174f, -7f, 4.08088f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-3.983249f, 0f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.983249f, 0f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-7.283081f, 7f, 4.666666f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7.283081f, 7f, 4.666666f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_centered_seven),
-                Is.EqualTo(new Rect(0.9664984f, -10.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0.9664984f, -10.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-2.333333f, -3.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-2.333333f, -3.5f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertWorldToLocalRect(localToWorld_compoundNegative, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-3.016751f, -7f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.016751f, -7f, 4.666667f, 7f)).Using<Rect>(EquivalencyWithTolerance));
         }
 
         // ----- ConvertWorldToLocalRect ----- //
@@ -3508,56 +3200,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_zero_zero),
-                Is.EqualTo(new Rect(rect_zero_zero.position + localToWorld_translateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_zero.position + localToWorld_translateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_seven_seven),
-                Is.EqualTo(new Rect(rect_seven_seven.position + localToWorld_translateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_seven.position + localToWorld_translateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_zero_one),
-                Is.EqualTo(new Rect(rect_zero_one.position + localToWorld_translateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_one.position + localToWorld_translateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(rect_seven_negativeSeven.position + localToWorld_translateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_negativeSeven.position + localToWorld_translateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(rect_zero_oneSeven.position + localToWorld_translateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_oneSeven.position + localToWorld_translateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(rect_zero_sevenOne.position + localToWorld_translateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_sevenOne.position + localToWorld_translateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position + localToWorld_translateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position + localToWorld_translateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position + localToWorld_translateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position + localToWorld_translateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(rect_negativeOffset_seven.position + localToWorld_translateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_seven.position + localToWorld_translateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position + localToWorld_translateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position + localToWorld_translateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_centered_seven),
-                Is.EqualTo(new Rect(rect_centered_seven.position + localToWorld_translateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_seven.position + localToWorld_translateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(rect_centered_negativeSeven.position + localToWorld_translateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativeSeven.position + localToWorld_translateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_translate, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position + localToWorld_translateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position + localToWorld_translateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_negativeTranslate = new LocalToWorld()
@@ -3568,56 +3247,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_zero_zero),
-                Is.EqualTo(new Rect(rect_zero_zero.position + localToWorld_negativeTranslateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_zero.position + localToWorld_negativeTranslateTranslation, rect_zero_zero.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_seven_seven),
-                Is.EqualTo(new Rect(rect_seven_seven.position + localToWorld_negativeTranslateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_seven.position + localToWorld_negativeTranslateTranslation, rect_seven_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_zero_one),
-                Is.EqualTo(new Rect(rect_zero_one.position + localToWorld_negativeTranslateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_one.position + localToWorld_negativeTranslateTranslation, rect_zero_one.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(rect_seven_negativeSeven.position + localToWorld_negativeTranslateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_seven_negativeSeven.position + localToWorld_negativeTranslateTranslation, rect_seven_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(rect_zero_oneSeven.position + localToWorld_negativeTranslateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_oneSeven.position + localToWorld_negativeTranslateTranslation, rect_zero_oneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(rect_zero_sevenOne.position + localToWorld_negativeTranslateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_sevenOne.position + localToWorld_negativeTranslateTranslation, rect_zero_sevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position + localToWorld_negativeTranslateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeOneSeven.position + localToWorld_negativeTranslateTranslation, rect_zero_negativeOneSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position + localToWorld_negativeTranslateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_zero_negativeSevenOne.position + localToWorld_negativeTranslateTranslation, rect_zero_negativeSevenOne.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(rect_negativeOffset_seven.position + localToWorld_negativeTranslateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_seven.position + localToWorld_negativeTranslateTranslation, rect_negativeOffset_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position + localToWorld_negativeTranslateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_negativeOffset_negativeSeven.position + localToWorld_negativeTranslateTranslation, rect_negativeOffset_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_centered_seven),
-                Is.EqualTo(new Rect(rect_centered_seven.position + localToWorld_negativeTranslateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_seven.position + localToWorld_negativeTranslateTranslation, rect_centered_seven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(rect_centered_negativeSeven.position + localToWorld_negativeTranslateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativeSeven.position + localToWorld_negativeTranslateTranslation, rect_centered_negativeSeven.size)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_negativeTranslate, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position + localToWorld_negativeTranslateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(rect_centered_negativePositiveSeven.position + localToWorld_negativeTranslateTranslation, rect_centered_negativePositiveSeven.size)).Using<Rect>(EquivalencyWithTolerance));
         }
 
         [Test]
@@ -3661,56 +3327,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_seven_seven),
-                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_zero_one),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_ninety, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_rotate_fortyFive = new LocalToWorld
@@ -3720,56 +3373,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_seven_seven),
-                Is.EqualTo(new Rect(3.924621f, 7f, 6.999999f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.924621f, 7f, 6.999999f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_zero_one),
-                Is.EqualTo(new Rect(-0.1464466f, 0f, 1f, 0.9999999f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-0.1464466f, 0f, 1f, 0.9999999f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(-1.025126f, 0f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1.025126f, 0f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(-1.025126f, 0f, 1.87868f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1.025126f, 0f, 1.87868f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(-0.1464466f, 0f, 6.12132f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-0.1464466f, 0f, 6.12132f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-0.8535534f, -4f, 1.87868f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-0.8535534f, -4f, 1.87868f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-5.974874f, -4f, 6.12132f, 4f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-5.974874f, -4f, 6.12132f, 4f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-10.92462f, -14f, 6.999999f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.92462f, -14f, 6.999999f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-15.87437f, -21f, 7.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-15.87437f, -21f, 7.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-8.449748f, -10.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-8.449748f, -10.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_fortyFive, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-9.474874f, -7f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-9.474874f, -7f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_rotate_Xninety = new LocalToWorld
@@ -3779,56 +3419,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_seven_seven),
-                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_zero_one),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1f, 0f, 1f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-21f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Xninety, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, 0f, 7f, 0f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_rotate_Zninety = new LocalToWorld
@@ -3838,56 +3465,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_zero_zero),
-                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_seven_seven),
-                Is.EqualTo(new Rect(-14f, 6.999998f, 7.000002f, 7.000003f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-14f, 6.999998f, 7.000002f, 7.000003f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_zero_one),
-                Is.EqualTo(new Rect(-1f, 0f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1f, 0f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(-7.000002f, 0f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7.000002f, 0f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(-7.000001f, 0f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7.000001f, 0f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(-1.000001f, 0f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-1.000001f, 0f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(0f, -1f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -1f, 7.000001f, 1.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(0f, -7.000001f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(0f, -7.000001f, 1.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(7.000002f, -14f, 7.000002f, 7.000003f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7.000002f, -14f, 7.000002f, 7.000003f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(14f, -21f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(14f, -21f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_centered_seven),
-                Is.EqualTo(new Rect(-3.500001f, -3.500001f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.500001f, -3.500001f, 7.000002f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(3.500001f, -10.5f, 7.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(3.500001f, -10.5f, 7.000001f, 7.000001f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_rotate_Zninety, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-3.5f, -10.5f, 7.000001f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-3.5f, -10.5f, 7.000001f, 7.000002f)).Using<Rect>(EquivalencyWithTolerance));
         }
 
         [Test]
@@ -3922,7 +3536,7 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             float3 scale_two = new float3(2f);
             float3 scale_negativeTwo = -scale_two;
-            float3 scale_twoNegativeZ = new float3(2f,2f,-2f);
+            float3 scale_twoNegativeZ = new float3(2f, 2f, -2f);
             float3 scale_ZnegativeTwo = new float3(point_one.xy, -2f);
             float3 scale_ZXonePointFive = new float3(1.5f, 1f, 1.5f);
             float3 scale_zero = float3.zero;
@@ -3934,57 +3548,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_seven_seven),
-                 Is.EqualTo(new Rect(14f, 14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 2f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-2f, -14f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-14f, -2f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-28f, -28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-42f, -42f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_centered_seven),
-                 Is.EqualTo(new Rect(-7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-21f, -21f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-21f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_seven_seven),
+                Is.EqualTo(new Rect(14f, 14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 2f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-2f, -14f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-14f, -2f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-28f, -28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-42f, -42f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_centered_seven),
+                Is.EqualTo(new Rect(-7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-21f, -21f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_two, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-21f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_negativeTwo = new LocalToWorld()
@@ -3993,57 +3594,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_seven_seven),
-                 Is.EqualTo(new Rect(-28f, -28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_one),
-                 Is.EqualTo(new Rect(-2f, -2f, 2f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(-14f, -14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(-2f, -14f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(-14f, -2f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(14f, 14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(28f, 28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_centered_seven),
-                 Is.EqualTo(new Rect(-7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(7f, 7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_seven_seven),
+                Is.EqualTo(new Rect(-28f, -28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_one),
+                Is.EqualTo(new Rect(-2f, -2f, 2f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(-14f, -14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(-2f, -14f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(-14f, -2f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(14f, 14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(28f, 28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_centered_seven),
+                Is.EqualTo(new Rect(-7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(7f, 7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_negativeTwo, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_twoNegativeZ = new LocalToWorld()
@@ -4052,116 +3640,90 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_seven_seven),
-                 Is.EqualTo(new Rect(14f, 14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 2f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-2f, -14f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-14f, -2f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-28f, -28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-42f, -42f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_centered_seven),
-                 Is.EqualTo(new Rect(-7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-21f, -21f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-21f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_seven_seven),
+                Is.EqualTo(new Rect(14f, 14f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 2f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-2f, -14f, 2f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-14f, -2f, 14f, 2f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-28f, -28f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-42f, -42f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_centered_seven),
+                Is.EqualTo(new Rect(-7f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-21f, -21f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_twoNegativeZ, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-21f, -7f, 14f, 14f)).Using<Rect>(EquivalencyWithTolerance));
 
 
-             LocalToWorld localToWorld_scale_ZnegativeTwo = new LocalToWorld()
+            LocalToWorld localToWorld_scale_ZnegativeTwo = new LocalToWorld()
             {
                 Value = float4x4.TRS(point_zero, quaternion.identity, scale_ZnegativeTwo)
             };
 
             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_seven_seven),
-                 Is.EqualTo(new Rect(7f, 7f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-1f, -7f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-7f, -1f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-14f, -14f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-21f, -21f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_centered_seven),
-                 Is.EqualTo(new Rect(-3.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-10.5f, -10.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-10.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_seven_seven),
+                Is.EqualTo(new Rect(7f, 7f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 1f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-1f, -7f, 1f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-7f, -1f, 7f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-14f, -14f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-21f, -21f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_centered_seven),
+                Is.EqualTo(new Rect(-3.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-10.5f, -10.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZnegativeTwo, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-10.5f, -3.5f, 7f, 7f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_ZXonePointFive = new LocalToWorld()
@@ -4170,57 +3732,44 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             };
 
             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_zero),
-                 Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_seven_seven),
-                 Is.EqualTo(new Rect(10.5f, 7f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_one),
-                 Is.EqualTo(new Rect(0f, 0f, 1.5f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_seven_negativeSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_oneSeven),
-                 Is.EqualTo(new Rect(0f, 0f, 1.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_sevenOne),
-                 Is.EqualTo(new Rect(0f, 0f, 10.5f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeOneSeven),
-                 Is.EqualTo(new Rect(-1.5f, -7f, 1.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeSevenOne),
-                 Is.EqualTo(new Rect(-10.5f, -1f, 10.5f, 1f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_seven),
-                 Is.EqualTo(new Rect(-21f, -14f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(new Rect(-31.5f, -21f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_centered_seven),
-                 Is.EqualTo(new Rect(-5.25f, -3.5f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_centered_negativeSeven),
-                 Is.EqualTo(new Rect(-15.75f, -10.5f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_centered_negativePositiveSeven),
-                 Is.EqualTo(new Rect(-15.75f, -3.5f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance)
-                 );
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_zero),
+                Is.EqualTo(new Rect(0f, 0f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_seven_seven),
+                Is.EqualTo(new Rect(10.5f, 7f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_one),
+                Is.EqualTo(new Rect(0f, 0f, 1.5f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_seven_negativeSeven),
+                Is.EqualTo(new Rect(0f, 0f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_oneSeven),
+                Is.EqualTo(new Rect(0f, 0f, 1.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_sevenOne),
+                Is.EqualTo(new Rect(0f, 0f, 10.5f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeOneSeven),
+                Is.EqualTo(new Rect(-1.5f, -7f, 1.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_zero_negativeSevenOne),
+                Is.EqualTo(new Rect(-10.5f, -1f, 10.5f, 1f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_seven),
+                Is.EqualTo(new Rect(-21f, -14f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(new Rect(-31.5f, -21f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_centered_seven),
+                Is.EqualTo(new Rect(-5.25f, -3.5f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_centered_negativeSeven),
+                Is.EqualTo(new Rect(-15.75f, -10.5f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_ZXonePointFive, rect_centered_negativePositiveSeven),
+                Is.EqualTo(new Rect(-15.75f, -3.5f, 10.5f, 7f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_scale_zero = new LocalToWorld()
@@ -4236,70 +3785,57 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             Logger.Debug("BEGIN: Expected error messages.");
             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_zero),
-                 Is.EqualTo(rect_infinity)
-                 );
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_zero),
+                Is.EqualTo(rect_infinity));
             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_seven_seven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_one),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_seven_negativeSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_oneSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_sevenOne),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_negativeOneSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_negativeSevenOne),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_negativeOffset_seven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_negativeOffset_negativeSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_centered_seven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
-                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_centered_negativeSeven),
-                 Is.EqualTo(rect_infinity)
-                 );
-             LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
-             Assert.That(
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_seven_seven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_one),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_seven_negativeSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_oneSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_sevenOne),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_negativeOneSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_zero_negativeSevenOne),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_negativeOffset_seven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_negativeOffset_negativeSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_centered_seven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
+                TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_centered_negativeSeven),
+                Is.EqualTo(rect_infinity));
+            LogAssert.Expect(LogType.Error, invalidMatrixError_rect);
+            Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_scale_zero, rect_centered_negativePositiveSeven),
-                Is.EqualTo(rect_infinity)
-                 );
-             Logger.Debug("END: Expected error messages.");
+                Is.EqualTo(rect_infinity));
+            Logger.Debug("END: Expected error messages.");
         }
 
         [Test]
@@ -4339,56 +3875,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_zero_zero),
-                Is.EqualTo(new Rect(7f, 7f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 7f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_seven_seven),
-                Is.EqualTo(new Rect(-12.97487f, 0f, 9.987437f, 8.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-12.97487f, 0f, 9.987437f, 8.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_zero_one),
-                Is.EqualTo(new Rect(5.573223f, 6.25f, 1.426777f, 1.25f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(5.573223f, 6.25f, 1.426777f, 1.25f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(-2.987437f, 1.75f, 9.987437f, 8.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-2.987437f, 1.75f, 9.987437f, 8.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(4.694544f, 6.25f, 2.305456f, 4.25f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(4.694544f, 6.25f, 2.305456f, 4.25f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(-2.108757f, 1.75f, 9.108757f, 5.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-2.108757f, 1.75f, 9.108757f, 5.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(7f, 3.5f, 2.305456f, 4.25f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 3.5f, 2.305456f, 4.25f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(7f, 6.5f, 9.108757f, 5.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(7f, 6.5f, 9.108757f, 5.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(16.98744f, 5.250001f, 9.987436f, 8.749999f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(16.98744f, 5.250001f, 9.987436f, 8.749999f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(26.97487f, 7.000001f, 9.987436f, 8.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(26.97487f, 7.000001f, 9.987436f, 8.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_centered_seven),
-                Is.EqualTo(new Rect(2.006281f, 2.625f, 9.987438f, 8.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(2.006281f, 2.625f, 9.987438f, 8.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(11.99372f, 4.375f, 9.987436f, 8.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(11.99372f, 4.375f, 9.987436f, 8.75f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compound, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(10.96859f, 7.875f, 9.987435f, 8.75f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(10.96859f, 7.875f, 9.987435f, 8.75f)).Using<Rect>(EquivalencyWithTolerance));
 
 
             LocalToWorld localToWorld_compoundNegative = new LocalToWorld
@@ -4398,56 +3921,43 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
 
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_zero_zero),
-                Is.EqualTo(new Rect(-7f, -7f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7f, -7f, 0f, 0f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_seven_seven),
-                Is.EqualTo(new Rect(-5.037689f, -17.07538f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-5.037689f, -17.07538f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_zero_one),
-                Is.EqualTo(new Rect(-7.5f, -7.71967f, 1.78033f, 0.7196698f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7.5f, -7.71967f, 1.78033f, 0.7196698f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_seven_negativeSeven),
-                Is.EqualTo(new Rect(-10.5f, -12.03769f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, -12.03769f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_zero_oneSeven),
-                Is.EqualTo(new Rect(-10.5f, -10.71967f, 4.78033f, 3.719669f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-10.5f, -10.71967f, 4.78033f, 3.719669f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_zero_sevenOne),
-                Is.EqualTo(new Rect(-7.5f, -9.037689f, 9.462311f, 2.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-7.5f, -9.037689f, 9.462311f, 2.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_zero_negativeOneSeven),
-                Is.EqualTo(new Rect(-8.28033f, -7f, 4.78033f, 3.719669f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-8.28033f, -7f, 4.78033f, 3.719669f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_zero_negativeSevenOne),
-                Is.EqualTo(new Rect(-15.96231f, -7f, 9.462311f, 2.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-15.96231f, -7f, 9.462311f, 2.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_negativeOffset_seven),
-                Is.EqualTo(new Rect(-21.42462f, -1.962311f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-21.42462f, -1.962311f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_negativeOffset_negativeSeven),
-                Is.EqualTo(new Rect(-26.88693f, 3.075377f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-26.88693f, 3.075377f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_centered_seven),
-                Is.EqualTo(new Rect(-13.23116f, -9.518845f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-13.23116f, -9.518845f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_centered_negativeSeven),
-                Is.EqualTo(new Rect(-18.69347f, -4.481155f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-18.69347f, -4.481155f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
             Assert.That(
                 TransformUtil.ConvertLocalToWorldRect(localToWorld_compoundNegative, rect_centered_negativePositiveSeven),
-                Is.EqualTo(new Rect(-22.19347f, -7.981155f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance)
-                );
+                Is.EqualTo(new Rect(-22.19347f, -7.981155f, 12.46231f, 5.037689f)).Using<Rect>(EquivalencyWithTolerance));
         }
     }
 }

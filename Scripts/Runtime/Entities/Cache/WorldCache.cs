@@ -22,10 +22,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The <see cref="World"/> this represents.
         /// </summary>
-        public World World
-        {
-            get;
-        }
+        public World World { get; }
 
         internal WorldCache(World world)
         {
@@ -122,9 +119,9 @@ namespace Anvil.Unity.DOTS.Entities
         private void ParsePlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem)
         {
             if (playerLoopSystem.updateDelegate != null
-             && COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type)
-             && PlayerLoopUtil.IsPlayerLoopSystemPartOfWorld(ref playerLoopSystem, World)
-             && PlayerLoopUtil.TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemGroup group))
+                && COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type)
+                && PlayerLoopUtil.IsPlayerLoopSystemPartOfWorld(ref playerLoopSystem, World)
+                && PlayerLoopUtil.TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemGroup group))
             {
                 ParseSystemGroup(null, group);
             }

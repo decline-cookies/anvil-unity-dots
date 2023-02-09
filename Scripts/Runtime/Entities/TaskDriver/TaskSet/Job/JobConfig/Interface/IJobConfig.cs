@@ -18,10 +18,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <summary>
         /// A configuration helper that will run this job only once.
-        /// After being run, it will set <see cref="IsEnabled"/> to false.
+        /// It will set <see cref="IsEnabled"/> to true, and then after being run,
+        /// it will set <see cref="IsEnabled"/> to false.
         /// </summary>
         /// <remarks>
-        /// This is useful for the initial setup jobs.
+        /// This is useful for the initial setup jobs or to run once after making some structural changes.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RunOnce();
@@ -72,6 +73,25 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
+
+
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id)
+            where TData : unmanaged;
+
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id)
+            where TData : unmanaged;
+
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id)
+            where TData : unmanaged;
+
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id)
+            where TData : unmanaged;
+
+        public IJobConfig RequirePersistentDataForRead<TData>(string id)
+            where TData : unmanaged;
+
+        public IJobConfig RequirePersistentDataForWrite<TData>(string id)
+            where TData : unmanaged;
 
         /// <summary>
         /// Specifies a generic struct to be written to in an exclusive-write context.

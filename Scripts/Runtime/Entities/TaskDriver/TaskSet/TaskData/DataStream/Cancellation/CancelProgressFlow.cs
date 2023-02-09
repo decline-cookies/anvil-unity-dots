@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_CancelProgressFlowNodes = new List<CancelProgressFlowNode>();
             m_CancelFlowHierarchy = new Dictionary<int, List<CancelProgressFlowNode>>();
-            
+
             //Build up the hierarchy of when things should be scheduled so that the bottom most get a chance first
             //This will ensure the order of jobs executed to allow for possible 1 frame bubble up of completes
             BuildSchedulingHierarchy(topLevelTaskDriver, 0, null);
@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //Get all the jobs for updating progress back in order of execution to ensure that progress propagates
             //up the chain correctly
             m_OrderedBulkJobSchedulers = CreateOrderedBulkJobSchedulers();
-            
+
             //TODO: #108 - Lazy create this as needed if that's the case when decorating the job.
             m_DebugString = BuildDebugString();
         }
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_CancelProgressFlowNodes.DisposeAllAndTryClear();
             m_OrderedBulkJobSchedulers.DisposeAllAndTryClear();
-            
+
             base.DisposeSelf();
         }
 
@@ -50,13 +50,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private BulkJobScheduler<CancelProgressFlowNode>[] CreateOrderedBulkJobSchedulers()
         {
             List<BulkJobScheduler<CancelProgressFlowNode>> orderedBulkJobSchedulers = new List<BulkJobScheduler<CancelProgressFlowNode>>();
-            
+
             //In order for cancel progress to propagate correctly, we need to first check our deepest nodes in the chain
             //and they will write to their parents if we should keep waiting for the cancellation to be complete or not.
             //This builds up the order in which we need to execute those jobs so that we're doing it in the most 
             //efficient manner yet still preserving the integrity of the chain. A complete can cascade from the lowest 
             //level up to the top in one frame this way.
-            
+
             int maxDepth = m_CancelFlowHierarchy.Count - 1;
             for (int depth = maxDepth; depth >= 0; --depth)
             {
@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             List<CancelProgressFlowNode> cancelFlows = GetOrCreateAtDepth(depth);
             List<CancelProgressFlowNode> cancelFlowsOneDeeper = GetOrCreateAtDepth(depth + 1);
-            
+
             //If we don't have any Cancellable Data, then none of our children/systems do either, so we can skip
             if (!taskSetOwner.HasCancellableData)
             {
@@ -98,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelProgressFlowNode taskDriverNode = new CancelProgressFlowNode(taskSetOwner, parent);
             cancelFlows.Add(taskDriverNode);
             m_CancelProgressFlowNodes.Add(taskDriverNode);
-                
+
             //If our system has Cancellable Data, we need a node for it as well but one level deeper
             if (taskSetOwner.TaskDriverSystem.HasCancellableData)
             {
@@ -106,14 +106,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 cancelFlowsOneDeeper.Add(systemNode);
                 m_CancelProgressFlowNodes.Add(systemNode);
             }
-                
+
             //Drill down into the children
             foreach (AbstractTaskDriver subTaskDriver in taskSetOwner.SubTaskDrivers)
             {
                 BuildSchedulingHierarchy(subTaskDriver, depth + 1, taskDriverNode);
             }
         }
-        
+
         private List<CancelProgressFlowNode> GetOrCreateAtDepth(int depth)
         {
             if (!m_CancelFlowHierarchy.TryGetValue(depth, out List<CancelProgressFlowNode> cancelProgressFlowNodes))
@@ -141,7 +141,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return dependsOn;
         }
-        
+
         private JobHandle ScheduleBulkSchedulers(BulkJobScheduler<CancelProgressFlowNode> bulkJobScheduler, JobHandle dependsOn)
         {
             return bulkJobScheduler.Schedule(dependsOn, CancelProgressFlowNode.CHECK_PROGRESS_SCHEDULE_FUNCTION);

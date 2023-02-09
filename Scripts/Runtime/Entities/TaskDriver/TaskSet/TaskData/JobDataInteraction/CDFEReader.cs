@@ -9,8 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to read</typeparam>
     [BurstCompatible]
-    public readonly struct CDFEReader<T>
-        where T : struct, IComponentData
+    public readonly struct CDFEReader<T> where T : struct, IComponentData
     {
         [ReadOnly] private readonly ComponentDataFromEntity<T> m_CDFE;
 
@@ -18,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_CDFE = system.GetComponentDataFromEntity<T>(true);
         }
-        
+
         /// <summary>
         /// Gets the <typeparamref name="T"/> that corresponds to the passed <see cref="Entity"/>
         /// </summary>
@@ -27,5 +26,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_CDFE[entity];
         }
+
+        /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>
+        public bool HasComponent(Entity entity) => m_CDFE.HasComponent(entity);
     }
 }

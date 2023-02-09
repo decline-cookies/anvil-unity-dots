@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : unmanaged, IEquatable<T>
     {
         private static readonly int INITIAL_SIZE = (int)math.ceil(ChunkUtil.MaxElementsPerChunk<T>() / 8.0f);
-        
+
         public UnsafeParallelHashMap<T, bool> Lookup { get; }
 
         public ActiveLookupData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(id, taskSetOwner, cancelRequestBehaviour, null)

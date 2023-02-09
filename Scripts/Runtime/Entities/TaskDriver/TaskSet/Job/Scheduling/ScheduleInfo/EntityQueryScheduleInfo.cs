@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly EntityQueryJobData m_JobData;
         private readonly EntityQueryNativeArray m_EntityQueryNativeArray;
         private readonly JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate m_ScheduleJobFunction;
-        
+
         /// <summary>
         /// The total number of instances to process.
         /// </summary>
@@ -20,13 +20,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_EntityQueryNativeArray.Length;
         }
 
-        internal EntityQueryScheduleInfo(EntityQueryJobData jobData,
-                                         EntityQueryNativeArray entityQueryNativeArray,
-                                         BatchStrategy batchStrategy,
-                                         JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction) 
-            : base(scheduleJobFunction.Method,
-                   batchStrategy,
-                   ChunkUtil.MaxElementsPerChunk<Entity>())
+        internal EntityQueryScheduleInfo(
+            EntityQueryJobData jobData,
+            EntityQueryNativeArray entityQueryNativeArray,
+            BatchStrategy batchStrategy,
+            JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction)
+            : base(scheduleJobFunction.Method, batchStrategy, ChunkUtil.MaxElementsPerChunk<Entity>())
         {
             m_JobData = jobData;
             m_EntityQueryNativeArray = entityQueryNativeArray;

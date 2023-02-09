@@ -11,8 +11,16 @@ namespace Anvil.Unity.DOTS.Entities
     public static class PlayerLoopUtil
     {
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
-        private static readonly MethodInfo s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo = typeof(ScriptBehaviourUpdateOrder).GetMethod("IsDelegateForWorldSystem", BindingFlags.Static | BindingFlags.NonPublic);
-        private static readonly IsDelegateForWorldSystemDelegate s_IsDelegateForWorldSystem = (IsDelegateForWorldSystemDelegate)Delegate.CreateDelegate(typeof(IsDelegateForWorldSystemDelegate), s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo);
+
+        private static readonly MethodInfo s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo
+            = typeof(ScriptBehaviourUpdateOrder)
+                .GetMethod("IsDelegateForWorldSystem", BindingFlags.Static | BindingFlags.NonPublic);
+
+        private static readonly IsDelegateForWorldSystemDelegate s_IsDelegateForWorldSystem
+            = (IsDelegateForWorldSystemDelegate)Delegate.CreateDelegate(
+                typeof(IsDelegateForWorldSystemDelegate),
+                s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo);
+
         private static MethodInfo s_DummyDelegateWrapper_System;
 
         private delegate bool IsDelegateForWorldSystemDelegate(World world, ref PlayerLoopSystem playerLoopSystem);
@@ -55,8 +63,7 @@ namespace Anvil.Unity.DOTS.Entities
         public static bool TryGetSystemGroupFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemGroup systemGroup)
         {
             systemGroup = null;
-            if (playerLoopSystem.updateDelegate?.Target == null
-             || !COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type))
+            if (playerLoopSystem.updateDelegate?.Target == null || !COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type))
             {
                 return false;
             }
@@ -67,7 +74,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemGroup"/> associated.
         /// This method has no checks and assumes that you are certain the <see cref="PlayerLoopSystem"/>
-        /// does contain a <see cref="ComponentSystemGroup"/>. 
+        /// does contain a <see cref="ComponentSystemGroup"/>.
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
         /// <param name="systemGroup">The <see cref="ComponentSystemGroup"/> associated.</param>
@@ -75,7 +82,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// True if there is a system group
         /// False if not
         /// </returns>
-        public static bool TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemGroup systemGroup)
+        public static bool TryGetSystemGroupFromPlayerLoopSystemNoChecks(
+            ref PlayerLoopSystem playerLoopSystem,
+            out ComponentSystemGroup systemGroup)
         {
             bool result = TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemBase system);
             systemGroup = (ComponentSystemGroup)system;
@@ -97,13 +106,14 @@ namespace Anvil.Unity.DOTS.Entities
         public static bool TryGetSystemFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemBase system)
         {
             system = null;
-            return playerLoopSystem.updateDelegate?.Target != null && TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out system);
+            return playerLoopSystem.updateDelegate?.Target != null
+                && TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out system);
         }
 
         /// <summary>
         /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemBase"/> associated.
         /// This method has no checks and assumes that you are certain the <see cref="PlayerLoopSystem"/>
-        /// does contain a <see cref="ComponentSystemBase"/>. 
+        /// does contain a <see cref="ComponentSystemBase"/>.
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
         /// <param name="system">The <see cref="ComponentSystemBase"/> associated.</param>
@@ -118,7 +128,11 @@ namespace Anvil.Unity.DOTS.Entities
             //We have to lazy create this because we don't have access to the wrapper's type until we see it at runtime.
             if (s_DummyDelegateWrapper_System == null)
             {
-                s_DummyDelegateWrapper_System = wrapper.GetType().GetProperty("System", BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
+                s_DummyDelegateWrapper_System
+                    = wrapper
+                        .GetType()
+                        .GetProperty("System", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetMethod;
             }
 
             //TODO: #28 We can speed the reflected call up by using Expression Trees to create a strongly typed delegate

@@ -51,6 +51,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// The buffer to write to.
         /// </summary>
         [WriteOnly] public BufferFromSingleEntity<T> Source;
+
         /// <summary>
         /// The value to write to the buffer.
         /// </summary>

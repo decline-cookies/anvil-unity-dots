@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Anvil.Unity.Collections;
 using Unity.Assertions;
 using Unity.Burst;
 using Unity.Collections;
@@ -12,7 +11,7 @@ using Debug = UnityEngine.Debug;
 namespace Anvil.Unity.DOTS.Data
 {
     //TODO: #99 - This class should be renamed and updated to reflect the List like functionality it now has.
-    
+
     /// <summary>
     /// Scheduling information for a <see cref="DeferredNativeArray{T}"/>
     /// </summary>
@@ -46,7 +45,6 @@ namespace Anvil.Unity.DOTS.Data
             BufferPtr = bufferPtr;
         }
 #endif
-
     }
 
     /// <summary>
@@ -101,7 +99,7 @@ namespace Anvil.Unity.DOTS.Data
 
         private static readonly int SIZE = UnsafeUtility.SizeOf<T>();
         private static readonly int ALIGNMENT = UnsafeUtility.AlignOf<T>();
-        
+
         internal static unsafe DeferredNativeArray<T> ReinterpretFromPointer(void* ptr)
         {
             Debug_EnsurePointerNotNull(ptr);
@@ -145,9 +143,10 @@ namespace Anvil.Unity.DOTS.Data
 
             AssertValidElementType();
             array = new DeferredNativeArray<T>();
-            array.m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(BufferInfo.SIZE,
-                                                                   BufferInfo.ALIGNMENT,
-                                                                   allocator);
+            array.m_BufferInfo = (BufferInfo*)UnsafeUtility.Malloc(
+                BufferInfo.SIZE,
+                BufferInfo.ALIGNMENT,
+                allocator);
             array.m_BufferInfo->Length = 0;
             array.m_BufferInfo->Capacity = 0;
             array.m_BufferInfo->Buffer = null;
@@ -167,7 +166,7 @@ namespace Anvil.Unity.DOTS.Data
             {
                 return;
             }
-            
+
             bufferInfo->Length = 0;
         }
 
@@ -188,7 +187,7 @@ namespace Anvil.Unity.DOTS.Data
 
             UnsafeUtility.Free(bufferInfo, allocator);
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static unsafe void Debug_EnsurePointerNotNull(void* ptr)
         {
@@ -230,7 +229,7 @@ namespace Anvil.Unity.DOTS.Data
                     ? m_BufferInfo->Length
                     : 0;
         }
-        
+
         /// <summary>
         /// The capacity of the array
         /// </summary>
@@ -253,8 +252,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     UnsafeUtility.AddressOf(ref m_Safety),
 #endif
-                    m_BufferInfo
-                    );
+                    m_BufferInfo);
         }
 
         /// <summary>
@@ -264,9 +262,7 @@ namespace Anvil.Unity.DOTS.Data
         /// The <see cref="Allocator"/> to use for memory allocation of the collection and
         /// the deferred data.
         /// </param>
-        public DeferredNativeArray(Allocator allocator) : this(allocator, allocator)
-        {
-        }
+        public DeferredNativeArray(Allocator allocator) : this(allocator, allocator) { }
 
         /// <summary>
         /// Creates a new instance of <see cref="DeferredNativeArray{T}"/>
@@ -350,7 +346,7 @@ namespace Anvil.Unity.DOTS.Data
             JobHandle jobHandle = clearJob.Schedule(inputDeps);
             return jobHandle;
         }
-        
+
         /// <summary>
         /// Sets the desired capacity of the array. This will allocate new memory of the correct size and free any
         /// old memory that was being used. If any elements were in the array, they will be copied into the new memory.
@@ -368,13 +364,13 @@ namespace Anvil.Unity.DOTS.Data
             {
                 UnsafeUtility.MemCpy(newMemory, m_BufferInfo->Buffer, m_BufferInfo->Length * SIZE);
             }
-            
+
             UnsafeUtility.Free(m_BufferInfo->Buffer, m_BufferInfo->DeferredAllocator);
 
             m_BufferInfo->Buffer = newMemory;
             m_BufferInfo->Capacity = capacity;
         }
-        
+
         /// <summary>
         /// Adds an element to next free spot in the array.
         /// Will trigger a re-allocation if going above the current capacity.
@@ -456,7 +452,7 @@ namespace Anvil.Unity.DOTS.Data
 
             return array;
         }
-        
+
         internal unsafe void* GetBufferPointer()
         {
             return m_BufferInfo;

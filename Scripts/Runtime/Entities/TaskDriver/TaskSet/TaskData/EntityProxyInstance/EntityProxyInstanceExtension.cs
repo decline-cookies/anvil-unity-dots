@@ -16,9 +16,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="updater">A reference to the <see cref="DataStreamUpdater{TInstance}"/></param>
         /// <typeparam name="TInstance">The type of instance</typeparam>
         /// <typeparam name="TResolveTargetType">The type of the resolved data</typeparam>
-        public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
-                                                                  TResolveTargetType resolvedInstance,
-                                                                  ref DataStreamUpdater<TInstance> updater)
+        public static void Resolve<TInstance, TResolveTargetType>(
+            this TInstance instance,
+            TResolveTargetType resolvedInstance,
+            ref DataStreamUpdater<TInstance> updater)
             where TInstance : unmanaged, IEntityProxyInstance
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
@@ -34,9 +35,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="updater">A reference to the <see cref="DataStreamCancellationUpdater{TInstance}"/></param>
         /// <typeparam name="TInstance">The type of instance</typeparam>
         /// <typeparam name="TResolveTargetType">The type of the resolved data</typeparam>
-        public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
-                                                                  TResolveTargetType resolvedInstance,
-                                                                  ref DataStreamCancellationUpdater<TInstance> updater)
+        public static void Resolve<TInstance, TResolveTargetType>(
+            this TInstance instance,
+            TResolveTargetType resolvedInstance,
+            ref DataStreamCancellationUpdater<TInstance> updater)
             where TInstance : unmanaged, IEntityProxyInstance
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
@@ -44,9 +46,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.TaskDriver.DataStreamUpdater{TInstance})"/>
-        public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
-                                                                  ref TResolveTargetType resolvedInstance,
-                                                                  ref DataStreamUpdater<TInstance> updater)
+        public static void Resolve<TInstance, TResolveTargetType>(
+            this TInstance instance,
+            ref TResolveTargetType resolvedInstance,
+            ref DataStreamUpdater<TInstance> updater)
             where TInstance : unmanaged, IEntityProxyInstance
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
@@ -54,9 +57,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <inheritdoc cref="Resolve{TInstance,TResolveTargetType}(TInstance,TResolveTargetType,ref Anvil.Unity.DOTS.Entities.TaskDriver.DataStreamCancellationUpdater{TInstance})"/>
-        public static void Resolve<TInstance, TResolveTargetType>(this TInstance instance,
-                                                                  ref TResolveTargetType resolvedInstance,
-                                                                  ref DataStreamCancellationUpdater<TInstance> updater)
+        public static void Resolve<TInstance, TResolveTargetType>(
+            this TInstance instance,
+            ref TResolveTargetType resolvedInstance,
+            ref DataStreamCancellationUpdater<TInstance> updater)
             where TInstance : unmanaged, IEntityProxyInstance
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {

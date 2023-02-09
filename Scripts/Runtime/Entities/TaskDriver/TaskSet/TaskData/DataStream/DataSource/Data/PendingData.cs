@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : unmanaged, IEquatable<T>
     {
         private UnsafeTypedStream<T> m_Pending;
-        
+
         public UnsafeTypedStream<T> Pending { get => m_Pending; }
         public UnsafeTypedStream<T>.Writer PendingWriter { get; }
         public unsafe void* PendingWriterPointer { get; }

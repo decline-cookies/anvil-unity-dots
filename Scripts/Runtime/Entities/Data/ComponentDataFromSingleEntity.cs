@@ -1,6 +1,5 @@
 using Unity.Entities;
 
-
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
@@ -32,9 +31,6 @@ namespace Anvil.Unity.DOTS.Entities
         /// Call during job execution.
         /// </summary>
         /// <returns>The <see cref="T" /> instance</returns>
-        public T GetComponent()
-        {
-            return m_Lookup[m_Entity];
-        }
+        public T GetComponent() => m_Lookup[m_Entity];
     }
 }

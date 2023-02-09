@@ -11,9 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => Results.Length;
         }
 
-        public EntityQueryNativeArray(EntityQuery entityQuery) : base(entityQuery)
-        {
-        }
+        public EntityQueryNativeArray(EntityQuery entityQuery) : base(entityQuery) { }
 
         public sealed override JobHandle Acquire()
         {

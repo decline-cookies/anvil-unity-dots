@@ -11,9 +11,9 @@ namespace Anvil.Unity.DOTS.Jobs
     /// </summary>
     public static class BulkSchedulingExtension
     {
-        //NOTE: While it's annoying, we're duplicating code for the different collections in order to avoid  
-        //generating garbage. Using ICollection<TElement> and the like results in boxing and/or the creation and 
-        //disposal of the Enumerator. By duplicating the code for each collection type we avoid this. 
+        //NOTE: While it's annoying, we're duplicating code for the different collections in order to avoid
+        //generating garbage. Using ICollection<TElement> and the like results in boxing and/or the creation and
+        //disposal of the Enumerator. By duplicating the code for each collection type we avoid this.
         //This is necessary because these functions often are run in hot sections of the code multiple times every frame.
 
         /// <summary>
@@ -27,10 +27,11 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="scheduleFunc">The <see cref="BulkScheduleDelegate{T}"/> to call on each element</param>
         /// <typeparam name="TElement">The type of element in the collection</typeparam>
         /// <returns>A <see cref="JobHandle"/> that represents when all jobs are completed.</returns>
-        public static JobHandle BulkScheduleParallel<TElement>(this TElement[] array,
-                                                               JobHandle dependsOn,
-                                                               ref NativeArray<JobHandle> dependenciesArrayScratchPad,
-                                                               BulkScheduleDelegate<TElement> scheduleFunc)
+        public static JobHandle BulkScheduleParallel<TElement>(
+            this TElement[] array,
+            JobHandle dependsOn,
+            ref NativeArray<JobHandle> dependenciesArrayScratchPad,
+            BulkScheduleDelegate<TElement> scheduleFunc)
         {
             int len = array.Length;
             if (len == 0)
@@ -49,7 +50,10 @@ namespace Anvil.Unity.DOTS.Jobs
         }
 
         /// <inheritdoc cref="BulkScheduleParallel{TElement}"/>
-        public static JobHandle BulkScheduleParallel<TKey, TElement>(this Dictionary<TKey, TElement>.ValueCollection valueCollection, JobHandle dependsOn, BulkScheduleDelegate<TElement> scheduleFunc)
+        public static JobHandle BulkScheduleParallel<TKey, TElement>(
+            this Dictionary<TKey, TElement>.ValueCollection valueCollection,
+            JobHandle dependsOn,
+            BulkScheduleDelegate<TElement> scheduleFunc)
         {
             int len = valueCollection.Count;
             if (len == 0)
@@ -78,7 +82,10 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="scheduleFunc">The <see cref="BulkScheduleDelegate{T}"/> to call on each element</param>
         /// <typeparam name="TElement">The type of element in the collection</typeparam>
         /// <returns>A <see cref="JobHandle"/> that represents when the last job is completed.</returns>
-        public static JobHandle BulkScheduleSequential<TElement>(this TElement[] array, JobHandle dependsOn, BulkScheduleDelegate<TElement> scheduleFunc)
+        public static JobHandle BulkScheduleSequential<TElement>(
+            this TElement[] array,
+            JobHandle dependsOn,
+            BulkScheduleDelegate<TElement> scheduleFunc)
         {
             int len = array.Length;
             if (len == 0)
@@ -93,11 +100,11 @@ namespace Anvil.Unity.DOTS.Jobs
 
             return dependsOn;
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsureSameLengths(int arrayLength, int scratchPadLength)
         {

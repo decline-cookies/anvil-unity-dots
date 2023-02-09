@@ -81,11 +81,11 @@ namespace Anvil.Unity.DOTS.Entities
     /// dependency conflict. It is best practice to create all queries in the <see cref="SystemBase.OnCreate"/> or
     /// if you must create the query later, manually rebuild the <see cref="WorldCache"/>.
     ///
-    /// - You may get a false positive if you have a System that has two or more queries in it. One that operates on 
+    /// - You may get a false positive if you have a System that has two or more queries in it. One that operates on
     /// your <see cref="IBufferElementData"/> (QueryA) and one that doesn't (QueryB). If the logic has the QueryB
     /// execute but QueryA doesn't, we still see the system as having executed and we'll count it as a point to move
-    /// the handle up when in reality it could have been ignored. 
-    /// 
+    /// the handle up when in reality it could have been ignored.
+    ///
     /// </summary>
     /// <remarks>
     /// This is similar to the <see cref="CollectionAccessController{TContext}"/> but for specific use with a
@@ -93,8 +93,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <seealso cref="DynamicBufferSharedWriteDataSystem"/>
     /// </remarks>
     /// <typeparam name="T">The <see cref="IBufferElementData"/> type this instance is associated with.</typeparam>
-    internal class DynamicBufferSharedWriteController<T> : AbstractAnvilBase,
-                                                           IDynamicBufferSharedWriteController
+    internal class DynamicBufferSharedWriteController<T> : AbstractAnvilBase, IDynamicBufferSharedWriteController
         where T : IBufferElementData
     {
         //*************************************************************************************************************
@@ -116,8 +115,9 @@ namespace Anvil.Unity.DOTS.Entities
             private int m_OrderedSystemsIndexForExecution;
             private int m_LastRebuildCheckFrameCount;
 
-            internal LocalCache(WorldCache worldCache,
-                                ComponentType componentType)
+            internal LocalCache(
+                WorldCache worldCache,
+                ComponentType componentType)
             {
                 m_WorldCache = worldCache;
                 m_QueryComponentTypes = new HashSet<ComponentType>
@@ -136,8 +136,7 @@ namespace Anvil.Unity.DOTS.Entities
             internal ComponentSystemBase GetSystemAtExecutionOrder(int executionOrder)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                if (executionOrder <= 0
-                 || executionOrder > m_ExecutedOrderedSystems.Count)
+                if (executionOrder <= 0 || executionOrder > m_ExecutedOrderedSystems.Count)
                 {
                     throw new InvalidOperationException($"Invalid execution order of {executionOrder}.{nameof(m_ExecutedOrderedSystems)} Count is {m_ExecutedOrderedSystems.Count}");
                 }
@@ -200,7 +199,7 @@ namespace Anvil.Unity.DOTS.Entities
             internal void UpdateExecutedSystems(ComponentSystemBase callingSystem)
             {
                 //Once a frame we'll end up iterating through all the OrderedSystems but there's no need to iterate
-                //the whole list each time. Instead, we'll track the progress through the frame and only iterate up 
+                //the whole list each time. Instead, we'll track the progress through the frame and only iterate up
                 //to the system that is currently executing and thus checking when it can shared write.
                 for (; m_OrderedSystemsIndexForExecution < m_OrderedSystems.Count; ++m_OrderedSystemsIndexForExecution)
                 {
@@ -214,7 +213,7 @@ namespace Anvil.Unity.DOTS.Entities
 
                     //Internally, Systems will execute if they are enabled, set to AlwaysUpdate or have any queries
                     //that will return entities. The systems do this check via ShouldRunSystem and Enabled.
-                    //While we could reflect and call that again, it seems inefficient to do so especially since it 
+                    //While we could reflect and call that again, it seems inefficient to do so especially since it
                     //has already been done. Instead we can check if a system HAS run this frame by comparing the
                     //LastSystemVersion with our cached version. If the versions are the same, the system didn't run
                     //for any number of reasons and we can exclude it from our order. If it is enabled the next frame
@@ -260,14 +259,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The <see cref="ComponentType"/> of <see cref="IBufferElementData"/> this instance is associated with.
         /// </summary>
-        public ComponentType ComponentType
-        {
-            get;
-        }
+        public ComponentType ComponentType { get; }
 
-        internal DynamicBufferSharedWriteController(ComponentType type,
-                                                    World world,
-                                                    DynamicBufferSharedWriteDataSystem.LookupByComponentType lookupByComponentType)
+        internal DynamicBufferSharedWriteController(
+            ComponentType type,
+            World world,
+            DynamicBufferSharedWriteDataSystem.LookupByComponentType lookupByComponentType)
         {
             ComponentType = type;
             m_World = world;
@@ -342,7 +339,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_SharedWriteDependency = callingSystemDependency;
                 m_ExecutionOrderOfLastSharedWriteDependency = callingSystemOrder;
             }
-            //Otherwise we want to check the system(s) that executed before us to see what kind of lock they had 
+            //Otherwise we want to check the system(s) that executed before us to see what kind of lock they had
             //on our IBufferElementData
             else
             {
@@ -350,7 +347,7 @@ namespace Anvil.Unity.DOTS.Entities
                 //in the case where a shared write system DOESN'T call this GetSharedWriteDependency
                 for (int i = callingSystemOrder - 1; i > m_ExecutionOrderOfLastSharedWriteDependency; --i)
                 {
-                    //If that system was a shared writable system, we don't want to move our dependency up so that we 
+                    //If that system was a shared writable system, we don't want to move our dependency up so that we
                     //can also share the write. If not, we move it up.
                     if (IsSystemAtExecutionOrderSharedWritable(i))
                     {

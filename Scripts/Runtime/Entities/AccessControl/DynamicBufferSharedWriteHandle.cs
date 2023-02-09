@@ -16,8 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly IDynamicBufferSharedWriteController m_Controller;
         private readonly SystemBase m_System;
 
-        internal DynamicBufferSharedWriteHandle(IDynamicBufferSharedWriteController controller,
-                                                SystemBase system)
+        internal DynamicBufferSharedWriteHandle(IDynamicBufferSharedWriteController controller, SystemBase system)
         {
             m_Controller = controller;
             m_System = system;

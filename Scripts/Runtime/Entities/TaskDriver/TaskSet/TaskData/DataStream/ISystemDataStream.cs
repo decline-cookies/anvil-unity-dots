@@ -8,7 +8,5 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
     public interface ISystemDataStream<TInstance> : IAbstractDataStream<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
-    {
-    }
+        where TInstance : unmanaged, IEntityProxyInstance { }
 }

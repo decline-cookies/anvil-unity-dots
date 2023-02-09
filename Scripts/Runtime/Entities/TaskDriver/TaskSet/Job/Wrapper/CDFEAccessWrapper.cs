@@ -8,10 +8,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : struct, IComponentData
     {
         private readonly SystemBase m_System;
+        private readonly AccessController m_AccessController;
 
         public CDFEAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
         {
             m_System = system;
+            m_AccessController = m_System.World.GetOrCreateSystem<TaskDriverManagementSystem>().GetOrCreateCDFEAccessController<T>();
+        }
+
+        protected override void DisposeSelf()
+        {
+            //NOT disposing the AccessController because it is owned by the TaskDriverManagementSystem and shared across
+            //multiple AccessWrappers.
+            base.DisposeSelf();
         }
 
         public CDFEReader<T> CreateCDFEReader()
@@ -26,13 +35,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override JobHandle AcquireAsync()
         {
-            //Do nothing, Unity's System will handle dependencies for us
-            return default;
+            return m_AccessController.AcquireAsync(AccessType);
         }
 
         public override void ReleaseAsync(JobHandle dependsOn)
         {
-            //Do nothing - Unity's System will handle dependencies for us
+            m_AccessController.ReleaseAsync(dependsOn);
         }
     }
 }

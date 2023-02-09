@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug.Assert(instance.GetType().IsClass, $"Implementations of {nameof(IComponentReferencable)} must be classes");
 
             uint id = s_IDProvider.GetNextID();
-            if(!s_InstanceToID.TryAdd(instance, id))
+            if (!s_InstanceToID.TryAdd(instance, id))
             {
                 s_Logger.Warning($"Instance already registered, ignoring. instance: {instance}");
                 return;
@@ -78,7 +78,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The ID of the instance.</returns>
         internal static uint GetID(IComponentReferencable instance)
         {
-            Debug.Assert(s_InstanceToID.ContainsKey(instance),
+            Debug.Assert(
+                s_InstanceToID.ContainsKey(instance),
                 $"Instance is not yet registered with {nameof(ManagedReferenceStore)}. Make sure it is registering on creation and unregistering on disposal before using.");
 
             return s_InstanceToID[instance];

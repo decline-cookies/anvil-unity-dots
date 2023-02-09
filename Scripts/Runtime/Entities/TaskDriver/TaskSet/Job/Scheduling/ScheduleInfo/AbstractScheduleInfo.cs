@@ -11,22 +11,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     public abstract class AbstractScheduleInfo
     {
         private const string UNKNOWN_DECLARING_TYPE = "unknown";
-        
+
         private static int ResolveBatchSize(BatchStrategy batchStrategy, int maxElementsPerChunk)
         {
             return batchStrategy switch
             {
-                BatchStrategy.MaximizeChunk   => maxElementsPerChunk,
+                BatchStrategy.MaximizeChunk => maxElementsPerChunk,
                 BatchStrategy.MaximizeThreads => 1,
-                _                             => throw new InvalidOperationException($"Tried to resolve batch size for {nameof(BatchStrategy)}.{batchStrategy} but no code path satisfies!")
+                _ => throw new InvalidOperationException($"Tried to resolve batch size for {nameof(BatchStrategy)}.{batchStrategy} but no code path satisfies!")
             };
         }
-        
+
         /// <summary>
         /// The number of instances to process per batch.
         /// </summary>
         public int BatchSize { get; }
-        
+
         internal string ScheduleJobFunctionInfo { get; }
 
         protected AbstractScheduleInfo(MemberInfo scheduleJobFunctionMethodInfo, BatchStrategy batchStrategy, int maxElementsPerChunk)
@@ -36,6 +36,5 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
-        
     }
 }
