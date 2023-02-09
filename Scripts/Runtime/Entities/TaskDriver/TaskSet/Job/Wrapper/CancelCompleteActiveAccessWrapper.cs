@@ -7,9 +7,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public CancelCompleteDataStream CancelCompleteDataStream { get; }
 
-        public CancelCompleteActiveAccessWrapper(CancelCompleteDataStream cancelCompleteDataStream,
-                                                 AccessType accessType,
-                                                 AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public CancelCompleteActiveAccessWrapper(
+            CancelCompleteDataStream cancelCompleteDataStream,
+            AccessType accessType,
+            AbstractJobConfig.Usage usage)
+            : base(accessType, usage)
         {
             CancelCompleteDataStream = cancelCompleteDataStream;
         }

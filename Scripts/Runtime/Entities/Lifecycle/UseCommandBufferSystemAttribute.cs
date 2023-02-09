@@ -11,11 +11,11 @@ namespace Anvil.Unity.DOTS.Entities
     /// <remarks>
     /// Runtime checks will enforce valid types.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Class|AttributeTargets.Struct)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
     public class UseCommandBufferSystemAttribute : Attribute
     {
         private static readonly Type COMMAND_BUFFER_SYSTEM_TYPE = typeof(EntityCommandBufferSystem);
-        
+
         /// <summary>
         /// The type of <see cref="EntityCommandBufferSystem"/> to use
         /// </summary>
@@ -42,7 +42,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Command Buffer System type of {commandBufferSystemType.GetReadableName()} is not a subclass of {COMMAND_BUFFER_SYSTEM_TYPE.GetReadableName()}!");
             }
-            
+
             CommandBufferSystemType = commandBufferSystemType;
         }
     }

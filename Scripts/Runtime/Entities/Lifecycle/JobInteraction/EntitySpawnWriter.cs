@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_LaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
-            
+
             Debug_InitializeWriterState();
         }
 
@@ -71,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureCanAdd();
             m_LaneWriter.Write(ref definition);
         }
-        
+
         /// <summary>
         /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned later on by
         /// the <see cref="EntitySpawnSystem"/>
@@ -95,9 +95,9 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred(ref TEntitySpawnDefinition definition, int laneIndex)
         {
             m_Writer.AsLaneWriter(laneIndex)
-                    .Write(ref definition);
+                .Write(ref definition);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -119,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_State = WriterState.Uninitialized;
 #endif
         }
-        
+
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureCanAdd()

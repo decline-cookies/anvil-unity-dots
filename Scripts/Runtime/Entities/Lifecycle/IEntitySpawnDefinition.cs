@@ -70,7 +70,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <see cref="EntityArchetype"/>
         /// </summary>
         public ComponentType[] RequiredComponents { get; }
-        
+
         /// <summary>
         /// Called automatically when spawning to populate a newly created <see cref="Entity"/>
         /// with the data needed.

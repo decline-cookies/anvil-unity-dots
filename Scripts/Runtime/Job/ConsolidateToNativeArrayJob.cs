@@ -13,14 +13,12 @@ namespace Anvil.Unity.DOTS.Jobs
     /// </summary>
     /// <typeparam name="T">The type contained in the collection</typeparam>
     [BurstCompile]
-    public struct ConsolidateToNativeArrayJob<T> : IJob
-        where T : unmanaged
+    public struct ConsolidateToNativeArrayJob<T> : IJob where T : unmanaged
     {
         [ReadOnly] private readonly UnsafeTypedStream<T>.Reader m_Reader;
         private DeferredNativeArray<T> m_DeferredNativeArray;
 
-        public ConsolidateToNativeArrayJob(UnsafeTypedStream<T>.Reader reader,
-                                           DeferredNativeArray<T> deferredNativeArray)
+        public ConsolidateToNativeArrayJob(UnsafeTypedStream<T>.Reader reader, DeferredNativeArray<T> deferredNativeArray)
         {
             m_Reader = reader;
             m_DeferredNativeArray = deferredNativeArray;

@@ -8,9 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private CancelRequestsDataSourceConsolidator m_Consolidator;
 
-        public CancelRequestsDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
-        {
-        }
+        public CancelRequestsDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem) { }
 
         protected override void DisposeSelf()
         {
@@ -38,24 +36,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             ConsolidateCancelRequestsDataSourceJob consolidateCancelRequestsDataSourceJob = new ConsolidateCancelRequestsDataSourceJob(m_Consolidator);
             dependsOn = consolidateCancelRequestsDataSourceJob.Schedule(dependsOn);
-            
+
             return dependsOn;
         }
-        
+
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
-        
+
         [BurstCompile]
         private struct ConsolidateCancelRequestsDataSourceJob : IJob
         {
             private CancelRequestsDataSourceConsolidator m_Consolidator;
-        
+
             public ConsolidateCancelRequestsDataSourceJob(CancelRequestsDataSourceConsolidator dataSourceConsolidator) : this()
             {
                 m_Consolidator = dataSourceConsolidator;
             }
-        
+
             public void Execute()
             {
                 m_Consolidator.Consolidate();

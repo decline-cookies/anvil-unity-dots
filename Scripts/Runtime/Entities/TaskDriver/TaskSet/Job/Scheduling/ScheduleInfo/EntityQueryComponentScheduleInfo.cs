@@ -23,13 +23,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_EntityQueryComponentNativeArray.Length;
         }
 
-        internal EntityQueryComponentScheduleInfo(EntityQueryComponentJobData<T> jobData,
-                                                  EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray,
-                                                  BatchStrategy batchStrategy,
-                                                  JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction) 
-            : base(scheduleJobFunction.Method,
-                   batchStrategy,
-                   ChunkUtil.MaxElementsPerChunk<T>())
+        internal EntityQueryComponentScheduleInfo(
+            EntityQueryComponentJobData<T> jobData,
+            EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray,
+            BatchStrategy batchStrategy,
+            JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction)
+            : base(scheduleJobFunction.Method, batchStrategy, ChunkUtil.MaxElementsPerChunk<T>())
         {
             m_JobData = jobData;
             m_EntityQueryComponentNativeArray = entityQueryComponentNativeArray;

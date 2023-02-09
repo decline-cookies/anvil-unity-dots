@@ -11,16 +11,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IBufferElementData"/> to update.</typeparam>
     [BurstCompatible]
-    public struct DBFEForExclusiveWrite<T>
-        where T : struct, IBufferElementData
+    public struct DBFEForExclusiveWrite<T> where T : struct, IBufferElementData
     {
-        [NativeDisableParallelForRestriction][WriteOnly] private BufferFromEntity<T> m_DBFE;
+        [NativeDisableParallelForRestriction] [WriteOnly]
+        private BufferFromEntity<T> m_DBFE;
 
         internal DBFEForExclusiveWrite(SystemBase system)
         {
             m_DBFE = system.GetBufferFromEntity<T>(false);
         }
-        
+
         /// <summary>
         /// Gets the <see cref="DynamicBuffer{T}"/> that corresponds to the passed <see cref="Entity"/>
         /// </summary>

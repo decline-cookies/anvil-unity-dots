@@ -8,27 +8,27 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Data
 {
-    //NOTE - Taken from: https://github.com/Amarcolina/NativeHeap (MIT LICENCE)
-    //This is a lightly cleaned up version of NativeHeap from Amarcolina that removes
-    //any safety aspects so that it can be used inside a different Native Collection.
+    // NOTE - Taken from: https://github.com/Amarcolina/NativeHeap (MIT LICENCE)
+    // This is a lightly cleaned up version of NativeHeap from Amarcolina that removes
+    // any safety aspects so that it can be used inside a different Native Collection.
 
     /// <summary>
     /// This is a basic implementation of the MinHeap/MaxHeap data structure.  It allows you
     /// to insert objects into the container with a O(log(n)) cost per item, and it allows you
     /// to extract the min/max from the container with a O(log(n)) cost per item.
-    /// 
+    ///
     /// This implementation provides the ability to remove items from the middle of the container
     /// as well.  This is a critical operation when implementing algorithms like A*.  When an
     /// item is added to the container, an index is returned which can be used to later remove
     /// the item no matter where it is in the heap, for the same cost of removing it if it was
     /// popped normally.
-    /// 
+    ///
     /// This container is parameterized with a comparer type that defines the ordering of the
     /// container.  The default form of the comparer can be used, or you can specify your own.
     /// The item that comes first in the ordering is the one that will be returned by the Pop
-    /// operation.  This allows you to use the comparer to parameterize this collection into a 
+    /// operation.  This allows you to use the comparer to parameterize this collection into a
     /// MinHeap, MaxHeap, or other type of ordered heap using your own custom type.
-    /// 
+    ///
     /// For convenience, this library contains the Min and Max comparer, which provide
     /// comparisons for all built in primitives.
     /// </summary>
@@ -60,24 +60,29 @@ namespace Anvil.Unity.DOTS.Data
             {
                 unsafe
                 {
-                    TableValue* newTable = (TableValue*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<TableValue>() * value, UnsafeUtility.AlignOf<TableValue>(), m_Allocator);
-                    void* newHeap = UnsafeUtility.Malloc(UnsafeUtility.SizeOf<HeapNode>() * value, UnsafeUtility.AlignOf<HeapNode>(), m_Allocator);
+                    TableValue* newTable = (TableValue*)UnsafeUtility.Malloc(
+                        UnsafeUtility.SizeOf<TableValue>() * value,
+                        UnsafeUtility.AlignOf<TableValue>(),
+                        m_Allocator);
+                    void* newHeap = UnsafeUtility.Malloc(
+                        UnsafeUtility.SizeOf<HeapNode>() * value,
+                        UnsafeUtility.AlignOf<HeapNode>(),
+                        m_Allocator);
 
-                    int toCopy = m_Data->Capacity < value
-                        ? m_Data->Capacity
-                        : value;
+                    int toCopy = m_Data->Capacity < value ? m_Data->Capacity : value;
                     UnsafeUtility.MemCpy(newTable, m_Data->Table, toCopy * UnsafeUtility.SizeOf<TableValue>());
                     UnsafeUtility.MemCpy(newHeap, m_Data->Heap, toCopy * UnsafeUtility.SizeOf<HeapNode>());
 
                     for (int i = 0; i < value - m_Data->Capacity; i++)
                     {
                         //For each new heap node, make sure that it has a new unique index
-                        UnsafeUtility.WriteArrayElement(newHeap,
-                                                        i + m_Data->Capacity,
-                                                        new HeapNode
-                                                        {
-                                                            TableIndex = i + m_Data->Capacity
-                                                        });
+                        UnsafeUtility.WriteArrayElement(
+                            newHeap,
+                            i + m_Data->Capacity,
+                            new HeapNode
+                            {
+                                TableIndex = i + m_Data->Capacity
+                            });
                     }
 
                     UnsafeUtility.Free(m_Data->Table, m_Allocator);
@@ -117,9 +122,7 @@ namespace Anvil.Unity.DOTS.Data
         /// always return the smallest element according to the ordering specified by this comparer.
         /// </param>
         public UnsafeHeap(Allocator allocator, TComparer comparer = default) :
-            this(ChunkUtil.MaxElementsPerChunk<T>(), comparer, allocator)
-        {
-        }
+            this(ChunkUtil.MaxElementsPerChunk<T>(), comparer, allocator) { }
 
         /// <summary>
         /// Constructs a new UnsafeHeap using the given Allocator.  You must call Dispose on this collection
@@ -137,13 +140,11 @@ namespace Anvil.Unity.DOTS.Data
         /// always return the smallest element according to the ordering specified by this comparer.
         /// </param>
         public UnsafeHeap(Allocator allocator, int initialCapacity, TComparer comparer = default)
-            : this(initialCapacity, comparer, allocator)
-        {
-        }
+            : this(initialCapacity, comparer, allocator) { }
 
         /// <summary>
         /// Disposes of this container and deallocates its memory immediately.
-        /// 
+        ///
         /// Any UnsafeHeapIndex structures obtained will be invalidated and cannot be used again.
         /// </summary>
         public void Dispose()
@@ -174,9 +175,9 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// Returns the next element that would be obtained if Pop was called.  This is the first/smallest
         /// item according to the ordering specified by the comparer.
-        /// 
+        ///
         /// This method is an O(1) operation.
-        /// 
+        ///
         /// This method will throw an InvalidOperationException if the collection is empty.
         /// </summary>
         public T Peek()
@@ -192,9 +193,9 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// Returns the next element that would be obtained if Pop was called.  This is the first/smallest
         /// item according to the ordering specified by the comparer.
-        /// 
+        ///
         /// This method is an O(1) operation.
-        /// 
+        ///
         /// This method will return true if an element could be obtained, or false if the container is empty.
         /// </summary>
         public bool TryPeek(out T t)
@@ -214,9 +215,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <summary>
         /// Removes the first/smallest element from the container and returns it.
-        /// 
+        ///
         /// This method is an O(log(n)) operation.
-        /// 
+        ///
         /// This method will throw an InvalidOperationException if the collection is empty.
         /// </summary>
         public T Pop()
@@ -231,9 +232,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <summary>
         /// Removes the first/smallest element from the container and returns it.
-        /// 
+        ///
         /// This method is an O(log(n)) operation.
-        /// 
+        ///
         /// This method will return true if an element could be obtained, or false if the container is empty.
         /// </summary>
         public bool TryPop(out T t)
@@ -266,13 +267,13 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// Inserts the provided element into the container.  It may later be removed by a call to Pop,
         /// TryPop, or Remove.
-        /// 
+        ///
         /// This method returns a UnsafeHeapIndex.  This index can later be used to Remove the item from
         /// the collection.  Once the item is removed by any means, this UnsafeHeapIndex will become invalid.
         /// If an item is re-added to the collection after it has been removed, Insert will return a NEW
         /// index that is distinct from the previous index.  Each index can only be used exactly once to
         /// remove a single item.
-        /// 
+        ///
         /// This method is an O(log(n)) operation.
         /// </summary>
         public UnsafeHeapIndex Insert(in T t)
@@ -302,10 +303,10 @@ namespace Anvil.Unity.DOTS.Data
         /// Removes the element tied to this UnsafeHeapIndex from the container.  The UnsafeHeapIndex must be
         /// the result of a previous call to Insert on this container.  If the item has already been removed by
         /// any means, this method will throw an ArgumentException.
-        /// 
+        ///
         /// This method will invalidate the provided index.  If you re-insert the removed object, you must use
         /// the NEW index to remove it again.
-        /// 
+        ///
         /// This method is an O(log(n)) operation.
         /// </summary>
         public T Remove(UnsafeHeapIndex index)
@@ -346,20 +347,30 @@ namespace Anvil.Unity.DOTS.Data
         {
             unsafe
             {
-                m_Data = (HeapData*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<HeapData>(), UnsafeUtility.AlignOf<HeapData>(), allocator);
-                m_Data->Heap = UnsafeUtility.Malloc(UnsafeUtility.SizeOf<HeapNode>() * initialCapacity, UnsafeUtility.AlignOf<HeapNode>(), allocator);
-                m_Data->Table = (TableValue*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<TableValue>() * initialCapacity, UnsafeUtility.AlignOf<TableValue>(), allocator);
+                m_Data = (HeapData*)UnsafeUtility.Malloc(
+                    UnsafeUtility.SizeOf<HeapData>(),
+                    UnsafeUtility.AlignOf<HeapData>(),
+                    allocator);
+                m_Data->Heap = UnsafeUtility.Malloc(
+                    UnsafeUtility.SizeOf<HeapNode>() * initialCapacity,
+                    UnsafeUtility.AlignOf<HeapNode>(),
+                    allocator);
+                m_Data->Table = (TableValue*)UnsafeUtility.Malloc(
+                    UnsafeUtility.SizeOf<TableValue>() * initialCapacity,
+                    UnsafeUtility.AlignOf<TableValue>(),
+                    allocator);
 
                 m_Allocator = allocator;
 
                 for (int i = 0; i < initialCapacity; i++)
                 {
-                    UnsafeUtility.WriteArrayElement(m_Data->Heap,
-                                                    i,
-                                                    new HeapNode
-                                                    {
-                                                        TableIndex = i
-                                                    });
+                    UnsafeUtility.WriteArrayElement(
+                        m_Data->Heap,
+                        i,
+                        new HeapNode
+                        {
+                            TableIndex = i
+                        });
                 }
 
                 m_Data->Count = 0;
@@ -384,9 +395,10 @@ namespace Anvil.Unity.DOTS.Data
                     }
 
                     if (indexR >= m_Data->Count
-                     || m_Comparer.Compare(UnsafeUtility.ReadArrayElement<HeapNode>(m_Data->Heap, indexL).Item,
-                                           UnsafeUtility.ReadArrayElement<HeapNode>(m_Data->Heap, indexR).Item)
-                     <= 0)
+                        || m_Comparer.Compare(
+                            UnsafeUtility.ReadArrayElement<HeapNode>(m_Data->Heap, indexL).Item,
+                            UnsafeUtility.ReadArrayElement<HeapNode>(m_Data->Heap, indexR).Item)
+                        <= 0)
                     {
                         //left is smaller (or the only child)
                         HeapNode leftNode = UnsafeUtility.ReadArrayElement<HeapNode>(m_Data->Heap, indexL);
@@ -497,55 +509,25 @@ namespace Anvil.Unity.DOTS.Data
                         IComparer<double>,
                         IComparer<decimal>
     {
-        public int Compare(byte x, byte y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(byte x, byte y) => y.CompareTo(x);
 
-        public int Compare(ushort x, ushort y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(ushort x, ushort y) => y.CompareTo(x);
 
-        public int Compare(short x, short y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(short x, short y) => y.CompareTo(x);
 
-        public int Compare(uint x, uint y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(uint x, uint y) => y.CompareTo(x);
 
-        public int Compare(int x, int y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(int x, int y) => y.CompareTo(x);
 
-        public int Compare(ulong x, ulong y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(ulong x, ulong y) => y.CompareTo(x);
 
-        public int Compare(long x, long y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(long x, long y) => y.CompareTo(x);
 
-        public int Compare(float x, float y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(float x, float y) => y.CompareTo(x);
 
-        public int Compare(double x, double y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(double x, double y) => y.CompareTo(x);
 
-        public int Compare(decimal x, decimal y)
-        {
-            return y.CompareTo(x);
-        }
+        public int Compare(decimal x, decimal y) => y.CompareTo(x);
     }
 
     /// <summary>
@@ -562,54 +544,24 @@ namespace Anvil.Unity.DOTS.Data
                         IComparer<double>,
                         IComparer<decimal>
     {
-        public int Compare(byte x, byte y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(byte x, byte y) => x.CompareTo(y);
 
-        public int Compare(ushort x, ushort y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(ushort x, ushort y) => x.CompareTo(y);
 
-        public int Compare(short x, short y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(short x, short y) => x.CompareTo(y);
 
-        public int Compare(uint x, uint y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(uint x, uint y) => x.CompareTo(y);
 
-        public int Compare(int x, int y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(int x, int y) => x.CompareTo(y);
 
-        public int Compare(ulong x, ulong y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(ulong x, ulong y) => x.CompareTo(y);
 
-        public int Compare(long x, long y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(long x, long y) => x.CompareTo(y);
 
-        public int Compare(float x, float y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(float x, float y) => x.CompareTo(y);
 
-        public int Compare(double x, double y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(double x, double y) => x.CompareTo(y);
 
-        public int Compare(decimal x, decimal y)
-        {
-            return x.CompareTo(y);
-        }
+        public int Compare(decimal x, decimal y) => x.CompareTo(y);
     }
 }

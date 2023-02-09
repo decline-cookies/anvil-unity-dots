@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                 m_PendingCancelActiveID = pendingCancelActiveData.ID;
             }
-            
+
             m_CancelRequestBehaviour = activeArrayData.CancelRequestBehaviour;
             m_CancelRequestsLookup = activeArrayData.TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData.Lookup;
         }
@@ -57,12 +57,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 case CancelRequestBehaviour.Delete:
                     WriteToActiveWithDefaultCancel(ref instance);
                     break;
+
                 case CancelRequestBehaviour.Unwind:
                     WriteToActiveWithExplicitCancel(ref instance);
                     break;
+
                 case CancelRequestBehaviour.Ignore:
                     WriteInstanceToActive(ref instance);
                     break;
+
                 default:
                     throw new InvalidOperationException($"No code path satisfies! {m_CancelRequestBehaviour}");
             }
@@ -96,11 +99,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Add(instance);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsurePointerNotNull(void* ptr)
         {

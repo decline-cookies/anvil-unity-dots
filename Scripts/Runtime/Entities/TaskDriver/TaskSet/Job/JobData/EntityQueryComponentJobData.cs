@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : struct, IComponentData
     {
         private readonly EntityQueryComponentJobConfig<T> m_JobConfig;
-        
+
         internal EntityQueryComponentJobData(EntityQueryComponentJobConfig<T> jobConfig) : base(jobConfig)
         {
             m_JobConfig = jobConfig;

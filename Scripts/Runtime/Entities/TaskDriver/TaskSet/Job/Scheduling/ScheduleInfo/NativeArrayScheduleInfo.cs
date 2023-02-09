@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly NativeArrayJobData<T> m_JobData;
         private readonly JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> m_ScheduleJobFunction;
-        
+
         private NativeArray<T> m_Array;
 
         /// <summary>
@@ -23,12 +23,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Array.Length;
         }
 
-        internal NativeArrayScheduleInfo(NativeArrayJobData<T> jobData,
-                                         BatchStrategy batchStrategy,
-                                         JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction)
-            : base(scheduleJobFunction.Method,
-                   batchStrategy,
-                   ChunkUtil.MaxElementsPerChunk<T>())
+        internal NativeArrayScheduleInfo(
+            NativeArrayJobData<T> jobData,
+            BatchStrategy batchStrategy,
+            JobConfigScheduleDelegates.ScheduleNativeArrayJobDelegate<T> scheduleJobFunction)
+            : base(scheduleJobFunction.Method, batchStrategy, ChunkUtil.MaxElementsPerChunk<T>())
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;

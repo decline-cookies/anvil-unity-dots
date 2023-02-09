@@ -7,8 +7,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
-                                                               ITaskSetOwner
+    internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase, ITaskSetOwner
     {
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
         private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
@@ -20,10 +19,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
 
-        public AbstractTaskDriverSystem TaskDriverSystem { get => this; }
+        public AbstractTaskDriverSystem TaskDriverSystem
+        {
+            get => this;
+        }
 
         //Note - This represents the World that was passed in by the TaskDriver during this system's construction.
-        //Normally a system doesn't get a World until OnCreate is called and the System.World will return null. 
+        //Normally a system doesn't get a World until OnCreate is called and the System.World will return null.
         //We need a valid World in the constructor so we get one and assign it to this property instead.
         public new World World { get; }
         public TaskSet TaskSet { get; }
@@ -59,6 +61,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void OnCreate()
         {
             base.OnCreate();
+
             Debug_EnsureWorldsAreTheSame();
         }
 
@@ -83,7 +86,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDrivers.Add(taskDriver);
         }
 
-        public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
+        public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(
+            AbstractTaskDriver taskDriver,
+            CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour);
@@ -102,9 +107,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        public IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                                      JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                                      BatchStrategy batchStrategy)
+        public IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(
+            ISystemDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             //If we've already configured our system level jobs, we don't want to create duplicates so we return
@@ -114,14 +120,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 return NO_OP_JOB_CONFIG;
             }
 
-            return TaskSet.ConfigureJobToUpdate(dataStream,
-                                                scheduleJobFunction,
-                                                batchStrategy);
+            return TaskSet.ConfigureJobToUpdate(
+                dataStream,
+                scheduleJobFunction,
+                batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                                      JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                                      BatchStrategy batchStrategy)
+        public IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(
+            ISystemDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             //If we've already configured our system level jobs, we don't want to create duplicates so we return
@@ -131,9 +139,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 return NO_OP_JOB_CONFIG;
             }
 
-            return TaskSet.ConfigureJobToCancel(dataStream,
-                                                scheduleJobFunction,
-                                                batchStrategy);
+            return TaskSet.ConfigureJobToCancel(
+                dataStream,
+                scheduleJobFunction,
+                batchStrategy);
         }
 
         //*************************************************************************************************************
@@ -192,8 +201,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private JobHandle UpdateTaskDriverSystem(JobHandle dependsOn)
         {
-            dependsOn = m_BulkJobScheduler.Schedule(dependsOn,
-                                                    AbstractJobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
+            dependsOn = m_BulkJobScheduler.Schedule(
+                dependsOn,
+                AbstractJobConfig.PREPARE_AND_SCHEDULE_FUNCTION);
 
             return dependsOn;
         }

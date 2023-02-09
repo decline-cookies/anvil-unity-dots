@@ -40,8 +40,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// </summary>
         public readonly TPrefixStringType MessagePrefix;
 
-        [NativeSetThreadIndex]
-        private readonly int m_ThreadIndex;
+        [NativeSetThreadIndex] private readonly int m_ThreadIndex;
 
         /// <summary>
         /// Creates an instance of <see cref="BurstableLogger{PrefixStringType}"/> from a

@@ -12,28 +12,30 @@ namespace Anvil.Unity.DOTS.Jobs
         //*************************************************************************************************************
         // SCHEDULING
         //*************************************************************************************************************
-        public static unsafe JobHandle Schedule<TJob>(this TJob jobData,
-                                                      JobHandle dependsOn = default)
+        public static unsafe JobHandle Schedule<TJob>(
+            this TJob jobData,
+            JobHandle dependsOn = default)
             where TJob : struct, IAnvilJob
         {
             IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
-            
+
             WrapperJobStruct<TJob> wrapperData = new WrapperJobStruct<TJob>(ref jobData);
-            
-            JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref wrapperData),
-                                                                                                         reflectionData,
-                                                                                                         dependsOn,
-                                                                                                         ScheduleMode.Single);
+
+            JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(
+                UnsafeUtility.AddressOf(ref wrapperData),
+                reflectionData,
+                dependsOn,
+                ScheduleMode.Single);
 
             dependsOn = JobsUtility.Schedule(ref scheduleParameters);
             return dependsOn;
         }
-        
+
         //*************************************************************************************************************
         // STATIC HELPERS
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void ValidateReflectionData(IntPtr reflectionData)
         {
@@ -42,7 +44,7 @@ namespace Anvil.Unity.DOTS.Jobs
                 throw new InvalidOperationException("Reflection data was not set up by a call to Initialize()");
             }
         }
-        
+
         //*************************************************************************************************************
         // WRAPPER STRUCT
         //*************************************************************************************************************
@@ -69,23 +71,26 @@ namespace Anvil.Unity.DOTS.Jobs
         private struct WrapperJobProducer<TJob>
             where TJob : struct, IAnvilJob
         {
-            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(typeof(WrapperJobStruct<TJob>),
-                                                                                                    typeof(TJob),
-                                                                                                    (ExecuteJobFunction)Execute);
+            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(
+                typeof(WrapperJobStruct<TJob>),
+                typeof(TJob),
+                (ExecuteJobFunction)Execute);
 
-            private delegate void ExecuteJobFunction(ref WrapperJobStruct<TJob> jobData,
-                                                     IntPtr additionalPtr,
-                                                     IntPtr bufferRangePatchData,
-                                                     ref JobRanges ranges,
-                                                     int jobIndex);
+            private delegate void ExecuteJobFunction(
+                ref WrapperJobStruct<TJob> jobData,
+                IntPtr additionalPtr,
+                IntPtr bufferRangePatchData,
+                ref JobRanges ranges,
+                int jobIndex);
 
 
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Required by Burst.")]
-            public static void Execute(ref WrapperJobStruct<TJob> wrapperData,
-                                       IntPtr additionalPtr,
-                                       IntPtr bufferRangePatchData,
-                                       ref JobRanges ranges,
-                                       int jobIndex)
+            public static void Execute(
+                ref WrapperJobStruct<TJob> wrapperData,
+                IntPtr additionalPtr,
+                IntPtr bufferRangePatchData,
+                ref JobRanges ranges,
+                int jobIndex)
             {
                 ref TJob jobData = ref wrapperData.JobData;
                 jobData.InitForThread(wrapperData.NativeThreadIndex);

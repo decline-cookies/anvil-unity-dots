@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #108 - Add profiling and debug string information, see if can be done without a ton of #IF Checks
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043567688
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043573642
-    
+
     [BurstCompatible]
     internal struct EntityProxyDataSourceConsolidator<TInstance> : IDisposable
         where TInstance : unmanaged, IEntityProxyInstance
@@ -17,12 +17,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
         private UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>> m_ActiveConsolidatorsByID;
 
-        public EntityProxyDataSourceConsolidator(PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
-                                                        Dictionary<uint, AbstractData> dataMapping)
+        public EntityProxyDataSourceConsolidator(
+            PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
+            Dictionary<uint, AbstractData> dataMapping)
         {
             m_Pending = pendingData.Pending;
 
-            m_ActiveConsolidatorsByID = new UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
+            m_ActiveConsolidatorsByID
+                = new UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
             foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
             {
                 ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)entry.Value;

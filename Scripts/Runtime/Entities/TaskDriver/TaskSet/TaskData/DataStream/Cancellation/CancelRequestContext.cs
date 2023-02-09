@@ -4,6 +4,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public readonly uint TaskSetOwnerID;
         public readonly uint ActiveID;
+
         public CancelRequestContext(uint taskSetOwnerID, uint activeID)
         {
             TaskSetOwnerID = taskSetOwnerID;

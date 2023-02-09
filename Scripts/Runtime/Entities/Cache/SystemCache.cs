@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -13,28 +12,18 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The <see cref="ComponentSystemBase"/> this cache represents
         /// </summary>
-        public ComponentSystemBase System
-        {
-            get;
-        }
+        public ComponentSystemBase System { get; }
 
         /// <summary>
         /// The <see cref="ComponentType"/>s used in any <see cref="EntityQuery"/>s
         /// on the <see cref="System"/>
         /// </summary>
-        public HashSet<ComponentType> QueryComponentTypes
-        {
-            get;
-        } = new HashSet<ComponentType>();
+        public HashSet<ComponentType> QueryComponentTypes { get; } = new HashSet<ComponentType>();
 
         /// <summary>
         /// The number of <see cref="EntityQuery"/>s this <see cref="System"/> has.
         /// </summary>
-        public int QueryCount
-        {
-            get;
-            private set;
-        }
+        public int QueryCount { get; private set; }
 
         private readonly HashSet<SystemGroupCache> m_GroupCaches = new HashSet<SystemGroupCache>();
 
@@ -61,7 +50,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"System queries decreased!");
             }
 #endif
-            
+
             if (currentQueryCount > QueryCount)
             {
                 RebuildQueries();
@@ -80,6 +69,7 @@ namespace Anvil.Unity.DOTS.Entities
                     QueryComponentTypes.Add(componentType);
                 }
             }
+
             QueryCount = queries.Length;
         }
     }

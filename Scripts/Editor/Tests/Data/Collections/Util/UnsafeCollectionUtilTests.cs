@@ -14,7 +14,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodClearBufferTest_All), Does.StartWith(nameof(UnsafeCollectionUtil.FloodClearBuffer) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(), 0, array.Length);
 
@@ -29,7 +37,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodClearBufferTest_Range), Does.StartWith(nameof(UnsafeCollectionUtil.FloodClearBuffer) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(), 1, 2);
 
@@ -44,11 +60,19 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodClearBufferTest_Range_InvalidParams), Does.StartWith(nameof(UnsafeCollectionUtil.FloodClearBuffer) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
-            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(),-1, 3));
-            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(),2, 0));
-            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(),2, -1));
+            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(), -1, 3));
+            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(), 2, 0));
+            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodClearBuffer<int>(array.GetUnsafePtr(), 2, -1));
         }
 
         // ----- FloodSetBuffer ----- //
@@ -57,7 +81,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodSetBufferTest_All), Does.StartWith(nameof(UnsafeCollectionUtil.FloodSetBuffer) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             UnsafeCollectionUtil.FloodSetBuffer(array.GetUnsafePtr(), 0, array.Length, 10);
 
@@ -72,7 +104,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodSetBufferTest_Range), Does.StartWith(nameof(UnsafeCollectionUtil.FloodSetBuffer) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             UnsafeCollectionUtil.FloodSetBuffer(array.GetUnsafePtr(), 1, 2, 10);
 
@@ -87,11 +127,19 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodSetBufferTest_Range_InvalidParams), Does.StartWith(nameof(UnsafeCollectionUtil.FloodSetBuffer) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
-            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodSetBuffer<int>(array.GetUnsafePtr(),-1, 3, 10));
-            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodSetBuffer<int>(array.GetUnsafePtr(),2, 0, 10));
-            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodSetBuffer<int>(array.GetUnsafePtr(),2, -1, 10));
+            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodSetBuffer<int>(array.GetUnsafePtr(), -1, 3, 10));
+            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodSetBuffer<int>(array.GetUnsafePtr(), 2, 0, 10));
+            Assert.Throws<Exception>(() => UnsafeCollectionUtil.FloodSetBuffer<int>(array.GetUnsafePtr(), 2, -1, 10));
         }
     }
 }

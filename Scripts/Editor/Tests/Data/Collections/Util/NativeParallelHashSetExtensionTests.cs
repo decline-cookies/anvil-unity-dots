@@ -23,7 +23,9 @@ namespace Anvil.Unity.DOTS.Tests.Data
 
             using NativeParallelHashSet<int> destinationSet = new NativeParallelHashSet<int>(3, Allocator.Persistent)
             {
-                2, 3, 4
+                2,
+                3,
+                4
             };
             int originalDestinationCount = destinationSet.Count();
 
@@ -45,7 +47,9 @@ namespace Anvil.Unity.DOTS.Tests.Data
 
             using NativeParallelHashSet<int> sourceSet = new NativeParallelHashSet<int>(3, Allocator.Persistent)
             {
-                1, 2, 3
+                1,
+                2,
+                3
             };
             int sourceSetCount = sourceSet.Count();
 
@@ -79,7 +83,9 @@ namespace Anvil.Unity.DOTS.Tests.Data
 
             using NativeParallelHashSet<int> destinationSet = new NativeParallelHashSet<int>(3, Allocator.Persistent)
             {
-                2, 3, 4
+                2,
+                3,
+                4
             };
             int originalDestinationCount = destinationSet.Count();
 
@@ -101,7 +107,9 @@ namespace Anvil.Unity.DOTS.Tests.Data
 
             IEnumerable<int> sourceSet = new List<int>()
             {
-                1, 2, 3
+                1,
+                2,
+                3
             };
             int sourceSetCount = sourceSet.Count();
 

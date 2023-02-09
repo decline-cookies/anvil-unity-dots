@@ -10,8 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IBufferElementData"/> to update.</typeparam>
     [BurstCompatible]
-    public readonly struct DBFEForRead<T>
-        where T : struct, IBufferElementData
+    public readonly struct DBFEForRead<T> where T : struct, IBufferElementData
     {
         [ReadOnly] private readonly BufferFromEntity<T> m_DBFE;
 
@@ -19,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_DBFE = system.GetBufferFromEntity<T>(true);
         }
-        
+
         /// <summary>
         /// Gets the <see cref="DynamicBuffer{T}"/> that corresponds to the passed <see cref="Entity"/>
         /// </summary>

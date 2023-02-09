@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     {
         //See Chunk.kChunkSize - Can't access so we redefine here
         private const int CHUNK_SIZE = 16 * 1024;
-        
+
         /// <summary>
         /// Gets the maximum number of elements that will fit into a chunk of memory.
         /// At minimum it will return 1 if the element is larger than a chunk.

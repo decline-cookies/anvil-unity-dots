@@ -18,10 +18,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </remarks>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to update.</typeparam>
     [BurstCompatible]
-    public struct CDFEWriter<T>
-        where T : struct, IComponentData
+    public struct CDFEWriter<T> where T : struct, IComponentData
     {
-        [NativeDisableContainerSafetyRestriction][NativeDisableParallelForRestriction] private ComponentDataFromEntity<T> m_CDFE;
+        [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
+        private ComponentDataFromEntity<T> m_CDFE;
 
         internal CDFEWriter(SystemBase system)
         {

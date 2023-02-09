@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly CancelRequestsDataSource m_DataSource;
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
-        
+
         public override uint ActiveID
         {
             get => ActiveLookupData.ID;
@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquirePendingAsync(AccessType accessType)
         {
@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_DataSource.ReleasePendingAsync(dependsOn);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AcquirePending(AccessType accessType)
         {

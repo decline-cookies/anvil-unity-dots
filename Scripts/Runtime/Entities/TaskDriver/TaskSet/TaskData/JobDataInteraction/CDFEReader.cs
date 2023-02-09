@@ -9,8 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to read</typeparam>
     [BurstCompatible]
-    public readonly struct CDFEReader<T>
-        where T : struct, IComponentData
+    public readonly struct CDFEReader<T> where T : struct, IComponentData
     {
         [ReadOnly] private readonly ComponentDataFromEntity<T> m_CDFE;
 

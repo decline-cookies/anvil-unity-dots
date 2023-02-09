@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public static bool operator ==(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {
             //Note that we are not checking if the Payload is equal because the wrapper is only for origin and lookup
-            //checks. 
+            //checks.
             Debug_EnsurePayloadsAreTheSame(lhs, rhs);
             return lhs.InstanceID == rhs.InstanceID;
         }
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return !(lhs == rhs);
         }
-        
+
         public readonly TInstance Payload;
         public readonly EntityProxyInstanceID InstanceID;
 
@@ -73,10 +73,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
-        private static void Debug_EnsurePayloadsAreTheSame(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
+        private static void Debug_EnsurePayloadsAreTheSame(
+            EntityProxyInstanceWrapper<TInstance> lhs,
+            EntityProxyInstanceWrapper<TInstance> rhs)
         {
-            if (lhs.InstanceID == rhs.InstanceID
-             && !lhs.Payload.Equals(rhs.Payload))
+            if (lhs.InstanceID == rhs.InstanceID && !lhs.Payload.Equals(rhs.Payload))
             {
                 throw new InvalidOperationException($"Equality check for {typeof(EntityProxyInstanceWrapper<TInstance>)} where the ID's are the same but the Payloads are different. This should never happen!");
             }

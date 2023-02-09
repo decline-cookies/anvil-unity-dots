@@ -15,14 +15,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Given a "Task" to complete, the TaskDriver handles ensuring it is populated, processed and completed by
     /// defining the data needed, any subtasks to accomplish and the Unity Jobs to do the work required.
     /// TaskDrivers are contextual, meaning that the work they accomplish is unique to their usage in different parts
-    /// of an application or as different sub task drivers as part of larger, more complex Task Drivers. 
+    /// of an application or as different sub task drivers as part of larger, more complex Task Drivers.
     /// The goal of a TaskDriver is to convert the specific contextual data into general agnostic data that the corresponding
     /// <see cref="AbstractTaskDriverSystem"/> will process in parallel. The results of that system processing
     /// are then picked up by the TaskDriver to be converted to specific contextual data again and passed on to
-    /// a sub task driver or to another system. 
+    /// a sub task driver or to another system.
     /// </summary>
-    public abstract class AbstractTaskDriver : AbstractAnvilBase,
-                                               ITaskSetOwner
+    public abstract class AbstractTaskDriver : AbstractAnvilBase, ITaskSetOwner
     {
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
@@ -42,9 +41,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal AbstractTaskDriverSystem TaskDriverSystem { get; }
         internal TaskSet TaskSet { get; }
 
-        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem { get => TaskDriverSystem; }
-        TaskSet ITaskSetOwner.TaskSet { get => TaskSet; }
-        uint ITaskSetOwner.ID { get => m_ID; }
+        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
+        {
+            get => TaskDriverSystem;
+        }
+
+        TaskSet ITaskSetOwner.TaskSet
+        {
+            get => TaskSet;
+        }
+
+        uint ITaskSetOwner.ID
+        {
+            get => m_ID;
+        }
 
         List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
         {
@@ -118,9 +128,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Type type = GetType();
             UpdateInGroupAttribute updateInGroupAttribute = type.GetCustomAttribute<UpdateInGroupAttribute>();
-            return updateInGroupAttribute == null
-                ? typeof(SimulationSystemGroup)
-                : updateInGroupAttribute.GroupType;
+            return updateInGroupAttribute == null ? typeof(SimulationSystemGroup) : updateInGroupAttribute.GroupType;
         }
 
         //*************************************************************************************************************
@@ -132,13 +140,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             subTaskDriver.Parent = this;
             m_SubTaskDrivers.Add(subTaskDriver);
+
             return subTaskDriver;
         }
 
         protected ISystemDataStream<TInstance> CreateSystemDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            ISystemDataStream<TInstance> dataStream = TaskDriverSystem.GetOrCreateDataStream<TInstance>(this, cancelRequestBehaviour);
+            ISystemDataStream<TInstance> dataStream
+                = TaskDriverSystem.GetOrCreateDataStream<TInstance>(this, cancelRequestBehaviour);
+
             return dataStream;
         }
 
@@ -146,6 +157,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TInstance : unmanaged, IEntityProxyInstance
         {
             IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour);
+
             return dataStream;
         }
 
@@ -153,24 +165,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        protected IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                                         JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
-                                                                                         BatchStrategy batchStrategy)
+        protected IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(
+            ISystemDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskDriverSystem.ConfigureSystemJobToCancel(dataStream,
-                                                               scheduleJobFunction,
-                                                               batchStrategy);
+            return TaskDriverSystem.ConfigureSystemJobToCancel(
+                dataStream,
+                scheduleJobFunction,
+                batchStrategy);
         }
 
-        protected IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(ISystemDataStream<TInstance> dataStream,
-                                                                                         JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
-                                                                                         BatchStrategy batchStrategy)
+        protected IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(
+            ISystemDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskDriverSystem.ConfigureSystemJobToUpdate(dataStream,
-                                                               scheduleJobFunction,
-                                                               batchStrategy);
+            return TaskDriverSystem.ConfigureSystemJobToUpdate(
+                dataStream,
+                scheduleJobFunction,
+                batchStrategy);
         }
 
         //*************************************************************************************************************
@@ -185,14 +201,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
         /// <typeparam name="TInstance">The type of instance contained in the <see cref="IDriverDataStream{TInstance}"/></typeparam>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobTriggeredBy<TInstance>(IDriverDataStream<TInstance> dataStream,
-                                                                   JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
-                                                                   BatchStrategy batchStrategy)
+        public IJobConfig ConfigureDriverJobTriggeredBy<TInstance>(
+            IDriverDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return TaskSet.ConfigureJobTriggeredBy((EntityProxyDataStream<TInstance>)dataStream,
-                                                   scheduleJobFunction,
-                                                   batchStrategy);
+            return TaskSet.ConfigureJobTriggeredBy(
+                (EntityProxyDataStream<TInstance>)dataStream,
+                scheduleJobFunction,
+                batchStrategy);
         }
 
         /// <summary>
@@ -203,13 +221,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobTriggeredBy(EntityQuery entityQuery,
-                                                        JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
-                                                        BatchStrategy batchStrategy)
+        public IJobConfig ConfigureDriverJobTriggeredBy(
+            EntityQuery entityQuery,
+            JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
+            BatchStrategy batchStrategy)
         {
-            return TaskSet.ConfigureJobTriggeredBy(entityQuery,
-                                                   scheduleJobFunction,
-                                                   batchStrategy);
+            return TaskSet.ConfigureJobTriggeredBy(
+                entityQuery,
+                scheduleJobFunction,
+                batchStrategy);
         }
 
         /// <summary>
@@ -219,20 +239,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobWhenCancelComplete(JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
-                                                               BatchStrategy batchStrategy)
+        public IJobConfig ConfigureDriverJobWhenCancelComplete(
+            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
+            BatchStrategy batchStrategy)
         {
-            return TaskSet.ConfigureJobWhenCancelComplete(scheduleJobFunction,
-                                                          batchStrategy);
+            return TaskSet.ConfigureJobWhenCancelComplete(
+                scheduleJobFunction,
+                batchStrategy);
         }
 
 
         //TODO: #73 - Implement other job types
-        
+
         //*************************************************************************************************************
         // EXTERNAL USAGE
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseCancelCompleteReaderAsync"/> after scheduling the job.
@@ -243,7 +265,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return TaskSet.AcquireCancelCompleteReaderAsync(out cancelCompleteReader);
         }
-        
+
         /// <summary>
         /// Allows other jobs to use the underlying data for the <see cref="DataStreamActiveReader{CancelComplete}"/>
         /// and ensures data integrity across those other usages.
@@ -253,7 +275,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskSet.ReleaseCancelCompleteReaderAsync(dependsOn);
         }
-        
+
         /// <summary>
         /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use on the main thread outside the Task Driver
         /// context.
@@ -264,7 +286,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return TaskSet.AcquireCancelCompleteReader();
         }
-        
+
         /// <summary>
         /// Allows other jobs or code to use to underlying data for the <see cref="DataStreamActiveReader{CancelComplete}"/>
         /// and ensures data integrity across those other usages.
@@ -273,7 +295,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskSet.ReleaseCancelCompleteReader();
         }
-        
+
         /// <summary>
         /// Gets a <see cref="CancelRequestsWriter"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseCancelRequestsWriterAsync"/> after scheduling the job.
@@ -284,7 +306,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return TaskSet.AcquireCancelRequestsWriterAsync(out cancelRequestsWriter);
         }
-        
+
         /// <summary>
         /// Allows other jobs to use the underlying data for the <see cref="CancelRequestsWriter"/>
         /// and ensures data integrity across those other usages.
@@ -294,7 +316,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskSet.ReleaseCancelRequestsWriterAsync(dependsOn);
         }
-        
+
         /// <summary>
         /// Gets a <see cref="CancelRequestsWriter"/> for use on the main thread outside the Task Driver
         /// context.
@@ -305,7 +327,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return TaskSet.AcquireCancelRequestsWriter();
         }
-        
+
         /// <summary>
         /// Allows other jobs or code to use to underlying data for the <see cref="CancelRequestsWriter"/>
         /// and ensures data integrity across those other usages.
@@ -339,8 +361,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             //TODO: #138 - Can we consolidate this into the TaskSet and have TaskSets aware of parenting instead
             m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0
-                                || TaskDriverSystem.HasCancellableData
-                                || m_SubTaskDrivers.Any(subtaskDriver => subtaskDriver.m_HasCancellableData);
+                || TaskDriverSystem.HasCancellableData
+                || m_SubTaskDrivers.Any(subtaskDriver => subtaskDriver.m_HasCancellableData);
         }
 
         internal void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)

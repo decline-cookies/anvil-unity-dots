@@ -23,13 +23,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_JobData.GetDataStreamReader<TInstance>();
         }
 
-        internal DataStreamScheduleInfo(DataStreamJobData<TInstance> jobData,
-                                        EntityProxyDataStream<TInstance> dataStream,
-                                        BatchStrategy batchStrategy,
-                                        JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction)
-            : base(scheduleJobFunction.Method,
-                   batchStrategy,
-                   EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
+        internal DataStreamScheduleInfo(
+            DataStreamJobData<TInstance> jobData,
+            EntityProxyDataStream<TInstance> dataStream,
+            BatchStrategy batchStrategy,
+            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction)
+            : base(scheduleJobFunction.Method, batchStrategy, EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;

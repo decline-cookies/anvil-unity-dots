@@ -23,12 +23,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             base.DisposeSelf();
         }
 
-        public JobHandle Schedule(JobHandle dependsOn,
-                                  BulkScheduleDelegate<T> scheduleFunction)
+        public JobHandle Schedule(
+            JobHandle dependsOn,
+            BulkScheduleDelegate<T> scheduleFunction)
         {
-            return m_Data.BulkScheduleParallel(dependsOn, 
-                                               ref m_Dependencies, 
-                                               scheduleFunction);
+            return m_Data.BulkScheduleParallel(
+                dependsOn,
+                ref m_Dependencies,
+                scheduleFunction);
         }
     }
 }

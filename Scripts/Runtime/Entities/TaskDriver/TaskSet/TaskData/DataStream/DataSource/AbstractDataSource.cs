@@ -16,16 +16,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : unmanaged, IEquatable<T>
     {
         private bool m_IsHardened;
-        
+
         private NativeArray<JobHandle> m_ConsolidationDependencies;
         private readonly List<DataAccessWrapper> m_ConsolidationData;
 
         public UnsafeTypedStream<T>.Writer PendingWriter { get; }
         public unsafe void* PendingWriterPointer { get; }
-        
+
         public PendingData<T> PendingData { get; }
         protected Dictionary<uint, AbstractData> ActiveDataLookupByID { get; }
-        
+
         protected TaskDriverManagementSystem TaskDriverManagementSystem { get; }
 
         protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
@@ -55,14 +55,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureNotHardened();
             //TODO: #136 - Kinda gross, we shouldn't know about Cancelling here.
-            
+
             //If we need to have an explicit unwinding to cancel, we need to create a second hidden piece of data to serve as the trigger
             ActiveArrayData<T> pendingCancelArrayData = null;
             if (cancelRequestBehaviour is CancelRequestBehaviour.Unwind)
             {
                 pendingCancelArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore, null);
             }
-            
+
             ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelRequestBehaviour, pendingCancelArrayData);
             ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
 
@@ -108,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             //Allow derived classes to add to the Consolidation Data if they need to.
             HardenSelf();
-            
+
             //For each piece of active data, we want exclusive access to it when consolidating. We're going to be writing to it via one thread.
             foreach (AbstractData data in ActiveDataLookupByID.Values)
             {
@@ -121,14 +121,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
             //We'll also add our own Pending data. We want exclusive access because we'll be reading from it and then clearing the collection.
             AddConsolidationData(PendingData, AccessType.ExclusiveWrite);
-            
+
             //One job handle for each Consolidation Data and one for the incoming dependency
             m_ConsolidationDependencies = new NativeArray<JobHandle>(m_ConsolidationData.Count + 1, Allocator.Persistent);
         }
 
-        protected virtual void HardenSelf()
-        {
-        }
+        protected virtual void HardenSelf() { }
 
         protected void AddConsolidationData(AbstractData data, AccessType accessType)
         {
@@ -157,7 +155,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 DataAccessWrapper dataAccessWrapper = m_ConsolidationData[dependencyIndex];
                 m_ConsolidationDependencies[dependencyIndex] = dataAccessWrapper.Data.AcquireAsync(dataAccessWrapper.AccessType);
             }
-            
+
             m_ConsolidationDependencies[dependencyIndex] = dependsOn;
 
             return JobHandle.CombineDependencies(m_ConsolidationDependencies);
@@ -183,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Expected {this} to not be hardened but {nameof(Harden)} has already been called!");
             }
         }
-        
+
         //*************************************************************************************************************
         // INNER CLASS
         //*************************************************************************************************************

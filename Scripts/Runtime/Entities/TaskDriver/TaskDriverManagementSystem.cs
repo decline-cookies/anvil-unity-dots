@@ -116,8 +116,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteDataSource.Harden();
 
             //Construct the CancelProgressFlows - Only create them if there is cancellable data
-            m_CancelProgressFlows.AddRange(m_TopLevelTaskDrivers.Where((topLevelTaskDriver) => ((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
-                                                                .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
+            m_CancelProgressFlows.AddRange(
+                m_TopLevelTaskDrivers.Where((topLevelTaskDriver) => ((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
+                    .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
         }
@@ -168,7 +169,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return GetOrCreateUnityEntityDataAccessController(typeof(T));
         }
-        
+
         private AccessController GetOrCreateUnityEntityDataAccessController(Type type)
         {
             if (!m_UnityEntityDataAccessControllers.TryGetValue(type, out AccessController accessController))
@@ -190,14 +191,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             dependsOn = m_CancelRequestsDataSource.Consolidate(dependsOn);
 
             //Next we check if any cancel progress was updated
-            dependsOn = m_CancelProgressFlowBulkJobScheduler.Schedule(dependsOn,
-                                                                      CancelProgressFlow.SCHEDULE_FUNCTION);
+            dependsOn = m_CancelProgressFlowBulkJobScheduler.Schedule(
+                dependsOn,
+                CancelProgressFlow.SCHEDULE_FUNCTION);
 
 
             //All Entity Proxy Data Streams will now be consolidated. Anything that was cancellable will be dealt with here as well
             //and written to the right location
-            dependsOn = m_EntityProxyDataSourceBulkJobScheduler.Schedule(dependsOn,
-                                                                         IDataSource.CONSOLIDATE_SCHEDULE_FUNCTION);
+            dependsOn = m_EntityProxyDataSourceBulkJobScheduler.Schedule(
+                dependsOn,
+                IDataSource.CONSOLIDATE_SCHEDULE_FUNCTION);
 
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
             // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain

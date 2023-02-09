@@ -14,16 +14,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return !(lhs == rhs);
         }
-        
-        public Type AccessWrapperType
-        {
-            get;
-        }
 
-        public AbstractJobConfig.Usage Usage
-        {
-            get;
-        }
+        public Type AccessWrapperType { get; }
+
+        public AbstractJobConfig.Usage Usage { get; }
 
         public JobConfigDataID(Type accessWrapperType, AbstractJobConfig.Usage usage)
         {
@@ -35,6 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return this == other;
         }
+
         public override bool Equals(object compare)
         {
             return compare is JobConfigDataID id && Equals(id);

@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TypeID = typeID;
             TaskSetOwnerID = taskSetOwnerID;
         }
-        
+
         public bool Equals(ResolveTargetID other)
         {
             return this == other;
@@ -45,11 +45,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return $"TypeID: {TypeID} - TaskSetOwnerID: {TaskSetOwnerID}";
         }
-        
+
         [BurstCompatible]
         public FixedString64Bytes ToFixedString()
         {
-            return new FixedString64Bytes(ToString());;
+            return new FixedString64Bytes(ToString());
+            ;
         }
     }
 }

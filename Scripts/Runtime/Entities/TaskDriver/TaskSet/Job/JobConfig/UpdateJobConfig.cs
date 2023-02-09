@@ -5,8 +5,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class UpdateJobConfig<TInstance> : AbstractResolvableJobConfig
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        public UpdateJobConfig(ITaskSetOwner taskSetOwner,
-                               EntityProxyDataStream<TInstance> dataStream) 
+        public UpdateJobConfig(ITaskSetOwner taskSetOwner, EntityProxyDataStream<TInstance> dataStream)
             : base(taskSetOwner)
         {
             RequireDataStreamForUpdate(dataStream);

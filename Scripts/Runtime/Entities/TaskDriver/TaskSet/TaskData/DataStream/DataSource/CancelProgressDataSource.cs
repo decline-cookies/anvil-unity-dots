@@ -5,9 +5,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelProgressDataSource : AbstractDataSource<EntityProxyInstanceID>
     {
-        public CancelProgressDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
-        {
-        }
+        public CancelProgressDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem) { }
 
         protected override JobHandle ConsolidateSelf(JobHandle dependsOn)
         {

@@ -21,7 +21,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
 
-        internal CancelRequestsWriter(UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingWriter, NativeArray<CancelRequestContext> cancelRequestContexts) : this()
+        internal CancelRequestsWriter(
+            UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingWriter,
+            NativeArray<CancelRequestContext> cancelRequestContexts)
+            : this()
         {
             m_PendingWriter = pendingWriter;
             m_CancelRequestContexts = cancelRequestContexts;
@@ -73,10 +76,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureCanCancel();
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
-                m_PendingLaneWriter.Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.ActiveID));
+                m_PendingLaneWriter.Write(
+                    new EntityProxyInstanceID(
+                        entity,
+                        cancelRequestContext.TaskSetOwnerID,
+                        cancelRequestContext.ActiveID));
             }
         }
-        
+
         /// <summary>
         /// Requests the cancellation of a TaskDriver flow for a specific <see cref="Entity"/>
         /// </summary>
@@ -89,16 +96,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             RequestCancel(ref entity, laneIndex);
         }
-        
+
         /// <inheritdoc cref="RequestCancel(Entity, int)"/>
         public void RequestCancel(ref Entity entity, int laneIndex)
         {
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
                 m_PendingWriter.AsLaneWriter(laneIndex)
-                               .Write(new EntityProxyInstanceID(entity,
-                                                                cancelRequestContext.TaskSetOwnerID,
-                                                                cancelRequestContext.ActiveID));
+                    .Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.ActiveID));
             }
         }
 

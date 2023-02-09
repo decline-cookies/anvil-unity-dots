@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             EntityQuery = entityQuery;
         }
-        
+
         public abstract JobHandle Acquire();
         public abstract void Release(JobHandle releaseAccessDependency);
     }

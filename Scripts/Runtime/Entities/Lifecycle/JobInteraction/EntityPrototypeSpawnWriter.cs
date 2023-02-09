@@ -26,8 +26,9 @@ namespace Anvil.Unity.DOTS.Entities
         private UnsafeTypedStream<Entity>.LaneWriter m_PrototypesToDestroyLaneWriter;
         private int m_LaneIndex;
 
-        internal EntityPrototypeSpawnWriter(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Writer writer,
-                                            UnsafeTypedStream<Entity>.Writer prototypesToDestroyWriter) : this()
+        internal EntityPrototypeSpawnWriter(
+            UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>.Writer writer,
+            UnsafeTypedStream<Entity>.Writer prototypesToDestroyWriter) : this()
         {
             m_Writer = writer;
             m_PrototypesToDestroyWriter = prototypesToDestroyWriter;
@@ -114,11 +115,11 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred(Entity prototype, ref TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
             m_Writer.AsLaneWriter(laneIndex)
-                    .Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
+                .Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
             if (shouldDestroyPrototype)
             {
                 m_PrototypesToDestroyWriter.AsLaneWriter(laneIndex)
-                                           .Write(prototype);
+                    .Write(prototype);
             }
         }
 

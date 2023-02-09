@@ -14,6 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// to gracefully unwind when cancelled. 
         /// </remarks>
         Delete,
+
         /// <summary>
         /// When a cancellation request is received, the data remains in the
         /// <see cref="IAbstractDataStream"/> and cannot be cancelled. The data will
@@ -24,6 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <see cref="Entity"/> is received. 
         /// </remarks>
         Ignore,
+
         /// <summary>
         /// When a cancellation request is received, the data is removed from the
         /// <see cref="IAbstractDataStream"/> and moved to a hidden internal
