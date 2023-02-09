@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            
+
             Type type = GetType();
             Type commandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(commandBufferSystemType);
@@ -61,12 +61,11 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        
-        
+
         //*************************************************************************************************************
         // SPAWN DEFERRED
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Spawns an <see cref="Entity"/> with the given definition later on when the associated
         /// <see cref="EntityCommandBufferSystem"/> runs.
@@ -84,10 +83,10 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
             entitySpawner.SpawnDeferred(spawnDefinition);
-            
+
             EnableSystem(entitySpawner);
         }
-        
+
         /// <summary>
         /// Spawns multiple <see cref="Entity"/>s with the given definitions later on when the associated
         /// <see cref="EntityCommandBufferSystem"/> runs.
@@ -108,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             EnableSystem(entitySpawner);
         }
-        
+
         /// <inheritdoc cref="SpawnDeferred{TEntitySpawnDefinition}(NativeArray{TEntitySpawnDefinition})"/>
         public void SpawnDeferred<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
@@ -123,13 +122,12 @@ namespace Anvil.Unity.DOTS.Entities
 
             SpawnDeferred(nativeArraySpawnDefinitions);
         }
-        
-        
-        
+
+
         //*************************************************************************************************************
         // SPAWN IN A JOB
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Returns a <see cref="EntitySpawnWriter{TEntitySpawnDefinition}"/> to enable queueing
         /// up <see cref="IEntitySpawnDefinition"/>s to spawn during the system's update phase while in a job.
@@ -144,12 +142,12 @@ namespace Anvil.Unity.DOTS.Entities
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntitySpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
-            
+
             EnableSystem(entitySpawner);
-            
+
             return entitySpawner.AcquireEntitySpawnWriterAsync(out entitySpawnWriter);
         }
-        
+
         /// <summary>
         /// Allows the system to know when other jobs have finished trying to queue
         /// up <see cref="IEntitySpawnDefinition"/>s to be spawned.
@@ -163,12 +161,11 @@ namespace Anvil.Unity.DOTS.Entities
             entitySpawner.ReleaseEntitySpawnWriterAsync(dependsOn);
         }
 
-        
-        
+
         //*************************************************************************************************************
         // SPAWN DEFERRED WITH PROTOTYPE
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Spawns an <see cref="Entity"/> with the given definition by cloning the passed in prototype
         /// <see cref="Entity"/> when the associated <see cref="EntityCommandBufferSystem"/> runs later on.
@@ -193,7 +190,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             EnableSystem(entitySpawner);
         }
-        
+
         /// <summary>
         /// Spawns <see cref="Entity"/>s with the given definitions by cloning the passed in prototype
         /// <see cref="Entity"/> when the associated <see cref="EntityCommandBufferSystem"/> runs later on.
@@ -218,13 +215,12 @@ namespace Anvil.Unity.DOTS.Entities
 
             EnableSystem(entitySpawner);
         }
-        
-        
-        
+
+
         //*************************************************************************************************************
         // SPAWN IN A JOB WITH PROTOTYPE
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Returns a <see cref="EntityPrototypeSpawnWriter{TEntitySpawnDefinition}"/> to enable queueing
         /// up <see cref="IEntitySpawnDefinition"/>s to spawn during the system's update phase while in a job.
@@ -239,9 +235,9 @@ namespace Anvil.Unity.DOTS.Entities
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntityPrototypeSpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<EntityPrototypeSpawner<TEntitySpawnDefinition>, TEntitySpawnDefinition>();
-            
+
             EnableSystem(entitySpawner);
-            
+
             return entitySpawner.AcquireEntitySpawnWriterAsync(out entitySpawnWriter);
         }
 
@@ -261,7 +257,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // SPAWN IMMEDIATE
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Spawns an <see cref="Entity"/> with the given definition immediately and returns it.
         /// </summary>
@@ -321,7 +317,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnUpdate()
         {
             Dependency = ScheduleActiveEntitySpawners(Dependency);
-            
+
             //Ensure we're turned back off
             m_ActiveEntitySpawners.Clear();
             Enabled = false;
@@ -364,17 +360,19 @@ namespace Anvil.Unity.DOTS.Entities
                 using var handle = m_EntityArchetypes.AcquireWithHandle(AccessType.ExclusiveWrite);
                 CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(handle.Value, out EntityArchetype entityArchetype, out long entityArchetypeHash);
                 entitySpawner = new TEntitySpawner();
-                entitySpawner.Init(EntityManager,
-                                   entityArchetype);
+                entitySpawner.Init(
+                    EntityManager,
+                    entityArchetype);
                 m_EntitySpawners.Add(spawnerType, entitySpawner);
             }
 
             return (TEntitySpawner)entitySpawner;
         }
 
-        private void CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup,
-                                                                                out EntityArchetype entityArchetype,
-                                                                                out long entityArchetypeHash)
+        private void CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(
+            NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup,
+            out EntityArchetype entityArchetype,
+            out long entityArchetypeHash)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             Type definitionType = typeof(TEntitySpawnDefinition);

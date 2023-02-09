@@ -48,24 +48,27 @@ namespace Anvil.Unity.DOTS.Entities
             ReleaseAsync(dependsOn);
         }
 
-        protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn,
-                                                      UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
-                                                      ref EntityCommandBuffer ecb)
+        protected override JobHandle ScheduleSpawnJob(
+            JobHandle dependsOn,
+            UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
+            ref EntityCommandBuffer ecb)
         {
             //TODO: #86 - Remove once we don't have to switch with BURST
             if (MustDisableBurst)
             {
-                SpawnJobNoBurst job = new SpawnJobNoBurst(spawnDefinitions,
-                                                          EntityArchetype,
-                                                          ref ecb);
+                SpawnJobNoBurst job = new SpawnJobNoBurst(
+                    spawnDefinitions,
+                    EntityArchetype,
+                    ref ecb);
 
                 return job.Schedule(dependsOn);
             }
             else
             {
-                SpawnJob job = new SpawnJob(spawnDefinitions,
-                                            EntityArchetype,
-                                            ref ecb);
+                SpawnJob job = new SpawnJob(
+                    spawnDefinitions,
+                    EntityArchetype,
+                    ref ecb);
 
                 return job.Schedule(dependsOn);
             }
@@ -84,9 +87,10 @@ namespace Anvil.Unity.DOTS.Entities
 
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJob(UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
-                            EntityArchetype archetype,
-                            ref EntityCommandBuffer ecb)
+            public SpawnJob(
+                UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
+                EntityArchetype archetype,
+                ref EntityCommandBuffer ecb)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_Archetype = archetype;
@@ -112,9 +116,10 @@ namespace Anvil.Unity.DOTS.Entities
 
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJobNoBurst(UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
-                                   EntityArchetype archetype,
-                                   ref EntityCommandBuffer ecb)
+            public SpawnJobNoBurst(
+                UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
+                EntityArchetype archetype,
+                ref EntityCommandBuffer ecb)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_Archetype = archetype;

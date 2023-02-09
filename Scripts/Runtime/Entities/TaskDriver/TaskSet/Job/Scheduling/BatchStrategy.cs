@@ -13,6 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Use this for work that is relatively quick to perform.
         /// </summary>
         MaximizeChunk,
+
         /// <summary>
         /// Spreads the work out across as many threads are available so that the total amount of work is
         /// as balanced as possible.

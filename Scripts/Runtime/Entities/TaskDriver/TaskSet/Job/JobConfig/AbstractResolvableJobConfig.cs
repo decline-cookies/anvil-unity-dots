@@ -6,10 +6,12 @@ using System.Reflection;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal abstract class AbstractResolvableJobConfig : AbstractJobConfig,
-                                                          IResolvableJobConfigRequirements
+    internal abstract class AbstractResolvableJobConfig : AbstractJobConfig, IResolvableJobConfigRequirements
     {
-        private static readonly MethodInfo PROTOTYPE_CREATE_RESOLVE_ACCESS_WRAPPER_METHOD = typeof(AbstractResolvableJobConfig).GetMethod(nameof(CreateAndAddDataStreamPendingAccessWrapperForResolving), BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly MethodInfo PROTOTYPE_CREATE_RESOLVE_ACCESS_WRAPPER_METHOD
+            = typeof(AbstractResolvableJobConfig).GetMethod(
+                nameof(CreateAndAddDataStreamPendingAccessWrapperForResolving),
+                BindingFlags.Instance | BindingFlags.NonPublic);
 
         private ResolveTargetTypeLookup m_ResolveTargetTypeLookup;
 
@@ -23,6 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void DisposeSelf()
         {
             m_ResolveTargetTypeLookup.Dispose();
+
             base.DisposeSelf();
         }
 
@@ -63,17 +66,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private void AddResolveAccessWrapper(Type type, AbstractDataStream dataStream)
         {
             MethodInfo genericCreateMethod = PROTOTYPE_CREATE_RESOLVE_ACCESS_WRAPPER_METHOD.MakeGenericMethod(type);
-            genericCreateMethod.Invoke(this,
-                                       new object[]
-                                       {
-                                           dataStream
-                                       });
+            genericCreateMethod.Invoke(this, new object[] { dataStream });
         }
 
         private void CreateAndAddDataStreamPendingAccessWrapperForResolving<TInstance>(AbstractDataStream dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Resolve));
+            AddAccessWrapper(
+                new DataStreamPendingAccessWrapper<TInstance>(
+                    (EntityProxyDataStream<TInstance>)dataStream,
+                    AccessType.SharedWrite,
+                    Usage.Resolve));
         }
 
         //*************************************************************************************************************
@@ -82,18 +85,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <summary>
         /// Returns the job-safe struct of <see cref="ResolveTargetTypeLookup"/> so that jobs can
-        /// resolve to the right <see cref="EntityProxyDataStream{TInstance}"/> based on context and id. 
+        /// resolve to the right <see cref="EntityProxyDataStream{TInstance}"/> based on context and id.
         /// </summary>
         /// <returns>The <see cref="ResolveTargetTypeLookup"/> for this job config</returns>
         public ResolveTargetTypeLookup GetResolveTargetTypeLookup()
         {
             return m_ResolveTargetTypeLookup;
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureValuesArePresent(List<AbstractDataStream> dataStreams)
         {

@@ -8,13 +8,12 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    public unsafe struct ThreadPersistentDataAccessor<TData>
-        where TData : unmanaged
+    public unsafe struct ThreadPersistentDataAccessor<TData> where TData : unmanaged
     {
         private const int UNSET_LANE_INDEX = -1;
-        
+
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ThreadDataArrayPointer;
-        
+
         private int m_LaneIndex;
 
         public ref TData ThreadData
@@ -30,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_ThreadDataArrayPointer = threadDataArray.GetUnsafePtr();
             m_LaneIndex = UNSET_LANE_INDEX;
-            
+
             Debug_InitializeAccessorState();
         }
 
@@ -39,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureInitThreadOnlyCalledOnce();
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -53,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private AccessorState m_State;
 #endif
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_InitializeAccessorState()
         {
@@ -61,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_State = AccessorState.Uninitialized;
 #endif
         }
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureInitThreadOnlyCalledOnce()
         {
@@ -74,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_State = AccessorState.Ready;
 #endif
         }
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureCanAccess()
         {
@@ -85,6 +84,5 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 #endif
         }
-        
     }
 }

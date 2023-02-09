@@ -2,7 +2,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
-
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
@@ -14,9 +13,9 @@ namespace Anvil.Unity.DOTS.Entities
     {
         //TODO: #115 - Implement a safety check to make sure there isn't another lookup/entity combination in flight.
         // Until the above is implemented leave it to consuming jobs to add the attributes.
-        [NativeDisableContainerSafetyRestriction]
-        [NativeDisableParallelForRestriction]
+        [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private BufferFromEntity<T> m_Lookup;
+
         private readonly Entity m_Entity;
 
         /// <summary>
@@ -35,10 +34,6 @@ namespace Anvil.Unity.DOTS.Entities
         /// Call during job execution.
         /// </summary>
         /// <returns>The <see cref="DynamicBuffer{T}" /> instance</returns>
-        public DynamicBuffer<T> GetBuffer()
-        {
-            return m_Lookup[m_Entity];
-        }
+        public DynamicBuffer<T> GetBuffer() => m_Lookup[m_Entity];
     }
-
 }

@@ -16,27 +16,34 @@ namespace Anvil.Unity.DOTS.Jobs
     /// - Multiple different systems want to write to the data.
     /// - They call <see cref="AcquireAsync"/> with access type of <see cref="AccessType.SharedWrite"/>.
     /// - This means that all those jobs can start at the same time.
-    /// - NOTE: You as the developer must ensure that your jobs write safely during a <see cref="AccessType.SharedWrite"/>. Typically this is done by using the <see cref="NativeSetThreadIndex"/> attribute to guarantee unique writing.
-    /// - All of those jobs use <see cref="ReleaseAsync"/> to let the <see cref="AccessController"/> know that there is parallel writing going on. We cannot read or exclusive write until this done.
+    /// - NOTE: You as the developer must ensure that your jobs write safely during a <see cref="AccessType.SharedWrite"/>.
+    ///   Typically this is done by using the <see cref="NativeSetThreadIndex"/> attribute to guarantee unique writing.
+    /// - All of those jobs use <see cref="ReleaseAsync"/> to let the <see cref="AccessController"/> know that there is
+    ///   parallel writing going on. We cannot read or exclusive write until this done.
     ///
     /// ----- INTERNAL WRITE PHASE -----
     /// - A managing system now needs to do some work where it reads from and writes to the data.
     /// - It schedules it's job to do that using <see cref="AcquireAsync"/> with access type of <see cref="AccessType.ExclusiveWrite"/>
     /// - This means that it can do it's work once all the previous external writers and/or readers have completed.
-    /// - NOTE: Typically this means that one thread is reading/writing to more than one (up to all) possible buckets in the data.
-    /// - This job then uses <see cref="ReleaseAsync"/> to the let the <see cref="AccessController"/> know that there an exclusive write going on that cannot be interrupted by parallel writes or reads.
+    /// - NOTE: Typically this means that one thread is reading/writing to more than one (up to all) possible buckets in
+    ///   the data.
+    /// - This job then uses <see cref="ReleaseAsync"/> to the let the <see cref="AccessController"/> know that there an
+    ///   exclusive write going on that cannot be interrupted by parallel writes or reads.
     ///
     /// ----- EXTERNAL READ PHASE -----
     /// - Multiple different systems want to read from the data.
     /// - They schedule their reading jobs using <see cref="AcquireAsync"/> with access type of <see cref="AccessType.SharedRead"/>
     /// - This means that all those reading jobs can start at the same time.
-    /// - All of those jobs use <see cref="ReleaseAsync"/> to let the <see cref="AccessController"/> know that there is reading going on. We cannot write again until this is done.
+    /// - All of those jobs use <see cref="ReleaseAsync"/> to let the <see cref="AccessController"/> know that there is
+    ///   reading going on. We cannot write again until this is done.
     ///
     /// ----- CLEAN UP PHASE -----
     /// - The data used above needs to be disposed but we need to ensure all reading and writing are complete.
     /// - The data disposes using <see cref="AcquireAsync"/> with access type of <see cref="AccessType.Disposal"/>
-    /// - This means that all reading and writing from the data has been completed. It is safe to dispose as no one is using it anymore and further calls to <see cref="AcquireAsync"/> will fail unless <see cref="Reset"/> is called.
-    /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles no longer apply.
+    /// - This means that all reading and writing from the data has been completed. It is safe to dispose as no one is
+    ///   using it anymore and further calls to <see cref="AcquireAsync"/> will fail unless <see cref="Reset"/> is called.
+    /// - Calling Reset indicates to the controller that the underlying instance has changed and all previous JobHandles
+    ///   no longer apply.
     /// </remarks>
     public class AccessController : AbstractAnvilBase
     {
@@ -61,9 +68,7 @@ namespace Anvil.Unity.DOTS.Jobs
 #endif
 
 
-        public AccessController()
-        {
-        }
+        public AccessController() { }
 
         protected override void DisposeSelf()
         {
@@ -135,7 +140,9 @@ namespace Anvil.Unity.DOTS.Jobs
                 AccessType.ExclusiveWrite => m_ExclusiveWriteDependency,
                 AccessType.SharedWrite => m_SharedWriteDependency,
                 AccessType.SharedRead => m_SharedReadDependency,
-                _ => throw new ArgumentOutOfRangeException(nameof(accessType), accessType,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(accessType),
+                    accessType,
                     $"Tried to get dependency with {nameof(AccessType)} of {accessType} but no code path satisfies!")
             };
         }
@@ -195,7 +202,7 @@ namespace Anvil.Unity.DOTS.Jobs
                     m_State = AcquisitionState.Disposing;
                     acquiredHandle = m_ExclusiveWriteDependency;
                     break;
-                
+
                 case AccessType.ExclusiveWrite:
                     m_State = AcquisitionState.ExclusiveWrite;
                     acquiredHandle = m_ExclusiveWriteDependency;
@@ -212,7 +219,10 @@ namespace Anvil.Unity.DOTS.Jobs
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(accessType), accessType, $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(accessType),
+                        accessType,
+                        $"Tried to acquire with {nameof(AccessType)} of {accessType} but no code path satisfies!");
             }
 
             //TODO: #129 - Remove once we have unit tests.
@@ -299,10 +309,7 @@ namespace Anvil.Unity.DOTS.Jobs
 
             if (m_State != AcquisitionState.Unacquired)
             {
-                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again." +
-                                                    $"\n ----- Last Acquisition Stack -----" +
-                                                    $"\n {GetLastAccessOperationStack()}" +
-                                                    $"\n ----- END Last Acquisition Stack -----\n");
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} must be called before {nameof(AcquireAsync)} is called again." + $"\n ----- Last Acquisition Stack -----" + $"\n {GetLastAccessOperationStack()}" + $"\n ----- END Last Acquisition Stack -----\n");
             }
         }
 
@@ -312,10 +319,7 @@ namespace Anvil.Unity.DOTS.Jobs
             // ReSharper disable once ConvertIfStatementToSwitchStatement
             if (m_State == AcquisitionState.Unacquired)
             {
-                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times." +
-                                                    $"\n ----- Last Release Stack -----" +
-                                                    $"\n {GetLastAccessOperationStack()}" +
-                                                    $"\n ----- END Last Release Stack -----\n");
+                throw new InvalidOperationException($"{nameof(ReleaseAsync)} was called multiple times." + $"\n ----- Last Release Stack -----" + $"\n {GetLastAccessOperationStack()}" + $"\n ----- END Last Release Stack -----\n");
             }
 
             if (m_State == AcquisitionState.Disposing)

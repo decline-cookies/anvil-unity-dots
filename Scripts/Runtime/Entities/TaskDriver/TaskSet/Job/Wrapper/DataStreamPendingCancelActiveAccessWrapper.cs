@@ -7,9 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                                    IDataStreamPendingAccessWrapper
         where T : unmanaged, IEntityProxyInstance
     {
-        public DataStreamPendingCancelActiveAccessWrapper(EntityProxyDataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage) : base(dataStream, accessType, usage)
-        {
-        }
+        public DataStreamPendingCancelActiveAccessWrapper(EntityProxyDataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage) : base(dataStream, accessType, usage) { }
 
         public override JobHandle AcquireAsync()
         {

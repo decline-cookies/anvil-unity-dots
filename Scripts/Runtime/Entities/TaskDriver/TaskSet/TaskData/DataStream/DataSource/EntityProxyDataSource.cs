@@ -9,9 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
 
-        public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
-        {
-        }
+        public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem) { }
 
         protected override void DisposeSelf()
         {
@@ -22,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void HardenSelf()
         {
             base.HardenSelf();
-            
+
             //We need to ensure we get the right access to any of the cancel data structures
             foreach (AbstractData data in ActiveDataLookupByID.Values)
             {
@@ -46,21 +44,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return dependsOn;
         }
-        
+
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
-        
+
         [BurstCompile]
         private struct ConsolidateEntityProxyDataSourceJob : IJob
         {
             private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
-        
+
             public ConsolidateEntityProxyDataSourceJob(EntityProxyDataSourceConsolidator<TInstance> dataSourceConsolidator) : this()
             {
                 m_Consolidator = dataSourceConsolidator;
             }
-        
+
             public void Execute()
             {
                 m_Consolidator.Consolidate();

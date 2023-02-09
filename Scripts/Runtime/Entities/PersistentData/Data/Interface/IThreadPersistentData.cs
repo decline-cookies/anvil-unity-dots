@@ -4,6 +4,7 @@ namespace Anvil.Unity.DOTS.Entities
         where T : struct
     {
         public delegate T ConstructionCallbackPerThread(int threadIndex);
+
         public delegate void DisposalCallbackPerThread(int threadIndex, T threadData);
     }
 }

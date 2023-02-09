@@ -16,6 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// The type handle for the <see cref="DynamicBuffer{T}" /> to copy from.
         /// </summary>
         [ReadOnly] public BufferFromSingleEntity<T> InputBufferFromEntity;
+
         /// <summary>
         /// The <see cref="NativeArray{T}" to copy to.
         /// </summary>

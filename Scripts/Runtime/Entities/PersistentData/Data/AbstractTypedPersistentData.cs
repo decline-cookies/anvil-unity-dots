@@ -16,12 +16,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractTypedPersistentData(string id, T data) : base(id)
         {
-            m_Data = UnsafeUtility.Malloc(UnsafeUtility.SizeOf<T>(),
-                                          UnsafeUtility.AlignOf<T>(),
-                                          Allocator.Persistent);
+            m_Data = UnsafeUtility.Malloc(
+                UnsafeUtility.SizeOf<T>(),
+                UnsafeUtility.AlignOf<T>(),
+                Allocator.Persistent);
             *(T*)m_Data = data;
         }
-        
+
         protected override void DisposeData()
         {
             (Data as IDisposable)?.Dispose();

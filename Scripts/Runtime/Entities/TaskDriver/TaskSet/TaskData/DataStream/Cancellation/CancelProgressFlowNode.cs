@@ -11,7 +11,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelProgressFlowNode : AbstractAnvilBase
     {
-        public static readonly BulkScheduleDelegate<CancelProgressFlowNode> CHECK_PROGRESS_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<CancelProgressFlowNode>(nameof(ScheduleCheckCancelProgressJob), BindingFlags.Instance | BindingFlags.NonPublic);
+        public static readonly BulkScheduleDelegate<CancelProgressFlowNode> CHECK_PROGRESS_SCHEDULE_FUNCTION
+            = BulkSchedulingUtil.CreateSchedulingDelegate<CancelProgressFlowNode>(
+                nameof(ScheduleCheckCancelProgressJob),
+                BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly ITaskSetOwner m_TaskSetOwner;
         private readonly CancelProgressFlowNode m_Parent;
@@ -44,6 +47,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void DisposeSelf()
         {
             m_Dependencies.Dispose();
+
             base.DisposeSelf();
         }
 
@@ -64,13 +68,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             dependsOn = JobHandle.CombineDependencies(m_Dependencies);
 
-            CheckCancelProgressJob checkCancelProgressJob = new CheckCancelProgressJob(m_ProgressLookupData.Lookup,
-                                                                                       m_CancelCompleteData.PendingWriter,
-                                                                                       m_CancelCompleteActiveID,
-                                                                                       m_ProgressLookupData.TaskSetOwner.ID,
-                                                                                       m_Parent != null
-                                                                                           ? m_ParentProgressLookupData.Lookup
-                                                                                           : default);
+            CheckCancelProgressJob checkCancelProgressJob = new CheckCancelProgressJob(
+                m_ProgressLookupData.Lookup,
+                m_CancelCompleteData.PendingWriter,
+                m_CancelCompleteActiveID,
+                m_ProgressLookupData.TaskSetOwner.ID,
+                m_Parent != null ? m_ParentProgressLookupData.Lookup : default);
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
@@ -102,11 +105,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             private UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.LaneWriter m_CompleteLaneWriter;
 
-            public CheckCancelProgressJob(UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
-                                          UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer completeWriter,
-                                          uint cancelCompleteActiveID,
-                                          uint taskSetOwnerID,
-                                          UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup)
+            public CheckCancelProgressJob(
+                UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
+                UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer completeWriter,
+                uint cancelCompleteActiveID,
+                uint taskSetOwnerID,
+                UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup)
             {
                 m_ProgressLookup = progressLookup;
                 m_CompleteWriter = completeWriter;
@@ -122,7 +126,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
                 m_CompleteLaneWriter = m_CompleteWriter.AsLaneWriter(laneIndex);
-                
+
                 if (m_ParentProgressLookup.IsCreated)
                 {
                     CheckCancelProgressWithParent();
@@ -135,14 +139,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             private void CheckCancelProgressWithParent()
             {
-                //We need to loop through the parent collection because if we are a System, then there could be 
+                //We need to loop through the parent collection because if we are a System, then there could be
                 //multiple TaskDrivers that have requested a cancel. If we iterate through ourself, we're going
                 //to accidentally mark things complete in different task drivers.
                 foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ParentProgressLookup)
                 {
                     ref bool isParentProcessing = ref entry.Value;
                     EntityProxyInstanceID id = new EntityProxyInstanceID(entry.Key, m_TaskSetOwnerID);
-                    
+
                     bool willComplete = CheckIfWillComplete(m_ProgressLookup[id], ref id);
                     if (!willComplete)
                     {
@@ -176,7 +180,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     return false;
                 }
                 //If we're not processing then:
-                // - All Cancel Jobs are complete 
+                // - All Cancel Jobs are complete
                 // OR
                 // - There never were any Cancel Jobs to begin with
                 // OR
@@ -187,10 +191,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     m_ProgressLookup.Remove(id);
                     //Write ourselves to the Complete.
                     CancelComplete cancelComplete = new CancelComplete(id.Entity);
-                    m_CompleteLaneWriter.Write(new EntityProxyInstanceWrapper<CancelComplete>(id.Entity, 
-                                                                                               id.TaskSetOwnerID, 
-                                                                                               m_CancelCompleteActiveID, 
-                                                                                               ref cancelComplete));
+                    m_CompleteLaneWriter.Write(
+                        new EntityProxyInstanceWrapper<CancelComplete>(
+                            id.Entity,
+                            id.TaskSetOwnerID,
+                            m_CancelCompleteActiveID,
+                            ref cancelComplete));
+
                     return true;
                 }
             }

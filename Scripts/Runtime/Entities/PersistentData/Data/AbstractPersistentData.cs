@@ -7,9 +7,8 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal abstract class AbstractPersistentData : AbstractAnvilBase
     {
-        
         private readonly AccessController m_AccessController;
-        
+
         public string ID { get; }
 
         protected AbstractPersistentData(string id)
@@ -33,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return m_AccessController.AcquireAsync(accessType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleaseAsync(JobHandle dependsOn)
         {
@@ -45,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_AccessController.Acquire(accessType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Release()
         {

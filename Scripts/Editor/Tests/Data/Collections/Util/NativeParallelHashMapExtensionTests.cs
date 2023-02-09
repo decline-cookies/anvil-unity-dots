@@ -1,4 +1,3 @@
-using System.Linq;
 using Anvil.Unity.DOTS.Data;
 using NUnit.Framework;
 using Unity.Collections;
@@ -15,8 +14,8 @@ namespace Anvil.Unity.DOTS.Tests.Data
 
             using NativeParallelHashMap<FixedString32Bytes, int> hashMap = new NativeParallelHashMap<FixedString32Bytes, int>(2, Allocator.Persistent)
             {
-                {"one", 1},
-                {"two", 2}
+                { "one", 1 },
+                { "two", 2 }
             };
 
             bool result = hashMap.Remove("one", out int removedValue);
@@ -36,8 +35,8 @@ namespace Anvil.Unity.DOTS.Tests.Data
 
             using NativeParallelHashMap<FixedString32Bytes, int> hashMap = new NativeParallelHashMap<FixedString32Bytes, int>(2, Allocator.Persistent)
             {
-                {"one", 1},
-                {"two", 2}
+                { "one", 1 },
+                { "two", 2 }
             };
 
             bool result = hashMap.Remove("three", out int removedValue);
@@ -48,7 +47,6 @@ namespace Anvil.Unity.DOTS.Tests.Data
             Assert.That(hashMap.ContainsKey("one"), Is.True);
             Assert.That(hashMap.ContainsKey("two"), Is.True);
             Assert.That(hashMap.Count(), Is.EqualTo(2));
-
         }
     }
 }

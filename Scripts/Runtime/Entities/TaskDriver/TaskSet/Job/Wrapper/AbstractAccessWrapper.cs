@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         // ReSharper disable once InconsistentNaming
         public Type Debug_WrapperType { get; private set; }
 

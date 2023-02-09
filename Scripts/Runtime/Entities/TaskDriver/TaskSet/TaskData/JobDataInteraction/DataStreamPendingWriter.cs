@@ -12,8 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to write</typeparam>
     [BurstCompatible]
-    public struct DataStreamPendingWriter<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+    public struct DataStreamPendingWriter<TInstance> where TInstance : unmanaged, IEntityProxyInstance
     {
         private const int UNSET_LANE_INDEX = -1;
 
@@ -24,7 +23,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
 
-        internal DataStreamPendingWriter(UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter, uint taskSetOwnerID, uint activeID) : this()
+        internal DataStreamPendingWriter(
+            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
+            uint taskSetOwnerID,
+            uint activeID)
+            : this()
         {
             m_PendingWriter = pendingWriter;
             m_TaskSetOwnerID = taskSetOwnerID;
@@ -36,10 +39,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_InitializeWriterState();
         }
 
-        internal unsafe DataStreamPendingWriter(void* writerPtr,
-                                                uint taskSetOwnerID,
-                                                uint activeID,
-                                                int laneIndex) : this()
+        internal unsafe DataStreamPendingWriter(
+            void* writerPtr,
+            uint taskSetOwnerID,
+            uint activeID,
+            int laneIndex)
+            : this()
         {
             m_PendingWriter = UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
             m_TaskSetOwnerID = taskSetOwnerID;
@@ -68,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
             m_PendingLaneWriter = m_PendingWriter.AsLaneWriter(m_LaneIndex);
         }
-        
+
         /// <summary>
         /// Call once to initialize the state of this writer for main thread usage.
         /// </summary>
@@ -94,10 +99,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public void Add(ref TInstance instance)
         {
             Debug_EnsureCanAdd();
-            m_PendingLaneWriter.Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                                m_TaskSetOwnerID,
-                                                                                m_ActiveID,
-                                                                                ref instance));
+            m_PendingLaneWriter.Write(
+                new EntityProxyInstanceWrapper<TInstance>(
+                    instance.Entity,
+                    m_TaskSetOwnerID,
+                    m_ActiveID,
+                    ref instance));
         }
 
         /// <summary>
@@ -118,10 +125,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public void Add(ref TInstance instance, int laneIndex)
         {
             m_PendingWriter.AsLaneWriter(laneIndex)
-                           .Write(new EntityProxyInstanceWrapper<TInstance>(instance.Entity,
-                                                                            m_TaskSetOwnerID,
-                                                                            m_ActiveID,
-                                                                            ref instance));
+                .Write(
+                    new EntityProxyInstanceWrapper<TInstance>(
+                        instance.Entity,
+                        m_TaskSetOwnerID,
+                        m_ActiveID,
+                        ref instance));
         }
 
 

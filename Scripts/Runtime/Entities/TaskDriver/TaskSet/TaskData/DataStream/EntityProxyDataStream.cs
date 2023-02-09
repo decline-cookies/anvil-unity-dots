@@ -7,9 +7,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #137 - Too much complexity that is not needed
-    internal class EntityProxyDataStream<TInstance> : AbstractDataStream,
-                                                      IDriverDataStream<TInstance>,
-                                                      ISystemDataStream<TInstance>
+    internal class EntityProxyDataStream<TInstance> : AbstractDataStream, IDriverDataStream<TInstance>, ISystemDataStream<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceWrapper<TInstance>>();
@@ -30,7 +28,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
         public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }
 
-        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour) : base(taskSetOwner)
+        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour)
+            : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
@@ -39,14 +38,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             if (m_ActiveArrayData.PendingCancelActiveData != null)
             {
-                m_PendingCancelActiveArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)m_ActiveArrayData.PendingCancelActiveData;
+                m_PendingCancelActiveArrayData
+                    = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)m_ActiveArrayData.PendingCancelActiveData;
                 PendingCancelScheduleInfo = m_PendingCancelActiveArrayData.ScheduleInfo;
             }
 
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
         }
 
-        public EntityProxyDataStream(AbstractTaskDriver taskDriver, EntityProxyDataStream<TInstance> systemDataStream) : base(taskDriver)
+        public EntityProxyDataStream(AbstractTaskDriver taskDriver, EntityProxyDataStream<TInstance> systemDataStream)
+            : base(taskDriver)
         {
             m_DataSource = systemDataStream.m_DataSource;
             m_ActiveArrayData = systemDataStream.m_ActiveArrayData;
@@ -145,18 +146,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataStreamUpdater<TInstance> CreateDataStreamUpdater(ResolveTargetTypeLookup resolveTargetTypeLookup)
         {
-            return new DataStreamUpdater<TInstance>(m_DataSource.PendingWriter,
-                                                    m_ActiveArrayData.DeferredJobArray,
-                                                    resolveTargetTypeLookup);
+            return new DataStreamUpdater<TInstance>(
+                m_DataSource.PendingWriter,
+                m_ActiveArrayData.DeferredJobArray,
+                resolveTargetTypeLookup);
         }
 
-        public DataStreamCancellationUpdater<TInstance> CreateDataStreamCancellationUpdater(ResolveTargetTypeLookup resolveTargetTypeLookup,
-                                                                                            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup)
+        public DataStreamCancellationUpdater<TInstance> CreateDataStreamCancellationUpdater(
+            ResolveTargetTypeLookup resolveTargetTypeLookup,
+            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup)
         {
-            return new DataStreamCancellationUpdater<TInstance>(m_DataSource.PendingWriter,
-                                                                m_PendingCancelActiveArrayData.DeferredJobArray,
-                                                                resolveTargetTypeLookup,
-                                                                cancelProgressLookup);
+            return new DataStreamCancellationUpdater<TInstance>(
+                m_DataSource.PendingWriter,
+                m_PendingCancelActiveArrayData.DeferredJobArray,
+                resolveTargetTypeLookup,
+                cancelProgressLookup);
         }
 
         //*************************************************************************************************************

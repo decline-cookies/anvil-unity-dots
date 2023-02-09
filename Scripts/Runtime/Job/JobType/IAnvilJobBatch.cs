@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// </summary>
         /// <param name="nativeThreadIndex">The native thread index that the job is running on</param>
         void InitForThread(int nativeThreadIndex);
-        
+
         /// <summary>
         /// Implement this method to perform work for a certain subset of elements.
         /// </summary>

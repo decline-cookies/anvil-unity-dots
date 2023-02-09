@@ -17,7 +17,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="entity">The <see cref="Entity"/> to add the reference too.</param>
         /// <param name="instance">The instance to reference.</param>
         /// <typeparam name="T">The type of the managed instance.</typeparam>
-        public static void AddManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance) where T : class, IComponentReferencable
+        public static void AddManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance)
+            where T : class, IComponentReferencable
         {
             entityManager.AddComponentData(entity, instance.AsComponentDataReference());
         }
@@ -37,9 +38,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// Thrown when <see cref="preventOverwrite"/> is true and a <see cref="ManagedReference{T}"/> of the same type
         /// already exists on the <see cref="Entity"/>.
         /// </exception>
-        public static void SetManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance, bool preventOverwrite = false) where T : class, IComponentReferencable
+        public static void SetManagedRefTo<T>(this EntityManager entityManager, Entity entity, T instance, bool preventOverwrite = false)
+            where T : class, IComponentReferencable
         {
-            if(preventOverwrite && !entityManager.GetComponentData<ManagedReference<T>>(entity).Equals(default(ManagedReference<T>)))
+            if (
+                preventOverwrite
+                && !entityManager.GetComponentData<ManagedReference<T>>(entity).Equals(default(ManagedReference<T>)))
             {
                 throw new InvalidOperationException($"Managed ref for {nameof(T)} already exists in {nameof(World)}:{entityManager.World.Name} on {nameof(Entity)}:{entity}. Set {nameof(preventOverwrite)} to false to allow overwriting.");
             }
@@ -58,7 +62,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// since this method will remove any instance of the type <see cref="T"/> from the <see cref="Entity"/>.
         /// </param>
         /// <typeparam name="T">The type of the managed instance.</typeparam>
-        public static void RemoveManagedRefFrom<T>(this EntityManager entityManager, Entity entity, T instance) where T : class, IComponentReferencable
+        public static void RemoveManagedRefFrom<T>(this EntityManager entityManager, Entity entity, T instance)
+            where T : class, IComponentReferencable
         {
             DEBUG_AssertInstanceMatchesRef(entityManager, entity, instance);
             entityManager.RemoveComponent<ManagedReference<T>>(entity);
@@ -66,7 +71,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         // Ensure that the instance that's been provided matches the one defined in the component ref on the entity
         [Conditional("DEBUG")]
-        private static void DEBUG_AssertInstanceMatchesRef<T>(EntityManager entityManager, Entity entity, T instance) where T : class, IComponentReferencable
+        private static void DEBUG_AssertInstanceMatchesRef<T>(EntityManager entityManager, Entity entity, T instance)
+            where T : class, IComponentReferencable
         {
             ManagedReference<T> refComponent = entityManager.GetComponentData<ManagedReference<T>>(entity);
             Debug.Assert(refComponent.Resolve() == instance);
@@ -80,7 +86,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="system">The system to add the requirement too.</param>
         /// <typeparam name="T">The type of the managed instance.</typeparam>
-        public static void RequireManagedSingletonForUpdate<T>(this ComponentSystemBase system) where T : class, IComponentReferencable
+        public static void RequireManagedSingletonForUpdate<T>(this ComponentSystemBase system)
+            where T : class, IComponentReferencable
         {
             system.RequireSingletonForUpdate<ManagedReference<T>>();
         }

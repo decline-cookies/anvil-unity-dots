@@ -5,8 +5,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    public readonly struct EntityPersistentDataReader<TData>
-        where TData : struct
+    public readonly struct EntityPersistentDataReader<TData> where TData : struct
     {
         [ReadOnly] private readonly UnsafeParallelHashMap<Entity, TData> m_Lookup;
 
@@ -14,11 +13,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_Lookup = lookup;
         }
-        
+
         public TData this[Entity entity]
         {
             get => m_Lookup[entity];
         }
-        
     }
 }

@@ -24,13 +24,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_JobData.GetDataStreamCancellationUpdater();
         }
 
-        internal CancelScheduleInfo(CancelJobData<TInstance> jobData,
-                                    EntityProxyDataStream<TInstance> pendingCancelDataStream,
-                                    BatchStrategy batchStrategy,
-                                    JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
-            : base(scheduleJobFunction.Method,
-                   batchStrategy,
-                   EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
+        internal CancelScheduleInfo(
+            CancelJobData<TInstance> jobData,
+            EntityProxyDataStream<TInstance> pendingCancelDataStream,
+            BatchStrategy batchStrategy,
+            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
+            : base(scheduleJobFunction.Method, batchStrategy, EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;

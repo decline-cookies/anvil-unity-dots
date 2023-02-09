@@ -8,19 +8,17 @@ namespace Anvil.Unity.DOTS.Data
 {
     public static class UnsafeArrayUtility
     {
-        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void CheckConvertArguments<T>(int length, Allocator allocator) where T : unmanaged
         {
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof (length), "Length must be >= 0");
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
+            }
             UnsafeArray<T>.IsUnmanagedAndThrow();
         }
 
-        public static unsafe UnsafeArray<T> ConvertExistingDataToUnsafeArray<T>(
-            void* dataPointer,
-            int length,
-            Allocator allocator)
+        public static unsafe UnsafeArray<T> ConvertExistingDataToUnsafeArray<T>(void* dataPointer, int length, Allocator allocator)
             where T : unmanaged
         {
             CheckConvertArguments<T>(length, allocator);
@@ -34,20 +32,20 @@ namespace Anvil.Unity.DOTS.Data
             };
         }
 
-        public static unsafe NativeArray<T> AsNativeArray<T>(this UnsafeArray<T> unsafeArray)
-            where T : unmanaged
+        public static unsafe NativeArray<T> AsNativeArray<T>(this UnsafeArray<T> unsafeArray) where T : unmanaged
         {
-            return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(unsafeArray.m_Buffer,
-                                                                                unsafeArray.m_Length,
-                                                                                unsafeArray.m_AllocatorLabel);
+            return NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(
+                unsafeArray.m_Buffer,
+                unsafeArray.m_Length,
+                unsafeArray.m_AllocatorLabel);
         }
 
-        public static unsafe UnsafeArray<T> AsUnsafeArray<T>(this NativeArray<T> nativeArray)
-            where T : unmanaged
+        public static unsafe UnsafeArray<T> AsUnsafeArray<T>(this NativeArray<T> nativeArray) where T : unmanaged
         {
-            return ConvertExistingDataToUnsafeArray<T>(NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(nativeArray),
-                                                       nativeArray.Length,
-                                                       nativeArray.GetAllocator());
+            return ConvertExistingDataToUnsafeArray<T>(
+                NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(nativeArray),
+                nativeArray.Length,
+                nativeArray.GetAllocator());
         }
 
         public static unsafe void* GetUnsafePtr<T>(this UnsafeArray<T> nativeArray) where T : unmanaged

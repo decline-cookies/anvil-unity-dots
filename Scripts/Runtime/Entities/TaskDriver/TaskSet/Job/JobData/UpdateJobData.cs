@@ -1,5 +1,3 @@
-using Unity.Entities;
-
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
@@ -15,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_UpdateJobConfig = jobConfig;
         }
-        
+
         //*************************************************************************************************************
         // DATA STREAMS
         //*************************************************************************************************************

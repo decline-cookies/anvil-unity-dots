@@ -85,8 +85,9 @@ namespace Anvil.Unity.DOTS.Entities
         {
             JobHandle dependsOnDefinitions = AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> definitionsToSpawn);
             JobHandle dependsOnPrototypes = m_PrototypesToDestroy.AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<Entity> prototypes);
-            entitySpawnWriter = new EntityPrototypeSpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter(),
-                                                                                       prototypes.AsWriter());
+            entitySpawnWriter = new EntityPrototypeSpawnWriter<TEntitySpawnDefinition>(
+                definitionsToSpawn.AsWriter(),
+                prototypes.AsWriter());
             return JobHandle.CombineDependencies(dependsOnDefinitions, dependsOnPrototypes);
         }
 
@@ -96,9 +97,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_PrototypesToDestroy.ReleaseAsync(dependsOn);
         }
 
-        protected override JobHandle ScheduleSpawnJob(JobHandle dependsOn,
-                                                      UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
-                                                      ref EntityCommandBuffer ecb)
+        protected override JobHandle ScheduleSpawnJob(
+            JobHandle dependsOn,
+            UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+            ref EntityCommandBuffer ecb)
         {
             JobHandle prototypesHandle = m_PrototypesToDestroy.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<Entity> prototypes);
             dependsOn = JobHandle.CombineDependencies(prototypesHandle, dependsOn);
@@ -106,17 +108,19 @@ namespace Anvil.Unity.DOTS.Entities
             //TODO: #86 - Remove once we don't have to switch with BURST
             if (MustDisableBurst)
             {
-                SpawnJobNoBurst job = new SpawnJobNoBurst(spawnDefinitions,
-                                                          ref ecb,
-                                                          prototypes);
+                SpawnJobNoBurst job = new SpawnJobNoBurst(
+                    spawnDefinitions,
+                    ref ecb,
+                    prototypes);
 
                 dependsOn = job.Schedule(dependsOn);
             }
             else
             {
-                SpawnJob job = new SpawnJob(spawnDefinitions,
-                                            ref ecb,
-                                            prototypes);
+                SpawnJob job = new SpawnJob(
+                    spawnDefinitions,
+                    ref ecb,
+                    prototypes);
 
                 dependsOn = job.Schedule(dependsOn);
             }
@@ -138,9 +142,10 @@ namespace Anvil.Unity.DOTS.Entities
 
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJob(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
-                            ref EntityCommandBuffer ecb,
-                            UnsafeTypedStream<Entity> prototypesToDestroy)
+            public SpawnJob(
+                UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+                ref EntityCommandBuffer ecb,
+                UnsafeTypedStream<Entity> prototypesToDestroy)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_ECB = ecb;
@@ -174,9 +179,10 @@ namespace Anvil.Unity.DOTS.Entities
 
             private EntityCommandBuffer m_ECB;
 
-            public SpawnJobNoBurst(UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
-                                   ref EntityCommandBuffer ecb,
-                                   UnsafeTypedStream<Entity> prototypesToDestroy)
+            public SpawnJobNoBurst(
+                UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+                ref EntityCommandBuffer ecb,
+                UnsafeTypedStream<Entity> prototypesToDestroy)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_ECB = ecb;
@@ -213,16 +219,16 @@ namespace Anvil.Unity.DOTS.Entities
         public readonly Entity Prototype;
         public readonly TEntitySpawnDefinition EntitySpawnDefinition;
 
-        public EntityPrototypeDefinitionWrapper(Entity prototype,
-                                                ref TEntitySpawnDefinition entitySpawnDefinition)
+        public EntityPrototypeDefinitionWrapper(
+            Entity prototype,
+            ref TEntitySpawnDefinition entitySpawnDefinition)
         {
             Prototype = prototype;
             EntitySpawnDefinition = entitySpawnDefinition;
         }
 
-        public EntityPrototypeDefinitionWrapper(Entity prototype,
-                                                TEntitySpawnDefinition entitySpawnDefinition) : this(prototype, ref entitySpawnDefinition)
-        {
-        }
+        public EntityPrototypeDefinitionWrapper(
+            Entity prototype,
+            TEntitySpawnDefinition entitySpawnDefinition) : this(prototype, ref entitySpawnDefinition) { }
     }
 }

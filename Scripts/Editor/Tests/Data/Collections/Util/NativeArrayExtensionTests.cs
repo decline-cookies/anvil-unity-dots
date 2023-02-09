@@ -13,7 +13,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodClearTest_All), Does.StartWith(nameof(NativeArrayExtension.FloodClear) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             array.FloodClear();
 
@@ -28,7 +36,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodClearTest_Range), Does.StartWith(nameof(NativeArrayExtension.FloodClear) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             array.FloodClear(1, 2);
 
@@ -43,7 +59,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodClearTest_Range_OutOfRange), Does.StartWith(nameof(NativeArrayExtension.FloodClear) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             Assert.Throws<Exception>(() => array.FloodClear(4, 1));
             Assert.Throws<Exception>(() => array.FloodClear(3, 2));
@@ -55,7 +79,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodSetTest_All), Does.StartWith(nameof(NativeArrayExtension.FloodSet) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             array.FloodSet(10);
 
@@ -70,7 +102,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodSetTest_Range), Does.StartWith(nameof(NativeArrayExtension.FloodSet) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             array.FloodSet(1, 2, 10);
 
@@ -85,7 +125,15 @@ namespace Anvil.Unity.DOTS.Tests.Data
         {
             Assert.That(nameof(FloodSetTest_Range), Does.StartWith(nameof(NativeArrayExtension.FloodSet) + "Test"));
 
-            using NativeArray<int> array = new NativeArray<int>(new []{1, 2, 3, 4}, Allocator.Persistent);
+            using NativeArray<int> array = new NativeArray<int>(
+                new[]
+                {
+                    1,
+                    2,
+                    3,
+                    4
+                },
+                Allocator.Persistent);
 
             Assert.Throws<Exception>(() => array.FloodSet(4, 1, 10));
             Assert.Throws<Exception>(() => array.FloodSet(3, 2, 10));

@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_System = system;
             m_AccessController = m_System.World.GetOrCreateSystem<TaskDriverManagementSystem>().GetOrCreateCDFEAccessController<T>();
         }
-        
+
         protected override void DisposeSelf()
         {
             //NOT disposing the AccessController because it is owned by the TaskDriverManagementSystem and shared across

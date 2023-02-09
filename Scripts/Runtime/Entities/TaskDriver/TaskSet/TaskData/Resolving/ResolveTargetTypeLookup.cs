@@ -13,7 +13,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public ResolveTargetTypeLookup(int count)
         {
-            m_ResolveTargetWriteDataByID = new UnsafeParallelHashMap<ResolveTargetID, ResolveTargetWriteData>(count, Allocator.Persistent);
+            m_ResolveTargetWriteDataByID
+                = new UnsafeParallelHashMap<ResolveTargetID, ResolveTargetWriteData>(count, Allocator.Persistent);
         }
 
         public void Dispose()
@@ -29,7 +30,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             foreach (AbstractDataStream dataStream in dataStreams)
             {
                 ResolveTargetID targetID = new ResolveTargetID(targetDefinition.TypeID, dataStream.TaskSetOwner.ID);
-                ResolveTargetWriteData resolveTargetWriteData = new ResolveTargetWriteData(targetDefinition.PendingWriterPointerAddress, dataStream.ActiveID);
+                ResolveTargetWriteData resolveTargetWriteData
+                    = new ResolveTargetWriteData(targetDefinition.PendingWriterPointerAddress, dataStream.ActiveID);
                 Debug_EnsureNotPresent(targetID);
                 m_ResolveTargetWriteDataByID.Add(targetID, resolveTargetWriteData);
             }
@@ -43,10 +45,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsurePresent(targetID);
             ResolveTargetWriteData resolveTargetWriteData = m_ResolveTargetWriteDataByID[targetID];
             void* writerPtr = (void*)resolveTargetWriteData.PendingWriterPointerAddress;
-            DataStreamPendingWriter<TResolveTargetType> writer = new DataStreamPendingWriter<TResolveTargetType>(writerPtr, taskSetOwnerID, resolveTargetWriteData.ActiveID, laneIndex);
+            DataStreamPendingWriter<TResolveTargetType> writer
+                = new DataStreamPendingWriter<TResolveTargetType>(writerPtr, taskSetOwnerID, resolveTargetWriteData.ActiveID, laneIndex);
             writer.Add(ref resolvedInstance);
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -59,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Trying to add {resolveTargetID} but it already exists!");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsurePresent(ResolveTargetID resolveTargetID)
         {

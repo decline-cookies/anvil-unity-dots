@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             uint typeID = ResolveTargetUtil.RegisterResolveTarget<TInstance>();
             return new ResolveTargetDefinition(typeof(TInstance), typeID, (long)pendingWriterPointer);
         }
-        
+
         public readonly Type Type;
         public readonly uint TypeID;
         public readonly long PendingWriterPointerAddress;
@@ -21,6 +21,5 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TypeID = typeID;
             PendingWriterPointerAddress = pendingWriterPointerAddress;
         }
-        
     }
 }

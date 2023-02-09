@@ -10,6 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
         where T : struct
     {
         private readonly IEntityPersistentData<T>.DisposalCallbackPerEntity m_DisposalCallbackPerEntity;
+
         public EntityPersistentData(string id, IEntityPersistentData<T>.DisposalCallbackPerEntity disposalCallbackPerEntity) : base(id, new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
             m_DisposalCallbackPerEntity = disposalCallbackPerEntity;

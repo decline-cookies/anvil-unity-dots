@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     public class EntityQueryJobData : AbstractJobData
     {
         private readonly EntityQueryJobConfig m_JobConfig;
-        
+
         internal EntityQueryJobData(EntityQueryJobConfig jobConfig) : base(jobConfig)
         {
             m_JobConfig = jobConfig;

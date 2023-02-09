@@ -163,8 +163,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
 
             return quaternion.LookRotationSafe(
                 math.rotate(worldToLocalMtx, math.mul(rotation, math.forward())),
-                math.rotate(worldToLocalMtx, math.mul(rotation, math.up()))
-            );
+                math.rotate(worldToLocalMtx, math.mul(rotation, math.up())));
         }
 
         /// <summary>
@@ -209,8 +208,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
 
             return quaternion.LookRotationSafe(
                 math.rotate(localToWorldMtx, math.mul(rotation, math.forward())),
-                math.rotate(localToWorldMtx, math.mul(rotation, math.up()))
-            );
+                math.rotate(localToWorldMtx, math.mul(rotation, math.up())));
         }
 
         /// <summary>
@@ -344,8 +342,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
                 ConvertWorldToLocalPoint(worldToLocalMtx, point1).xy,
                 ConvertWorldToLocalPoint(worldToLocalMtx, point2).xy,
                 ConvertWorldToLocalPoint(worldToLocalMtx, point3).xy,
-                ConvertWorldToLocalPoint(worldToLocalMtx, point4).xy
-            );
+                ConvertWorldToLocalPoint(worldToLocalMtx, point4).xy);
         }
 
         /// <summary>
@@ -387,8 +384,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
                 ConvertLocalToWorldPoint(localToWorld.Value, point1).xy,
                 ConvertLocalToWorldPoint(localToWorld.Value, point2).xy,
                 ConvertLocalToWorldPoint(localToWorld.Value, point3).xy,
-                ConvertLocalToWorldPoint(localToWorld.Value, point4).xy
-            );
+                ConvertLocalToWorldPoint(localToWorld.Value, point4).xy);
         }
 
         //TODO: #116 - Transforms with non-uniform scale operations are not currently supported.

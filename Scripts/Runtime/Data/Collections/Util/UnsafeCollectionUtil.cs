@@ -42,8 +42,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </param>
         /// <param name="value">The value to set each element.</param>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        public static unsafe void FloodSetBuffer<T>(void* bufferPtr, int startIndex, int length, T value)
-            where T : struct
+        public static unsafe void FloodSetBuffer<T>(void* bufferPtr, int startIndex, int length, T value) where T : struct
         {
             Debug.Assert(startIndex >= 0);
             Debug.Assert(length > 0);

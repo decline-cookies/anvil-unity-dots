@@ -60,9 +60,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         internal class LookupByComponentType : AbstractLookup<World, ComponentType, IDynamicBufferSharedWriteController>
         {
-            internal LookupByComponentType(World context) : base(context)
-            {
-            }
+            internal LookupByComponentType(World context) : base(context) { }
 
             internal void Remove<T>()
                 where T : IBufferElementData

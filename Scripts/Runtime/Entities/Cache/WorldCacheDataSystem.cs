@@ -7,11 +7,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public partial class WorldCacheDataSystem : AbstractDataSystem
     {
-        public WorldCache WorldCache
-        {
-            get;
-            private set;
-        }
+        public WorldCache WorldCache { get; private set; }
 
         protected override void OnCreate()
         {
@@ -23,6 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnDestroy()
         {
             WorldCache.Dispose();
+
             base.OnDestroy();
         }
     }

@@ -5,10 +5,10 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    public struct EntityPersistentDataWriter<TData>
-        where TData : struct
+    public struct EntityPersistentDataWriter<TData> where TData : struct
     {
-        [NativeDisableContainerSafetyRestriction][NativeDisableParallelForRestriction] private UnsafeParallelHashMap<Entity, TData> m_Lookup;
+        [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
+        private UnsafeParallelHashMap<Entity, TData> m_Lookup;
 
         internal EntityPersistentDataWriter(ref UnsafeParallelHashMap<Entity, TData> lookup)
         {

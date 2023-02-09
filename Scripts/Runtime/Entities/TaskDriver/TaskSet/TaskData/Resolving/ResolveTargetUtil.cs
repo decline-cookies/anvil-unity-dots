@@ -12,9 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal static class ResolveTargetUtil
     {
         // ReSharper disable once ClassNeverInstantiated.Local
-        private class ResolveTargetSharedStaticContext
-        {
-        }
+        private class ResolveTargetSharedStaticContext { }
 
         [BurstCompatible]
         // ReSharper disable once ClassNeverInstantiated.Local
@@ -22,13 +20,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             // ReSharper disable once StaticMemberInGenericType
-            public static readonly SharedStatic<uint> ID = SharedStatic<uint>.GetOrCreate<ResolveTargetSharedStaticContext, TResolveTargetType>();
+            public static readonly SharedStatic<uint> ID
+                = SharedStatic<uint>.GetOrCreate<ResolveTargetSharedStaticContext, TResolveTargetType>();
         }
 
         /// <summary>
         /// The ID's for each ResolveTarget are not deterministic, it's a first come first serve basis.
         /// As code changes through development, an older save file might have a different ID for the same type.
-        /// This mapping can be used to stitch them properly together. 
+        /// This mapping can be used to stitch them properly together.
         /// </summary>
         /// TODO: #83 - Implement serialization
         internal static readonly Dictionary<Type, uint> SERIALIZATION_MAPPING = new Dictionary<Type, uint>();
@@ -56,6 +55,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             id = s_IDProvider.GetNextID();
             ResolveTargetID<TResolveTargetType>.ID.Data = id;
             SERIALIZATION_MAPPING.Add(typeof(TResolveTargetType), id);
+
             return id;
         }
 
@@ -65,6 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             uint id = ResolveTargetID<TResolveTargetType>.ID.Data;
             Debug_EnsureIsRegistered<TResolveTargetType>(id);
+
             return id;
         }
 

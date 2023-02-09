@@ -1,7 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
@@ -18,11 +17,11 @@ namespace Anvil.Unity.DOTS.Entities
         protected EntityManager EntityManager { get; private set; }
 
         protected EntityArchetype EntityArchetype { get; private set; }
-        
+
         protected bool MustDisableBurst { get; private set; }
-        
+
         protected int MainThreadIndex { get; }
-        
+
         protected AbstractEntitySpawner()
         {
             m_DefinitionsToSpawn = new AccessControlledValue<UnsafeTypedStream<T>>(new UnsafeTypedStream<T>(Allocator.Persistent));
@@ -33,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntityManager = entityManager;
             EntityArchetype = entityArchetype;
-            
+
             //TODO: #86 - When upgrading to Entities 1.0 we can use an unmanaged shared component which will let us use the job in burst
             NativeArray<ComponentType> componentTypes = EntityArchetype.GetComponentTypes(Allocator.Temp);
             foreach (ComponentType componentType in componentTypes.Where(componentType => componentType.IsSharedComponent))
@@ -79,9 +78,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_DefinitionsToSpawn.ReleaseAsync(dependsOn);
         }
 
-        public JobHandle Schedule(JobHandle dependsOn,
-                                  ref EntityCommandBuffer ecb,
-                                  NativeParallelHashMap<long, EntityArchetype> entityArchetypeLookup)
+        public JobHandle Schedule(
+            JobHandle dependsOn,
+            ref EntityCommandBuffer ecb,
+            NativeParallelHashMap<long, EntityArchetype> entityArchetypeLookup)
         {
             JobHandle definitionsHandle = m_DefinitionsToSpawn.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<T> definitions);
             dependsOn = JobHandle.CombineDependencies(definitionsHandle, dependsOn);
@@ -92,8 +92,9 @@ namespace Anvil.Unity.DOTS.Entities
             return dependsOn;
         }
 
-        protected abstract JobHandle ScheduleSpawnJob(JobHandle dependsOn,
-                                                      UnsafeTypedStream<T> spawnDefinitions,
-                                                      ref EntityCommandBuffer ecb);
+        protected abstract JobHandle ScheduleSpawnJob(
+            JobHandle dependsOn,
+            UnsafeTypedStream<T> spawnDefinitions,
+            ref EntityCommandBuffer ecb);
     }
 }

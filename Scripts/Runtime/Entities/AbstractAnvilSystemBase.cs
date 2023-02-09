@@ -23,6 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
     public abstract partial class AbstractAnvilSystemBase : SystemBase
     {
         private Logger? m_Logger;
+
         /// <summary>
         /// Returns a <see cref="Logger"/> for this instance to emit log messages with.
         /// Lazy instantiated.
@@ -59,12 +60,13 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
+            
             EnsureSystemIsInUpdateGroup();
         }
 
         private void EnsureSystemIsInUpdateGroup()
         {
-            //We could be created for a different world in which case we won't be in the group's update loop. 
+            //We could be created for a different world in which case we won't be in the group's update loop.
             //First we try to get the group attribute
             Type type = GetType();
             UpdateInGroupAttribute updateInGroupAttribute = type.GetCustomAttribute<UpdateInGroupAttribute>();
@@ -73,7 +75,7 @@ namespace Anvil.Unity.DOTS.Entities
                 //If nothing, then we don't do anything, the developer is responsible
                 return;
             }
-            
+
             //We'll get or create the system specified in the attribute. It SHOULD be a Group, but might not be so...
             ComponentSystemBase componentSystemBase = World.GetOrCreateSystem(updateInGroupAttribute.GroupType);
             if (componentSystemBase is not ComponentSystemGroup componentSystemGroup)
@@ -81,7 +83,7 @@ namespace Anvil.Unity.DOTS.Entities
                 //We'll rightly complain about it.
                 throw new InvalidOperationException($"{type.GetReadableName()} is trying to set its {nameof(UpdateInGroupAttribute)} to use {updateInGroupAttribute.GroupType} but that isn't a {typeof(ComponentSystemGroup).GetReadableName()}!");
             }
-            //This function early returns if we're already part of the group, like in the case of automatic 
+            //This function early returns if we're already part of the group, like in the case of automatic
             //default world init, so it's safe to just call to ensure we're part of the right update system.
             componentSystemGroup.AddSystemToUpdateList(this);
         }

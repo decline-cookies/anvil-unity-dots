@@ -6,9 +6,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class PersistentDataAccessWrapper<TPersistentData> : AbstractAccessWrapper
         where TPersistentData : AbstractPersistentData
     {
-
         public TPersistentData PersistentData { get; }
-        
+
         public PersistentDataAccessWrapper(TPersistentData persistentData, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
             PersistentData = persistentData;

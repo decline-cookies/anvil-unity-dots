@@ -14,27 +14,30 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// a <see cref="DataStreamJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
-        public delegate JobHandle ScheduleDataStreamJobDelegate<TInstance>(JobHandle jobHandle,
-                                                                           DataStreamJobData<TInstance> jobData,
-                                                                           DataStreamScheduleInfo<TInstance> scheduleInfo)
+        public delegate JobHandle ScheduleDataStreamJobDelegate<TInstance>(
+            JobHandle jobHandle,
+            DataStreamJobData<TInstance> jobData,
+            DataStreamScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
         /// For scheduling a job triggered by the entities in an <see cref="EntityQuery"/> from
         /// an <see cref="EntityQueryJobConfig"/>
         /// </summary>
-        public delegate JobHandle ScheduleEntityQueryJobDelegate(JobHandle jobHandle,
-                                                                 EntityQueryJobData jobData,
-                                                                 EntityQueryScheduleInfo scheduleInfo);
-        
+        public delegate JobHandle ScheduleEntityQueryJobDelegate(
+            JobHandle jobHandle,
+            EntityQueryJobData jobData,
+            EntityQueryScheduleInfo scheduleInfo);
+
         /// <summary>
         /// For scheduling a job triggered by the <see cref="IComponentData"/> in an <see cref="EntityQuery"/> from
         /// an <see cref="EntityQueryComponentJobConfig{T}"/>
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/></typeparam>
-        public delegate JobHandle ScheduleEntityQueryComponentJobDelegate<T>(JobHandle jobHandle,
-                                                                             EntityQueryComponentJobData<T> jobData,
-                                                                             EntityQueryComponentScheduleInfo<T> scheduleInfo)
+        public delegate JobHandle ScheduleEntityQueryComponentJobDelegate<T>(
+            JobHandle jobHandle,
+            EntityQueryComponentJobData<T> jobData,
+            EntityQueryComponentScheduleInfo<T> scheduleInfo)
             where T : struct, IComponentData;
 
         /// <summary>
@@ -42,9 +45,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <see cref="NativeArrayJobConfig{T}"/>
         /// </summary>
         /// <typeparam name="T">The type of struct in the array</typeparam>
-        public delegate JobHandle ScheduleNativeArrayJobDelegate<T>(JobHandle jobHandle,
-                                                                    NativeArrayJobData<T> jobData,
-                                                                    NativeArrayScheduleInfo<T> scheduleInfo)
+        public delegate JobHandle ScheduleNativeArrayJobDelegate<T>(
+            JobHandle jobHandle,
+            NativeArrayJobData<T> jobData,
+            NativeArrayScheduleInfo<T> scheduleInfo)
             where T : struct;
 
 
@@ -53,9 +57,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// updated. Used with <see cref="UpdateJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
-        public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(JobHandle jobHandle,
-                                                                       UpdateJobData<TInstance> jobData,
-                                                                       UpdateScheduleInfo<TInstance> scheduleInfo)
+        public delegate JobHandle ScheduleUpdateJobDelegate<TInstance>(
+            JobHandle jobHandle,
+            UpdateJobData<TInstance> jobData,
+            UpdateScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
@@ -63,9 +68,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// requested to cancel. Used with <see cref="CancelJobConfig{TInstance}"/>
         /// </summary>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
-        public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(JobHandle jobHandle,
-                                                                       CancelJobData<TInstance> jobData,
-                                                                       CancelScheduleInfo<TInstance> scheduleInfo)
+        public delegate JobHandle ScheduleCancelJobDelegate<TInstance>(
+            JobHandle jobHandle,
+            CancelJobData<TInstance> jobData,
+            CancelScheduleInfo<TInstance> scheduleInfo)
             where TInstance : unmanaged, IEntityProxyInstance;
     }
 }

@@ -10,14 +10,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal abstract class AbstractData : AbstractAnvilBase
     {
         private readonly AccessController m_AccessController;
-        
+
         public uint ID { get; }
         public CancelRequestBehaviour CancelRequestBehaviour { get; }
-        
+
         public ITaskSetOwner TaskSetOwner { get; }
-        
+
         public AbstractData PendingCancelActiveData { get; }
-        
+
 
         protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData)
         {
@@ -43,25 +43,25 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         protected abstract void DisposeData();
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquireAsync(AccessType accessType)
         {
             return m_AccessController.AcquireAsync(accessType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Acquire(AccessType accessType)
-        { 
+        {
             m_AccessController.Acquire(accessType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Release()
         {
