@@ -22,6 +22,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </remarks>
     public abstract partial class AbstractAnvilSystemBase : SystemBase
     {
+        private Type m_UpdateInGroupType;
         private Logger? m_Logger;
 
         /// <summary>
@@ -64,6 +65,12 @@ namespace Anvil.Unity.DOTS.Entities
             EnsureSystemIsInUpdateGroup();
         }
 
+        protected override void OnDestroy()
+        {
+            WorldInternal.OnSystemCreated -= WorldInternal_OnSystemCreated;
+            base.OnDestroy();
+        }
+
         private void EnsureSystemIsInUpdateGroup()
         {
             //We could be created for a different world in which case we won't be in the group's update loop.
@@ -76,13 +83,41 @@ namespace Anvil.Unity.DOTS.Entities
                 return;
             }
 
+            m_UpdateInGroupType = updateInGroupAttribute.GroupType;
+
             //We'll get or create the system specified in the attribute. It SHOULD be a Group, but might not be so...
-            ComponentSystemBase componentSystemBase = World.GetOrCreateSystem(updateInGroupAttribute.GroupType);
+            ComponentSystemBase componentSystemBase = World.GetOrCreateSystem(m_UpdateInGroupType);
             if (componentSystemBase is not ComponentSystemGroup componentSystemGroup)
             {
                 //We'll rightly complain about it.
-                throw new InvalidOperationException($"{type.GetReadableName()} is trying to set its {nameof(UpdateInGroupAttribute)} to use {updateInGroupAttribute.GroupType} but that isn't a {typeof(ComponentSystemGroup).GetReadableName()}!");
+                throw new InvalidOperationException($"{type.GetReadableName()} is trying to set its {nameof(UpdateInGroupAttribute)} to use {m_UpdateInGroupType} but that isn't a {typeof(ComponentSystemGroup).GetReadableName()}!");
             }
+
+            //We can't add to the update list until we're created and we can't force a manual create
+            if (componentSystemGroup.Created == false)
+            {
+                WorldInternal.OnSystemCreated += WorldInternal_OnSystemCreated;
+            }
+            else
+            {
+                AddSystemToUpdateList(componentSystemGroup);
+            }
+        }
+
+        private void WorldInternal_OnSystemCreated(World world, ComponentSystemBase createdSystem)
+        {
+            //If this doesn't concern us...
+            if (World != world || createdSystem.GetType() != m_UpdateInGroupType)
+            {
+                return;
+            }
+            //Otherwise, we can finish up
+            WorldInternal.OnSystemCreated -= WorldInternal_OnSystemCreated;
+            AddSystemToUpdateList((ComponentSystemGroup)createdSystem);
+        }
+
+        private void AddSystemToUpdateList(ComponentSystemGroup componentSystemGroup)
+        {
             //This function early returns if we're already part of the group, like in the case of automatic
             //default world init, so it's safe to just call to ensure we're part of the right update system.
             componentSystemGroup.AddSystemToUpdateList(this);
