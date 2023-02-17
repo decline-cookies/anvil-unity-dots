@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
-    internal class EndInitializationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
+    public class EndInitializationSystemGroup_Anvil : ComponentSystemGroup { }
 
     /// <summary>
     /// A system group to house a <see cref="World"/>s <see cref="EndSimulationEntityCommandBufferSystem"/>.
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
-    internal class EndSimulationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
+    public class EndSimulationSystemGroup_Anvil : ComponentSystemGroup { }
 
     /// <summary>
     /// A <see cref="PlayerLoop"/> phase inserted immediately after <see cref="Update"/>.
@@ -167,8 +167,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private static readonly (Type PlayerLoopSystemType, Type SystemGroupType)[] s_MultiWorldTopLevelGroupTypes = new[]
         {
-            (typeof(PostInitialization_Anvil), typeof(EndInitializationCommandBufferSystemGroup_Anvil)),
-            (typeof(PostUpdate_Anvil), typeof(EndSimulationCommandBufferSystemGroup_Anvil)),
+            (typeof(PostInitialization_Anvil), typeof(EndInitializationSystemGroup_Anvil)),
+            (typeof(PostUpdate_Anvil), typeof(EndSimulationSystemGroup_Anvil)),
         };
 
         /// <summary>
@@ -190,8 +190,8 @@ namespace Anvil.Unity.DOTS.Entities
             AddCustomPhasesToCurrentPlayerLoop();
             AddTopLevelGroupsToCurrentPlayerLoop(world, s_MultiWorldTopLevelGroupTypes);
 
-            MoveSystemFromToGroup<EndInitializationEntityCommandBufferSystem, InitializationSystemGroup, EndInitializationCommandBufferSystemGroup_Anvil>(world);
-            MoveSystemFromToGroup<EndSimulationEntityCommandBufferSystem, SimulationSystemGroup, EndSimulationCommandBufferSystemGroup_Anvil>(world);
+            MoveSystemFromToGroup<EndInitializationEntityCommandBufferSystem, InitializationSystemGroup, EndInitializationSystemGroup_Anvil>(world);
+            MoveSystemFromToGroup<EndSimulationEntityCommandBufferSystem, SimulationSystemGroup, EndSimulationSystemGroup_Anvil>(world);
 
             // Suppress the logging during sort so we don't see complaints about systems that position themselves based on
             // the systems that we're moving. So far, the configured above are at the end of the group and don't cause issues
