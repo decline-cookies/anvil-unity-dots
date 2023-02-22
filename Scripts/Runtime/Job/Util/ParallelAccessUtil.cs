@@ -5,6 +5,14 @@ using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using Anvil.Unity.DOTS.Data;
+using Unity.Collections;
+using Unity.Jobs;
+
+#if ANVIL_DEBUG_SAFETY_EXPENSIVE
+using System.Collections.Concurrent;
+using System.Linq;
+#endif
 
 namespace Anvil.Unity.DOTS.Jobs
 {
@@ -58,7 +66,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <remarks>
         /// There is a lot of different terminology for the "buckets".
         /// <see cref="NativeStream"/> has foreachCount
-        /// <see cref="UnsafeTypedStream"/> has lanes
+        /// <see cref="UnsafeTypedStream{T}"/> has lanes
         /// etc
         /// It's the number of separate "buckets" that can be written to in parallel.
         /// </remarks>
