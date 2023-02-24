@@ -325,8 +325,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle ScheduleActiveEntitySpawners(JobHandle dependsOn)
         {
-            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(m_ActiveEntitySpawners.Count + 1, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            dependencies[^1] = m_EntityArchetypes.AcquireAsync(AccessType.SharedRead, out NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup);
+            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(m_ActiveEntitySpawners.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
 
             //All the active spawners that need to go this frame are given a chance to go ahead and run their spawn jobs
             int index = 0;
@@ -338,12 +337,11 @@ namespace Anvil.Unity.DOTS.Entities
                 //end of the function. Creating here and passing into the Schedule function allows us to see the
                 //creation and AddJobHandleForProducer calls close by so we know we're adhering to the "pattern".
                 EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
-                dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb, entityArchetypesLookup);
+                dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb);
                 index++;
             }
 
             dependsOn = JobHandle.CombineDependencies(dependencies);
-            m_EntityArchetypes.ReleaseAsync(dependsOn);
             m_CommandBufferSystem.AddJobHandleForProducer(dependsOn);
             return dependsOn;
         }
