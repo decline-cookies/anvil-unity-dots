@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -36,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void Spawn(Entity prototype, TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
         {
-            InternalSpawn(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref spawnDefinition));
+            InternalSpawn(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, in spawnDefinition));
             if (shouldDestroyPrototype)
             {
                 MarkPrototypeToBeDestroyed(prototype);
@@ -221,7 +222,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public EntityPrototypeDefinitionWrapper(
             Entity prototype,
-            ref TEntitySpawnDefinition entitySpawnDefinition)
+            in TEntitySpawnDefinition entitySpawnDefinition)
         {
             Prototype = prototype;
             EntitySpawnDefinition = entitySpawnDefinition;
@@ -229,6 +230,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         public EntityPrototypeDefinitionWrapper(
             Entity prototype,
-            TEntitySpawnDefinition entitySpawnDefinition) : this(prototype, ref entitySpawnDefinition) { }
+            TEntitySpawnDefinition entitySpawnDefinition) : this(prototype, in entitySpawnDefinition) { }
     }
 }

@@ -81,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred(Entity prototype, ref TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
         {
             Debug_EnsureCanAdd();
-            m_LaneWriter.Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
+            m_LaneWriter.Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, in definition));
             if (shouldDestroyPrototype)
             {
                 m_PrototypesToDestroyLaneWriter.Write(prototype);
@@ -95,7 +95,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <remarks>
         /// Useful when in a job that only operates on each index or Entity like Entities.ForEach.
         /// There is no opportunity to call <see cref="InitForThread"/> at the start and you can't call
-        /// it multiple times. 
+        /// it multiple times.
         /// </remarks>
         /// <param name="prototype">The prototype <see cref="Entity"/> to clone.</param>
         /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
@@ -108,14 +108,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// </param>
         public void SpawnDeferred(Entity prototype, TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
-            SpawnDeferred(prototype, ref definition, laneIndex, shouldDestroyPrototype);
+            SpawnDeferred(prototype, in definition, laneIndex, shouldDestroyPrototype);
         }
 
         /// <inheritdoc cref="SpawnDeferred(Entity,TEntitySpawnDefinition,int,bool)"/>
-        public void SpawnDeferred(Entity prototype, ref TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
+        public void SpawnDeferred(Entity prototype, in TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
         {
             m_Writer.AsLaneWriter(laneIndex)
-                .Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, ref definition));
+                .Write(new EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>(prototype, in definition));
             if (shouldDestroyPrototype)
             {
                 m_PrototypesToDestroyWriter.AsLaneWriter(laneIndex)
