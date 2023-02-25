@@ -80,8 +80,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobHandle Schedule(
             JobHandle dependsOn,
-            ref EntityCommandBuffer ecb,
-            NativeParallelHashMap<long, EntityArchetype> entityArchetypeLookup)
+            ref EntityCommandBuffer ecb)
         {
             JobHandle definitionsHandle = m_DefinitionsToSpawn.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<T> definitions);
             dependsOn = JobHandle.CombineDependencies(definitionsHandle, dependsOn);

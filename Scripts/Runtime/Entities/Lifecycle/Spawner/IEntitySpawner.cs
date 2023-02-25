@@ -13,7 +13,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         public JobHandle Schedule(
             JobHandle dependsOn,
-            ref EntityCommandBuffer ecb,
-            NativeParallelHashMap<long, EntityArchetype> entityArchetypeLookup);
+            ref EntityCommandBuffer ecb);
     }
 }

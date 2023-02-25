@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <remarks>
     /// By default, this system updates in <see cref="SimulationSystemGroup"/> but can be configured by subclassing
     /// and using the <see cref="UpdateInGroupAttribute"/> to target a different group.
-    /// 
+    ///
     /// By default, this system uses the <see cref="EndSimulationEntityCommandBufferSystem"/> to playback the
     /// generated <see cref="EntityCommandBuffer"/>s. This can be configured by subclassing and using the
     /// <see cref="UseCommandBufferSystemAttribute"/> to target a different <see cref="EntityCommandBufferSystem"/>
@@ -284,7 +284,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         /// <summary>
         /// Spawns an <see cref="Entity"/> with the given definition immediately by cloning the passed in prototype
-        /// <see cref="Entity"/> and returns it immediately. 
+        /// <see cref="Entity"/> and returns it immediately.
         /// </summary>
         /// <remarks>
         /// This will not enable this system.
@@ -325,24 +325,23 @@ namespace Anvil.Unity.DOTS.Entities
 
         private JobHandle ScheduleActiveEntitySpawners(JobHandle dependsOn)
         {
-            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(m_ActiveEntitySpawners.Count + 1, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            dependencies[^1] = m_EntityArchetypes.AcquireAsync(AccessType.SharedRead, out NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup);
+            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(m_ActiveEntitySpawners.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
 
             //All the active spawners that need to go this frame are given a chance to go ahead and run their spawn jobs
             int index = 0;
+
             foreach (IEntitySpawner entitySpawner in m_ActiveEntitySpawners)
             {
                 //Normally for each ECB created, you want to add the job handle for producer to the command buffer
                 //system. However, we know that all these handles will be combined, so we can just do one call at the
-                //end of the function. Creating here and passing into the Schedule function allows us to see the 
+                //end of the function. Creating here and passing into the Schedule function allows us to see the
                 //creation and AddJobHandleForProducer calls close by so we know we're adhering to the "pattern".
                 EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
-                dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb, entityArchetypesLookup);
+                dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb);
                 index++;
             }
 
             dependsOn = JobHandle.CombineDependencies(dependencies);
-            m_EntityArchetypes.ReleaseAsync(dependsOn);
             m_CommandBufferSystem.AddJobHandleForProducer(dependsOn);
             return dependsOn;
         }
