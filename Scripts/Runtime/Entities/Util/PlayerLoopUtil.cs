@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using Unity.Entities;
 using UnityEngine.LowLevel;
 
@@ -8,22 +7,18 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// Helper class for exposing and dealing with some <see cref="PlayerLoopSystem"/> internals.
     /// </summary>
+    /// <remarks>
+    /// To help reduce ambiguity the names in this class follow a convention.
+    ///  - PlayerLoopSystem - Refers to the system itself and not its recursive subsystems
+    ///  - PlayerLoop - Refers to the system and all of its subsystems recursively.
+    ///
+    /// Ex:
+    ///  - IsInPlayerLoop would check the provided system, all subsystems and their subsystems.
+    ///  - IsInPlayerLoopSystem would check just the provided system.
+    /// </remarks>
     public static class PlayerLoopUtil
     {
-        private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
-
-        private static readonly MethodInfo s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo
-            = typeof(ScriptBehaviourUpdateOrder)
-                .GetMethod("IsDelegateForWorldSystem", BindingFlags.Static | BindingFlags.NonPublic);
-
-        private static readonly IsDelegateForWorldSystemDelegate s_IsDelegateForWorldSystem
-            = (IsDelegateForWorldSystemDelegate)Delegate.CreateDelegate(
-                typeof(IsDelegateForWorldSystemDelegate),
-                s_ScriptBehaviourUpdateOrder_IsDelegateForWorldSystem_MethodInfo);
-
-        private static MethodInfo s_DummyDelegateWrapper_System;
-
-        private delegate bool IsDelegateForWorldSystemDelegate(World world, ref PlayerLoopSystem playerLoopSystem);
+        public static readonly PlayerLoopSystem NO_PLAYER_LOOP = default;
 
         /// <summary>
         /// Checks if a <see cref="PlayerLoopSystem"/> is part of a given <see cref="World"/>
@@ -45,102 +40,124 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         public static bool IsPlayerLoopSystemPartOfWorld(ref PlayerLoopSystem playerLoopSystem, World world)
         {
-            return playerLoopSystem.updateDelegate?.Target != null && s_IsDelegateForWorldSystem(world, ref playerLoopSystem);
+            return TryGetSystemFromPlayerLoopSystem(ref playerLoopSystem, out ComponentSystemBase system)
+                && system.World == world;
         }
 
         /// <summary>
-        /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemGroup"/> associated.
-        /// This is a "safe" method, it does not assume there is a <see cref="ComponentSystemGroup"/> to get
-        /// and may return null.
+        /// Recursively search the <see cref="PlayerLoopSystem"/> for the instance of a <see cref="ComponentSystem"/>.
         /// </summary>
-        /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
-        /// <param name="systemGroup">The <see cref="ComponentSystemGroup"/> if it exists.</param>
-        /// <returns>
-        /// True if a system group exists
-        /// False if this <see cref="PlayerLoopSystem"/> is a phase
-        /// False if this <see cref="PlayerLoopSystem"/> does not have a <see cref="ComponentSystemGroup"/>
-        /// </returns>
-        public static bool TryGetSystemGroupFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemGroup systemGroup)
+        /// <param name="system">The <see cref="ComponentSystem"/> to search for.</param>
+        /// <param name="playerLoop">
+        /// The <see cref="PlayerLoopSystem"/> to start at. This instance and all sub systems are recursively searched
+        /// </param>
+        /// <returns>True if an instance of the system already exists in the player loop.</returns>
+        /// <remarks>
+        /// This is a compliment to <see cref="ScriptBehaviourUpdateOrder.IsInPlayerLoop"/> and
+        /// <see cref="ScriptBehaviourUpdateOrder.IsWorldInPlayerLoop"/> that is required because
+        /// <see cref="ScriptBehaviourUpdateOrder.AppendSystemToPlayerLoop"/> wraps the update call in a dummy class to work
+        /// around a limitation with Mono (<see cref="ScriptBehaviourUpdateOrder.DummyDelegateWrapper"/>).
+        ///
+        /// The behaviour differs slightly from the built in methods where <see cref="playerLoop"/> evaluated to check for
+        /// <see cref="system"/> rather than just its sub systems.
+        /// </remarks>
+        public static bool IsInPlayerLoop(ComponentSystemBase system, ref PlayerLoopSystem playerLoop)
         {
-            systemGroup = null;
-            if (playerLoopSystem.updateDelegate?.Target == null || !COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type))
+            // Is the system in one of the systems at this level?
+            if (IsSubsystemOfPlayerLoopSystem(system, ref playerLoop))
             {
-                return false;
+                return true;
             }
 
-            return TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out systemGroup);
+            // Recursively check each subsystem's subsystems the system.
+            for (int i = 0; i < playerLoop.subSystemList.Length; i++)
+            {
+                PlayerLoopSystem playerLoopSubSystem = playerLoop.subSystemList[i];
+                if (IsInPlayerLoop(system, ref playerLoopSubSystem))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
-        /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemGroup"/> associated.
-        /// This method has no checks and assumes that you are certain the <see cref="PlayerLoopSystem"/>
-        /// does contain a <see cref="ComponentSystemGroup"/>.
+        /// Identify whether the instance of a <see cref="ComponentSystem"/> exists in a subsystem of a
+        /// <see cref="PlayerLoopSystem"/>.
+        /// (non-recursive)
         /// </summary>
-        /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
-        /// <param name="systemGroup">The <see cref="ComponentSystemGroup"/> associated.</param>
-        /// <returns>
-        /// True if there is a system group
-        /// False if not
-        /// </returns>
-        public static bool TryGetSystemGroupFromPlayerLoopSystemNoChecks(
-            ref PlayerLoopSystem playerLoopSystem,
-            out ComponentSystemGroup systemGroup)
+        /// <param name="system">The <see cref="ComponentSystem"/> to search for.</param>
+        /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to search the subsystems of.</param>
+        /// <returns>True if an instance of the system exists in this player loop.</returns>
+        public static bool IsSubsystemOfPlayerLoopSystem(ComponentSystemBase system, ref PlayerLoopSystem playerLoopSystem)
         {
-            bool result = TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemBase system);
-            systemGroup = (ComponentSystemGroup)system;
-            return result;
+            for (int i = 0; i < playerLoopSystem.subSystemList.Length; i++)
+            {
+                PlayerLoopSystem playerLoopSubSystem = playerLoopSystem.subSystemList[i];
+                if (!typeof(ComponentSystemBase).IsAssignableFrom(playerLoopSubSystem.type))
+                {
+                    continue;
+                }
+
+                if (TryGetSystemFromPlayerLoopSystem(ref playerLoopSubSystem, out ComponentSystemBase subSystem) && subSystem == system)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
-        /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemBase"/> associated.
-        /// This is a "safe" method, it does not assume there is a <see cref="ComponentSystemBase"/> to get
-        /// and may return null.
-        /// </summary>
-        /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
-        /// <param name="system">The <see cref="ComponentSystemBase"/> if it exists.</param>
-        /// <returns>
-        /// True if there is a system
-        /// False if this <see cref="PlayerLoopSystem"/> is a phase or if this <see cref="PlayerLoopSystem"/> does
-        /// not have a <see cref="ComponentSystemBase"/>
-        /// </returns>
-        public static bool TryGetSystemFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemBase system)
-        {
-            system = null;
-            return playerLoopSystem.updateDelegate?.Target != null
-                && TryGetSystemFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out system);
-        }
-
-        /// <summary>
-        /// Given a <see cref="PlayerLoopSystem"/>, gets the <see cref="ComponentSystemBase"/> associated.
-        /// This method has no checks and assumes that you are certain the <see cref="PlayerLoopSystem"/>
-        /// does contain a <see cref="ComponentSystemBase"/>.
+        /// Given a <see cref="PlayerLoopSystem"/>, try to get the associated <see cref="ComponentSystemBase"/>.
+        /// (non-recursive)
         /// </summary>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to use.</param>
         /// <param name="system">The <see cref="ComponentSystemBase"/> associated.</param>
         /// <returns>
-        /// True if there is a system
-        /// False if not
+        /// True if there is a system.
+        /// False if the provided player loop does not represent a system.
         /// </returns>
-        public static bool TryGetSystemFromPlayerLoopSystemNoChecks(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemBase system)
-        {
-            object wrapper = playerLoopSystem.updateDelegate.Target;
+        /// <remarks>
+        /// Currently proxy's <see cref="ScriptBehaviourUpdateOrderInternal.TryGetSystemFromPlayerLoopSystem"/> but business
+        /// logic will move to this method when Unity stops wrapping systems in the DummyDelegateWrapper.
+        /// </remarks>
+        public static bool TryGetSystemFromPlayerLoopSystem(ref PlayerLoopSystem playerLoopSystem, out ComponentSystemBase system)
+            => ScriptBehaviourUpdateOrderInternal.TryGetSystemFromPlayerLoopSystem(ref playerLoopSystem, out system);
 
-            //We have to lazy create this because we don't have access to the wrapper's type until we see it at runtime.
-            if (s_DummyDelegateWrapper_System == null)
+        /// <summary>
+        /// Recursively search a <see cref="PlayerLoopSystem"/> for an instance of <see cref="playerLoopSystemType"/>.
+        /// </summary>
+        /// <param name="playerLoop">
+        /// The <see cref="PlayerLoopSystem"/> to start at. This instance and all sub systems are recursively searched
+        /// </param>
+        /// <param name="playerLoopSystemType">The type of the <see cref="PlayerLoopSystem"/> to look for.</param>
+        /// <param name="playerLoopSystem">
+        /// If found, the instance of the <see cref="PlayerLoopSystem"/> where the <see cref="PlayerLoopSystem.type"/>
+        /// matches <see cref="playerLoopSystemType"/>
+        /// If no instance is found the value is <see cref="NO_PLAYER_LOOP"/>.
+        /// </param>
+        /// <returns>True if an instance is found.</returns>
+        public static bool TryFindPlayerLoopSystemByType(ref PlayerLoopSystem playerLoop, Type playerLoopSystemType, out PlayerLoopSystem playerLoopSystem)
+        {
+            if (playerLoop.type == playerLoopSystemType)
             {
-                s_DummyDelegateWrapper_System
-                    = wrapper
-                        .GetType()
-                        .GetProperty("System", BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetMethod;
+                playerLoopSystem = playerLoop;
+                return true;
             }
 
-            //TODO: #28 We can speed the reflected call up by using Expression Trees to create a strongly typed delegate
-            //We should be able to call with the params we have access to and pass in "object" for the param we don't.
-            //In the expression lambda, we do a convert to the internal type defined on the method info.
-            system = (ComponentSystemBase)s_DummyDelegateWrapper_System.Invoke(wrapper, null);
+            for (int i = 0; i < playerLoop.subSystemList?.Length; i++)
+            {
+                ref PlayerLoopSystem playerLoopSubSystem = ref playerLoop.subSystemList[i];
+                if (TryFindPlayerLoopSystemByType(ref playerLoopSubSystem, playerLoopSystemType, out playerLoopSystem))
+                {
+                    return true;
+                }
+            }
 
-            return system != null;
+            playerLoopSystem = NO_PLAYER_LOOP;
+            return false;
         }
     }
 }

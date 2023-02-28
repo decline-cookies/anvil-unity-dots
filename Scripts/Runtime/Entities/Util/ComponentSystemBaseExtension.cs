@@ -1,7 +1,9 @@
 using Anvil.Unity.DOTS.Data;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -133,6 +135,26 @@ namespace Anvil.Unity.DOTS.Entities
             };
 
             return job.Schedule(dependsOn);
+        }
+
+        public static bool TryFindParentGroup(this ComponentSystemGroup system, out ComponentSystemGroup group)
+        {
+            var worldSystems = system.World.Systems;
+            foreach (ComponentSystemBase worldSystem in worldSystems)
+            {
+                if (worldSystem is ComponentSystemGroup worldGroup)
+                {
+                    Debug.Assert(worldGroup.Systems is List<ComponentSystemBase>);
+                    if ((worldGroup.Systems as List<ComponentSystemBase>).Contains(system))
+                    {
+                        group = worldGroup;
+                        return true;
+                    }
+                }
+            }
+
+            group = null;
+            return false;
         }
     }
 }
