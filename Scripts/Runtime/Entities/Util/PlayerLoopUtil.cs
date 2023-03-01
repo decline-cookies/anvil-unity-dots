@@ -58,13 +58,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <see cref="ScriptBehaviourUpdateOrder.AppendSystemToPlayerLoop"/> wraps the update call in a dummy class to work
         /// around a limitation with Mono (<see cref="ScriptBehaviourUpdateOrder.DummyDelegateWrapper"/>).
         ///
-        /// The behaviour differs slightly from the built in methods where <see cref="playerLoop"/> evaluated to check for
-        /// <see cref="system"/> rather than just its sub systems.
+        /// The behaviour differs slightly from the built in methods where <see cref="playerLoop"/> is evaluated to
+        /// check for <see cref="system"/> rather than just its sub systems.
         /// </remarks>
         public static bool IsInPlayerLoop(ComponentSystemBase system, ref PlayerLoopSystem playerLoop)
         {
-            // Is the system in one of the systems at this level?
-            if (IsSubsystemOfPlayerLoopSystem(system, ref playerLoop))
+            if (IsInPlayerLoopSystem(system, ref playerLoop))
             {
                 return true;
             }
@@ -72,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities
             // Recursively check each subsystem's subsystems for system.
             for (int i = 0; i < playerLoop.subSystemList.Length; i++)
             {
-                PlayerLoopSystem playerLoopSubSystem = playerLoop.subSystemList[i];
+                ref PlayerLoopSystem playerLoopSubSystem = ref playerLoop.subSystemList[i];
                 if (IsInPlayerLoop(system, ref playerLoopSubSystem))
                 {
                     return true;
@@ -83,24 +82,30 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
+        /// Identify whether the instance of a <see cref="ComponentSystem"/> exists in <see cref="PlayerLoopSystem"/>.
+        /// (non-recursive)
+        /// </summary>
+        /// <param name="system">The <see cref="ComponentSystem"/> to search for.</param>
+        /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to check.</param>
+        /// <returns>True if an instance of the system exists in this player loop.</returns>
+        public static bool IsInPlayerLoopSystem(ComponentSystemBase system, ref PlayerLoopSystem playerLoopSystem)
+            => TryGetSystemFromPlayerLoopSystem(ref playerLoopSystem, out ComponentSystemBase subSystem)
+                && subSystem == system;
+
+        /// <summary>
         /// Identify whether the instance of a <see cref="ComponentSystem"/> exists in a subsystem of a
         /// <see cref="PlayerLoopSystem"/>.
         /// (non-recursive)
         /// </summary>
         /// <param name="system">The <see cref="ComponentSystem"/> to search for.</param>
         /// <param name="playerLoopSystem">The <see cref="PlayerLoopSystem"/> to search the subsystems of.</param>
-        /// <returns>True if an instance of the system exists in this player loop.</returns>
+        /// <returns>True if an instance of the system exists in this player loop's subsystems.</returns>
         public static bool IsSubsystemOfPlayerLoopSystem(ComponentSystemBase system, ref PlayerLoopSystem playerLoopSystem)
         {
             for (int i = 0; i < playerLoopSystem.subSystemList.Length; i++)
             {
-                PlayerLoopSystem playerLoopSubSystem = playerLoopSystem.subSystemList[i];
-                if (!typeof(ComponentSystemBase).IsAssignableFrom(playerLoopSubSystem.type))
-                {
-                    continue;
-                }
-
-                if (TryGetSystemFromPlayerLoopSystem(ref playerLoopSubSystem, out ComponentSystemBase subSystem) && subSystem == system)
+                ref PlayerLoopSystem playerLoopSubSystem = ref playerLoopSystem.subSystemList[i];
+                if (IsInPlayerLoopSystem(system, ref playerLoopSubSystem))
                 {
                     return true;
                 }
