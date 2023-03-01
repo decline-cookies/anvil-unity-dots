@@ -45,6 +45,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
         private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
+        private readonly PersistentDataSystem m_PersistentDataSystem;
 
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
         private AbstractScheduleInfo m_ScheduleInfo;
@@ -65,6 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             IsEnabled = true;
             TaskSetOwner = taskSetOwner;
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
@@ -228,7 +230,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id) where TData : unmanaged
         {
-            ThreadPersistentData<TData> data = PersistentDataManager.GetThreadPersistentData<TData>(id);
+            ThreadPersistentData<TData> data = m_PersistentDataSystem.GetThreadPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
 
             return this;
@@ -236,7 +238,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public IJobConfig RequireThreadPersistentDataForRead<TData>(string id) where TData : unmanaged
         {
-            ThreadPersistentData<TData> data = PersistentDataManager.GetThreadPersistentData<TData>(id);
+            ThreadPersistentData<TData> data = m_PersistentDataSystem.GetThreadPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
 
             return this;
@@ -244,7 +246,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id) where TData : unmanaged
         {
-            EntityPersistentData<TData> data = PersistentDataManager.GetEntityPersistentData<TData>(id);
+            EntityPersistentData<TData> data = m_PersistentDataSystem.GetEntityPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
 
             return this;
@@ -252,7 +254,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public IJobConfig RequireEntityPersistentDataForRead<TData>(string id) where TData : unmanaged
         {
-            EntityPersistentData<TData> data = PersistentDataManager.GetEntityPersistentData<TData>(id);
+            EntityPersistentData<TData> data = m_PersistentDataSystem.GetEntityPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
 
             return this;
@@ -260,14 +262,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public IJobConfig RequirePersistentDataForRead<TData>(string id) where TData : unmanaged
         {
-            PersistentData<TData> data = PersistentDataManager.GetPersistentData<TData>(id);
+            PersistentData<TData> data = m_PersistentDataSystem.GetPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
             return this;
         }
 
         public IJobConfig RequirePersistentDataForWrite<TData>(string id) where TData : unmanaged
         {
-            PersistentData<TData> data = PersistentDataManager.GetPersistentData<TData>(id);
+            PersistentData<TData> data = m_PersistentDataSystem.GetPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
 
             return this;
