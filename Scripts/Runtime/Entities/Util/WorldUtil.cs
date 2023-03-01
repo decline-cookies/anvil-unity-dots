@@ -150,7 +150,6 @@ namespace Anvil.Unity.DOTS.Entities
             (Type PlayerLoopSystemType, Type SystemGroupType)[] topLevelGroupTypes)
         {
             PlayerLoopSystem playerLoop = PlayerLoop.GetCurrentPlayerLoop();
-            bool systemSortRequired = false;
 
             // Create and Add top level system groups to the player loop
             ComponentSystemGroup[] topLevelGroups = new ComponentSystemGroup[topLevelGroupTypes.Length];
@@ -158,7 +157,6 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 (Type playerLoopSystemType, Type systemGroupType) = topLevelGroupTypes[i];
                 Debug.Assert(systemGroupType.IsSubclassOf(typeof(ComponentSystemGroup)));
-
 
                 ComponentSystemGroup group = world.GetExistingSystem(systemGroupType) as ComponentSystemGroup;
                 if (group == null)
