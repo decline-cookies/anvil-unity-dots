@@ -69,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities
                 return true;
             }
 
-            // Recursively check each subsystem's subsystems the system.
+            // Recursively check each subsystem's subsystems for system.
             for (int i = 0; i < playerLoop.subSystemList.Length; i++)
             {
                 PlayerLoopSystem playerLoopSubSystem = playerLoop.subSystemList[i];
