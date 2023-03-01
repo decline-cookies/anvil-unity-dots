@@ -255,16 +255,13 @@ namespace Anvil.Unity.DOTS.Entities
             MoveSystemFromToGroup<EndInitializationEntityCommandBufferSystem, InitializationSystemGroup, EndInitializationCommandBufferSystemGroup_Anvil>(world);
             MoveSystemFromToGroup<EndSimulationEntityCommandBufferSystem, SimulationSystemGroup, EndSimulationCommandBufferSystemGroup_Anvil>(world);
 
+            Log.GetStaticLogger(typeof(WorldUtil)).Warning($"Optimizing world '{world.Name}' for multi world execution. From this point forward, when sorting {nameof(SimulationSystemGroup)} warnings will be emitted for systems trying to position against {nameof(EndSimulationEntityCommandBufferSystem)}. This is expected.");
             // Suppress the logging during sort so we don't see complaints about systems that position themselves based on
             // the systems that we're moving. So far, the configured above are at the end of the group and don't cause issues
             // aside from the warnings. (dependent systems end up in the right place anyway)
             try
             {
-#if LOG_VERBOSE
-                UnityEngine.Debug.LogWarning($"Sorting {nameof(PlayerLoopSystem)}s. Warning expected with systems trying to position against ${nameof(EndSimulationEntityCommandBufferSystem)}");
-#else
                 Log.SuppressLogging = true;
-#endif
                 SortAllGroupsInWorld(world);
             }
             finally
