@@ -121,9 +121,9 @@ namespace Anvil.Unity.DOTS.Entities
             if (playerLoopSystem.updateDelegate != null
                 && COMPONENT_SYSTEM_GROUP_TYPE.IsAssignableFrom(playerLoopSystem.type)
                 && PlayerLoopUtil.IsPlayerLoopSystemPartOfWorld(ref playerLoopSystem, World)
-                && PlayerLoopUtil.TryGetSystemGroupFromPlayerLoopSystemNoChecks(ref playerLoopSystem, out ComponentSystemGroup group))
+                && PlayerLoopUtil.TryGetSystemFromPlayerLoopSystem(ref playerLoopSystem, out ComponentSystemBase group))
             {
-                ParseSystemGroup(null, group);
+                ParseSystemGroup(null, (ComponentSystemGroup)group);
             }
 
             //Phases won't have subsystems
