@@ -6,6 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public abstract partial class AbstractDataSystem : AbstractAnvilSystemBase
     {
+        //TODO: #172 - Remove from PlayerLoop
         protected override void OnCreate()
         {
             base.OnCreate();
