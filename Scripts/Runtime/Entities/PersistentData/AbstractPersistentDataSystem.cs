@@ -1,21 +1,23 @@
 using Anvil.CSharp.Collections;
+using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public partial class PersistentDataSystem : AbstractAnvilSystemBase
+    public abstract partial class AbstractPersistentDataSystem : AbstractAnvilSystemBase
     {
-        private static readonly Dictionary<string, AbstractPersistentData> s_ThreadLookup = new Dictionary<string, AbstractPersistentData>();
+        private static readonly Dictionary<uint, AbstractPersistentData> s_ThreadLookup = new Dictionary<uint, AbstractPersistentData>();
         private static int s_InstanceCount;
+        private static readonly IDProvider s_IDProvider = new IDProvider();
         
-        private readonly Dictionary<string, AbstractPersistentData> m_Lookup;
-
-        public PersistentDataSystem()
+        private readonly Dictionary<uint, AbstractPersistentData> m_Lookup;
+        
+        protected AbstractPersistentDataSystem()
         {
             s_InstanceCount++;
-            m_Lookup = new Dictionary<string, AbstractPersistentData>();
+            m_Lookup = new Dictionary<uint, AbstractPersistentData>();
         }
 
         protected override void OnCreate()
@@ -31,6 +33,7 @@ namespace Anvil.Unity.DOTS.Entities
             if (s_InstanceCount <= 0)
             {
                 s_ThreadLookup.DisposeAllValuesAndClear();
+                s_IDProvider.Dispose();
             }
             base.OnDestroy();
         }
@@ -42,44 +45,33 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        public void CreatePersistentData<T>(string id, T persistentData) where T : unmanaged
+        protected uint CreatePersistentData<T>(T persistentData) where T : unmanaged
         {
-            if (m_Lookup.ContainsKey(id))
-            {
-                return;
-            }
-
+            uint id = s_IDProvider.GetNextID();
             m_Lookup.Add(id, new PersistentData<T>(id, persistentData));
+            return id;
         }
 
-        public void CreateThreadPersistentData<T>(
-            string id,
+        protected uint CreateThreadPersistentData<T>(
             IThreadPersistentData<T>.ConstructionCallbackPerThread constructionCallbackPerThread,
             IThreadPersistentData<T>.DisposalCallbackPerThread disposalCallbackPerThread = null)
             where T : unmanaged
         {
-            if (s_ThreadLookup.ContainsKey(id))
-            {
-                return;
-            }
-
+            uint id = s_IDProvider.GetNextID();
             s_ThreadLookup.Add(id, new ThreadPersistentData<T>(id, constructionCallbackPerThread, disposalCallbackPerThread));
+            return id;
         }
 
-        public void CreateEntityPersistentData<T>(
-            string id,
+        protected uint CreateEntityPersistentData<T>(
             IEntityPersistentData<T>.DisposalCallbackPerEntity disposalCallbackPerEntity = null)
             where T : unmanaged
         {
-            if (m_Lookup.ContainsKey(id))
-            {
-                return;
-            }
-
+            uint id = s_IDProvider.GetNextID();
             m_Lookup.Add(id, new EntityPersistentData<T>(id, disposalCallbackPerEntity));
+            return id;
         }
 
-        public IEntityPersistentData<T> AcquireEntityPersistentData<T>(string id, AccessType accessType)
+        public IEntityPersistentData<T> AcquireEntityPersistentData<T>(uint id, AccessType accessType)
             where T : unmanaged
         {
             EntityPersistentData<T> entityPersistentData = GetEntityPersistentData<T>(id);
@@ -88,7 +80,7 @@ namespace Anvil.Unity.DOTS.Entities
             return entityPersistentData;
         }
 
-        public IThreadPersistentData<T> AcquireThreadPersistentData<T>(string id, AccessType accessType)
+        public IThreadPersistentData<T> AcquireThreadPersistentData<T>(uint id, AccessType accessType)
             where T : unmanaged
         {
             ThreadPersistentData<T> threadPersistentData = GetThreadPersistentData<T>(id);
@@ -97,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities
             return threadPersistentData;
         }
 
-        public IPersistentData<T> AcquirePersistentData<T>(string id, AccessType accessType) where T : unmanaged
+        public IPersistentData<T> AcquirePersistentData<T>(uint id, AccessType accessType) where T : unmanaged
         {
             PersistentData<T> persistentData = GetPersistentData<T>(id);
             persistentData.Acquire(accessType);
@@ -106,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        internal ThreadPersistentData<T> GetThreadPersistentData<T>(string id) where T : unmanaged
+        internal ThreadPersistentData<T> GetThreadPersistentData<T>(uint id) where T : unmanaged
         {
             if (!s_ThreadLookup.TryGetValue(id, out AbstractPersistentData data))
             {
@@ -116,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities
             return (ThreadPersistentData<T>)data;
         }
 
-        internal EntityPersistentData<T> GetEntityPersistentData<T>(string id) where T : unmanaged
+        internal EntityPersistentData<T> GetEntityPersistentData<T>(uint id) where T : unmanaged
         {
             if (!m_Lookup.TryGetValue(id, out AbstractPersistentData data))
             {
@@ -126,7 +118,7 @@ namespace Anvil.Unity.DOTS.Entities
             return (EntityPersistentData<T>)data;
         }
 
-        internal PersistentData<T> GetPersistentData<T>(string id) where T : unmanaged
+        internal PersistentData<T> GetPersistentData<T>(uint id) where T : unmanaged
         {
             if (!m_Lookup.TryGetValue(id, out AbstractPersistentData data))
             {

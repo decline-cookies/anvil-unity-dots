@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal class PersistentData<T> : AbstractTypedPersistentData<T>, IPersistentData<T> where T : unmanaged
     {
-        public PersistentData(string id, T data) : base(id, data) { }
+        public PersistentData(uint id, T data) : base(id, data) { }
 
         public PersistentDataReader<T> CreatePersistentDataReader()
         {

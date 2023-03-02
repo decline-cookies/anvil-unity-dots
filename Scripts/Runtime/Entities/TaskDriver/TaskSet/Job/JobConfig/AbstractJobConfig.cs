@@ -45,7 +45,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
         private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
-        private readonly PersistentDataSystem m_PersistentDataSystem;
+        private readonly AbstractPersistentDataSystem m_PersistentDataSystem;
 
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
         private AbstractScheduleInfo m_ScheduleInfo;
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             IsEnabled = true;
             TaskSetOwner = taskSetOwner;
-            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<AbstractPersistentDataSystem>();
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
@@ -228,7 +228,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
 
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(uint id) where TData : unmanaged
         {
             ThreadPersistentData<TData> data = m_PersistentDataSystem.GetThreadPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
@@ -236,7 +236,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(uint id) where TData : unmanaged
         {
             ThreadPersistentData<TData> data = m_PersistentDataSystem.GetThreadPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
@@ -244,7 +244,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(uint id) where TData : unmanaged
         {
             EntityPersistentData<TData> data = m_PersistentDataSystem.GetEntityPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
@@ -252,7 +252,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(uint id) where TData : unmanaged
         {
             EntityPersistentData<TData> data = m_PersistentDataSystem.GetEntityPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
@@ -260,14 +260,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequirePersistentDataForRead<TData>(string id) where TData : unmanaged
+        public IJobConfig RequirePersistentDataForRead<TData>(uint id) where TData : unmanaged
         {
             PersistentData<TData> data = m_PersistentDataSystem.GetPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequirePersistentDataForWrite<TData>(string id) where TData : unmanaged
+        public IJobConfig RequirePersistentDataForWrite<TData>(uint id) where TData : unmanaged
         {
             PersistentData<TData> data = m_PersistentDataSystem.GetPersistentData<TData>(id);
             AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly IThreadPersistentData<T>.DisposalCallbackPerThread m_DisposalCallbackPerThread;
 
         public ThreadPersistentData(
-            string id,
+            uint id,
             IThreadPersistentData<T>.ConstructionCallbackPerThread constructionCallbackPerThread,
             IThreadPersistentData<T>.DisposalCallbackPerThread disposalCallbackPerThread)
             : base(id, new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent))

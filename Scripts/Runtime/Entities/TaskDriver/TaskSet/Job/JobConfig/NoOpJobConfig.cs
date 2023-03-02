@@ -92,37 +92,37 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id)
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(uint id)
             where TData : unmanaged
         {
             return this;
         }
 
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id)
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(uint id)
             where TData : unmanaged
         {
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id)
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(uint id)
             where TData : unmanaged
         {
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id)
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(uint id)
             where TData : unmanaged
         {
             return this;
         }
 
-        public IJobConfig RequirePersistentDataForRead<TData>(string id)
+        public IJobConfig RequirePersistentDataForRead<TData>(uint id)
             where TData : unmanaged
         {
             return this;
         }
 
-        public IJobConfig RequirePersistentDataForWrite<TData>(string id)
+        public IJobConfig RequirePersistentDataForWrite<TData>(uint id)
             where TData : unmanaged
         {
             return this;
