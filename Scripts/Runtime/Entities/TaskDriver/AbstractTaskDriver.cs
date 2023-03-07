@@ -189,6 +189,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 batchStrategy);
         }
 
+        protected EntityQuery GetEntityQuery(params ComponentType[] componentTypes)
+        {
+            return TaskDriverSystem.GetEntityQuery(componentTypes);
+        }
+
         //*************************************************************************************************************
         // JOB CONFIGURATION - DRIVER LEVEL
         //*************************************************************************************************************
