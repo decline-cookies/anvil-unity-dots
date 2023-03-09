@@ -2,10 +2,12 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Entities.TaskDriver;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal class ThreadPersistentData<T> : AbstractTypedPersistentData<UnsafeArray<T>>, IThreadPersistentData<T>
+    internal class ThreadPersistentData<T> : AbstractTypedPersistentData<UnsafeArray<T>>,
+                                             IThreadPersistentData<T>
         where T : unmanaged, IThreadPersistentDataInstance
     {
         public ThreadPersistentData()
@@ -34,6 +36,19 @@ namespace Anvil.Unity.DOTS.Entities
         public ThreadPersistentDataAccessor<T> CreateThreadPersistentDataAccessor()
         {
             return new ThreadPersistentDataAccessor<T>(ref Data);
+        }
+
+        public JobHandle AcquireAsync(out ThreadPersistentDataAccessor<T> accessor)
+        {
+            JobHandle dependsOn = AcquireAsync(AccessType.SharedWrite);
+            accessor = CreateThreadPersistentDataAccessor();
+            return dependsOn;
+        }
+
+        public ThreadPersistentDataAccessor<T> Acquire()
+        {
+            Acquire(AccessType.SharedWrite);
+            return CreateThreadPersistentDataAccessor();
         }
     }
 }
