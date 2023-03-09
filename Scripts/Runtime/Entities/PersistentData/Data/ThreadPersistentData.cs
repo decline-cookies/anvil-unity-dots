@@ -6,35 +6,28 @@ using Unity.Collections;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class ThreadPersistentData<T> : AbstractTypedPersistentData<UnsafeArray<T>>, IThreadPersistentData<T>
-        where T : unmanaged
+        where T : unmanaged, IThreadPersistentDataInstance
     {
-        private readonly IThreadPersistentData<T>.DisposalCallbackPerThread m_DisposalCallbackPerThread;
-
-        public ThreadPersistentData(
-            uint id,
-            IThreadPersistentData<T>.ConstructionCallbackPerThread constructionCallbackPerThread,
-            IThreadPersistentData<T>.DisposalCallbackPerThread disposalCallbackPerThread)
-            : base(id, new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent))
+        public ThreadPersistentData()
+            : base(new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent))
         {
-            m_DisposalCallbackPerThread = disposalCallbackPerThread;
             ref UnsafeArray<T> data = ref Data;
             for (int i = 0; i < data.Length; ++i)
             {
-                data[i] = constructionCallbackPerThread(i);
+                T instance = new T();
+                instance.ConstructForThread(i);
+                data[i] = instance;
             }
         }
 
         protected override void DisposeData()
         {
-            if (m_DisposalCallbackPerThread != null)
+            ref UnsafeArray<T> data = ref Data;
+            for (int i = 0; i < data.Length; ++i)
             {
-                ref UnsafeArray<T> data = ref Data;
-                for (int i = 0; i < data.Length; ++i)
-                {
-                    m_DisposalCallbackPerThread(i, data[i]);
-                }
+                data[i].DisposeForThread(i);
             }
-            
+
             base.DisposeData();
         }
 

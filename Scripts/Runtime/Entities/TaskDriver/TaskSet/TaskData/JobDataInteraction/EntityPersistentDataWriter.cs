@@ -5,7 +5,8 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    public struct EntityPersistentDataWriter<TData> where TData : struct
+    public struct EntityPersistentDataWriter<TData> 
+        where TData : struct, IEntityPersistentDataInstance
     {
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private UnsafeParallelHashMap<Entity, TData> m_Lookup;

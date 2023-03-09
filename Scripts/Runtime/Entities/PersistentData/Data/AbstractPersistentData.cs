@@ -9,11 +9,8 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly AccessController m_AccessController;
 
-        public uint ID { get; }
-
-        protected AbstractPersistentData(uint id)
+        protected AbstractPersistentData()
         {
-            ID = id;
             m_AccessController = new AccessController();
         }
 

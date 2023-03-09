@@ -26,6 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
 
+        private readonly PersistentDataSystem m_PersistentDataSystem;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly uint m_ID;
 
@@ -74,7 +75,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             World = world;
             TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
-
+            m_PersistentDataSystem = World.GetOrCreateSystem<PersistentDataSystem>();
+            
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
 
@@ -159,6 +161,34 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour);
 
             return dataStream;
+        }
+
+        protected IDriverEntityPersistentData<T> CreateDriverEntityPersistentData<T>()
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<T> entityPersistentData = TaskSet.CreateEntityPersistentData<T>();
+            return entityPersistentData;
+        }
+
+        protected ISystemEntityPersistentData<T> CreateSystemEntityPersistentData<T>()
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<T> entityPersistentData = TaskDriverSystem.GetOrCreateEntityPersistentData<T>();
+            return entityPersistentData;
+        }
+
+        protected IWorldEntityPersistentData<T> GetOrCreateWorldEntityPersistentData<T>()
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>();
+            return entityPersistentData;
+        }
+
+        protected IThreadPersistentData<T> GetOrCreateThreadPersistentData<T>()
+            where T : unmanaged, IThreadPersistentDataInstance
+        {
+            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.GetOrCreateThreadPersistentData<T>();
+            return threadPersistentData;
         }
 
         //*************************************************************************************************************

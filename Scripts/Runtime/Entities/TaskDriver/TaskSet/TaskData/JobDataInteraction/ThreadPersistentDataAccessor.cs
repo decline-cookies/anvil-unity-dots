@@ -8,7 +8,8 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    public unsafe struct ThreadPersistentDataAccessor<TData> where TData : unmanaged
+    public unsafe struct ThreadPersistentDataAccessor<TData> 
+        where TData : unmanaged, IThreadPersistentDataInstance
     {
         private const int UNSET_LANE_INDEX = -1;
 

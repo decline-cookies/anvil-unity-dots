@@ -6,30 +6,22 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class EntityPersistentData<T> : AbstractTypedPersistentData<UnsafeParallelHashMap<Entity, T>>,
-                                             IEntityPersistentData<T>
-        where T : struct
+                                             IDriverEntityPersistentData<T>,
+                                             ISystemEntityPersistentData<T>,
+                                             IWorldEntityPersistentData<T>
+        where T : struct, IEntityPersistentDataInstance
     {
-        private readonly IEntityPersistentData<T>.DisposalCallbackPerEntity m_DisposalCallbackPerEntity;
-
-        public EntityPersistentData(
-            uint id,
-            IEntityPersistentData<T>.DisposalCallbackPerEntity disposalCallbackPerEntity)
-            : base(
-                id,
-                new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
+        public EntityPersistentData()
+            : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
-            m_DisposalCallbackPerEntity = disposalCallbackPerEntity;
         }
 
         protected override void DisposeData()
         {
-            if (m_DisposalCallbackPerEntity != null)
+            ref UnsafeParallelHashMap<Entity, T> data = ref Data;
+            foreach (KeyValue<Entity, T> entry in data)
             {
-                ref UnsafeParallelHashMap<Entity, T> data = ref Data;
-                foreach (KeyValue<Entity, T> entry in data)
-                {
-                    m_DisposalCallbackPerEntity(entry.Key, entry.Value);
-                }
+                entry.Value.DisposeForEntity(entry.Key);
             }
             base.DisposeData();
         }
