@@ -38,15 +38,19 @@ namespace Anvil.Unity.DOTS.Entities
             return new ThreadPersistentDataAccessor<T>(ref Data);
         }
 
+        /// <inheritdoc cref="IThreadPersistentData{T}.AcquireAsync"/>
         public JobHandle AcquireAsync(out ThreadPersistentDataAccessor<T> accessor)
         {
+            //Thread data is only for one thread at a time so we can assume shared write.
             JobHandle dependsOn = AcquireAsync(AccessType.SharedWrite);
             accessor = CreateThreadPersistentDataAccessor();
             return dependsOn;
         }
 
+        /// <inheritdoc cref="IThreadPersistentData{T}.Acquire"/>
         public ThreadPersistentDataAccessor<T> Acquire()
         {
+            //Thread data is only for one thread at a time so we can assume shared write.
             Acquire(AccessType.SharedWrite);
             return CreateThreadPersistentDataAccessor();
         }
