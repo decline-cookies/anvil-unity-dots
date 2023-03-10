@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// An <see cref="IAbstractPersistentData"/> that is owned by the overall application and
     /// used to provide a unique instance of the data that persists for a thread index.
-    /// There is only ever one of these. 
+    /// There is only ever one <typeparamref name="T"/> per thread.
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IThreadPersistentDataInstance"/></typeparam>
     public interface IThreadPersistentData<T> : IAbstractPersistentData

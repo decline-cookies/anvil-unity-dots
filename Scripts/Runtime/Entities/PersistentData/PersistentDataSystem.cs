@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal partial class PersistentDataSystem : AbstractAnvilSystemBase
+    internal partial class PersistentDataSystem : AbstractDataSystem
     {
         private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
         private static int s_InstanceCount;
@@ -17,12 +17,6 @@ namespace Anvil.Unity.DOTS.Entities
             m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
         }
 
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            Enabled = false;
-        }
-
         protected override void OnDestroy()
         {
             m_EntityPersistentData.DisposeAllValuesAndClear();
@@ -32,12 +26,6 @@ namespace Anvil.Unity.DOTS.Entities
                 s_ThreadPersistentData.DisposeAllValuesAndClear();
             }
             base.OnDestroy();
-        }
-
-        protected override void OnUpdate()
-        {
-            //Just in case
-            Enabled = false;
         }
 
         public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>()

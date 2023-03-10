@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
             ref UnsafeParallelHashMap<Entity, T> data = ref Data;
             foreach (KeyValue<Entity, T> entry in data)
             {
-                entry.Value.DisposeForEntity(entry.Key);
+                entry.Value.Dispose();
             }
             base.DisposeData();
         }

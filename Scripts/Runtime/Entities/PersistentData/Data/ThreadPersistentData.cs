@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             ref UnsafeArray<T> data = ref Data;
             for (int i = 0; i < data.Length; ++i)
             {
-                data[i].DisposeForThread(i);
+                data[i].Dispose();
             }
 
             base.DisposeData();
