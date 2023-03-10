@@ -4,8 +4,14 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
+    /// <summary>
+    /// Represents a write only reference to a <see cref="IEntityPersistentData{TData}"/>
+    /// To be used in jobs that only allows for writing of this data.
+    /// </summary>
+    /// <typeparam name="TData">They type of <see cref="IEntityPersistentDataInstance"/> to write</typeparam>
     [BurstCompatible]
-    public struct EntityPersistentDataWriter<TData> where TData : struct
+    public struct EntityPersistentDataWriter<TData> 
+        where TData : struct, IEntityPersistentDataInstance
     {
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private UnsafeParallelHashMap<Entity, TData> m_Lookup;
@@ -15,6 +21,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_Lookup = lookup;
         }
 
+        /// <summary>
+        /// Gets or sets the data based on the <see cref="Entity"/>
+        /// </summary>
+        /// <param name="entity">The <see cref="Entity"/> to use as the key</param>
         public TData this[Entity entity]
         {
             get => m_Lookup[entity];

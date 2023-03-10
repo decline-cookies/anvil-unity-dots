@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine.UI;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -15,6 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
+        private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentDataByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
@@ -43,6 +45,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
+            m_EntityPersistentDataByType = new Dictionary<Type, AbstractPersistentData>();
+            
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
@@ -57,6 +61,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
+            m_EntityPersistentDataByType.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
         }
@@ -104,6 +109,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
 
             return dataStream;
+        }
+        
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            Type type = typeof(T);
+            if (!m_EntityPersistentDataByType.TryGetValue(type, out AbstractPersistentData persistentData))
+            {
+                persistentData = CreateEntityPersistentData<T>();
+                m_EntityPersistentDataByType.Add(type, persistentData);
+            }
+
+            return (EntityPersistentData<T>)persistentData;
+        }
+
+        public EntityPersistentData<T> CreateEntityPersistentData<T>()
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
+            return entityPersistentData;
         }
 
         public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)

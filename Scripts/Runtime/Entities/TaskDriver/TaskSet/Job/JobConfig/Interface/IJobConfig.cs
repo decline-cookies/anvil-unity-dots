@@ -75,23 +75,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TData : struct;
 
 
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id)
-            where TData : unmanaged;
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>()
+            where TData : unmanaged, IThreadPersistentDataInstance;
 
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id)
-            where TData : unmanaged;
+        public IJobConfig RequireThreadPersistentDataForRead<TData>()
+            where TData : unmanaged, IThreadPersistentDataInstance;
 
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id)
-            where TData : unmanaged;
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance;
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id)
-            where TData : unmanaged;
-
-        public IJobConfig RequirePersistentDataForRead<TData>(string id)
-            where TData : unmanaged;
-
-        public IJobConfig RequirePersistentDataForWrite<TData>(string id)
-            where TData : unmanaged;
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance;
 
         /// <summary>
         /// Specifies a generic struct to be written to in an exclusive-write context.

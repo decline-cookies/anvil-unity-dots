@@ -96,6 +96,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>();
+            return entityPersistentData;
+        }
+
         //We only want to register Jobs to the System once. However we still want to preserve the API in the TaskDriver.
         //If we have two or more TaskDrivers, we are guaranteed to have configured our System Jobs already configured.
         private bool HaveSystemLevelJobsBeenConfigured()

@@ -7,8 +7,13 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
+    /// <summary>
+    /// Represents a read/write reference to an <see cref="IThreadPersistentData{TData}"/>
+    /// </summary>
+    /// <typeparam name="TData">The type of <see cref="IThreadPersistentDataInstance"/> to read/write</typeparam>
     [BurstCompatible]
-    public unsafe struct ThreadPersistentDataAccessor<TData> where TData : unmanaged
+    public unsafe struct ThreadPersistentDataAccessor<TData> 
+        where TData : unmanaged, IThreadPersistentDataInstance
     {
         private const int UNSET_LANE_INDEX = -1;
 
@@ -16,6 +21,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private int m_LaneIndex;
 
+        /// <summary>
+        /// A reference to the data for reading/writing
+        /// </summary>
         public ref TData ThreadData
         {
             get
@@ -32,11 +40,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Debug_InitializeAccessorState();
         }
-
+        
+        /// <summary>
+        /// Call once to initialize the state of this accessor for the thread it is running on.
+        /// </summary>
+        /// <param name="nativeThreadIndex">The native thread index that the job is running on</param>
         public void InitForThread(int nativeThreadIndex)
         {
             Debug_EnsureInitThreadOnlyCalledOnce();
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
+        }
+        
+        /// <summary>
+        /// Call once to initialize the state of this writer for main thread usage.
+        /// </summary>
+        public void InitForMainThread()
+        {
+            Debug_EnsureInitThreadOnlyCalledOnce();
+            m_LaneIndex = ParallelAccessUtil.CollectionIndexForMainThread();
         }
 
         //*************************************************************************************************************
@@ -67,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State != AccessorState.Uninitialized)
             {
-                throw new InvalidOperationException($"{nameof(InitForThread)} has already been called!");
+                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} has already been called!");
             }
 
             m_State = AccessorState.Ready;
@@ -80,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             if (m_State == AccessorState.Uninitialized)
             {
-                throw new InvalidOperationException($"{nameof(InitForThread)} must be called first before attempting to access thread data.");
+                throw new InvalidOperationException($"{nameof(InitForThread)} or {nameof(InitForMainThread)} must be called first before attempting to access thread data.");
             }
 #endif
         }

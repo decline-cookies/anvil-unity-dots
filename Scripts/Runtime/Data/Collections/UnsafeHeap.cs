@@ -44,6 +44,20 @@ namespace Anvil.Unity.DOTS.Data
         where TComparer : unmanaged, IComparer<T>
     {
         /// <summary>
+        /// Whether this collection has been created or not (had memory been allocated)
+        /// </summary>
+        public bool IsCreated
+        {
+            get
+            {
+                unsafe
+                {
+                    return m_Data != null;
+                }
+            }
+        }
+
+        /// <summary>
         /// Returns the number of elements that this collection can hold before the internal structures
         /// need to be reallocated.
         /// </summary>

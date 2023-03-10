@@ -1,37 +1,31 @@
 using Anvil.Unity.DOTS.Entities.TaskDriver;
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
     internal class EntityPersistentData<T> : AbstractTypedPersistentData<UnsafeParallelHashMap<Entity, T>>,
-                                             IEntityPersistentData<T>
-        where T : struct
+                                             IDriverEntityPersistentData<T>,
+                                             ISystemEntityPersistentData<T>,
+                                             IWorldEntityPersistentData<T>
+        where T : struct, IEntityPersistentDataInstance
     {
-        private readonly IEntityPersistentData<T>.DisposalCallbackPerEntity m_DisposalCallbackPerEntity;
-
-        public EntityPersistentData(string id, IEntityPersistentData<T>.DisposalCallbackPerEntity disposalCallbackPerEntity) : base(id, new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
+        public EntityPersistentData()
+            : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
-            m_DisposalCallbackPerEntity = disposalCallbackPerEntity;
         }
 
         protected override void DisposeData()
         {
-            if (m_DisposalCallbackPerEntity != null)
+            ref UnsafeParallelHashMap<Entity, T> data = ref Data;
+            foreach (KeyValue<Entity, T> entry in data)
             {
-                ref UnsafeParallelHashMap<Entity, T> data = ref Data;
-                foreach (KeyValue<Entity, T> entry in data)
-                {
-                    m_DisposalCallbackPerEntity(entry.Key, entry.Value);
-                }
+                entry.Value.Dispose();
             }
             base.DisposeData();
-        }
-
-        public void Add(Entity entity, T data)
-        {
-            Data.Add(entity, data);
         }
 
         public EntityPersistentDataReader<T> CreateEntityPersistentDataReader()
@@ -42,6 +36,52 @@ namespace Anvil.Unity.DOTS.Entities
         public EntityPersistentDataWriter<T> CreateEntityPersistentDataWriter()
         {
             return new EntityPersistentDataWriter<T>(ref Data);
+        }
+
+        public JobHandle AcquireReaderAsync(out EntityPersistentDataReader<T> reader)
+        {
+            JobHandle dependsOn = AcquireAsync(AccessType.SharedRead);
+            reader = CreateEntityPersistentDataReader();
+            return dependsOn;
+        }
+
+        public void ReleaseReaderAsync(JobHandle dependsOn)
+        {
+            ReleaseAsync(dependsOn);
+        }
+
+        public EntityPersistentDataReader<T> AcquireReader()
+        {
+            Acquire(AccessType.SharedRead);
+            return CreateEntityPersistentDataReader();
+        }
+
+        public void ReleaseReader()
+        {
+            Release();
+        }
+
+        public JobHandle AcquireWriterAsync(out EntityPersistentDataWriter<T> writer)
+        {
+            JobHandle dependsOn = AcquireAsync(AccessType.SharedWrite);
+            writer = CreateEntityPersistentDataWriter();
+            return dependsOn;
+        }
+
+        public void ReleaseWriterAsync(JobHandle dependsOn)
+        {
+            ReleaseAsync(dependsOn);
+        }
+
+        public EntityPersistentDataWriter<T> AcquireWriter()
+        {
+            Acquire(AccessType.SharedWrite);
+            return CreateEntityPersistentDataWriter();
+        }
+
+        public void ReleaseWriter()
+        {
+            Release();
         }
     }
 }

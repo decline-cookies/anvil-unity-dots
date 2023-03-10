@@ -45,6 +45,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly string m_TypeString;
         private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
         private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
+        private readonly PersistentDataSystem m_PersistentDataSystem;
 
         private NativeArray<JobHandle> m_AccessWrapperDependencies;
         private AbstractScheduleInfo m_ScheduleInfo;
@@ -65,6 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             IsEnabled = true;
             TaskSetOwner = taskSetOwner;
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
@@ -226,49 +228,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
 
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>()
+            where TData : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<TData> data = PersistentDataManager.GetThreadPersistentData<TData>(id);
+            ThreadPersistentData<TData> data = m_PersistentDataSystem.GetOrCreateThreadPersistentData<TData>();
             AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
 
             return this;
         }
 
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireThreadPersistentDataForRead<TData>()
+            where TData : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<TData> data = PersistentDataManager.GetThreadPersistentData<TData>(id);
+            ThreadPersistentData<TData> data = m_PersistentDataSystem.GetOrCreateThreadPersistentData<TData>();
             AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
 
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<TData> data = PersistentDataManager.GetEntityPersistentData<TData>(id);
+            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
 
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(string id) where TData : unmanaged
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<TData> data = PersistentDataManager.GetEntityPersistentData<TData>(id);
+            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
-
-            return this;
-        }
-
-        public IJobConfig RequirePersistentDataForRead<TData>(string id) where TData : unmanaged
-        {
-            PersistentData<TData> data = PersistentDataManager.GetPersistentData<TData>(id);
-            AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
-            return this;
-        }
-
-        public IJobConfig RequirePersistentDataForWrite<TData>(string id) where TData : unmanaged
-        {
-            PersistentData<TData> data = PersistentDataManager.GetPersistentData<TData>(id);
-            AddAccessWrapper(new PersistentDataAccessWrapper<PersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
 
             return this;
         }
@@ -351,7 +342,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dependsOn;
         }
 
-        private TWrapper GetAccessWrapper<TWrapper>(Usage usage) where TWrapper : AbstractAccessWrapper
+        private TWrapper GetAccessWrapper<TWrapper>(Usage usage)
+            where TWrapper : AbstractAccessWrapper
         {
             JobConfigDataID id = new JobConfigDataID(typeof(TWrapper), usage);
             Debug_EnsureWrapperExists(id);
@@ -402,7 +394,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dataStreamPendingCancelActiveAccessWrapper.DataStream;
         }
 
-        internal TData GetGenericData<TData>() where TData : struct
+        internal TData GetGenericData<TData>()
+            where TData : struct
         {
             GenericDataAccessWrapper<TData> genericDataAccessWrapper
                 = GetAccessWrapper<GenericDataAccessWrapper<TData>>(Usage.Default);
@@ -410,7 +403,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return genericDataAccessWrapper.Data;
         }
 
-        internal ThreadPersistentData<TData> GetThreadPersistentData<TData>() where TData : unmanaged
+        internal ThreadPersistentData<TData> GetThreadPersistentData<TData>()
+            where TData : unmanaged, IThreadPersistentDataInstance
         {
             PersistentDataAccessWrapper<ThreadPersistentData<TData>> persistentDataAccessWrapper
                 = GetAccessWrapper<PersistentDataAccessWrapper<ThreadPersistentData<TData>>>(Usage.Default);
@@ -418,18 +412,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return persistentDataAccessWrapper.PersistentData;
         }
 
-        internal EntityPersistentData<TData> GetEntityPersistentData<TData>() where TData : unmanaged
+        internal EntityPersistentData<TData> GetEntityPersistentData<TData>()
+            where TData : unmanaged, IEntityPersistentDataInstance
         {
             PersistentDataAccessWrapper<EntityPersistentData<TData>> persistentDataAccessWrapper
                 = GetAccessWrapper<PersistentDataAccessWrapper<EntityPersistentData<TData>>>(Usage.Default);
-
-            return persistentDataAccessWrapper.PersistentData;
-        }
-
-        internal PersistentData<TData> GetPersistentData<TData>() where TData : unmanaged
-        {
-            PersistentDataAccessWrapper<PersistentData<TData>> persistentDataAccessWrapper
-                = GetAccessWrapper<PersistentDataAccessWrapper<PersistentData<TData>>>(Usage.Default);
 
             return persistentDataAccessWrapper.PersistentData;
         }
@@ -442,7 +429,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryAccessWrapper.NativeArray;
         }
 
-        internal NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>() where T : struct, IComponentData
+        internal NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>()
+            where T : struct, IComponentData
         {
             EntityQueryComponentAccessWrapper<T> entityQueryAccessWrapper
                 = GetAccessWrapper<EntityQueryComponentAccessWrapper<T>>(Usage.Default);
@@ -450,25 +438,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryAccessWrapper.NativeArray;
         }
 
-        internal CDFEReader<T> GetCDFEReader<T>() where T : struct, IComponentData
+        internal CDFEReader<T> GetCDFEReader<T>()
+            where T : struct, IComponentData
         {
             CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Default);
             return cdfeAccessWrapper.CreateCDFEReader();
         }
 
-        internal CDFEWriter<T> GetCDFEWriter<T>() where T : struct, IComponentData
+        internal CDFEWriter<T> GetCDFEWriter<T>()
+            where T : struct, IComponentData
         {
             CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Default);
             return cdfeAccessWrapper.CreateCDFEUpdater();
         }
 
-        internal DBFEForRead<T> GetDBFEForRead<T>() where T : struct, IBufferElementData
+        internal DBFEForRead<T> GetDBFEForRead<T>()
+            where T : struct, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
             return dynamicBufferAccessWrapper.CreateDynamicBufferReader();
         }
 
-        internal DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>() where T : struct, IBufferElementData
+        internal DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
+            where T : struct, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
             return dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
