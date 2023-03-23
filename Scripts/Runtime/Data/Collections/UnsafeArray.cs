@@ -52,6 +52,12 @@ namespace Anvil.Unity.DOTS.Data
             Copy(array, 0, this, 0, array.Length);
         }
 
+        public UnsafeArray(NativeArray<T>.ReadOnly array, Allocator allocator)
+        {
+            Allocate(array.Length, allocator, out this);
+            Copy(array, 0, this, 0, array.Length);
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void CheckAllocateArguments(int length, Allocator allocator, long totalSize)
         {
@@ -244,6 +250,12 @@ namespace Anvil.Unity.DOTS.Data
             Copy(src, 0, dst, 0, src.Length);
         }
 
+        public static void Copy(NativeArray<T>.ReadOnly src, UnsafeArray<T> dst)
+        {
+            CheckCopyLengths(src.Length, dst.Length);
+            Copy(src, 0, dst, 0, src.Length);
+        }
+
         public static void Copy(ReadOnly src, UnsafeArray<T> dst)
         {
             CheckCopyLengths(src.Length, dst.Length);
@@ -269,6 +281,8 @@ namespace Anvil.Unity.DOTS.Data
         }
 
         public static void Copy(UnsafeArray<T> src, UnsafeArray<T> dst, int length) => Copy(src, 0, dst, 0, length);
+
+        public static void Copy(NativeArray<T>.ReadOnly src, UnsafeArray<T> dst, int length) => Copy(src, 0, dst, 0, length);
 
         public static void Copy(ReadOnly src, UnsafeArray<T> dst, int length) => Copy(src, 0, dst, 0, length);
 
@@ -321,6 +335,12 @@ namespace Anvil.Unity.DOTS.Data
         {
             CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
             UnsafeUtility.MemCpy((void*)((IntPtr)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>()), (void*)((IntPtr)src.m_Buffer + srcIndex * UnsafeUtility.SizeOf<T>()), length * UnsafeUtility.SizeOf<T>());
+        }
+
+        public static unsafe void Copy(NativeArray<T>.ReadOnly src, int srcIndex, UnsafeArray<T> dst, int dstIndex, int length)
+        {
+            CheckCopyArguments(src.Length, srcIndex, dst.Length, dstIndex, length);
+            UnsafeUtility.MemCpy((void*)((IntPtr)dst.m_Buffer + dstIndex * UnsafeUtility.SizeOf<T>()), (void*)((IntPtr)src.GetUnsafeReadOnlyPtr() + srcIndex * UnsafeUtility.SizeOf<T>()), length * UnsafeUtility.SizeOf<T>());
         }
 
         public static unsafe void Copy(ReadOnly src, int srcIndex, UnsafeArray<T> dst, int dstIndex, int length)
