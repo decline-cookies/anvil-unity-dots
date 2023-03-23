@@ -24,5 +24,26 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return entityManager.Exists(entity) && !entityManager.HasComponent(entity, EntityCleanupHelper.CLEAN_UP_ENTITY_COMPONENT_TYPE);
         }
+
+        /// <summary>
+        /// Try to get a <see cref="IComponentData"/> instance from an entity.
+        /// Use when a component may or may not be present.
+        /// </summary>
+        /// <param name="entityManager">The <see cref="EntityManager"/> the Entity is a part of.</param>
+        /// <param name="entity">The <see cref="Entity"/> to get the data from.</param>
+        /// <param name="data">The data that was fetched. This data is only valid if the method returns true.</param>
+        /// <typeparam name="T">The data type to fetch.</typeparam>
+        /// <returns>True if the data was present on the entity.</returns>
+        public static bool TryGetComponentData<T>(this EntityManager entityManager, Entity entity, out T data) where T : struct, IComponentData
+        {
+            if (entityManager.HasComponent<T>(entity))
+            {
+                data = entityManager.GetComponentData<T>(entity);
+                return true;
+            }
+
+            data = default;
+            return false;
+        }
     }
 }
