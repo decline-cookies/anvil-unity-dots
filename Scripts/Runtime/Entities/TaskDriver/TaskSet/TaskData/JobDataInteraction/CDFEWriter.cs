@@ -23,11 +23,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private ComponentDataFromEntity<T> m_CDFE;
 
-        internal CDFEWriter(SystemBase system)
-        {
-            m_CDFE = system.GetComponentDataFromEntity<T>(false);
-        }
-
         /// <summary>
         /// Gets/Sets the <typeparamref name="T"/> that corresponds to the passed <see cref="Entity"/>
         /// </summary>
@@ -38,7 +33,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             set => m_CDFE[entity] = value;
         }
 
+
+        internal CDFEWriter(SystemBase system)
+        {
+            m_CDFE = system.GetComponentDataFromEntity<T>(false);
+        }
+
         /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>
         public bool HasComponent(Entity entity) => m_CDFE.HasComponent(entity);
+
+        /// <inheritdoc cref="ComponentDataFromEntity{T}.TryGetComponent"/>
+        public bool TryGetComponent(Entity entity, out T component) => m_CDFE.TryGetComponent(entity, out component);
     }
 }
