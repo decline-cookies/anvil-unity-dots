@@ -10,16 +10,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TData">They type of <see cref="IEntityPersistentDataInstance"/> to write</typeparam>
     [BurstCompatible]
-    public struct EntityPersistentDataWriter<TData> 
+    public struct EntityPersistentDataWriter<TData>
         where TData : struct, IEntityPersistentDataInstance
     {
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private UnsafeParallelHashMap<Entity, TData> m_Lookup;
-
-        internal EntityPersistentDataWriter(ref UnsafeParallelHashMap<Entity, TData> lookup)
-        {
-            m_Lookup = lookup;
-        }
 
         /// <summary>
         /// Gets or sets the data based on the <see cref="Entity"/>
@@ -30,5 +25,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Lookup[entity];
             set => m_Lookup[entity] = value;
         }
+
+
+        internal EntityPersistentDataWriter(ref UnsafeParallelHashMap<Entity, TData> lookup)
+        {
+            m_Lookup = lookup;
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Remove"/>
+        public bool Remove(Entity entity) => m_Lookup.Remove(entity);
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.TryGetValue"/>
+        public bool TryGet(Entity entity, out TData data) => m_Lookup.TryGetValue(entity, out data);
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.ContainsKey"/>
+        public bool Contains(Entity entity) => m_Lookup.ContainsKey(entity);
     }
 }
