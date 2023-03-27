@@ -42,6 +42,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal AbstractTaskDriverSystem TaskDriverSystem { get; }
         internal TaskSet TaskSet { get; }
 
+        protected AbstractAnvilSystemBase System
+        {
+            get => TaskDriverSystem;
+        }
+
         AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
         {
             get => TaskDriverSystem;
@@ -76,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             World = world;
             TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_PersistentDataSystem = World.GetOrCreateSystem<PersistentDataSystem>();
-            
+
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
 
