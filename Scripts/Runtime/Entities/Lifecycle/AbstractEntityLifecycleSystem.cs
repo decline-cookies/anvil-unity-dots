@@ -4,16 +4,44 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// Provides the ability to hook into <see cref="EntityManager.GetCreatedAndDestroyedEntitiesAsync"/>
+    /// to get a <see cref="IReadOnlyEntityLifecycleGroup"/> view into entities that were created/imported or
+    /// destroyed/evicted this frame.
+    /// </summary>
+    /// <remarks>
+    /// Update the <see cref="UpdateInGroupAttribute"/> to place the extended concrete
+    /// class right after structural changes in the app. Multiple instances of this class are allowed as
+    /// <see cref="EntityManager.GetCreatedAndDestroyedEntitiesAsync"/> will work off the same state list.
+    /// Ex. Creating simulation entities and then running an EntityLifecycleSystem will return the newly created
+    /// simulation entities. In the same frame, creating rendering entities and then running another
+    /// EntityLifecycleSystem will return only the newly created rendering entities as we've already been notified
+    /// of the simulation entities this frame.
+    /// </remarks>
     //By default, we'll assume that all spawning/destroying happens in the Initialization Phase
     [UpdateInGroup(typeof(PostInitialization_Anvil), OrderLast = true)]
     public abstract partial class AbstractEntityLifecycleSystem : AbstractAnvilSystemBase
     {
+        private static NativeList<int> s_State;
+        private static int s_InstanceCount;
+        
+        //Ensure our static state is correct
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Init()
+        {
+            if (s_State.IsCreated)
+            {
+                s_State.Dispose();
+            }
+        }
+        
+        
         private readonly List<EntityLifecycleGroup> m_EntityLifecycleGroups;
-
-        private NativeList<int> m_State;
+        
         private NativeList<Entity> m_CreatedEntities;
         private NativeList<Entity> m_DestroyedEntities;
 
@@ -31,14 +59,22 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            m_State = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+            s_InstanceCount++;
+            if (!s_State.IsCreated)
+            {
+                s_State = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+            }
             m_CreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
             m_DestroyedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
         }
 
         protected override void OnDestroy()
         {
-            m_State.Dispose();
+            s_InstanceCount--;
+            if (s_InstanceCount <= 0)
+            {
+                s_State.Dispose();
+            }
             m_CreatedEntities.Dispose();
             m_DestroyedEntities.Dispose();
 
@@ -118,7 +154,7 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = JobHandle.CombineDependencies(
                 dependsOn,
                 EntityManager.GetCreatedAndDestroyedEntitiesAsync(
-                    m_State,
+                    s_State,
                     m_CreatedEntities,
                     m_DestroyedEntities));
 
