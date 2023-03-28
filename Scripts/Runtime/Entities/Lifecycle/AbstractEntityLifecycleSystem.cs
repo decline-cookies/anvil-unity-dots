@@ -1,7 +1,9 @@
 using Anvil.CSharp.Collections;
+using Anvil.Unity.DOTS.Jobs;
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
@@ -90,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 m_Dependencies.Dispose();
             }
-            
+
             m_EntityLifecycleGroups.DisposeAllAndTryClear();
 
             base.OnDestroy();
@@ -106,7 +108,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_IsInitialized = true;
             Harden();
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="IReadOnlyEntityLifecycleGroup"/> based on the passed in <see cref="ComponentType"/>
         /// </summary>
@@ -137,8 +139,11 @@ namespace Anvil.Unity.DOTS.Entities
             for (int i = 0; i < groupCount; ++i)
             {
                 EntityLifecycleGroup entityLifecycleGroup = m_EntityLifecycleGroups[i];
-                m_CreationFilteredGroups[i] = entityLifecycleGroup.CreationFilteredGroup;
-                m_DestructionFilteredGroups[i] = entityLifecycleGroup.DestructionFilteredGroup;
+                entityLifecycleGroup.Harden(
+                    out EntityLifecycleFilteredGroup creationFilteredGroup,
+                    out EntityLifecycleFilteredGroup destructionFilteredGroup);
+                m_CreationFilteredGroups[i] = creationFilteredGroup;
+                m_DestructionFilteredGroups[i] = destructionFilteredGroup;
             }
         }
 
@@ -151,12 +156,10 @@ namespace Anvil.Unity.DOTS.Entities
         private JobHandle UpdateAsync(JobHandle dependsOn)
         {
             //First we need to get the list of created and destroyed entities
-            dependsOn = JobHandle.CombineDependencies(
-                dependsOn,
-                EntityManager.GetCreatedAndDestroyedEntitiesAsync(
-                    s_State,
-                    m_CreatedEntities,
-                    m_DestroyedEntities));
+            EntityManager.GetCreatedAndDestroyedEntities(
+                s_State,
+                m_CreatedEntities,
+                m_DestroyedEntities);
 
             //Then we can run the filter passes on created and destroyed in parallel
             dependsOn = JobHandle.CombineDependencies(

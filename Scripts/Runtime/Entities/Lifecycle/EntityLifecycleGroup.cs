@@ -12,27 +12,21 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private readonly AccessControlledValue<UnsafeList<Entity>> m_CreatedEntities;
         private readonly AccessControlledValue<UnsafeList<Entity>> m_DestroyedEntities;
-
-        public EntityLifecycleFilteredGroup CreationFilteredGroup { get; }
-        public EntityLifecycleFilteredGroup DestructionFilteredGroup { get; }
+        private readonly AbstractAnvilSystemBase m_OwningSystem;
+        private readonly ComponentType[] m_QueryComponents;
 
         public EntityLifecycleGroup(AbstractAnvilSystemBase owningSystem, params ComponentType[] queryComponents)
         {
-            EntityQuery entityQuery = owningSystem.GetEntityQuery(queryComponents);
-            EntityQueryMask entityQueryMask = entityQuery.GetEntityQueryMask();
+            m_OwningSystem = owningSystem;
+            m_QueryComponents = queryComponents;
             
-            UnsafeList<Entity> creationList = new UnsafeList<Entity>(
+            m_CreatedEntities = new AccessControlledValue<UnsafeList<Entity>>(new UnsafeList<Entity>(
                 ChunkUtil.MaxElementsPerChunk<Entity>(),
-                Allocator.Persistent);
-            m_CreatedEntities = new AccessControlledValue<UnsafeList<Entity>>(creationList);
-            CreationFilteredGroup = new EntityLifecycleFilteredGroup(entityQueryMask, creationList);
+                Allocator.Persistent));
 
-
-            UnsafeList<Entity> destructionList = new UnsafeList<Entity>(
+            m_DestroyedEntities = new AccessControlledValue<UnsafeList<Entity>>(new UnsafeList<Entity>(
                 ChunkUtil.MaxElementsPerChunk<Entity>(),
-                Allocator.Persistent);
-            m_DestroyedEntities = new AccessControlledValue<UnsafeList<Entity>>(destructionList);
-            DestructionFilteredGroup = new EntityLifecycleFilteredGroup(entityQueryMask, destructionList);
+                Allocator.Persistent));
         }
 
         protected override void DisposeSelf()
@@ -40,6 +34,20 @@ namespace Anvil.Unity.DOTS.Entities
             m_CreatedEntities.Dispose();
             m_DestroyedEntities.Dispose();
             base.DisposeSelf();
+        }
+
+        public void Harden(
+            out EntityLifecycleFilteredGroup creationFilteredGroup, 
+            out EntityLifecycleFilteredGroup destructionFilteredGroup)
+        {
+            EntityQuery entityQuery = m_OwningSystem.GetEntityQuery(m_QueryComponents);
+            EntityQueryMask entityQueryMask = entityQuery.GetEntityQueryMask();
+
+            using var creationHandle = m_CreatedEntities.AcquireWithHandle(AccessType.SharedRead);
+            creationFilteredGroup = new EntityLifecycleFilteredGroup(entityQueryMask, creationHandle.Value);
+
+            using var destructionHandle = m_DestroyedEntities.AcquireWithHandle(AccessType.SharedRead);
+            destructionFilteredGroup = new EntityLifecycleFilteredGroup(entityQueryMask, destructionHandle.Value);
         }
         
         //*************************************************************************************************************
