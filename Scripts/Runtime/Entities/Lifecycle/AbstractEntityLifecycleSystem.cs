@@ -163,6 +163,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             //Then we can run the filter passes on created and destroyed in parallel
             dependsOn = JobHandle.CombineDependencies(
+                dependsOn,
                 UpdateCreationAsync(dependsOn),
                 UpdateDestructionAsync(dependsOn));
 
