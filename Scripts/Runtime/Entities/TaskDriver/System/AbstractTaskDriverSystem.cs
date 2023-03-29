@@ -7,7 +7,8 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase, ITaskSetOwner
+    //TODO: #188 - /// Document public API
+    public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase, ITaskSetOwner
     {
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
         private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
@@ -28,7 +29,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //Normally a system doesn't get a World until OnCreate is called and the System.World will return null.
         //We need a valid World in the constructor so we get one and assign it to this property instead.
         public new World World { get; }
-        public TaskSet TaskSet { get; }
+
+        internal TaskSet TaskSet { get; }
+
+        TaskSet ITaskSetOwner.TaskSet
+        {
+            get => TaskSet;
+        }
+
         public uint ID { get; }
 
         public List<AbstractTaskDriver> SubTaskDrivers
@@ -96,7 +104,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
-        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+        internal EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>();
@@ -188,7 +196,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_BulkJobScheduler = new BulkJobScheduler<AbstractJobConfig>(jobConfigs.ToArray());
         }
 
-        public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
+        void ITaskSetOwner.AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
+            => AddResolvableDataStreamsTo(type, dataStreams);
+
+        internal void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
         {
             TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
             foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)
