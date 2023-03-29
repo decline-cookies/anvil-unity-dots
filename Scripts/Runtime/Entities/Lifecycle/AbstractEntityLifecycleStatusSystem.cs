@@ -3,41 +3,28 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    [AlwaysUpdateSystem]
     public abstract partial class AbstractEntityLifecycleStatusSystem : AbstractAnvilSystemBase
     {
         private readonly List<EntityLifecycleStatus> m_EntityLifecycleStatus;
-
-        private NativeList<int> m_WorldEntitiesState;
-        private NativeList<Entity> m_WorldCreatedEntities;
-        private NativeList<Entity> m_WorldDestroyedEntities;
-
+        private WorldEntityState m_WorldEntityState;
         private NativeArray<JobHandle> m_Dependencies;
-
-        internal NativeArray<Entity>.ReadOnly CreatedEntities
-        {
-            get => m_WorldCreatedEntities.AsArray().AsReadOnly();
-        }
-
-        internal NativeArray<Entity>.ReadOnly DestroyedEntities
-        {
-            get => m_WorldDestroyedEntities.AsArray().AsReadOnly();
-        }
-
+        
         protected AbstractEntityLifecycleStatusSystem()
         {
             m_EntityLifecycleStatus = new List<EntityLifecycleStatus>();
-
-            m_WorldEntitiesState = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
-            m_WorldCreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
-            m_WorldDestroyedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
         }
 
         protected override void OnCreate()
         {
             base.OnCreate();
+
+            m_WorldEntityState = WorldEntityState.GetOrCreate(World, this);
+
             foreach (EntityLifecycleStatus entityLifecycleStatus in m_EntityLifecycleStatus)
             {
                 entityLifecycleStatus.CreateQuery();
@@ -49,12 +36,10 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnDestroy()
         {
             m_EntityLifecycleStatus.DisposeAllAndTryClear();
-
             m_Dependencies.Dispose();
+            
+            m_WorldEntityState.RemoveLifecycleStatusSystem(this);
 
-            m_WorldEntitiesState.Dispose();
-            m_WorldCreatedEntities.Dispose();
-            m_WorldDestroyedEntities.Dispose();
             base.OnDestroy();
         }
 
@@ -67,34 +52,105 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnUpdate()
         {
-            EntityManager.GetCreatedAndDestroyedEntities(
-                m_WorldEntitiesState,
-                m_WorldCreatedEntities,
-                m_WorldDestroyedEntities);
+            m_WorldEntityState.GetCreatedAndDestroyedEntities(
+                out NativeArray<Entity>.ReadOnly createdEntities,
+                out NativeArray<Entity>.ReadOnly destroyedEntities);
 
-            if (m_WorldCreatedEntities.Length == 0
-                && m_WorldDestroyedEntities.Length == 0)
+            if (createdEntities.Length == 0
+                && destroyedEntities.Length == 0)
             {
                 return;
             }
 
-            //TODO: If nothing has been created, nothing has been destroyed and nothing has been evicted... then we don't need to do anything
-            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {m_WorldCreatedEntities.Length} - Destroyed: {m_WorldDestroyedEntities.Length} - ");
-            Dependency = UpdateAsync(Dependency);
+            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length}");
+            Dependency = UpdateAsync(
+                Dependency,
+                ref createdEntities,
+                ref destroyedEntities);
         }
 
-        private JobHandle UpdateAsync(JobHandle dependsOn)
+        private JobHandle UpdateAsync(
+            JobHandle dependsOn,
+            ref NativeArray<Entity>.ReadOnly createdEntities,
+            ref NativeArray<Entity>.ReadOnly destroyedEntities)
         {
             for (int i = 0; i < m_EntityLifecycleStatus.Count; ++i)
             {
-                m_Dependencies[i] = m_EntityLifecycleStatus[i].UpdateAsync(dependsOn);
+                m_Dependencies[i] = m_EntityLifecycleStatus[i].UpdateAsync(
+                    dependsOn, 
+                    ref createdEntities, 
+                    ref destroyedEntities);
             }
             return JobHandle.CombineDependencies(m_Dependencies);
         }
 
-        public void EvictEntitiesTo(World dstWorld, EntityQuery srcQuery)
+        private class WorldEntityState
         {
-            dstWorld.EntityManager.MoveEntitiesFrom(EntityManager, srcQuery);
+            private static readonly Dictionary<World, WorldEntityState> s_WorldEntityStates = new Dictionary<World, WorldEntityState>();
+
+            [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+            private static void Init()
+            {
+                s_WorldEntityStates.Clear();
+            }
+
+            public static WorldEntityState GetOrCreate(World world, AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
+            {
+                if (!s_WorldEntityStates.TryGetValue(world, out WorldEntityState worldEntityState))
+                {
+                    worldEntityState = new WorldEntityState(world);
+                    s_WorldEntityStates.Add(world, worldEntityState);
+                }
+                worldEntityState.AddLifecycleStatusSystem(lifecycleStatusSystem);
+                return worldEntityState;
+            }
+
+            private readonly World m_World;
+            private readonly HashSet<AbstractEntityLifecycleStatusSystem> m_LifecycleStatusSystems;
+
+            private NativeList<int> m_WorldEntitiesState;
+            private NativeList<Entity> m_WorldCreatedEntities;
+            private NativeList<Entity> m_WorldDestroyedEntities;
+
+            private WorldEntityState(World world)
+            {
+                m_World = world;
+                m_LifecycleStatusSystems = new HashSet<AbstractEntityLifecycleStatusSystem>();
+
+                m_WorldEntitiesState = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+                m_WorldCreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+                m_WorldDestroyedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+            }
+
+            private void Dispose()
+            {
+                m_WorldEntitiesState.Dispose();
+                m_WorldCreatedEntities.Dispose();
+                m_WorldDestroyedEntities.Dispose();
+            }
+
+            private void AddLifecycleStatusSystem(AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
+            {
+                m_LifecycleStatusSystems.Add(lifecycleStatusSystem);
+            }
+
+            public void RemoveLifecycleStatusSystem(AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
+            {
+                m_LifecycleStatusSystems.Remove(lifecycleStatusSystem);
+                if (m_LifecycleStatusSystems.Count == 0)
+                {
+                    Dispose();
+                }
+            }
+
+            public void GetCreatedAndDestroyedEntities(
+                out NativeArray<Entity>.ReadOnly createdEntities,
+                out NativeArray<Entity>.ReadOnly destroyedEntities)
+            {
+                m_World.EntityManager.GetCreatedAndDestroyedEntities(m_WorldEntitiesState, m_WorldCreatedEntities, m_WorldDestroyedEntities);
+                createdEntities = m_WorldCreatedEntities.AsArray().AsReadOnly();
+                destroyedEntities = m_WorldDestroyedEntities.AsArray().AsReadOnly();
+            }
         }
     }
 }

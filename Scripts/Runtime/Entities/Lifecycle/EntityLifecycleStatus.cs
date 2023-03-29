@@ -18,15 +18,12 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly ComponentType[] m_QueryComponentTypes;
 
         private EntityQuery m_Query;
-        private EntityQueryDesc m_QueryDesc;
-        
-        private NativeList<Entity> m_EvictedEntities;
 
         public EntityLifecycleStatus(AbstractEntityLifecycleStatusSystem owningSystem, params ComponentType[] queryComponentTypes)
         {
             m_OwningSystem = owningSystem;
             m_QueryComponentTypes = queryComponentTypes;
-            
+
             m_Lookup = new AccessControlledValue<NativeParallelHashSet<Entity>>(
                 new NativeParallelHashSet<Entity>(
                     ChunkUtil.MaxElementsPerChunk<Entity>(),
@@ -34,7 +31,6 @@ namespace Anvil.Unity.DOTS.Entities
 
             m_ArrivedEntities = new AccessControlledValue<NativeList<Entity>>(new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent));
             m_DepartedEntities = new AccessControlledValue<NativeList<Entity>>(new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent));
-            m_EvictedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
@@ -42,7 +38,6 @@ namespace Anvil.Unity.DOTS.Entities
             m_Lookup.Dispose();
             m_ArrivedEntities.Dispose();
             m_DepartedEntities.Dispose();
-            m_EvictedEntities.Dispose();
             base.DisposeSelf();
         }
 
@@ -50,45 +45,15 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_Query = m_OwningSystem.GetEntityQuery(m_QueryComponentTypes);
             m_Query.SetOrderVersionFilter();
-            m_QueryDesc = m_Query.GetEntityQueryDesc();
         }
 
-        public void AddPendingEvictedEntities(EntityQuery evictionQuery)
-        {
-            EntityQueryDesc evictionQueryDesc = evictionQuery.GetEntityQueryDesc();
-
-            EntityQueryDescBuilder builder = new EntityQueryDescBuilder(Allocator.Temp);
-
-            ComponentType[] all = evictionQueryDesc.All.Concat(m_QueryDesc.All).Distinct().ToArray();
-            foreach (ComponentType type in all)
-            {
-                builder.AddAll(type);
-            }
-            ComponentType[] any = evictionQueryDesc.Any.Concat(m_QueryDesc.Any).Distinct().ToArray();
-            foreach (ComponentType type in any)
-            {
-                builder.AddAny(type);
-            }
-            ComponentType[] none = evictionQueryDesc.None.Concat(m_QueryDesc.None).Distinct().ToArray();
-            foreach (ComponentType type in none)
-            {
-                builder.AddNone(type);
-            }
-            builder.Options(evictionQueryDesc.Options);
-            builder.FinalizeQuery();
-
-            EntityQuery subQuery = m_OwningSystem.EntityManager.CreateEntityQuery(builder);
-
-            NativeArray<Entity> pendingEvictedEntities = subQuery.ToEntityArray(Allocator.Temp);
-            m_EvictedEntities.AddRange(pendingEvictedEntities);
-
-            subQuery.Dispose();
-        }
-
-        public JobHandle UpdateAsync(JobHandle dependsOn)
+        public JobHandle UpdateAsync(
+            JobHandle dependsOn,
+            ref NativeArray<Entity>.ReadOnly createdEntities,
+            ref NativeArray<Entity>.ReadOnly destroyedEntities)
         {
             dependsOn = ClearAsync(dependsOn);
-            dependsOn = UpdateDepartedAsync(dependsOn);
+            dependsOn = UpdateDepartedAsync(dependsOn, ref destroyedEntities);
             dependsOn = UpdateArrivedAsync(dependsOn);
 
             var arrived = m_ArrivedEntities.Acquire(AccessType.SharedRead);
@@ -96,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities
             Logger.Debug($"{m_OwningSystem.World} | {UnityEngine.Time.frameCount} ({m_Query.GetReadWriteComponentTypes().FirstOrDefault()} - Arrived: {arrived.Length} - Departed: {departed.Length}");
             m_ArrivedEntities.Release();
             m_DepartedEntities.Release();
-            
+
             return dependsOn;
         }
 
@@ -116,7 +81,9 @@ namespace Anvil.Unity.DOTS.Entities
             return dependsOn;
         }
 
-        private JobHandle UpdateDepartedAsync(JobHandle dependsOn)
+        private JobHandle UpdateDepartedAsync(
+            JobHandle dependsOn,
+            ref NativeArray<Entity>.ReadOnly destroyedEntities)
         {
             dependsOn = JobHandle.CombineDependencies(
                 dependsOn,
@@ -124,8 +91,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_DepartedEntities.AcquireAsync(AccessType.ExclusiveWrite, out var departedEntities));
 
             UpdateDepartedJob updateDepartedJob = new UpdateDepartedJob(
-                m_OwningSystem.DestroyedEntities,
-                m_EvictedEntities,
+                destroyedEntities,
                 lookup,
                 departedEntities);
             dependsOn = updateDepartedJob.Schedule(dependsOn);
@@ -184,35 +150,24 @@ namespace Anvil.Unity.DOTS.Entities
         {
             [ReadOnly] private readonly NativeArray<Entity>.ReadOnly m_DestroyedEntities;
 
-            private NativeList<Entity> m_EvictedEntities;
             private NativeParallelHashSet<Entity> m_Lookup;
             private NativeList<Entity> m_DepartedEntities;
 
             public UpdateDepartedJob(
                 NativeArray<Entity>.ReadOnly destroyedEntities,
-                NativeList<Entity> evictedEntities,
                 NativeParallelHashSet<Entity> lookup,
                 NativeList<Entity> departedEntities)
             {
                 m_DestroyedEntities = destroyedEntities;
-                m_EvictedEntities = evictedEntities;
                 m_Lookup = lookup;
                 m_DepartedEntities = departedEntities;
             }
 
             public void Execute()
             {
-                RemoveFromLookup(m_DestroyedEntities);
-                RemoveFromLookup(m_EvictedEntities.AsArray().AsReadOnly());
-
-                m_EvictedEntities.Clear();
-            }
-
-            private void RemoveFromLookup(in NativeArray<Entity>.ReadOnly entities)
-            {
-                for (int i = 0; i < entities.Length; ++i)
+                for (int i = 0; i < m_DestroyedEntities.Length; ++i)
                 {
-                    Entity candidate = entities[i];
+                    Entity candidate = m_DestroyedEntities[i];
                     //If we were able to remove it from the lookup, it's departed
                     if (m_Lookup.Remove(candidate))
                     {
