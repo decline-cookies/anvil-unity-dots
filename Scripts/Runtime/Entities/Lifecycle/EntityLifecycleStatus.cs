@@ -46,21 +46,52 @@ namespace Anvil.Unity.DOTS.Entities
             m_Query = m_OwningSystem.GetEntityQuery(m_QueryComponentTypes);
             m_Query.SetOrderVersionFilter();
         }
+        
+        //*************************************************************************************************************
+        // PUBLIC API
+        //*************************************************************************************************************
 
+        public JobHandle AcquireArrivalsAsync(out NativeList<Entity> arrivals)
+        {
+            return m_ArrivedEntities.AcquireAsync(AccessType.SharedRead, out arrivals);
+        }
+
+        public JobHandle AcquireDeparturesAsync(out NativeList<Entity> departures)
+        {
+            return m_DepartedEntities.AcquireAsync(AccessType.SharedRead, out departures);
+        }
+
+        public void ReleaseArrivalsAsync(JobHandle dependsOn)
+        {
+            m_ArrivedEntities.ReleaseAsync(dependsOn);
+        }
+
+        public void ReleaseDeparturesAsync(JobHandle dependsOn)
+        {
+            m_DepartedEntities.ReleaseAsync(dependsOn);
+        }
+
+        public AccessControlledValue<NativeList<Entity>>.AccessHandle AcquireArrivals()
+        {
+            return m_ArrivedEntities.AcquireWithHandle(AccessType.SharedRead);
+        }
+
+        public AccessControlledValue<NativeList<Entity>>.AccessHandle AcquireDepartures()
+        {
+            return m_DepartedEntities.AcquireWithHandle(AccessType.SharedRead);
+        }
+
+        //*************************************************************************************************************
+        // UPDATES
+        //*************************************************************************************************************
+        
         public JobHandle UpdateAsync(
             JobHandle dependsOn,
-            ref NativeArray<Entity>.ReadOnly createdEntities,
             ref NativeArray<Entity>.ReadOnly destroyedEntities)
         {
             dependsOn = ClearAsync(dependsOn);
             dependsOn = UpdateDepartedAsync(dependsOn, ref destroyedEntities);
             dependsOn = UpdateArrivedAsync(dependsOn);
-
-            var arrived = m_ArrivedEntities.Acquire(AccessType.SharedRead);
-            var departed = m_DepartedEntities.Acquire(AccessType.SharedRead);
-            Logger.Debug($"{m_OwningSystem.World} | {UnityEngine.Time.frameCount} ({m_Query.GetReadWriteComponentTypes().FirstOrDefault()} - Arrived: {arrived.Length} - Departed: {departed.Length}");
-            m_ArrivedEntities.Release();
-            m_DepartedEntities.Release();
 
             return dependsOn;
         }

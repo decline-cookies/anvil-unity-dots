@@ -1,4 +1,5 @@
 using Anvil.CSharp.Collections;
+using Anvil.Unity.DOTS.Jobs;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
@@ -13,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly List<EntityLifecycleStatus> m_EntityLifecycleStatus;
         private WorldEntityState m_WorldEntityState;
         private NativeArray<JobHandle> m_Dependencies;
-        
+
         protected AbstractEntityLifecycleStatusSystem()
         {
             m_EntityLifecycleStatus = new List<EntityLifecycleStatus>();
@@ -37,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_EntityLifecycleStatus.DisposeAllAndTryClear();
             m_Dependencies.Dispose();
-            
+
             m_WorldEntityState.RemoveLifecycleStatusSystem(this);
 
             base.OnDestroy();
@@ -52,34 +53,39 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnUpdate()
         {
-            m_WorldEntityState.GetCreatedAndDestroyedEntities(
+            JobHandle dependsOn = Dependency;
+            dependsOn = m_WorldEntityState.AcquireCreatedAndDestroyedEntities(
+                dependsOn,
                 out NativeArray<Entity>.ReadOnly createdEntities,
                 out NativeArray<Entity>.ReadOnly destroyedEntities);
 
             if (createdEntities.Length == 0
                 && destroyedEntities.Length == 0)
             {
+                m_WorldEntityState.ReleaseCreatedAndDestroyedEntities(dependsOn);
+                Dependency = dependsOn;
                 return;
             }
 
             Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length}");
-            Dependency = UpdateAsync(
-                Dependency,
-                ref createdEntities,
+            dependsOn = UpdateAsync(
+                dependsOn,
                 ref destroyedEntities);
+            
+            m_WorldEntityState.ReleaseCreatedAndDestroyedEntities(dependsOn);
+            Dependency = dependsOn;
         }
 
         private JobHandle UpdateAsync(
             JobHandle dependsOn,
-            ref NativeArray<Entity>.ReadOnly createdEntities,
             ref NativeArray<Entity>.ReadOnly destroyedEntities)
         {
             for (int i = 0; i < m_EntityLifecycleStatus.Count; ++i)
             {
-                m_Dependencies[i] = m_EntityLifecycleStatus[i].UpdateAsync(
-                    dependsOn, 
-                    ref createdEntities, 
-                    ref destroyedEntities);
+                m_Dependencies[i] = m_EntityLifecycleStatus[i]
+                    .UpdateAsync(
+                        dependsOn,
+                        ref destroyedEntities);
             }
             return JobHandle.CombineDependencies(m_Dependencies);
         }
@@ -107,6 +113,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             private readonly World m_World;
             private readonly HashSet<AbstractEntityLifecycleStatusSystem> m_LifecycleStatusSystems;
+            private readonly AccessController m_AccessController;
 
             private NativeList<int> m_WorldEntitiesState;
             private NativeList<Entity> m_WorldCreatedEntities;
@@ -116,6 +123,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 m_World = world;
                 m_LifecycleStatusSystems = new HashSet<AbstractEntityLifecycleStatusSystem>();
+                m_AccessController = new AccessController();
 
                 m_WorldEntitiesState = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldCreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
@@ -124,6 +132,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             private void Dispose()
             {
+                m_AccessController.Dispose();
                 m_WorldEntitiesState.Dispose();
                 m_WorldCreatedEntities.Dispose();
                 m_WorldDestroyedEntities.Dispose();
@@ -143,13 +152,23 @@ namespace Anvil.Unity.DOTS.Entities
                 }
             }
 
-            public void GetCreatedAndDestroyedEntities(
+            public JobHandle AcquireCreatedAndDestroyedEntities(
+                JobHandle dependsOn,
                 out NativeArray<Entity>.ReadOnly createdEntities,
                 out NativeArray<Entity>.ReadOnly destroyedEntities)
             {
+                m_AccessController.Acquire(AccessType.ExclusiveWrite);
+                
                 m_World.EntityManager.GetCreatedAndDestroyedEntities(m_WorldEntitiesState, m_WorldCreatedEntities, m_WorldDestroyedEntities);
                 createdEntities = m_WorldCreatedEntities.AsArray().AsReadOnly();
                 destroyedEntities = m_WorldDestroyedEntities.AsArray().AsReadOnly();
+
+                return dependsOn;
+            }
+
+            public void ReleaseCreatedAndDestroyedEntities(JobHandle dependsOn)
+            {
+                m_AccessController.ReleaseAsync(dependsOn);
             }
         }
     }
