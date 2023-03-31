@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -10,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TData">They type of <see cref="IEntityPersistentDataInstance"/> to read</typeparam>
     [BurstCompatible]
-    public readonly struct EntityPersistentDataReader<TData> 
+    public readonly struct EntityPersistentDataReader<TData>
         where TData : struct, IEntityPersistentDataInstance
     {
         [ReadOnly] private readonly UnsafeParallelHashMap<Entity, TData> m_Lookup;
@@ -19,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_Lookup = lookup;
         }
-        
+
         /// <summary>
         /// Gets the <typeparamref name="TData"/> for the specified <see cref="Entity"/>.
         /// </summary>
@@ -27,6 +29,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TData this[Entity entity]
         {
             get => m_Lookup[entity];
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetKeyArray"/>>
+        public NativeArray<Entity> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetKeyArray(allocator);
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetValueArray"/>>
+        public NativeArray<TData> GetValueArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetValueArray(allocator);
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetEnumerator"/>>
+        public UnsafeParallelHashMap<Entity, TData>.Enumerator GetEnumerator()
+        {
+            return m_Lookup.GetEnumerator();
         }
     }
 }
