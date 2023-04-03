@@ -1,6 +1,7 @@
 using Anvil.CSharp.Collections;
 using Anvil.Unity.DOTS.Jobs;
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -12,11 +13,13 @@ namespace Anvil.Unity.DOTS.Entities
     public abstract partial class AbstractEntityLifecycleStatusSystem : AbstractAnvilSystemBase
     {
         private readonly List<EntityLifecycleStatus> m_EntityLifecycleStatus;
+        private readonly bool m_ShouldIncludeCleanupEntities;
         private WorldEntityState m_WorldEntityState;
         private NativeArray<JobHandle> m_Dependencies;
 
-        protected AbstractEntityLifecycleStatusSystem()
+        protected AbstractEntityLifecycleStatusSystem(bool shouldIncludeCleanupEntities)
         {
+            m_ShouldIncludeCleanupEntities = shouldIncludeCleanupEntities;
             m_EntityLifecycleStatus = new List<EntityLifecycleStatus>();
         }
 
@@ -57,7 +60,8 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = m_WorldEntityState.AcquireCreatedAndDestroyedEntities(
                 dependsOn,
                 out NativeArray<Entity>.ReadOnly createdEntities,
-                out NativeArray<Entity>.ReadOnly destroyedEntities);
+                out NativeArray<Entity>.ReadOnly destroyedEntities,
+                m_ShouldIncludeCleanupEntities);
 
             if (createdEntities.Length == 0
                 && destroyedEntities.Length == 0)
@@ -67,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities
                 return;
             }
 
-            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length}");
+            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length} with total: {EntityManager.UniversalQuery.CalculateEntityCount()}");
             dependsOn = UpdateAsync(
                 dependsOn,
                 ref destroyedEntities);
@@ -119,6 +123,8 @@ namespace Anvil.Unity.DOTS.Entities
             private NativeList<Entity> m_WorldCreatedEntities;
             private NativeList<Entity> m_WorldDestroyedEntities;
 
+            private EntityQuery m_CleanupEntityQuery;
+
             private WorldEntityState(World world)
             {
                 m_World = world;
@@ -128,6 +134,8 @@ namespace Anvil.Unity.DOTS.Entities
                 m_WorldEntitiesState = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldCreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldDestroyedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+                
+                m_CleanupEntityQuery = m_World.EntityManager.CreateEntityQuery(EntityCleanupHelper.CLEAN_UP_ENTITY_COMPONENT_TYPE);
             }
 
             private void Dispose()
@@ -136,6 +144,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_WorldEntitiesState.Dispose();
                 m_WorldCreatedEntities.Dispose();
                 m_WorldDestroyedEntities.Dispose();
+                m_CleanupEntityQuery.Dispose();
             }
 
             private void AddLifecycleStatusSystem(AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
@@ -155,11 +164,27 @@ namespace Anvil.Unity.DOTS.Entities
             public JobHandle AcquireCreatedAndDestroyedEntities(
                 JobHandle dependsOn,
                 out NativeArray<Entity>.ReadOnly createdEntities,
-                out NativeArray<Entity>.ReadOnly destroyedEntities)
+                out NativeArray<Entity>.ReadOnly destroyedEntities,
+                bool shouldIncludeCleanupEntities)
             {
                 m_AccessController.Acquire(AccessType.ExclusiveWrite);
                 
                 m_World.EntityManager.GetCreatedAndDestroyedEntities(m_WorldEntitiesState, m_WorldCreatedEntities, m_WorldDestroyedEntities);
+
+                if (shouldIncludeCleanupEntities)
+                {
+                    NativeArray<Entity> cleanupEntities = m_CleanupEntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle cleanupDependsOn);
+                    
+                    IncludeCleanupEntitiesJob includeCleanupEntitiesJob = new IncludeCleanupEntitiesJob(
+                        m_WorldEntitiesState,
+                        m_WorldDestroyedEntities,
+                        cleanupEntities
+                        );
+                    cleanupDependsOn = includeCleanupEntitiesJob.Schedule(cleanupDependsOn);
+                    cleanupEntities.Dispose(cleanupDependsOn);
+                    cleanupDependsOn.Complete();
+                }
+                
                 createdEntities = m_WorldCreatedEntities.AsArray().AsReadOnly();
                 destroyedEntities = m_WorldDestroyedEntities.AsArray().AsReadOnly();
 
@@ -169,6 +194,42 @@ namespace Anvil.Unity.DOTS.Entities
             public void ReleaseCreatedAndDestroyedEntities(JobHandle dependsOn)
             {
                 m_AccessController.ReleaseAsync(dependsOn);
+            }
+        }
+        
+        //*************************************************************************************************************
+        // WORLD ENTITY STATE - JOBS
+        //*************************************************************************************************************
+
+        [BurstCompile]
+        private struct IncludeCleanupEntitiesJob : IJob
+        {
+            [WriteOnly] private NativeList<int> m_WorldEntitiesState;
+            [WriteOnly] private NativeList<Entity> m_WorldDestroyedEntities;
+
+            [ReadOnly] private readonly NativeArray<Entity> m_CleanupEntities;
+
+            public IncludeCleanupEntitiesJob(
+                NativeList<int> worldEntitiesState, 
+                NativeList<Entity> worldDestroyedEntities, 
+                NativeArray<Entity> cleanupEntities)
+            {
+                m_WorldEntitiesState = worldEntitiesState;
+                m_WorldDestroyedEntities = worldDestroyedEntities;
+                m_CleanupEntities = cleanupEntities;
+            }
+
+            public void Execute()
+            {
+                m_WorldDestroyedEntities.AddRange(m_CleanupEntities);
+
+                for (int i = 0; i < m_CleanupEntities.Length; ++i)
+                {
+                    Entity cleanupEntity = m_CleanupEntities[i];
+                    //Bump the state so that next time we call the function, Unity thinks we already handled this
+                    //which... we did
+                    m_WorldEntitiesState[cleanupEntity.Index + 1] = cleanupEntity.Version + 1;
+                }
             }
         }
     }
