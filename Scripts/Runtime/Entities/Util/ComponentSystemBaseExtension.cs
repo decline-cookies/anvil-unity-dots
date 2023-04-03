@@ -137,7 +137,13 @@ namespace Anvil.Unity.DOTS.Entities
             return job.Schedule(dependsOn);
         }
 
-        public static bool TryFindParentGroup(this ComponentSystemGroup system, out ComponentSystemGroup group)
+        /// <summary>
+        /// Attempts to find the parent <see cref="ComponentSystemGroup"/> of a <see cref="ComponentSystem"/>
+        /// </summary>
+        /// <param name="system">The system to find the parent of.</param>
+        /// <param name="group">The parent of the system</param>
+        /// <returns>True if a parent was found for the given system.</returns>
+        public static bool TryFindParentGroup(this ComponentSystem system, out ComponentSystemGroup group)
         {
             var worldSystems = system.World.Systems;
             foreach (ComponentSystemBase worldSystem in worldSystems)
