@@ -51,31 +51,37 @@ namespace Anvil.Unity.DOTS.Entities
         // PUBLIC API
         //*************************************************************************************************************
 
+        /// <inheritdoc cref="IEntityLifecycleStatus.AcquireArrivalsAsync"/>
         public JobHandle AcquireArrivalsAsync(out NativeList<Entity> arrivals)
         {
             return m_ArrivedEntities.AcquireAsync(AccessType.SharedRead, out arrivals);
         }
 
+        /// <inheritdoc cref="IEntityLifecycleStatus.AcquireDeparturesAsync"/>
         public JobHandle AcquireDeparturesAsync(out NativeList<Entity> departures)
         {
             return m_DepartedEntities.AcquireAsync(AccessType.SharedRead, out departures);
         }
 
+        /// <inheritdoc cref="IEntityLifecycleStatus.ReleaseArrivalsAsync"/>
         public void ReleaseArrivalsAsync(JobHandle dependsOn)
         {
             m_ArrivedEntities.ReleaseAsync(dependsOn);
         }
 
+        /// <inheritdoc cref="IEntityLifecycleStatus.ReleaseDeparturesAsync"/>
         public void ReleaseDeparturesAsync(JobHandle dependsOn)
         {
             m_DepartedEntities.ReleaseAsync(dependsOn);
         }
 
+        /// <inheritdoc cref="IEntityLifecycleStatus.AcquireArrivals"/>
         public AccessControlledValue<NativeList<Entity>>.AccessHandle AcquireArrivals()
         {
             return m_ArrivedEntities.AcquireWithHandle(AccessType.SharedRead);
         }
 
+        /// <inheritdoc cref="IEntityLifecycleStatus.AcquireDepartures"/>
         public AccessControlledValue<NativeList<Entity>>.AccessHandle AcquireDepartures()
         {
             return m_DepartedEntities.AcquireWithHandle(AccessType.SharedRead);

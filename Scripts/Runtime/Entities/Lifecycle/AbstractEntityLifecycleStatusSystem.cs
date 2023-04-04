@@ -9,17 +9,35 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// Provides information on the lifecycle of entities.
+    /// </summary>
+    /// <remarks>
+    /// Best practice is to extend this system and place the newly created system at a point in time when structural
+    /// changes have been made. Ex. Right after a <see cref="EntityCommandBufferSystem"/>.
+    /// Created or Imported entities will be treated as "Arrivals" to the World.
+    /// Destroyed or Evicted entities will be treated as "Departures" from the World.
+    /// Entities that are in a "CleanUp" state can be treated as "Departures" before they are actually destroyed by
+    /// Unity.
+    /// </remarks>
     [AlwaysUpdateSystem]
     public abstract partial class AbstractEntityLifecycleStatusSystem : AbstractAnvilSystemBase
     {
         private readonly List<EntityLifecycleStatus> m_EntityLifecycleStatus;
-        private readonly bool m_ShouldIncludeCleanupEntities;
+        private readonly bool m_ShouldCleanupEntitiesCountAsDepartures;
         private WorldEntityState m_WorldEntityState;
         private NativeArray<JobHandle> m_Dependencies;
-
-        protected AbstractEntityLifecycleStatusSystem(bool shouldIncludeCleanupEntities)
+        
+        /// <summary>
+        /// Creates a new <see cref="AbstractEntityLifecycleStatusSystem"/>
+        /// </summary>
+        /// <param name="shouldCleanupEntitiesCountAsDepartures">
+        /// If true, Entities that are in a CleanUp state with <see cref="ISystemStateComponentData"/>
+        /// will be considered as Departures. They will not show up later when they are actually destroyed by Unity.
+        /// </param>
+        protected AbstractEntityLifecycleStatusSystem(bool shouldCleanupEntitiesCountAsDepartures)
         {
-            m_ShouldIncludeCleanupEntities = shouldIncludeCleanupEntities;
+            m_ShouldCleanupEntitiesCountAsDepartures = shouldCleanupEntitiesCountAsDepartures;
             m_EntityLifecycleStatus = new List<EntityLifecycleStatus>();
         }
 
@@ -46,7 +64,13 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.OnDestroy();
         }
-
+        
+        /// <summary>
+        /// Creates a new <see cref="IEntityLifecycleStatus"/> object to monitor Arrivals/Departures from a certain
+        /// archetype.
+        /// </summary>
+        /// <param name="componentTypes">The components to filter on.</param>
+        /// <returns>The <see cref="IEntityLifecycleStatus"/> object</returns>
         protected IEntityLifecycleStatus CreateEntityLifecycleStatus(params ComponentType[] componentTypes)
         {
             EntityLifecycleStatus entityLifecycleStatus = new EntityLifecycleStatus(this, componentTypes);
@@ -61,8 +85,9 @@ namespace Anvil.Unity.DOTS.Entities
                 dependsOn,
                 out NativeArray<Entity>.ReadOnly createdEntities,
                 out NativeArray<Entity>.ReadOnly destroyedEntities,
-                m_ShouldIncludeCleanupEntities);
+                m_ShouldCleanupEntitiesCountAsDepartures);
 
+            //If nothing was created or destroyed we can early exit
             if (createdEntities.Length == 0
                 && destroyedEntities.Length == 0)
             {
@@ -71,7 +96,7 @@ namespace Anvil.Unity.DOTS.Entities
                 return;
             }
 
-            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length} with total: {EntityManager.UniversalQuery.CalculateEntityCount()}");
+            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length}");
             dependsOn = UpdateAsync(
                 dependsOn,
                 ref destroyedEntities);
@@ -94,6 +119,10 @@ namespace Anvil.Unity.DOTS.Entities
             return JobHandle.CombineDependencies(m_Dependencies);
         }
 
+        //*************************************************************************************************************
+        // WORLD ENTITY STATE
+        //*************************************************************************************************************
+        
         private class WorldEntityState
         {
             private static readonly Dictionary<World, WorldEntityState> s_WorldEntityStates = new Dictionary<World, WorldEntityState>();
@@ -191,8 +220,7 @@ namespace Anvil.Unity.DOTS.Entities
                     cleanupEntities.Dispose(cleanupDependsOn);
                     cleanupDependsOn.Complete();
                 }
-                
-                
+
                 createdEntities = m_WorldCreatedEntities.AsArray().AsReadOnly();
                 destroyedEntities = m_WorldDestroyedEntities.AsArray().AsReadOnly();
 
