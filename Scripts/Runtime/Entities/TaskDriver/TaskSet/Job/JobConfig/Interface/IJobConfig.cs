@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -173,5 +174,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData;
+
+        IJobConfig AddRequirementsFrom<T>(T taskDriver, Func<T, IJobConfig, IJobConfig> configureRequirements)
+            where T : AbstractTaskDriver;
     }
 }
