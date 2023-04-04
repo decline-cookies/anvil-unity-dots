@@ -75,7 +75,7 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = UpdateAsync(
                 dependsOn,
                 ref destroyedEntities);
-            
+
             m_WorldEntityState.ReleaseCreatedAndDestroyedEntities(dependsOn);
             Dependency = dependsOn;
         }
@@ -122,6 +122,7 @@ namespace Anvil.Unity.DOTS.Entities
             private NativeList<int> m_WorldEntitiesState;
             private NativeList<Entity> m_WorldCreatedEntities;
             private NativeList<Entity> m_WorldDestroyedEntities;
+            private NativeParallelHashSet<Entity> m_WorldCleanupEntities;
 
             private EntityQuery m_CleanupEntityQuery;
 
@@ -134,7 +135,8 @@ namespace Anvil.Unity.DOTS.Entities
                 m_WorldEntitiesState = new NativeList<int>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldCreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldDestroyedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
-                
+                m_WorldCleanupEntities = new NativeParallelHashSet<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+
                 m_CleanupEntityQuery = m_World.EntityManager.CreateEntityQuery(EntityCleanupHelper.CLEAN_UP_ENTITY_COMPONENT_TYPE);
             }
 
@@ -144,6 +146,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_WorldEntitiesState.Dispose();
                 m_WorldCreatedEntities.Dispose();
                 m_WorldDestroyedEntities.Dispose();
+                m_WorldCleanupEntities.Dispose();
                 m_CleanupEntityQuery.Dispose();
             }
 
@@ -170,20 +173,20 @@ namespace Anvil.Unity.DOTS.Entities
                 m_AccessController.Acquire(AccessType.ExclusiveWrite);
                 
                 m_World.EntityManager.GetCreatedAndDestroyedEntities(m_WorldEntitiesState, m_WorldCreatedEntities, m_WorldDestroyedEntities);
-
+                
                 if (shouldIncludeCleanupEntities)
                 {
                     NativeArray<Entity> cleanupEntities = m_CleanupEntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle cleanupDependsOn);
-                    
+
                     IncludeCleanupEntitiesJob includeCleanupEntitiesJob = new IncludeCleanupEntitiesJob(
-                        m_WorldEntitiesState,
+                        m_WorldCleanupEntities,
                         m_WorldDestroyedEntities,
-                        cleanupEntities
-                        );
+                        cleanupEntities);
                     cleanupDependsOn = includeCleanupEntitiesJob.Schedule(cleanupDependsOn);
                     cleanupEntities.Dispose(cleanupDependsOn);
                     cleanupDependsOn.Complete();
                 }
+                
                 
                 createdEntities = m_WorldCreatedEntities.AsArray().AsReadOnly();
                 destroyedEntities = m_WorldDestroyedEntities.AsArray().AsReadOnly();
@@ -196,7 +199,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_AccessController.ReleaseAsync(dependsOn);
             }
         }
-        
+
         //*************************************************************************************************************
         // WORLD ENTITY STATE - JOBS
         //*************************************************************************************************************
@@ -204,31 +207,49 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompile]
         private struct IncludeCleanupEntitiesJob : IJob
         {
-            [WriteOnly] private NativeList<int> m_WorldEntitiesState;
-            [WriteOnly] private NativeList<Entity> m_WorldDestroyedEntities;
-
-            [ReadOnly] private readonly NativeArray<Entity> m_CleanupEntities;
+            private NativeParallelHashSet<Entity> m_WorldCleanupEntities;
+            private NativeList<Entity> m_WorldDestroyedEntities;
+            [ReadOnly] private readonly NativeArray<Entity> m_PendingCleanupEntities;
 
             public IncludeCleanupEntitiesJob(
-                NativeList<int> worldEntitiesState, 
-                NativeList<Entity> worldDestroyedEntities, 
-                NativeArray<Entity> cleanupEntities)
+                NativeParallelHashSet<Entity> worldCleanupEntities,
+                NativeList<Entity> worldDestroyedEntities,
+                NativeArray<Entity> pendingCleanupEntities)
             {
-                m_WorldEntitiesState = worldEntitiesState;
+                m_WorldCleanupEntities = worldCleanupEntities;
                 m_WorldDestroyedEntities = worldDestroyedEntities;
-                m_CleanupEntities = cleanupEntities;
+                m_PendingCleanupEntities = pendingCleanupEntities;
             }
 
             public void Execute()
             {
-                m_WorldDestroyedEntities.AddRange(m_CleanupEntities);
-
-                for (int i = 0; i < m_CleanupEntities.Length; ++i)
+                //First we need to ensure that none of the destroyed entities were entities we already counted
+                //as destroyed because they were clean up entities the previous time we called this
+                for (int i = m_WorldDestroyedEntities.Length - 1; i >= 0; --i)
                 {
-                    Entity cleanupEntity = m_CleanupEntities[i];
-                    //Bump the state so that next time we call the function, Unity thinks we already handled this
-                    //which... we did
-                    m_WorldEntitiesState[cleanupEntity.Index + 1] = cleanupEntity.Version + 1;
+                    if (m_WorldCleanupEntities.Contains(m_WorldDestroyedEntities[i]))
+                    {
+                        m_WorldDestroyedEntities.RemoveAtSwapBack(i);
+                    }
+                }
+                
+                //Now that we've culled any previously handled entities, we can clear the lookup that we were using
+                m_WorldCleanupEntities.Clear();
+                
+                //If we don't have any pending clean up entities, we're done.
+                if (m_PendingCleanupEntities.Length == 0)
+                {
+                    return;
+                }
+                
+                //We'll add all the pending clean up entities to the destroyed list
+                m_WorldDestroyedEntities.AddRange(m_PendingCleanupEntities);
+                
+                //Now we'll go through all the entities that are going to be cleaned up later in the frame.
+                for (int i = 0; i < m_PendingCleanupEntities.Length; ++i)
+                {
+                    //And add them to the lookup so we don't double count them
+                    m_WorldCleanupEntities.Add(m_PendingCleanupEntities[i]);
                 }
             }
         }
