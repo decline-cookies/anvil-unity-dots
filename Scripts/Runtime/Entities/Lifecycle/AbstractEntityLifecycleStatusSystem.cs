@@ -123,6 +123,7 @@ namespace Anvil.Unity.DOTS.Entities
             private NativeList<Entity> m_WorldCreatedEntities;
             private NativeList<Entity> m_WorldDestroyedEntities;
             private NativeParallelHashSet<Entity> m_WorldCleanupEntities;
+            private NativeReference<int> m_CleanupFrame;
 
             private EntityQuery m_CleanupEntityQuery;
 
@@ -136,6 +137,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_WorldCreatedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldDestroyedEntities = new NativeList<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
                 m_WorldCleanupEntities = new NativeParallelHashSet<Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent);
+                m_CleanupFrame = new NativeReference<int>(-1, Allocator.Persistent);
 
                 m_CleanupEntityQuery = m_World.EntityManager.CreateEntityQuery(EntityCleanupHelper.CLEAN_UP_ENTITY_COMPONENT_TYPE);
             }
@@ -147,6 +149,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_WorldCreatedEntities.Dispose();
                 m_WorldDestroyedEntities.Dispose();
                 m_WorldCleanupEntities.Dispose();
+                m_CleanupFrame.Dispose();
                 m_CleanupEntityQuery.Dispose();
             }
 
@@ -181,7 +184,9 @@ namespace Anvil.Unity.DOTS.Entities
                     IncludeCleanupEntitiesJob includeCleanupEntitiesJob = new IncludeCleanupEntitiesJob(
                         m_WorldCleanupEntities,
                         m_WorldDestroyedEntities,
-                        cleanupEntities);
+                        cleanupEntities,
+                        m_CleanupFrame,
+                        UnityEngine.Time.frameCount);
                     cleanupDependsOn = includeCleanupEntitiesJob.Schedule(cleanupDependsOn);
                     cleanupEntities.Dispose(cleanupDependsOn);
                     cleanupDependsOn.Complete();
@@ -209,16 +214,22 @@ namespace Anvil.Unity.DOTS.Entities
         {
             private NativeParallelHashSet<Entity> m_WorldCleanupEntities;
             private NativeList<Entity> m_WorldDestroyedEntities;
+            private NativeReference<int> m_CleanupFrame;
             [ReadOnly] private readonly NativeArray<Entity> m_PendingCleanupEntities;
+            private readonly int m_CurrentFrame;
 
             public IncludeCleanupEntitiesJob(
                 NativeParallelHashSet<Entity> worldCleanupEntities,
                 NativeList<Entity> worldDestroyedEntities,
-                NativeArray<Entity> pendingCleanupEntities)
+                NativeArray<Entity> pendingCleanupEntities,
+                NativeReference<int> cleanupFrame,
+                int currentFrame)
             {
                 m_WorldCleanupEntities = worldCleanupEntities;
                 m_WorldDestroyedEntities = worldDestroyedEntities;
                 m_PendingCleanupEntities = pendingCleanupEntities;
+                m_CleanupFrame = cleanupFrame;
+                m_CurrentFrame = currentFrame;
             }
 
             public void Execute()
@@ -232,10 +243,17 @@ namespace Anvil.Unity.DOTS.Entities
                         m_WorldDestroyedEntities.RemoveAtSwapBack(i);
                     }
                 }
-                
-                //Now that we've culled any previously handled entities, we can clear the lookup that we were using
-                m_WorldCleanupEntities.Clear();
-                
+
+                //If we're on a new frame, we want to clear the cleanup entities. 
+                //We could have multiple Lifecycle systems and we want the cleanup entities to be valid for the 
+                //entirety of the frame
+                if (m_CurrentFrame != m_CleanupFrame.Value)
+                {
+                    m_CleanupFrame.Value = m_CurrentFrame;
+                    //Now that we've culled any previously handled entities, we can clear the lookup that we were using
+                    m_WorldCleanupEntities.Clear();
+                }
+
                 //If we don't have any pending clean up entities, we're done.
                 if (m_PendingCleanupEntities.Length == 0)
                 {
