@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.TaskDriver
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Represents a <see cref="BufferFromEntity{T}"/> that can only be read from.
@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         [ReadOnly] private readonly BufferFromEntity<T> m_DBFE;
 
-        internal DBFEForRead(SystemBase system)
+        public DBFEForRead(SystemBase system)
         {
             m_DBFE = system.GetBufferFromEntity<T>(true);
         }
