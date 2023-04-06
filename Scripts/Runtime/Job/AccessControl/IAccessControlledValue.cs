@@ -2,7 +2,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Jobs
 {
-    public interface IAccessControlledValue<T> : IBaseAccessControlledValue<T>
+    public interface IAccessControlledValue<T> : IReadOnlyAccessControlledValue<T>
     {
         /// <summary>
         /// Acquires the data instance synchronously for a given <see cref="AccessType"/> and returns the data in an

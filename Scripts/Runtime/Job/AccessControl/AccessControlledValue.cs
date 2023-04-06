@@ -10,13 +10,12 @@ namespace Anvil.Unity.DOTS.Jobs
     /// </summary>
     /// <typeparam name="T">The type of data to wrap access control to</typeparam>
     public class AccessControlledValue<T> : AbstractAnvilBase,
-                                            IReadOnlyAccessControlledValue<T>,
                                             IAccessControlledValue<T>
     {
         private readonly AccessController m_AccessController;
 
         private readonly T m_Value;
-
+        
         /// <summary>
         /// Creates a new instance of <see cref="AccessControlledValue{T}"/> for the passed in
         /// data.

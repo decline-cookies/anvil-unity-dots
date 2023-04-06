@@ -81,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TData GetGenericDataForReading<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetGenericData<TData>();
+            return m_JobConfig.GetGenericDataForReading<TData>();
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TData GetGenericDataForWriting<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetGenericData<TData>();
+            return m_JobConfig.GetGenericDataForWriting<TData>();
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TData GetGenericDataForExclusiveWriting<TData>()
             where TData : struct
         {
-            return m_JobConfig.GetGenericData<TData>();
+            return m_JobConfig.GetGenericDataForWriting<TData>();
         }
 
 

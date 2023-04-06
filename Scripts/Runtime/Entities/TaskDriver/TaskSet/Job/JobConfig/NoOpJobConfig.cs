@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireGenericDataForRead<TData>(IBaseAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> data)
             where TData : struct
         {
             return this;

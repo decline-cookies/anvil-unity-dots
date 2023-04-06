@@ -50,14 +50,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Specifies a generic struct to be read from in a shared-read context.
         /// </summary>
-        /// <param name="data">An <see cref="IBaseAccessControlledValue{T}"/> of the data to be read</param>
-        /// <typeparam name="TData">The struct inside the <see cref="IBaseAccessControlledValue{T}"/></typeparam>
+        /// <param name="data">An <see cref="IReadOnlyAccessControlledValue{T}"/> of the data to be read</param>
+        /// <typeparam name="TData">The struct inside the <see cref="IReadOnlyAccessControlledValue{T}"/></typeparam>
         /// <remarks>
         /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForRead<TData>(IBaseAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> data)
             where TData : struct;
 
         /// <summary>

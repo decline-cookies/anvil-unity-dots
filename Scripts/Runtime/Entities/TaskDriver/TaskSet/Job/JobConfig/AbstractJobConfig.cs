@@ -144,24 +144,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
 
-        public IJobConfig RequireGenericDataForRead<TData>(IBaseAccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>((AccessControlledValue<TData>)collection, AccessType.SharedRead, Usage.Default));
+            AddAccessWrapper(new GenericDataReadOnlyAccessWrapper<TData>(collection, Usage.Default));
             return this;
         }
 
         public IJobConfig RequireGenericDataForWrite<TData>(IAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>((AccessControlledValue<TData>)collection, AccessType.SharedWrite, Usage.Default));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));
             return this;
         }
 
         public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>((AccessControlledValue<TData>)collection, AccessType.ExclusiveWrite, Usage.Default));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.Default));
             return this;
         }
 
@@ -394,7 +394,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dataStreamPendingCancelActiveAccessWrapper.DataStream;
         }
 
-        internal TData GetGenericData<TData>()
+        internal TData GetGenericDataForReading<TData>()
+            where TData : struct
+        {
+            GenericDataReadOnlyAccessWrapper<TData> genericDataReadOnlyAccessWrapper
+                = GetAccessWrapper<GenericDataReadOnlyAccessWrapper<TData>>(Usage.Default);
+
+            return genericDataReadOnlyAccessWrapper.Data;
+        }
+
+        internal TData GetGenericDataForWriting<TData>()
             where TData : struct
         {
             GenericDataAccessWrapper<TData> genericDataAccessWrapper
