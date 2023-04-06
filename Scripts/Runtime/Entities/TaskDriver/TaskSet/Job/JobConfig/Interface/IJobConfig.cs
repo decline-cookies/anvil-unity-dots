@@ -50,28 +50,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Specifies a generic struct to be read from in a shared-read context.
         /// </summary>
-        /// <param name="data">An <see cref="AccessControlledValue{T}"/> of the data to be read</param>
-        /// <typeparam name="TData">The struct inside the <see cref="AccessControlledValue{T}"/></typeparam>
+        /// <param name="data">An <see cref="IBaseAccessControlledValue{T}"/> of the data to be read</param>
+        /// <typeparam name="TData">The struct inside the <see cref="IBaseAccessControlledValue{T}"/></typeparam>
         /// <remarks>
         /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForRead<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForRead<TData>(IBaseAccessControlledValue<TData> data)
             where TData : struct;
 
         /// <summary>
         /// Specifies a generic struct to be written to in a shared-write context.
         /// Sections of the struct will be written to by different threads at the same time.
         /// </summary>
-        /// <param name="data">An <see cref="AccessControlledValue{T}"/> of the data to be written to.</param>
-        /// <typeparam name="TData">The struct inside the <see cref="AccessControlledValue{T}"/></typeparam>
+        /// <param name="data">An <see cref="IAccessControlledValue{T}"/> of the data to be written to.</param>
+        /// <typeparam name="TData">The struct inside the <see cref="IAccessControlledValue{T}"/></typeparam>
         /// <remarks>
         /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForWrite<TData>(IAccessControlledValue<TData> data)
             where TData : struct;
 
 
@@ -91,14 +91,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Specifies a generic struct to be written to in an exclusive-write context.
         /// The entire struct will be written to by only one thread at a time.
         /// </summary>
-        /// <param name="data">An <see cref="AccessControlledValue{T}"/> of the data to be written to.</param>
-        /// <typeparam name="TData">The struct inside the <see cref="AccessControlledValue{T}"/></typeparam>
+        /// <param name="data">An <see cref="IAccessControlledValue{T}"/> of the data to be written to.</param>
+        /// <typeparam name="TData">The struct inside the <see cref="IAccessControlledValue{T}"/></typeparam>
         /// <remarks>
         /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IAccessControlledValue<TData> data)
             where TData : struct;
 
         /// <summary>

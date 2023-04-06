@@ -144,24 +144,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
 
-        public IJobConfig RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForRead<TData>(IBaseAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead, Usage.Default));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>((AccessControlledValue<TData>)collection, AccessType.SharedRead, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForWrite<TData>(IAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>((AccessControlledValue<TData>)collection, AccessType.SharedWrite, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.Default));
+            AddAccessWrapper(new GenericDataAccessWrapper<TData>((AccessControlledValue<TData>)collection, AccessType.ExclusiveWrite, Usage.Default));
             return this;
         }
 
