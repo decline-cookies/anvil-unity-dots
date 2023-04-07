@@ -1,14 +1,17 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Logging;
+using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -28,17 +31,111 @@ namespace Anvil.Unity.DOTS.Entities
     [UseCommandBufferSystem(typeof(EndSimulationEntityCommandBufferSystem))]
     public partial class EntitySpawnSystem : AbstractAnvilSystemBase
     {
+        //TODO: Build this into it's own type
+        private static readonly Type I_ENTITY_SPAWN_DEFINITION_TYPE = typeof(IEntitySpawnDefinition);
+        private static readonly Dictionary<Type, IEntitySpawnDefinition> s_SpawnDefinitionTypes = new Dictionary<Type, IEntitySpawnDefinition>();
+        private static readonly Dictionary<Type, bool> s_SpawnDefinitionShouldDisableBurstLookup = new Dictionary<Type, bool>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Init()
+        {
+            s_SpawnDefinitionTypes.Clear();
+            s_SpawnDefinitionShouldDisableBurstLookup.Clear();
+            //We'll reflect through the whole app to find all the possible IEntitySpawnDefinitions that exist. 
+            //We do this once here so we don't have to reflect for each World that exists.
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly.IsDynamic)
+                {
+                    continue;
+                }
+                foreach (Type type in assembly.GetTypes())
+                {
+                    if (!type.IsValueType || !I_ENTITY_SPAWN_DEFINITION_TYPE.IsAssignableFrom(type))
+                    {
+                        continue;
+                    }
+
+                    s_SpawnDefinitionTypes.Add(type, (IEntitySpawnDefinition)Activator.CreateInstance(type));
+
+                    if (s_SpawnDefinitionShouldDisableBurstLookup.ContainsKey(type))
+                    {
+                        continue;
+                    }
+                    s_SpawnDefinitionShouldDisableBurstLookup.Add(type, ShouldDisableBurst(type));
+                }
+            }
+        }
+
+        private static bool ShouldDisableBurst(Type type)
+        {
+            //We've already processed this type and it exists in the lookup, we can just return
+            if (s_SpawnDefinitionShouldDisableBurstLookup.TryGetValue(type, out bool shouldDisableBurst))
+            {
+                return shouldDisableBurst;
+            }
+            
+            //If any of our components require disabling burst we can early exit.
+            if (ShouldRequiredComponentsDisableBurst(type))
+            {
+                return true;
+            }
+
+            //Otherwise crawl our fields and properties to see if there are any proxy definitions that would require us
+            //to also disable burst
+            Type[] definitionTypes = type
+                .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Select(fieldInfo => fieldInfo.FieldType)
+                .Union(
+                    type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                        .Select(propertyInfo => propertyInfo.PropertyType))
+                .ToArray();
+
+            foreach (Type definitionType in definitionTypes)
+            {
+                if (!I_ENTITY_SPAWN_DEFINITION_TYPE.IsAssignableFrom(definitionType))
+                {
+                    continue;
+                }
+
+                //We have at least one field that needs us to disable burst, early out.
+                if (ShouldRequiredComponentsDisableBurst(definitionType))
+                {
+                    return true;
+                }
+
+                //Let's dive in deeper
+                if (ShouldDisableBurst(definitionType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ShouldRequiredComponentsDisableBurst(Type type)
+        {
+            ComponentType[] requiredComponents = s_SpawnDefinitionTypes[type].RequiredComponents;
+            return requiredComponents.Any(componentType => componentType.IsSharedComponent);
+        }
+
         private EntityCommandBufferSystem m_CommandBufferSystem;
-        private readonly AccessControlledValue<NativeParallelHashMap<long, EntityArchetype>> m_EntityArchetypes;
+        private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
+       
 
         private readonly Dictionary<Type, IEntitySpawner> m_EntitySpawners;
         private readonly HashSet<IEntitySpawner> m_ActiveEntitySpawners;
+        private readonly AccessControlledValue<NativeParallelHashMap<long, Entity>> m_EntityPrototypes;
 
         public EntitySpawnSystem()
         {
             m_EntitySpawners = new Dictionary<Type, IEntitySpawner>();
             m_ActiveEntitySpawners = new HashSet<IEntitySpawner>();
-            m_EntityArchetypes = new AccessControlledValue<NativeParallelHashMap<long, EntityArchetype>>(new NativeParallelHashMap<long, EntityArchetype>(ChunkUtil.MaxElementsPerChunk<EntityArchetype>(), Allocator.Persistent));
+            m_EntityArchetypes = new NativeParallelHashMap<long, EntityArchetype>(ChunkUtil.MaxElementsPerChunk<EntityArchetype>(), Allocator.Persistent);
+            m_EntityPrototypes = new AccessControlledValue<NativeParallelHashMap<long, Entity>>(
+                new NativeParallelHashMap<long, Entity>(ChunkUtil.MaxElementsPerChunk<Entity>(), 
+                    Allocator.Persistent));
         }
 
         protected override void OnCreate()
@@ -49,6 +146,8 @@ namespace Anvil.Unity.DOTS.Entities
             Type commandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(commandBufferSystemType);
 
+            CreateArchetypeLookup();
+
             //Default to being off, a call to a SpawnDeferred function will enable it
             Enabled = false;
         }
@@ -57,8 +156,36 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_ActiveEntitySpawners.Clear();
             m_EntityArchetypes.Dispose();
+            m_EntityPrototypes.Dispose();
             m_EntitySpawners.DisposeAllValuesAndClear();
             base.OnDestroy();
+        }
+
+        private void CreateArchetypeLookup()
+        {
+            foreach (KeyValuePair<Type, IEntitySpawnDefinition> entry in s_SpawnDefinitionTypes)
+            {
+                Type definitionType = entry.Key;
+                long entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
+                if (m_EntityArchetypes.TryGetValue(entityArchetypeHash, out EntityArchetype entityArchetype))
+                {
+                    continue;
+                }
+
+                if (definitionType.GetCustomAttribute<BurstCompatibleAttribute>() == null)
+                {
+                    throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should have the {nameof(BurstCompatibleAttribute)} set but it does not.");
+                }
+
+                if (definitionType.GetCustomAttribute<IsReadOnlyAttribute>() == null)
+                {
+                    throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should be readonly but it is not.");
+                }
+                
+                // ReSharper disable once PossibleNullReferenceException
+                entityArchetype = EntityManager.CreateArchetype(entry.Value.RequiredComponents);
+                m_EntityArchetypes.Add(entityArchetypeHash, entityArchetype);
+            }
         }
 
 
@@ -307,6 +434,27 @@ namespace Anvil.Unity.DOTS.Entities
 
         //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
 
+        public void RegisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(Entity prototype)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
+            long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
+            //TODO: DEBUG Ensure
+            handle.Value.Add(hash, prototype);
+        }
+
+        public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
+            long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
+            //TODO: DEBUG Ensure
+            if (handle.Value.Remove(hash, out Entity prototype) && shouldDestroy)
+            {
+                EntityManager.DestroyEntity(prototype);
+            }
+        }
+
         private void EnableSystem(IEntitySpawner entitySpawner)
         {
             //By using this, we're writing immediately, but will need to execute later on when the system runs
@@ -355,50 +503,16 @@ namespace Anvil.Unity.DOTS.Entities
             // ReSharper disable once InvertIf
             if (!m_EntitySpawners.TryGetValue(spawnerType, out IEntitySpawner entitySpawner))
             {
-                // ReSharper disable once SuggestVarOrType_SimpleTypes
-                using var handle = m_EntityArchetypes.AcquireWithHandle(AccessType.ExclusiveWrite);
-                CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(handle.Value, out EntityArchetype entityArchetype, out long entityArchetypeHash);
                 entitySpawner = new TEntitySpawner();
                 entitySpawner.Init(
-                    EntityManager,
-                    entityArchetype);
+                    EntityManager, 
+                    m_EntityArchetypes, 
+                    m_EntityPrototypes, 
+                    s_SpawnDefinitionShouldDisableBurstLookup[definitionType]);
                 m_EntitySpawners.Add(spawnerType, entitySpawner);
             }
 
             return (TEntitySpawner)entitySpawner;
-        }
-
-        private void CreateEntityArchetypeForDefinition<TEntitySpawnDefinition>(
-            NativeParallelHashMap<long, EntityArchetype> entityArchetypesLookup,
-            out EntityArchetype entityArchetype,
-            out long entityArchetypeHash)
-            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
-        {
-            Type definitionType = typeof(TEntitySpawnDefinition);
-            entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
-            if (entityArchetypesLookup.TryGetValue(entityArchetypeHash, out entityArchetype))
-            {
-                return;
-            }
-
-            if (!definitionType.IsValueType)
-            {
-                throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should be a readonly struct but it is not.");
-            }
-
-            if (definitionType.GetCustomAttribute<BurstCompatibleAttribute>() == null)
-            {
-                throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should have the {nameof(BurstCompatibleAttribute)} set but it does not.");
-            }
-
-            if (definitionType.GetCustomAttribute<IsReadOnlyAttribute>() == null)
-            {
-                throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should be readonly but it is not.");
-            }
-
-            TEntitySpawnDefinition defaultInstance = default;
-            entityArchetype = EntityManager.CreateArchetype(defaultInstance.RequiredComponents);
-            entityArchetypesLookup.Add(entityArchetypeHash, entityArchetype);
         }
     }
 }

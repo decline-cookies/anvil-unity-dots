@@ -6,7 +6,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -46,7 +45,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void Spawn(Entity prototype, ICollection<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
         {
-            NativeArray<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> nativeArraySpawnDefinitions = new NativeArray<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>(spawnDefinitions.Count, Allocator.Temp);
+            NativeArray<TEntitySpawnDefinition> nativeArraySpawnDefinitions = new NativeArray<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>>(spawnDefinitions.Count, Allocator.Temp);
             int index = 0;
             foreach (TEntitySpawnDefinition spawnDefinition in spawnDefinitions)
             {
@@ -68,9 +67,9 @@ namespace Anvil.Unity.DOTS.Entities
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
-            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
+            
             Entity entity = EntityManager.Instantiate(prototype);
-            spawnDefinition.PopulateOnEntity(entity, ref ecb);
+            spawnDefinition.PopulateOnEntity(entity, ref ecb, AcquireEntitySpawnHelper());
 
             if (shouldDestroyPrototype)
             {
@@ -79,12 +78,14 @@ namespace Anvil.Unity.DOTS.Entities
 
             ecb.Playback(EntityManager);
             ecb.Dispose();
+            
+            ReleaseEntitySpawnHelper();
             return entity;
         }
 
         public JobHandle AcquireEntitySpawnWriterAsync(out EntityPrototypeSpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
         {
-            JobHandle dependsOnDefinitions = AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> definitionsToSpawn);
+            JobHandle dependsOnDefinitions = AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<TEntitySpawnDefinition> definitionsToSpawn);
             JobHandle dependsOnPrototypes = m_PrototypesToDestroy.AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<Entity> prototypes);
             entitySpawnWriter = new EntityPrototypeSpawnWriter<TEntitySpawnDefinition>(
                 definitionsToSpawn.AsWriter(),
@@ -100,7 +101,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override JobHandle ScheduleSpawnJob(
             JobHandle dependsOn,
-            UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+            UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
+            EntitySpawnHelper entitySpawnHelper,
             ref EntityCommandBuffer ecb)
         {
             JobHandle prototypesHandle = m_PrototypesToDestroy.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<Entity> prototypes);
@@ -138,28 +140,33 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompile]
         private struct SpawnJob : IJob
         {
-            [ReadOnly] private UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;
+            [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
+            [ReadOnly] private readonly EntitySpawnHelper m_EntitySpawnHelper;
             private UnsafeTypedStream<Entity> m_PrototypesToDestroy;
 
             private EntityCommandBuffer m_ECB;
+            private readonly long m_Hash;
 
             public SpawnJob(
-                UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+                UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
                 ref EntityCommandBuffer ecb,
-                UnsafeTypedStream<Entity> prototypesToDestroy)
+                UnsafeTypedStream<Entity> prototypesToDestroy,
+                in EntitySpawnHelper entitySpawnHelper)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_ECB = ecb;
                 m_PrototypesToDestroy = prototypesToDestroy;
+                m_EntitySpawnHelper = entitySpawnHelper;
+                
+                m_Hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
             }
 
             public void Execute()
             {
-                foreach (EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition> wrapper in m_SpawnDefinitions)
+                foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitions)
                 {
-                    Entity entity = m_ECB.Instantiate(wrapper.Prototype);
-                    // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-                    wrapper.EntitySpawnDefinition.PopulateOnEntity(entity, ref m_ECB);
+                    Entity entity = m_ECB.Instantiate(m_EntitySpawnHelper.GetPrototypeEntityForDefinition(m_Hash));
+                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
                 }
 
                 m_SpawnDefinitions.Clear();
@@ -175,28 +182,33 @@ namespace Anvil.Unity.DOTS.Entities
 
         private struct SpawnJobNoBurst : IJob
         {
-            [ReadOnly] private UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;
+            [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
+            [ReadOnly] private readonly EntitySpawnHelper m_EntitySpawnHelper;
             private UnsafeTypedStream<Entity> m_PrototypesToDestroy;
 
             private EntityCommandBuffer m_ECB;
+            private readonly long m_Hash;
 
             public SpawnJobNoBurst(
-                UnsafeTypedStream<EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
+                UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
                 ref EntityCommandBuffer ecb,
-                UnsafeTypedStream<Entity> prototypesToDestroy)
+                UnsafeTypedStream<Entity> prototypesToDestroy,
+                in EntitySpawnHelper entitySpawnHelper)
             {
                 m_SpawnDefinitions = spawnDefinitions;
                 m_ECB = ecb;
                 m_PrototypesToDestroy = prototypesToDestroy;
+                m_EntitySpawnHelper = entitySpawnHelper;
+                
+                m_Hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
             }
 
             public void Execute()
             {
-                foreach (EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition> wrapper in m_SpawnDefinitions)
+                foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitions)
                 {
-                    Entity entity = m_ECB.Instantiate(wrapper.Prototype);
-                    // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-                    wrapper.EntitySpawnDefinition.PopulateOnEntity(entity, ref m_ECB);
+                    Entity entity = m_ECB.Instantiate(m_EntitySpawnHelper.GetPrototypeEntityForDefinition(m_Hash));
+                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
                 }
 
                 m_SpawnDefinitions.Clear();
@@ -209,27 +221,5 @@ namespace Anvil.Unity.DOTS.Entities
                 m_PrototypesToDestroy.Clear();
             }
         }
-    }
-
-    //*************************************************************************************************************
-    // WRAPPER
-    //*************************************************************************************************************
-    internal struct EntityPrototypeDefinitionWrapper<TEntitySpawnDefinition>
-        where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
-    {
-        public readonly Entity Prototype;
-        public readonly TEntitySpawnDefinition EntitySpawnDefinition;
-
-        public EntityPrototypeDefinitionWrapper(
-            Entity prototype,
-            in TEntitySpawnDefinition entitySpawnDefinition)
-        {
-            Prototype = prototype;
-            EntitySpawnDefinition = entitySpawnDefinition;
-        }
-
-        public EntityPrototypeDefinitionWrapper(
-            Entity prototype,
-            TEntitySpawnDefinition entitySpawnDefinition) : this(prototype, in entitySpawnDefinition) { }
     }
 }

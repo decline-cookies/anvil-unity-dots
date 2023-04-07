@@ -79,6 +79,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="ecb">
         /// The <see cref="EntityCommandBuffer"/> that will apply the data.
         /// </param>
-        public void PopulateOnEntity(Entity entity, ref EntityCommandBuffer ecb);
+        /// <param name="entitySpawnHelper">Helper to get Archetypes and Prototypes</param>
+        public void PopulateOnEntity(Entity entity, ref EntityCommandBuffer ecb, in EntitySpawnHelper entitySpawnHelper);
     }
 }

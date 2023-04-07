@@ -28,11 +28,12 @@ namespace Anvil.Unity.DOTS.Entities
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
-            // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
-            Entity entity = EntityManager.CreateEntity(EntityArchetype);
-            spawnDefinition.PopulateOnEntity(entity, ref ecb);
+            EntitySpawnHelper helper = AcquireEntitySpawnHelper();
+            Entity entity = EntityManager.CreateEntity(helper.GetEntityArchetypeForDefinition<TEntitySpawnDefinition>());
+            spawnDefinition.PopulateOnEntity(entity, ref ecb, helper);
             ecb.Playback(EntityManager);
             ecb.Dispose();
+            ReleaseEntitySpawnHelper();
             return entity;
         }
 
@@ -51,6 +52,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override JobHandle ScheduleSpawnJob(
             JobHandle dependsOn,
             UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
+            EntitySpawnHelper entitySpawnHelper,
             ref EntityCommandBuffer ecb)
         {
             //TODO: #86 - Remove once we don't have to switch with BURST
@@ -58,8 +60,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 SpawnJobNoBurst job = new SpawnJobNoBurst(
                     spawnDefinitions,
-                    EntityArchetype,
-                    ref ecb);
+                    ref ecb,
+                    entitySpawnHelper);
 
                 return job.Schedule(dependsOn);
             }
@@ -67,8 +69,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 SpawnJob job = new SpawnJob(
                     spawnDefinitions,
-                    EntityArchetype,
-                    ref ecb);
+                    ref ecb,
+                    entitySpawnHelper);
 
                 return job.Schedule(dependsOn);
             }
@@ -83,26 +85,30 @@ namespace Anvil.Unity.DOTS.Entities
         private struct SpawnJob : IJob
         {
             [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
-            [ReadOnly] private readonly EntityArchetype m_Archetype;
+            [ReadOnly] private readonly EntitySpawnHelper m_EntitySpawnHelper;
+
+            private readonly long m_Hash;
 
             private EntityCommandBuffer m_ECB;
 
             public SpawnJob(
                 UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
-                EntityArchetype archetype,
-                ref EntityCommandBuffer ecb)
+                ref EntityCommandBuffer ecb,
+                in EntitySpawnHelper entitySpawnHelper)
             {
                 m_SpawnDefinitions = spawnDefinitions;
-                m_Archetype = archetype;
                 m_ECB = ecb;
+                m_EntitySpawnHelper = entitySpawnHelper;
+
+                m_Hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
             }
 
             public void Execute()
             {
                 foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitions)
                 {
-                    Entity entity = m_ECB.CreateEntity(m_Archetype);
-                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB);
+                    Entity entity = m_ECB.CreateEntity(m_EntitySpawnHelper.GetEntityArchetypeForDefinition(m_Hash));
+                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
                 }
 
                 m_SpawnDefinitions.Clear();
@@ -112,26 +118,30 @@ namespace Anvil.Unity.DOTS.Entities
         private struct SpawnJobNoBurst : IJob
         {
             [ReadOnly] private UnsafeTypedStream<TEntitySpawnDefinition> m_SpawnDefinitions;
-            [ReadOnly] private readonly EntityArchetype m_Archetype;
+            [ReadOnly] private readonly EntitySpawnHelper m_EntitySpawnHelper;
+
+            private readonly long m_Hash;
 
             private EntityCommandBuffer m_ECB;
 
             public SpawnJobNoBurst(
                 UnsafeTypedStream<TEntitySpawnDefinition> spawnDefinitions,
-                EntityArchetype archetype,
-                ref EntityCommandBuffer ecb)
+                ref EntityCommandBuffer ecb,
+                in EntitySpawnHelper entitySpawnHelper)
             {
                 m_SpawnDefinitions = spawnDefinitions;
-                m_Archetype = archetype;
                 m_ECB = ecb;
+                m_EntitySpawnHelper = entitySpawnHelper;
+
+                m_Hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
             }
 
             public void Execute()
             {
                 foreach (TEntitySpawnDefinition spawnDefinition in m_SpawnDefinitions)
                 {
-                    Entity entity = m_ECB.CreateEntity(m_Archetype);
-                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB);
+                    Entity entity = m_ECB.CreateEntity(m_EntitySpawnHelper.GetEntityArchetypeForDefinition(m_Hash));
+                    spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
                 }
 
                 m_SpawnDefinitions.Clear();

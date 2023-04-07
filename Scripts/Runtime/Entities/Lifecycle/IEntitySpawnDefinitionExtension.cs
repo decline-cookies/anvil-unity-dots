@@ -7,6 +7,8 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     public static class IEntitySpawnDefinitionExtension
     {
+        
+        //TODO: UPDATE DOCS
         /// <summary>
         /// Create and populate an entity based on a <see cref="IEntitySpawnDefinition"/>.
         /// Generally <see cref="EntitySpawnSystem" />'s spawn methods should be preferred. They are more performant.
@@ -16,13 +18,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="definition">The definition to create and populate an instance from.</param>
         /// <param name="ecb">The <see cref="EntityCommandBuffer"/> to write to.</param>
-        /// <typeparam name="T">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
+        /// <typeparam name="TDefinition">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
         /// <returns>The created entity reference.</returns>
-        public static Entity CreateAndPopulate<T>(ref this T definition, ref EntityCommandBuffer ecb) where T : struct, IEntitySpawnDefinition
+        public static Entity CreateAndPopulate<TDefinition>(ref this TDefinition definition, ref EntityCommandBuffer ecb, in EntitySpawnHelper entitySpawnHelper) 
+            where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            Entity entity = ecb.CreateEntity();
-            ecb.AddComponent(entity, new ComponentTypes(definition.RequiredComponents));
-            definition.PopulateOnEntity(entity, ref ecb);
+            Entity entity = ecb.CreateEntity(entitySpawnHelper.GetEntityArchetypeForDefinition<TDefinition>());
+            definition.PopulateOnEntity(entity, ref ecb, entitySpawnHelper);
 
             return entity;
         }

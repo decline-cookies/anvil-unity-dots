@@ -1,7 +1,11 @@
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Diagnostics;
 using System.Linq;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -13,10 +17,11 @@ namespace Anvil.Unity.DOTS.Entities
         where T : unmanaged
     {
         private readonly AccessControlledValue<UnsafeTypedStream<T>> m_DefinitionsToSpawn;
+        private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
+        private IReadOnlyAccessControlledValue<NativeParallelHashMap<long, Entity>> m_Prototypes;
 
         protected EntityManager EntityManager { get; private set; }
 
-        protected EntityArchetype EntityArchetype { get; private set; }
 
         protected bool MustDisableBurst { get; private set; }
 
@@ -28,24 +33,34 @@ namespace Anvil.Unity.DOTS.Entities
             MainThreadIndex = ParallelAccessUtil.CollectionIndexForMainThread();
         }
 
-        public void Init(EntityManager entityManager, EntityArchetype entityArchetype)
+        public void Init(
+            EntityManager entityManager,
+            NativeParallelHashMap<long, EntityArchetype> entityArchetypes,
+            IReadOnlyAccessControlledValue<NativeParallelHashMap<long, Entity>> prototypes,
+            bool mustDisableBurst)
         {
             EntityManager = entityManager;
-            EntityArchetype = entityArchetype;
+            m_EntityArchetypes = entityArchetypes;
+            m_Prototypes = prototypes;
 
             //TODO: #86 - When upgrading to Entities 1.0 we can use an unmanaged shared component which will let us use the job in burst
-            NativeArray<ComponentType> componentTypes = EntityArchetype.GetComponentTypes(Allocator.Temp);
-            foreach (ComponentType componentType in componentTypes.Where(componentType => componentType.IsSharedComponent))
-            {
-                MustDisableBurst = true;
-                break;
-            }
+            MustDisableBurst = mustDisableBurst;
         }
 
         protected override void DisposeSelf()
         {
             m_DefinitionsToSpawn.Dispose();
             base.DisposeSelf();
+        }
+
+        protected EntitySpawnHelper AcquireEntitySpawnHelper()
+        {
+            return new EntitySpawnHelper(m_EntityArchetypes, m_Prototypes.AcquireReadOnly());
+        }
+
+        public void ReleaseEntitySpawnHelper()
+        {
+            m_Prototypes.Release();
         }
 
         protected void InternalSpawn(T element)
@@ -82,18 +97,24 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle dependsOn,
             ref EntityCommandBuffer ecb)
         {
-            JobHandle definitionsHandle = m_DefinitionsToSpawn.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<T> definitions);
-            dependsOn = JobHandle.CombineDependencies(definitionsHandle, dependsOn);
+            dependsOn = JobHandle.CombineDependencies(
+                dependsOn,
+                m_DefinitionsToSpawn.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<T> definitions),
+                m_Prototypes.AcquireReadOnlyAsync(out var prototypes));
 
-            dependsOn = ScheduleSpawnJob(dependsOn, definitions, ref ecb);
+            EntitySpawnHelper entitySpawnHelper = new EntitySpawnHelper(m_EntityArchetypes, prototypes);
+
+            dependsOn = ScheduleSpawnJob(dependsOn, definitions, entitySpawnHelper, ref ecb);
 
             m_DefinitionsToSpawn.ReleaseAsync(dependsOn);
+            m_Prototypes.ReleaseAsync(dependsOn);
             return dependsOn;
         }
 
         protected abstract JobHandle ScheduleSpawnJob(
             JobHandle dependsOn,
             UnsafeTypedStream<T> spawnDefinitions,
+            EntitySpawnHelper entitySpawnHelper,
             ref EntityCommandBuffer ecb);
     }
 }

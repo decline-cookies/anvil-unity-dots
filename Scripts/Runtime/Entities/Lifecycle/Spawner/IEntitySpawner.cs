@@ -1,4 +1,5 @@
 using Anvil.CSharp.Core;
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -9,7 +10,9 @@ namespace Anvil.Unity.DOTS.Entities
     {
         public void Init(
             EntityManager entityManager,
-            EntityArchetype entityArchetype);
+            NativeParallelHashMap<long, EntityArchetype> entityArchetypes,
+            IReadOnlyAccessControlledValue<NativeParallelHashMap<long, Entity>> entityPrototypes,
+            bool mustDisableBurst);
 
         public JobHandle Schedule(
             JobHandle dependsOn,
