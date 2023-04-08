@@ -102,5 +102,104 @@ namespace Anvil.Unity.DOTS.Data
         {
             return UnsafeUtilityExtensions.AsRef(list).Contains(value);
         }
+
+        /// <inheritdoc cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and
+        /// readonly references.
+        /// </remarks>
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList32Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAtSwapBack(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList64BytesExtensions.RemoveSwapBack{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList64BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and
+        /// readonly references.
+        /// </remarks>
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList64Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAtSwapBack(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList128BytesExtensions.RemoveSwapBack{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList128BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and
+        /// readonly references.
+        /// </remarks>
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList128Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAtSwapBack(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList512BytesExtensions.RemoveSwapBack{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList512BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and readonly references.
+        /// </remarks>
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList512Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAtSwapBack(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList4096BytesExtensions.RemoveSwapBack{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList4096BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums
+        /// and readonly references.
+        /// </remarks>
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList4096Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAtSwapBack(index);
+
+            return true;
+        }
     }
 }
