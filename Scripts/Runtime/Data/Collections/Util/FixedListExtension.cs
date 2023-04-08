@@ -54,5 +54,53 @@ namespace Anvil.Unity.DOTS.Data
         {
             return UnsafeUtilityExtensions.AsRef(list).IndexOf(value);
         }
+
+        /// <inheritdoc cref="FixedList32BytesExtensions.Contains{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList32BytesExtensions.Contains{T,U}"/> that is compatible with readonly references.
+        /// </remarks>
+        public static bool ContainsReadOnly<T, U>(this in FixedList32Bytes<T> list, U value) where T : unmanaged, IEquatable<U>
+        {
+            return UnsafeUtilityExtensions.AsRef(list).Contains(value);
+        }
+
+        /// <inheritdoc cref="FixedList64BytesExtensions.Contains{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList64BytesExtensions.Contains{T,U}"/> that is compatible with readonly references.
+        /// </remarks>
+        public static bool ContainsReadOnly<T, U>(this in FixedList64Bytes<T> list, U value) where T : unmanaged, IEquatable<U>
+        {
+            return UnsafeUtilityExtensions.AsRef(list).Contains(value);
+        }
+
+        /// <inheritdoc cref="FixedList128BytesExtensions.Contains{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList128BytesExtensions.Contains{T,U}"/> that is compatible with readonly
+        /// references.
+        /// </remarks>
+        public static bool ContainsReadOnly<T, U>(this in FixedList128Bytes<T> list, U value) where T : unmanaged, IEquatable<U>
+        {
+            return UnsafeUtilityExtensions.AsRef(list).Contains(value);
+        }
+
+        /// <inheritdoc cref="FixedList512BytesExtensions.Contains{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList512BytesExtensions.Contains{T,U}"/> that is compatible with readonly
+        /// references.
+        /// </remarks>
+        public static bool ContainsReadOnly<T, U>(this in FixedList512Bytes<T> list, U value) where T : unmanaged, IEquatable<U>
+        {
+            return UnsafeUtilityExtensions.AsRef(list).Contains(value);
+        }
+
+        /// <inheritdoc cref="FixedList4096BytesExtensions.Contains{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList4096BytesExtensions.Contains{T,U}"/> that is compatible with readonly
+        /// references.
+        /// </remarks>
+        public static bool ContainsReadOnly<T, U>(this in FixedList4096Bytes<T> list, U value) where T : unmanaged, IEquatable<U>
+        {
+            return UnsafeUtilityExtensions.AsRef(list).Contains(value);
+        }
     }
 }
