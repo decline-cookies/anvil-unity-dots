@@ -1,7 +1,10 @@
 using Anvil.Unity.DOTS.Core;
+using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -12,11 +15,10 @@ namespace Anvil.Unity.DOTS.Data
     public static class EnumerableToFixedStringExtension
     {
         /// <summary>
-        /// Generates a burst compatible, comma separated, string of an <see cref="IEnumerable{T}"/>'s elements.
+        /// Generates a burst compatible, comma separated, string of a <see cref="UnsafeParallelHashSet{T}"/>'s elements.
         /// Each element must implement <see cref="IToFixedString{T}"/>
         /// </summary>
-        /// <param name="collection">The collection of elements.</param>
-        /// <typeparam name="TCollection">The <see cref="IEnumerable{T}"/>'s concrete type.</typeparam>
+        /// <param name="collection">The collection of elements</param>
         /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
         /// <typeparam name="TElementString">The element's string type.</typeparam>
         /// <typeparam name="TOutputString">
@@ -24,16 +26,281 @@ namespace Anvil.Unity.DOTS.Data
         /// per element for the comma.
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
-        public static unsafe TOutputString ToFixedString<TCollection, TElement, TElementString, TOutputString>(ref this TCollection collection)
-            where TCollection : struct, IEnumerable<TElement>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this UnsafeParallelHashSet<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>, IEquatable<TElement>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            UnsafeParallelHashSet<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<UnsafeParallelHashSet<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="NativeParallelHashSet{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeParallelHashSet<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>, IEquatable<TElement>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            NativeParallelHashSet<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<NativeParallelHashSet<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="UnsafeList{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this UnsafeList<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            UnsafeList<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<UnsafeList<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="NativeList{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeList<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            NativeArray<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<NativeArray<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="UnsafeArray{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this UnsafeArray<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            UnsafeArray<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<UnsafeArray<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="NativeArray{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeArray<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            NativeArray<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<NativeArray<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="NativeArray{T}.ReadOnly"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeArray<TElement>.ReadOnly collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            NativeArray<TElement>.ReadOnly.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<NativeArray<TElement>.ReadOnly.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="FixedList32Bytes{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList32Bytes<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            FixedList32Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<FixedList32Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="FixedList64Bytes{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList64Bytes<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            FixedList64Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<FixedList64Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="FixedList128Bytes{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList128Bytes<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            FixedList128Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<FixedList128Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="FixedList512Bytes{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList512Bytes<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            FixedList512Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<FixedList512Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of a <see cref="FixedList4096Bytes{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The collection of elements</param>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList4096Bytes<TElement> collection)
+            where TElement : unmanaged, IToFixedString<TElementString>
+            where TElementString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+        {
+            FixedList4096Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            return enumerator.ToFixedString<FixedList4096Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
+        }
+
+        /// <summary>
+        /// Generates a burst compatible, comma separated, string of an <see cref="IEnumerator{T}"/>'s elements.
+        /// Each element must implement <see cref="IToFixedString{T}"/>
+        /// </summary>
+        /// <param name="collection">The enumerator of the elements.</param>
+        /// <typeparam name="TEnumerator">The <see cref="IEnumerator{T}"/>'s concrete type.</typeparam>
+        /// <typeparam name="TElement">The element's type. Must implement <see cref="IToFixedString{T}"/>.</typeparam>
+        /// <typeparam name="TElementString">The element's string type.</typeparam>
+        /// <typeparam name="TOutputString">
+        /// The output's string type. This must be large enough to contain the strings of all elements plus one byte
+        /// per element for the comma.
+        /// </typeparam>
+        /// <returns>The generated string instance.</returns>
+        public static unsafe TOutputString ToFixedString<TEnumerator, TElement, TElementString, TOutputString>(ref this TEnumerator enumerator)
+            where TEnumerator : struct, IEnumerator<TElement>
             where TElement : struct, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             TOutputString output = default;
-            foreach (TElement element in collection)
+            while (enumerator.MoveNext())
             {
-                TElementString elementString = element.ToFixedString();
+                TElementString elementString = enumerator.Current.ToFixedString();
                 output.Append(elementString.GetUnsafePtr(), elementString.Length);
                 output.Append(',');
             }

@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Core;
 using Anvil.Unity.DOTS.Data;
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -27,11 +28,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this UnsafeParallelHashSet<Entity> collection)
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<UnsafeParallelHashSet<Entity>, UnsafeParallelHashSet<EntityWrapper>>(ref collection)
-                .ToFixedString<UnsafeParallelHashSet<EntityWrapper>, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -45,11 +47,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeParallelHashSet<Entity> collection)
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeParallelHashSet<Entity>, NativeParallelHashSet<EntityWrapper>>(ref collection)
-                .ToFixedString<NativeParallelHashSet<EntityWrapper>, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -67,7 +70,7 @@ namespace Anvil.Unity.DOTS.Entities
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<UnsafeList<Entity>, UnsafeList<EntityWrapper>>(ref collection)
-                .ToFixedString<UnsafeList<EntityWrapper>, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -81,11 +84,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeList<Entity> collection)
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeList<Entity>, NativeList<EntityWrapper>>(ref collection)
-                .ToFixedString<NativeList<EntityWrapper>, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -99,11 +103,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this UnsafeArray<Entity> collection)
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<UnsafeArray<Entity>, UnsafeArray<EntityWrapper>>(ref collection)
-                .ToFixedString<UnsafeArray<EntityWrapper>, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -117,11 +122,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeArray<Entity> collection)
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeArray<Entity>, NativeArray<EntityWrapper>>(ref collection)
-                .ToFixedString<NativeArray<EntityWrapper>, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -135,11 +141,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeArray<Entity>.ReadOnly collection)
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeArray<Entity>.ReadOnly, NativeArray<EntityWrapper>.ReadOnly>(ref collection)
-                .ToFixedString<NativeArray<EntityWrapper>.ReadOnly, EntityWrapper, FixedString64Bytes, TOutputString>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
         }
 
         /// <summary>
@@ -151,10 +158,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
         /// <remarks>The outputted string size assumes each element's string is 64-bytes</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FixedString512Bytes ToFixedString(ref this FixedList32Bytes<Entity> collection)
         {
             return UnsafeUtility.As<FixedList32Bytes<Entity>, FixedList32Bytes<EntityWrapper>>(ref collection)
-                .ToFixedString<FixedList32Bytes<EntityWrapper>, EntityWrapper, FixedString64Bytes, FixedString512Bytes>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, FixedString512Bytes>();
         }
 
         /// <summary>
@@ -166,10 +174,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
         /// <remarks>The outputted string size assumes each element's string is 64-bytes</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FixedString512Bytes ToFixedString(ref this FixedList64Bytes<Entity> collection)
         {
             return UnsafeUtility.As<FixedList64Bytes<Entity>, FixedList64Bytes<EntityWrapper>>(ref collection)
-                .ToFixedString<FixedList64Bytes<EntityWrapper>, EntityWrapper, FixedString64Bytes, FixedString512Bytes>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, FixedString512Bytes>();
         }
 
         /// <summary>
@@ -181,10 +190,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
         /// <remarks>The outputted string size assumes each element's string is 64-bytes</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FixedString4096Bytes ToFixedString(ref this FixedList128Bytes<Entity> collection)
         {
             return UnsafeUtility.As<FixedList128Bytes<Entity>, FixedList128Bytes<EntityWrapper>>(ref collection)
-                .ToFixedString<FixedList128Bytes<EntityWrapper>, EntityWrapper, FixedString64Bytes, FixedString4096Bytes>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, FixedString4096Bytes>();
         }
 
         /// <summary>
@@ -196,10 +206,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
         /// <remarks>The outputted string size assumes each element's string is 64-bytes</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FixedString4096Bytes ToFixedString(ref this FixedList512Bytes<Entity> collection)
         {
             return UnsafeUtility.As<FixedList512Bytes<Entity>, FixedList512Bytes<EntityWrapper>>(ref collection)
-                .ToFixedString<FixedList512Bytes<EntityWrapper>, EntityWrapper, FixedString64Bytes, FixedString4096Bytes>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, FixedString4096Bytes>();
         }
 
         /// <summary>
@@ -211,10 +222,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
         /// <remarks>The outputted string size assumes each element's string is 64-bytes</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FixedString4096Bytes ToFixedString(ref this FixedList4096Bytes<Entity> collection)
         {
             return UnsafeUtility.As<FixedList4096Bytes<Entity>, FixedList4096Bytes<EntityWrapper>>(ref collection)
-                .ToFixedString<FixedList4096Bytes<EntityWrapper>, EntityWrapper, FixedString64Bytes, FixedString4096Bytes>();
+                .ToFixedString<EntityWrapper, FixedString64Bytes, FixedString4096Bytes>();
         }
 
         /// <summary>
