@@ -28,5 +28,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_Lookup[entity];
         }
+
+        /// <summary>
+        /// Returns whether the persistent data has no entries.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get => m_Lookup.IsEmpty;
+        }
+
+        /// <summary>
+        /// Returns the number of entries currently stored in persistent data.
+        /// </summary>
+        public int Count
+        {
+            get => m_Lookup.Count();
+        }
     }
 }

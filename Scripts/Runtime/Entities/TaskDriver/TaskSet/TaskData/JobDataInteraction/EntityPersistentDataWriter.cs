@@ -26,6 +26,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             set => m_Lookup[entity] = value;
         }
 
+        /// <summary>
+        /// Returns whether the persistent data has no entries.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get => m_Lookup.IsEmpty;
+        }
+
+        /// <summary>
+        /// Returns the number of entries currently stored in persistent data.
+        /// </summary>
+        public int Count
+        {
+            get => m_Lookup.Count();
+        }
 
         internal EntityPersistentDataWriter(ref UnsafeParallelHashMap<Entity, TData> lookup)
         {
