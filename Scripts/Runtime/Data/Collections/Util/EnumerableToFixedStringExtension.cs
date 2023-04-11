@@ -298,12 +298,23 @@ namespace Anvil.Unity.DOTS.Data
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
             TOutputString output = default;
+            output.Append('[');
+            bool isFirst = true;
             while (enumerator.MoveNext())
             {
+                if (!isFirst)
+                {
+                    output.Append(',');
+                }
+                else
+                {
+                    isFirst = false;
+                }
+
                 TElementString elementString = enumerator.Current.ToFixedString();
                 output.Append(elementString.GetUnsafePtr(), elementString.Length);
-                output.Append(',');
             }
+            output.Append(']');
 
             return output;
         }
