@@ -1,4 +1,5 @@
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -10,10 +11,19 @@ namespace Anvil.Unity.DOTS.Entities
     /// To be used in jobs that allow for updating a specific instance in the DBFE
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IBufferElementData"/> to update.</typeparam>
+    /// <remarks>
+    /// NOTE: The <see cref="BufferFromEntity{T}"/> has the
+    /// <see cref="NativeDisableContainerSafetyRestrictionAttribute"/> applied meaning that Unity will not issue
+    /// safety warnings when using it in jobs. This is because there might be many jobs of the same type but
+    /// representing different <see cref="AbstractTaskDriver"/>s and Unity's safety system gets upset if you straddle
+    /// across the jobs.
+    /// </remarks>
     [BurstCompatible]
     public struct DBFEForExclusiveWrite<T> where T : struct, IBufferElementData
     {
-        [NativeDisableParallelForRestriction] [WriteOnly]
+        // TODO: #197 - Improve Safety. Currently unable to detect parallel writing from multiple jobs.
+        // Required to allow JobPart patterns
+        [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction] [WriteOnly]
         private BufferFromEntity<T> m_DBFE;
 
         public DBFEForExclusiveWrite(SystemBase system)

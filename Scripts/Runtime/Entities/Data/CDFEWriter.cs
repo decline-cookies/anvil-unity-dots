@@ -20,6 +20,8 @@ namespace Anvil.Unity.DOTS.Entities
     [BurstCompatible]
     public struct CDFEWriter<T> where T : struct, IComponentData
     {
+        // TODO: #197 - Improve Safety. Currently unable to detect parallel writing from multiple jobs.
+        // Required to allow JobPart patterns
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private ComponentDataFromEntity<T> m_CDFE;
 
