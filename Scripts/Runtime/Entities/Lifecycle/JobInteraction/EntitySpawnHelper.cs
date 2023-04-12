@@ -6,13 +6,16 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// Helper utility to get Archetypes and Prototypes based on the type of <see cref="IEntitySpawnDefinition"/>
+    /// </summary>
     [BurstCompatible]
     public readonly struct EntitySpawnHelper
     {
         [ReadOnly] private readonly NativeParallelHashMap<long, EntityArchetype> m_ArchetypeLookup;
         [ReadOnly] private readonly NativeParallelHashMap<long, Entity> m_PrototypeLookup;
 
-        public EntitySpawnHelper(
+        internal EntitySpawnHelper(
             NativeParallelHashMap<long, EntityArchetype> archetypeLookup,
             NativeParallelHashMap<long, Entity> prototypeLookup) 
         {
@@ -20,6 +23,11 @@ namespace Anvil.Unity.DOTS.Entities
             m_PrototypeLookup = prototypeLookup;
         }
 
+        /// <summary>
+        /// Gets the <see cref="EntityArchetype"/> for a given <see cref="IEntitySpawnDefinition"/>
+        /// </summary>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>The <see cref="EntityArchetype"/></returns>
         public EntityArchetype GetEntityArchetypeForDefinition<TDefinition>()
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -27,12 +35,23 @@ namespace Anvil.Unity.DOTS.Entities
             return GetEntityArchetypeForDefinition(hash);
         }
         
+        /// <summary>
+        /// Gets the <see cref="EntityArchetype"/> for a given <see cref="IEntitySpawnDefinition"/>
+        /// based on the hash derived from <see cref="BurstRuntime.GetHashCode64"/>
+        /// </summary>
+        /// <param name="hash">The hash to lookup</param>
+        /// <returns>The <see cref="EntityArchetype"/></returns>
         public EntityArchetype GetEntityArchetypeForDefinition(long hash)
         {
             Debug_EnsureArchetypeIsRegistered(hash);
             return m_ArchetypeLookup[hash];
         }
-
+        
+        /// <summary>
+        /// Gets the <see cref="Entity"/> prototype for a given <see cref="IEntitySpawnDefinition"/>
+        /// </summary>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>The <see cref="Entity"/> prototype</returns>
         public Entity GetPrototypeEntityForDefinition<TDefinition>()
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -40,6 +59,12 @@ namespace Anvil.Unity.DOTS.Entities
             return GetPrototypeEntityForDefinition(hash);
         }
         
+        /// <summary>
+        /// Gets the <see cref="Entity"/> prototype for a given <see cref="IEntitySpawnDefinition"/>
+        /// based on the hash derived from <see cref="BurstRuntime.GetHashCode64"/>
+        /// </summary>
+        /// <param name="hash">The hash to lookup</param>
+        /// <returns>The <see cref="Entity"/> prototype</returns>
         public Entity GetPrototypeEntityForDefinition(long hash)
         {
             Debug_EnsurePrototypeIsRegistered(hash);

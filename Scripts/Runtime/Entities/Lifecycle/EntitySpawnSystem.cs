@@ -4,14 +4,13 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -31,95 +30,6 @@ namespace Anvil.Unity.DOTS.Entities
     [UseCommandBufferSystem(typeof(EndSimulationEntityCommandBufferSystem))]
     public partial class EntitySpawnSystem : AbstractAnvilSystemBase
     {
-        //TODO: Build this into it's own type
-        private static readonly Type I_ENTITY_SPAWN_DEFINITION_TYPE = typeof(IEntitySpawnDefinition);
-        private static readonly Dictionary<Type, IEntitySpawnDefinition> s_SpawnDefinitionTypes = new Dictionary<Type, IEntitySpawnDefinition>();
-        private static readonly Dictionary<Type, bool> s_SpawnDefinitionShouldDisableBurstLookup = new Dictionary<Type, bool>();
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Init()
-        {
-            s_SpawnDefinitionTypes.Clear();
-            s_SpawnDefinitionShouldDisableBurstLookup.Clear();
-            //We'll reflect through the whole app to find all the possible IEntitySpawnDefinitions that exist. 
-            //We do this once here so we don't have to reflect for each World that exists.
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.IsDynamic)
-                {
-                    continue;
-                }
-                foreach (Type type in assembly.GetTypes())
-                {
-                    if (!type.IsValueType || !I_ENTITY_SPAWN_DEFINITION_TYPE.IsAssignableFrom(type))
-                    {
-                        continue;
-                    }
-
-                    s_SpawnDefinitionTypes.Add(type, (IEntitySpawnDefinition)Activator.CreateInstance(type));
-
-                    if (s_SpawnDefinitionShouldDisableBurstLookup.ContainsKey(type))
-                    {
-                        continue;
-                    }
-                    s_SpawnDefinitionShouldDisableBurstLookup.Add(type, ShouldDisableBurst(type));
-                }
-            }
-        }
-
-        private static bool ShouldDisableBurst(Type type)
-        {
-            //We've already processed this type and it exists in the lookup, we can just return
-            if (s_SpawnDefinitionShouldDisableBurstLookup.TryGetValue(type, out bool shouldDisableBurst))
-            {
-                return shouldDisableBurst;
-            }
-
-            //If any of our components require disabling burst we can early exit.
-            if (ShouldRequiredComponentsDisableBurst(type))
-            {
-                return true;
-            }
-
-            //Otherwise crawl our fields and properties to see if there are any proxy definitions that would require us
-            //to also disable burst
-            Type[] definitionTypes = type
-                .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Select(fieldInfo => fieldInfo.FieldType)
-                .Union(
-                    type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                        .Select(propertyInfo => propertyInfo.PropertyType))
-                .ToArray();
-
-            foreach (Type definitionType in definitionTypes)
-            {
-                if (!I_ENTITY_SPAWN_DEFINITION_TYPE.IsAssignableFrom(definitionType))
-                {
-                    continue;
-                }
-
-                //We have at least one field that needs us to disable burst, early out.
-                if (ShouldRequiredComponentsDisableBurst(definitionType))
-                {
-                    return true;
-                }
-
-                //Let's dive in deeper
-                if (ShouldDisableBurst(definitionType))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool ShouldRequiredComponentsDisableBurst(Type type)
-        {
-            ComponentType[] requiredComponents = s_SpawnDefinitionTypes[type].RequiredComponents;
-            return requiredComponents.Any(componentType => componentType.IsSharedComponent);
-        }
-
         private EntityCommandBufferSystem m_CommandBufferSystem;
         private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
 
@@ -164,7 +74,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void CreateArchetypeLookup()
         {
-            foreach ((Type definitionType, IEntitySpawnDefinition entitySpawnDefinition) in s_SpawnDefinitionTypes)
+            foreach ((Type definitionType, IEntitySpawnDefinition entitySpawnDefinition) in EntitySpawnSystemReflectionHelper.SPAWN_DEFINITION_TYPES)
             {
                 long entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
                 if (m_EntityArchetypes.TryGetValue(entityArchetypeHash, out EntityArchetype entityArchetype))
@@ -188,6 +98,43 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
+        private NativeArray<TEntitySpawnDefinition> ConvertToNativeArray<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            NativeArray<TEntitySpawnDefinition> nativeArraySpawnDefinitions = new NativeArray<TEntitySpawnDefinition>(spawnDefinitions.Count, Allocator.Temp);
+            int index = 0;
+            foreach (TEntitySpawnDefinition spawnDefinition in spawnDefinitions)
+            {
+                nativeArraySpawnDefinitions[index] = spawnDefinition;
+                index++;
+            }
+            return nativeArraySpawnDefinitions;
+        }
+
+        private void EnableSystem(IEntitySpawner entitySpawner)
+        {
+            //By using this, we're writing immediately, but will need to execute later on when the system runs
+            Enabled = true;
+            m_ActiveEntitySpawners.Add(entitySpawner);
+        }
+
+        private EntitySpawner<TEntitySpawnDefinition> GetOrCreateEntitySpawner<TEntitySpawnDefinition>()
+            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            Type definitionType = typeof(TEntitySpawnDefinition);
+            // ReSharper disable once InvertIf
+            if (!m_EntitySpawners.TryGetValue(definitionType, out IEntitySpawner entitySpawner))
+            {
+                entitySpawner = new EntitySpawner<TEntitySpawnDefinition>(
+                    EntityManager,
+                    m_EntityArchetypes,
+                    m_EntityPrototypes,
+                    EntitySpawnSystemReflectionHelper.SHOULD_DISABLE_BURST_LOOKUP[definitionType]);
+                m_EntitySpawners.Add(definitionType, entitySpawner);
+            }
+
+            return (EntitySpawner<TEntitySpawnDefinition>)entitySpawner;
+        }
 
         //*************************************************************************************************************
         // SPAWN DEFERRED
@@ -239,15 +186,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            NativeArray<TEntitySpawnDefinition> nativeArraySpawnDefinitions = new NativeArray<TEntitySpawnDefinition>(spawnDefinitions.Count, Allocator.Temp);
-            int index = 0;
-            foreach (TEntitySpawnDefinition spawnDefinition in spawnDefinitions)
-            {
-                nativeArraySpawnDefinitions[index] = spawnDefinition;
-                index++;
-            }
-
-            SpawnDeferred(nativeArraySpawnDefinitions);
+            SpawnDeferred(ConvertToNativeArray(spawnDefinitions));
         }
 
 
@@ -294,7 +233,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         /// <summary>
-        /// Spawns an <see cref="Entity"/> with the given definition by cloning the passed in prototype
+        /// Spawns an <see cref="Entity"/> with the given definition by cloning the registered prototype
         /// <see cref="Entity"/> when the associated <see cref="EntityCommandBufferSystem"/> runs later on.
         /// </summary>
         /// <remarks>
@@ -328,6 +267,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="spawnDefinitions">
         /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with.
         /// </param>
+        /// <param name="shouldDestroyPrototype">
+        /// If true, will destroy the prototype <see cref="Entity"/> after creation.
+        /// </param>
         /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         public void SpawnWithPrototypeDeferred<TEntitySpawnDefinition>(NativeArray<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
@@ -356,15 +298,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnWithPrototypeDeferred<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            NativeArray<TEntitySpawnDefinition> nativeArraySpawnDefinitions = new NativeArray<TEntitySpawnDefinition>(spawnDefinitions.Count, Allocator.Temp);
-            int index = 0;
-            foreach (TEntitySpawnDefinition spawnDefinition in spawnDefinitions)
-            {
-                nativeArraySpawnDefinitions[index] = spawnDefinition;
-                index++;
-            }
-
-            SpawnWithPrototypeDeferred(nativeArraySpawnDefinitions, shouldDestroyPrototype);
+            SpawnWithPrototypeDeferred(ConvertToNativeArray(spawnDefinitions), shouldDestroyPrototype);
         }
 
         //*************************************************************************************************************
@@ -419,12 +353,16 @@ namespace Anvil.Unity.DOTS.Entities
 
         //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
 
+        //*************************************************************************************************************
+        // PROTOTYPE REGISTRATION
+        //*************************************************************************************************************
+
         public void RegisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(Entity prototype)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
             long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
-            //TODO: DEBUG Ensure
+            DEBUG_EnsurePrototypeIsNotRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
             handle.Value.Add(hash, prototype);
         }
 
@@ -433,19 +371,16 @@ namespace Anvil.Unity.DOTS.Entities
         {
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
             long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
-            //TODO: DEBUG Ensure
+            DEBUG_EnsurePrototypeIsRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
             if (handle.Value.Remove(hash, out Entity prototype) && shouldDestroy)
             {
                 EntityManager.DestroyEntity(prototype);
             }
         }
 
-        private void EnableSystem(IEntitySpawner entitySpawner)
-        {
-            //By using this, we're writing immediately, but will need to execute later on when the system runs
-            Enabled = true;
-            m_ActiveEntitySpawners.Add(entitySpawner);
-        }
+        //*************************************************************************************************************
+        // UPDATE
+        //*************************************************************************************************************
 
         protected override void OnUpdate()
         {
@@ -479,22 +414,26 @@ namespace Anvil.Unity.DOTS.Entities
             return dependsOn;
         }
 
-        private EntitySpawner<TEntitySpawnDefinition> GetOrCreateEntitySpawner<TEntitySpawnDefinition>()
-            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
-        {
-            Type definitionType = typeof(TEntitySpawnDefinition);
-            // ReSharper disable once InvertIf
-            if (!m_EntitySpawners.TryGetValue(definitionType, out IEntitySpawner entitySpawner))
-            {
-                entitySpawner = new EntitySpawner<TEntitySpawnDefinition>(
-                    EntityManager,
-                    m_EntityArchetypes,
-                    m_EntityPrototypes,
-                    s_SpawnDefinitionShouldDisableBurstLookup[definitionType]);
-                m_EntitySpawners.Add(definitionType, entitySpawner);
-            }
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
 
-            return (EntitySpawner<TEntitySpawnDefinition>)entitySpawner;
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void DEBUG_EnsurePrototypeIsRegistered(Type type, long hash, NativeParallelHashMap<long, Entity> prototypes)
+        {
+            if (!prototypes.ContainsKey(hash))
+            {
+                throw new InvalidOperationException($"Expected prototype to be registered for {type.GetReadableName()} but it wasn't! Did you call {nameof(RegisterEntityPrototypeForDefinition)}?");
+            }
+        }
+
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void DEBUG_EnsurePrototypeIsNotRegistered(Type type, long hash, NativeParallelHashMap<long, Entity> prototypes)
+        {
+            if (prototypes.ContainsKey(hash))
+            {
+                throw new InvalidOperationException($"Trying to register {type.GetReadableName()} but it already is!");
+            }
         }
     }
 }

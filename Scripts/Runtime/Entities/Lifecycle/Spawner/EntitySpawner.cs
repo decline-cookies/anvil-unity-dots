@@ -292,8 +292,8 @@ namespace Anvil.Unity.DOTS.Entities
                 spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
             }
         }
-
-        [BurstCompile]
+        
+        
         private struct SpawnJobNoBurst : IJob
         {
             [ReadOnly] private UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;
