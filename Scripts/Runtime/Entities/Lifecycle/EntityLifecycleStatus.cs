@@ -50,7 +50,8 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // PUBLIC API
         //*************************************************************************************************************
-
+        
+        //TODO: #195 - Get rid of these and expose as IReadOnlyAccessControlledValue
         /// <inheritdoc cref="IEntityLifecycleStatus.AcquireArrivalsAsync"/>
         public JobHandle AcquireArrivalsAsync(out NativeList<Entity> arrivals)
         {
