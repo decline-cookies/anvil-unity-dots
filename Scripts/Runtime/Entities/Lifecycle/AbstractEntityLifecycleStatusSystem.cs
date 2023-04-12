@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// Created or Imported entities will be treated as "Arrivals" to the World.
     /// Destroyed or Evicted entities will be treated as "Departures" from the World.
     /// Entities that are in a "CleanUp" state can be treated as "Departures" before they are actually destroyed by
-    /// Unity.
+    /// Unity. This is the default behaviour.
     /// </remarks>
     [AlwaysUpdateSystem]
     public abstract partial class AbstractEntityLifecycleStatusSystem : AbstractAnvilSystemBase
@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly bool m_ShouldCleanupEntitiesCountAsDepartures;
         private WorldEntityState m_WorldEntityState;
         private NativeArray<JobHandle> m_Dependencies;
-        
+
         /// <summary>
         /// Creates a new <see cref="AbstractEntityLifecycleStatusSystem"/>
         /// </summary>
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// If true, Entities that are in a CleanUp state with <see cref="ISystemStateComponentData"/>
         /// will be considered as Departures. They will not show up later when they are actually destroyed by Unity.
         /// </param>
-        protected AbstractEntityLifecycleStatusSystem(bool shouldCleanupEntitiesCountAsDepartures)
+        protected AbstractEntityLifecycleStatusSystem(bool shouldCleanupEntitiesCountAsDepartures = true)
         {
             m_ShouldCleanupEntitiesCountAsDepartures = shouldCleanupEntitiesCountAsDepartures;
             m_EntityLifecycleStatus = new List<EntityLifecycleStatus>();
@@ -45,7 +45,8 @@ namespace Anvil.Unity.DOTS.Entities
         {
             base.OnCreate();
 
-            m_WorldEntityState = WorldEntityState.GetOrCreate(World, this);
+            m_WorldEntityState = WorldEntityState.GetOrCreate(World);
+            m_WorldEntityState.AddLifecycleStatusSystem(this);
 
             foreach (EntityLifecycleStatus entityLifecycleStatus in m_EntityLifecycleStatus)
             {
@@ -64,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             base.OnDestroy();
         }
-        
+
         /// <summary>
         /// Creates a new <see cref="IEntityLifecycleStatus"/> object to monitor Arrivals/Departures from a certain
         /// archetype.
@@ -96,7 +97,8 @@ namespace Anvil.Unity.DOTS.Entities
                 return;
             }
 
-            Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length}");
+            // Enable for helpful debugging.
+            // Logger.Debug($"{World} | {UnityEngine.Time.frameCount} - Created: {createdEntities.Length} - Destroyed: {destroyedEntities.Length}");
             dependsOn = UpdateAsync(
                 dependsOn,
                 ref destroyedEntities);
@@ -122,7 +124,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // WORLD ENTITY STATE
         //*************************************************************************************************************
-        
+
         private class WorldEntityState
         {
             private static readonly Dictionary<World, WorldEntityState> s_WorldEntityStates = new Dictionary<World, WorldEntityState>();
@@ -133,14 +135,13 @@ namespace Anvil.Unity.DOTS.Entities
                 s_WorldEntityStates.Clear();
             }
 
-            public static WorldEntityState GetOrCreate(World world, AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
+            public static WorldEntityState GetOrCreate(World world)
             {
                 if (!s_WorldEntityStates.TryGetValue(world, out WorldEntityState worldEntityState))
                 {
                     worldEntityState = new WorldEntityState(world);
                     s_WorldEntityStates.Add(world, worldEntityState);
                 }
-                worldEntityState.AddLifecycleStatusSystem(lifecycleStatusSystem);
                 return worldEntityState;
             }
 
@@ -182,7 +183,7 @@ namespace Anvil.Unity.DOTS.Entities
                 m_CleanupEntityQuery.Dispose();
             }
 
-            private void AddLifecycleStatusSystem(AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
+            public void AddLifecycleStatusSystem(AbstractEntityLifecycleStatusSystem lifecycleStatusSystem)
             {
                 m_LifecycleStatusSystems.Add(lifecycleStatusSystem);
             }
@@ -202,10 +203,15 @@ namespace Anvil.Unity.DOTS.Entities
                 out NativeArray<Entity>.ReadOnly destroyedEntities,
                 bool shouldIncludeCleanupEntities)
             {
-                m_AccessController.Acquire(AccessType.ExclusiveWrite);
-                
+                dependsOn = JobHandle.CombineDependencies(
+                    dependsOn,
+                    m_AccessController.AcquireAsync(AccessType.ExclusiveWrite));
+                //We have to ensure that any jobs that were in flight that were using the m_WorldCreatedEntities or
+                //m_WorldDestroyedEntities lists are finished because Unity will modify them from under us.
+                dependsOn.Complete();
+
                 m_World.EntityManager.GetCreatedAndDestroyedEntities(m_WorldEntitiesState, m_WorldCreatedEntities, m_WorldDestroyedEntities);
-                
+
                 if (shouldIncludeCleanupEntities)
                 {
                     NativeArray<Entity> cleanupEntities = m_CleanupEntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle cleanupDependsOn);
@@ -287,16 +293,12 @@ namespace Anvil.Unity.DOTS.Entities
                 {
                     return;
                 }
-                
+
                 //We'll add all the pending clean up entities to the destroyed list
                 m_WorldDestroyedEntities.AddRange(m_PendingCleanupEntities);
-                
+
                 //Now we'll go through all the entities that are going to be cleaned up later in the frame.
-                for (int i = 0; i < m_PendingCleanupEntities.Length; ++i)
-                {
-                    //And add them to the lookup so we don't double count them
-                    m_WorldCleanupEntities.Add(m_PendingCleanupEntities[i]);
-                }
+                m_WorldCleanupEntities.UnionWith(m_PendingCleanupEntities);
             }
         }
     }
