@@ -19,12 +19,12 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<TEntitySpawnDefinition>.Writer m_Writer;
+        [ReadOnly] private readonly UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>.Writer m_Writer;
 
-        private UnsafeTypedStream<TEntitySpawnDefinition>.LaneWriter m_LaneWriter;
+        private UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>.LaneWriter m_LaneWriter;
         private int m_LaneIndex;
 
-        internal EntitySpawnWriter(UnsafeTypedStream<TEntitySpawnDefinition>.Writer writer) : this()
+        internal EntitySpawnWriter(UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>.Writer writer) : this()
         {
             m_Writer = writer;
 
@@ -65,11 +65,11 @@ namespace Anvil.Unity.DOTS.Entities
             SpawnDeferred(ref definition);
         }
 
-        /// <inheritdoc cref="SpawnDeferred"/>
+        /// <inheritdoc cref="SpawnDeferred(TEntitySpawnDefinition)"/>
         public void SpawnDeferred(ref TEntitySpawnDefinition definition)
         {
             Debug_EnsureCanAdd();
-            m_LaneWriter.Write(ref definition);
+            m_LaneWriter.Write(new SpawnDefinitionWrapper<TEntitySpawnDefinition>(definition, PrototypeSpawnBehaviour.None));
         }
 
         /// <summary>
@@ -95,7 +95,59 @@ namespace Anvil.Unity.DOTS.Entities
         public void SpawnDeferred(ref TEntitySpawnDefinition definition, int laneIndex)
         {
             m_Writer.AsLaneWriter(laneIndex)
-                .Write(ref definition);
+                .Write(new SpawnDefinitionWrapper<TEntitySpawnDefinition>(definition, PrototypeSpawnBehaviour.None));
+        }
+
+
+        /// <summary>
+        /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned
+        /// later on by the <see cref="EntitySpawnSystem"/>
+        /// </summary>
+        /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
+        /// <param name="shouldDestroyPrototype">If the prototype should be destroyed after spawning</param>
+        public void SpawnWithPrototypeDeferred(TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
+        {
+            SpawnWithPrototypeDeferred(ref definition, shouldDestroyPrototype);
+        }
+
+        /// <inheritdoc cref="SpawnDeferred(TEntitySpawnDefinition)"/>
+        public void SpawnWithPrototypeDeferred(ref TEntitySpawnDefinition definition, bool shouldDestroyPrototype)
+        {
+            Debug_EnsureCanAdd();
+            m_LaneWriter.Write(
+                new SpawnDefinitionWrapper<TEntitySpawnDefinition>(
+                    definition,
+                    shouldDestroyPrototype ? PrototypeSpawnBehaviour.Destroy : PrototypeSpawnBehaviour.Keep));
+        }
+
+        /// <summary>
+        /// Adds the <see cref="IEntitySpawnDefinition"/> to the queue to be spawned later on by
+        /// the <see cref="EntitySpawnSystem"/>
+        /// </summary>
+        /// <remarks>
+        /// Useful when in a job that only operates on each index or Entity like Entities.ForEach.
+        /// There is no opportunity to call <see cref="InitForThread"/> at the start and you can't call
+        /// it multiple times. 
+        /// </remarks>
+        /// <param name="definition">The type of <see cref="IEntitySpawnDefinition"/> to spawn</param>
+        /// <param name="laneIndex">
+        /// The collection index to use based on the thread this writer is being
+        /// used on. <see cref="ParallelAccessUtil"/> to get the correct index.
+        /// </param>
+        /// <param name="shouldDestroyPrototype">If the prototype should be destroyed after spawning</param>
+        public void SpawnWithPrototypeDeferred(TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
+        {
+            SpawnWithPrototypeDeferred(ref definition, laneIndex, shouldDestroyPrototype);
+        }
+
+        /// <inheritdoc cref="SpawnDeferred(TEntitySpawnDefinition,int)"/>
+        public void SpawnWithPrototypeDeferred(ref TEntitySpawnDefinition definition, int laneIndex, bool shouldDestroyPrototype)
+        {
+            m_Writer.AsLaneWriter(laneIndex)
+                .Write(
+                    new SpawnDefinitionWrapper<TEntitySpawnDefinition>(
+                        definition,
+                        shouldDestroyPrototype ? PrototypeSpawnBehaviour.Destroy : PrototypeSpawnBehaviour.Keep));
         }
 
         //*************************************************************************************************************
