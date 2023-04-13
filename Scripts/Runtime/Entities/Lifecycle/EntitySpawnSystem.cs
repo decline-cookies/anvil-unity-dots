@@ -98,6 +98,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
+        //TODO: Move this into NativeArrayExtension
         private NativeArray<TEntitySpawnDefinition> ConvertToNativeArray<TEntitySpawnDefinition>(ICollection<TEntitySpawnDefinition> spawnDefinitions)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -111,7 +112,7 @@ namespace Anvil.Unity.DOTS.Entities
             return nativeArraySpawnDefinitions;
         }
 
-        private void EnableSystem(IEntitySpawner entitySpawner)
+        private void MarkEntitySpawnerForUpdate(IEntitySpawner entitySpawner)
         {
             //By using this, we're writing immediately, but will need to execute later on when the system runs
             Enabled = true;
@@ -158,7 +159,7 @@ namespace Anvil.Unity.DOTS.Entities
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnDeferred(spawnDefinition);
 
-            EnableSystem(entitySpawner);
+            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <summary>
@@ -179,7 +180,7 @@ namespace Anvil.Unity.DOTS.Entities
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnDeferred(spawnDefinitions);
 
-            EnableSystem(entitySpawner);
+            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <inheritdoc cref="SpawnDeferred{TEntitySpawnDefinition}(NativeArray{TEntitySpawnDefinition})"/>
@@ -209,7 +210,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
 
-            EnableSystem(entitySpawner);
+            MarkEntitySpawnerForUpdate(entitySpawner);
 
             return entitySpawner.AcquireEntitySpawnWriterAsync(out entitySpawnWriter);
         }
@@ -253,7 +254,7 @@ namespace Anvil.Unity.DOTS.Entities
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnWithPrototypeDeferred(spawnDefinition, shouldDestroyPrototype);
 
-            EnableSystem(entitySpawner);
+            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <summary>
@@ -277,7 +278,7 @@ namespace Anvil.Unity.DOTS.Entities
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnWithPrototypeDeferred(spawnDefinitions, shouldDestroyPrototype);
 
-            EnableSystem(entitySpawner);
+            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <summary>
