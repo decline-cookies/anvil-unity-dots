@@ -264,7 +264,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig AddRequirementsFrom<T>(T taskDriver, Func<T, IJobConfig, IJobConfig> configureRequirements)
+        public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
             where T : AbstractTaskDriver
         {
             return configureRequirements(taskDriver, this);

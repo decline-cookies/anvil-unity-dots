@@ -1,5 +1,4 @@
 using Anvil.Unity.DOTS.Jobs;
-using System;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -10,6 +9,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     public interface IJobConfig
     {
+        /// <summary>
+        /// A delegate that configures the requirements for a job on the provided <see cref="IJobConfig"/>.
+        /// The same <see cref="IJobConfig"/> instance should be returned by the method to allow for chaining of
+        /// additional requirements.
+        /// </summary>
+        /// <param name="taskDriver">
+        /// The task driver instance that is configuring the job. This may be used to gain access to streams or other
+        /// task driver specific references.
+        /// </param>
+        /// <param name="jobConfig">The job config instance to set requirements on.</param>
+        /// <typeparam name="T">The concrete type of the <see cref="AbstractTaskDriver"/></typeparam>
+        /// <returns>
+        /// A reference to the <see cref="IJobConfig"/> instance passed in to continue chaining configuration methods.
+        /// </returns>
+        public delegate IJobConfig ConfigureJobRequirementsDelegate<in T>(T taskDriver, IJobConfig jobConfig)
+            where T : AbstractTaskDriver;
+
         /// <summary>
         /// Whether the Job is enabled or not.
         /// A job that is not enabled will not be scheduled or run but will still exist as part of the
@@ -184,7 +200,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="configureRequirements">The delegate to call to configure requirements.</param>
         /// <typeparam name="T">The type of the task driver instance.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        IJobConfig AddRequirementsFrom<T>(T taskDriver, Func<T, IJobConfig, IJobConfig> configureRequirements)
+        IJobConfig AddRequirementsFrom<T>(T taskDriver, ConfigureJobRequirementsDelegate<T> configureRequirements)
             where T : AbstractTaskDriver;
     }
 }
