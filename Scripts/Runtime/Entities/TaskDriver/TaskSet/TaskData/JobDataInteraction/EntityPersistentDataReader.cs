@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -39,5 +41,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Count"/>
         public int Count() => m_Lookup.Count();
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetKeyArray"/>>
+        public NativeArray<Entity> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetKeyArray(allocator);
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetValueArray"/>>
+        public NativeArray<TData> GetValueArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetValueArray(allocator);
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetEnumerator"/>>
+        public UnsafeParallelHashMap<Entity, TData>.Enumerator GetEnumerator()
+        {
+            return m_Lookup.GetEnumerator();
+        }
     }
 }

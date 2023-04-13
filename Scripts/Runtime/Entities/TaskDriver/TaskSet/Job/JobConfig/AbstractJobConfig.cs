@@ -255,13 +255,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IEntityPersistentData<TData> entityPersistentData)
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
 
             return this;
+        }
+
+        public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
+            where T : AbstractTaskDriver
+        {
+            return configureRequirements(taskDriver, this);
         }
 
         //*************************************************************************************************************
