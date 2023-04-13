@@ -66,6 +66,9 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
+        //TODO: Could consider getting rid of the Factory method and let you create your own Lifecycle Status.
+        //For safety we'd check the parent of a given Lifecycle status when added to the system to make sure it's not
+        //double added to multiple lifecycle systems. See: https://github.com/decline-cookies/anvil-unity-dots/pull/194/files#r1165757533
         /// <summary>
         /// Creates a new <see cref="IEntityLifecycleStatus"/> object to monitor Arrivals/Departures from a certain
         /// archetype.
@@ -89,6 +92,9 @@ namespace Anvil.Unity.DOTS.Entities
                 m_ShouldCleanupEntitiesCountAsDepartures);
 
             //If nothing was created or destroyed we can early exit
+            //Even though we're not using the createdEntities that are populated here,
+            //we want to still run the UpdateAsync method if any entities were created so that the queries
+            //will pick up the new entities and populate them.
             if (createdEntities.Length == 0
                 && destroyedEntities.Length == 0)
             {
