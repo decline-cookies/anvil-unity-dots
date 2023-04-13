@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForWrite<TData>(IAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
 
 
@@ -115,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct;
 
         /// <summary>

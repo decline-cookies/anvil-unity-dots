@@ -35,13 +35,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(IAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct
         {
             return this;
         }
 
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
             where TData : struct
         {
             return this;

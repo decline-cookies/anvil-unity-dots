@@ -10,12 +10,12 @@ namespace Anvil.Unity.DOTS.Jobs
     /// </summary>
     /// <typeparam name="T">The type of data to wrap access control to</typeparam>
     public class AccessControlledValue<T> : AbstractAnvilBase,
-                                            IAccessControlledValue<T>
+                                            IReadOnlyAccessControlledValue<T>
     {
         private readonly AccessController m_AccessController;
 
         private readonly T m_Value;
-        
+
         /// <summary>
         /// Creates a new instance of <see cref="AccessControlledValue{T}"/> for the passed in
         /// data.
@@ -38,32 +38,81 @@ namespace Anvil.Unity.DOTS.Jobs
             base.DisposeSelf();
         }
 
-        /// <inheritdoc cref="IBaseAccessControlledValue{T}.GetDependencyFor"/>
+        /// <summary>
+        /// Gets the current <see cref="JobHandle"/> that must be completed before the provided <see cref="AccessType"/>
+        /// may be performed without modifying the state of the controller.
+        /// This is the same <see cref="JobHandle"/> that would be returned by
+        /// <see cref="AccessControlledValue{T}.AcquireAsync"/> or
+        /// <see cref="AccessControlledValue{T}.AcquireReadOnlyAsync"/> when provided the same parameter.
+        /// </summary>
+        /// <remarks>
+        /// Generally <see cref="AccessControlledValue{T}.AcquireAsync"/> or
+        /// <see cref="AccessControlledValue{T}.AcquireReadOnlyAsync"/>should be used.
+        /// This method is an advanced feature for specialized
+        /// situations like detecting if a value has been acquired for writing between calls.
+        /// </remarks>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// A <see cref="JobHandle"/> that needs to be completed before the requested access type would be valid.
+        /// </returns>
         public JobHandle GetDependencyFor(AccessType accessType)
         {
             return m_AccessController.GetDependencyFor(accessType);
         }
 
-        /// <inheritdoc cref="IAccessControlledValue{T}.AcquireWithHandle"/>
+        /// <summary>
+        /// Acquires the data instance synchronously for a given <see cref="AccessType"/> and returns the data in an
+        /// <see cref="AccessControlledValue{T}.AccessHandle"/>.
+        /// This is the preferred method of synchronous value access vs <see cref="Acquire"/>/<see cref="AccessControlledValue{T}.Release"/>.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="AccessControlledValue{T}.AccessHandle"/> is a safer way to synchronously maintain access to an
+        /// <see cref="AccessControlledValue{T}"/>. Paired with a using statement access to the value will be released
+        /// when the handle falls out of scope.
+        /// </remarks>
+        /// <example>using var valueHandle = myAccessControlledValue.AcquireWithHandle(AccessType.SharedRead);</example>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>
+        /// The <see cref="AccessControlledValue{T}.AccessHandle"/> that maintains access to the controlled value until disposed.
+        /// </returns>
         public AccessHandle AcquireWithHandle(AccessType accessType)
         {
             return new AccessHandle(this, accessType);
         }
 
-        /// <inheritdoc cref="IAccessControlledValue{T}.Acquire"/>
+        /// <summary>
+        /// Acquires the data instance synchronously for a given <see cref="AccessType"/>.
+        /// Will block on the calling thread if there are any jobs that need to complete before this data instance
+        /// can be used.
+        ///
+        /// Typically this is used when wanting to perform main thread work on the data.
+        /// </summary>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <returns>The data instance</returns>
         public T Acquire(AccessType accessType)
         {
             m_AccessController.Acquire(accessType);
             return m_Value;
         }
 
-        /// <inheritdoc cref="IAccessControlledValue{T}.AcquireAsync"/>
+        /// <summary>
+        /// Acquires the data instance asynchronously for a given <see cref="AccessType"/>
+        /// The data will be returned immediately as well as a <see cref="JobHandle"/> to schedule actually
+        /// reading from/writing to the data.
+        ///
+        /// Not respecting the <see cref="JobHandle"/> could lead to dependency errors.
+        ///
+        /// Typically this is used when wanting to perform work on the data in a job to be scheduled.
+        /// </summary>
+        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
+        /// <param name="value">The data instance</param>
+        /// <returns>A <see cref="JobHandle"/> to wait on before accessing the data</returns>
         public JobHandle AcquireAsync(AccessType accessType, out T value)
         {
             value = m_Value;
             return m_AccessController.AcquireAsync(accessType);
         }
-        
+
         /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.AcquireWithReadOnlyHandle"/>
         public AccessHandle AcquireWithReadOnlyHandle()
         {
@@ -82,13 +131,13 @@ namespace Anvil.Unity.DOTS.Jobs
             return AcquireAsync(AccessType.SharedRead, out value);
         }
 
-        /// <inheritdoc cref="IBaseAccessControlledValue{T}.Release"/>
+        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.Release"/>
         public void Release()
         {
             m_AccessController.Release();
         }
-        
-        /// <inheritdoc cref="IBaseAccessControlledValue{T}.ReleaseAsync"/>
+
+        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.ReleaseAsync"/>
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
