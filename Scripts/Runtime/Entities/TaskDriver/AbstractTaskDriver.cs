@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using Unity.Entities;
 using Unity.Jobs;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -145,6 +146,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected TTaskDriver AddSubTaskDriver<TTaskDriver>(TTaskDriver subTaskDriver)
             where TTaskDriver : AbstractTaskDriver
         {
+            Debug.Assert(subTaskDriver.Parent == null);
             subTaskDriver.Parent = this;
             m_SubTaskDrivers.Add(subTaskDriver);
 
