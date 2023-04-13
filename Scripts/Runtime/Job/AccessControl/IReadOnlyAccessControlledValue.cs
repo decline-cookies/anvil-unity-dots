@@ -1,14 +1,15 @@
+using Anvil.CSharp.Core;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Jobs
 {
-    public interface IReadOnlyAccessControlledValue<T> : IBaseAccessControlledValue<T>
+    public interface IReadOnlyAccessControlledValue<T> : IAnvilDisposable
     {
         /// <summary>
         /// Acquires the data instance synchronously for Read Only access and returns the data in an
         /// <see cref="AccessControlledValue{T}.AccessHandle"/>.
         /// This is the preferred method of synchronous value access vs
-        /// <see cref="AcquireReadOnly"/>/<see cref="IBaseAccessControlledValue{T}.Release"/>.
+        /// <see cref="AcquireReadOnly"/>/<see cref="IReadOnlyAccessControlledValue{T}.Release"/>.
         /// </summary>
         /// <remarks>
         /// The <see cref="AccessControlledValue{T}.AccessHandle"/> is a safer way to synchronously maintain access to an
@@ -43,5 +44,25 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <param name="value">The data instance</param>
         /// <returns>A <see cref="JobHandle"/> to wait on before accessing the data</returns>
         public JobHandle AcquireReadOnlyAsync(out T value);
+
+        /// <summary>
+        /// Releases access to the data so other callers can use it.
+        /// Could potentially block on the calling thread if <see cref="AccessControlledValue{T}.AcquireAsync"/>
+        /// or <see cref="IReadOnlyAccessControlledValue{T}.AcquireReadOnlyAsync"/> was called first and the
+        /// dependency returned has not yet been completed.
+        ///
+        /// Typically this is used when main thread work on the data is complete.
+        /// </summary>
+        public void Release();
+        
+        /// <summary>
+        /// Releases access to the data so other callers can use it once the <paramref name="releaseAccessDependency"/>
+        /// is complete.
+        ///
+        /// Typically this used when job work on the data needs to be completed before other callers can use the data
+        /// again.
+        /// </summary>
+        /// <param name="releaseAccessDependency">The <see cref="JobHandle"/> to wait upon</param>
+        public void ReleaseAsync(JobHandle releaseAccessDependency);
     }
 }

@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.TaskDriver
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Represents a read only reference to a <see cref="ComponentDataFromEntity{T}"/>
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
 
-        internal CDFEReader(SystemBase system)
+        public CDFEReader(SystemBase system)
         {
             m_CDFE = system.GetComponentDataFromEntity<T>(true);
         }

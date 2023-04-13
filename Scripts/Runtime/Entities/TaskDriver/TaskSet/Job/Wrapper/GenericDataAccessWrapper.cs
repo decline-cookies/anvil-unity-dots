@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class GenericDataAccessWrapper<TData> : AbstractAccessWrapper
         where TData : struct
     {
-        private readonly IAccessControlledValue<TData> m_AccessControlledData;
+        private readonly AccessControlledValue<TData> m_AccessControlledData;
         private TData m_Data;
 
         public TData Data
@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Data;
         }
 
-        public GenericDataAccessWrapper(IAccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public GenericDataAccessWrapper(AccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
             m_AccessControlledData = data;
         }

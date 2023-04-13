@@ -1,3 +1,4 @@
+using Anvil.Unity.DOTS.Data;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -26,10 +27,36 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             set => m_Lookup[entity] = value;
         }
 
+        /// <summary>
+        /// Returns whether the persistent data has no entries.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get => m_Lookup.IsEmpty;
+        }
 
         internal EntityPersistentDataWriter(ref UnsafeParallelHashMap<Entity, TData> lookup)
         {
             m_Lookup = lookup;
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Count"/>
+        public int Count() => m_Lookup.Count();
+
+        /// <summary>
+        /// Removes a key-value pair and disposes the value.
+        /// </summary>
+        /// <param name="entity">The key to remove at.</param>
+        /// <returns>True if a key-value pair was removed.</returns>
+        public bool RemoveAndDispose(Entity entity)
+        {
+            if (m_Lookup.Remove(entity, out TData data))
+            {
+                data.Dispose();
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Remove"/>
@@ -40,5 +67,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.ContainsKey"/>
         public bool Contains(Entity entity) => m_Lookup.ContainsKey(entity);
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetKeyArray"/>>
+        public NativeArray<Entity> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetKeyArray(allocator);
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetValueArray"/>>
+        public NativeArray<TData> GetValueArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetValueArray(allocator);
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetEnumerator"/>>
+        public UnsafeParallelHashMap<Entity, TData>.Enumerator GetEnumerator()
+        {
+            return m_Lookup.GetEnumerator();
+        }
     }
 }

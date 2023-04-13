@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             m_EntityPersistentDataByType = new Dictionary<Type, AbstractPersistentData>();
-            
+
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
             CancelRequestsDataStream = new CancelRequestsDataStream(taskSetOwner);
@@ -110,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return dataStream;
         }
-        
+
         public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
             where T : unmanaged, IEntityPersistentDataInstance
         {
@@ -345,12 +345,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]
         private void Debug_EnsureNoDuplicateJobSchedulingDelegates(Delegate jobSchedulingDelegate)
         {
+            //TODO: #196 - Convert back to an error when configuration methods are made protected.
+            // Until this issue is resolved there are valid uses cases where multiple task driver instances of the same
+            // type configure on another task driver instance using the same schedule delegate.
             if (!m_JobConfigSchedulingDelegates.Add(jobSchedulingDelegate))
             {
-                throw new InvalidOperationException($"Trying to add a delegate {jobSchedulingDelegate} but it is already being used!");
+                Logger.Warning($"Trying to add the delegate {jobSchedulingDelegate} but it is already being used. Although there are valid use cases this may indicate unintended duplicate processing of data. Investigate.");
             }
         }
     }
