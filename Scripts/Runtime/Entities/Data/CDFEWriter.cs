@@ -2,7 +2,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.TaskDriver
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Represents a <see cref="ComponentDataFromEntity{T}"/> that can be read from and written to in
@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
 
-        internal CDFEWriter(SystemBase system)
+        public CDFEWriter(SystemBase system)
         {
             m_CDFE = system.GetComponentDataFromEntity<T>(false);
         }

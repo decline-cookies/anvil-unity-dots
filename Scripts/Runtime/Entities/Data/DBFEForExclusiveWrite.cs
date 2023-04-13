@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Anvil.Unity.DOTS.Entities.TaskDriver
+namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// Represents a <see cref="BufferFromEntity{T}"/> that can be read from and written to.
@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [NativeDisableParallelForRestriction] [WriteOnly]
         private BufferFromEntity<T> m_DBFE;
 
-        internal DBFEForExclusiveWrite(SystemBase system)
+        public DBFEForExclusiveWrite(SystemBase system)
         {
             m_DBFE = system.GetBufferFromEntity<T>(false);
         }
