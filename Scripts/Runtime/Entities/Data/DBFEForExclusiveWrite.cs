@@ -39,5 +39,11 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => m_DBFE[entity];
         }
+
+        /// <inheritdoc cref="BufferFromEntity{T}.HasComponent"/>
+        public bool HasComponent(Entity entity) => m_DBFE.HasComponent(entity);
+
+        /// <inheritdoc cref="BufferFromEntity{T}.TryGetComponent"/>
+        public bool TryGetBuffer(Entity entity, out DynamicBuffer<T> component) => m_DBFE.TryGetBuffer(entity, out component);
     }
 }
