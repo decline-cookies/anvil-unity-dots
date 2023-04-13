@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance;
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IEntityPersistentData<TData> entityPersistentData)
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance;
 
         /// <summary>
