@@ -234,11 +234,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         private struct EntityWrapper : IToFixedString<FixedString64Bytes>, IEquatable<EntityWrapper>
         {
-            private Entity Entity;
+            private Entity m_Entity;
 
-            public FixedString64Bytes ToFixedString() => Entity.ToFixedString();
+            public FixedString64Bytes ToFixedString() => m_Entity.ToFixedString();
 
-            public bool Equals(EntityWrapper other) => other.Entity == Entity;
+            public bool Equals(EntityWrapper other) => other.m_Entity == m_Entity;
         }
     }
 }
