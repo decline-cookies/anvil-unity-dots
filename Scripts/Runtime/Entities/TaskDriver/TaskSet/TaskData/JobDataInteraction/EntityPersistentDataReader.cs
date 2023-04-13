@@ -17,11 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         [ReadOnly] private readonly UnsafeParallelHashMap<Entity, TData> m_Lookup;
 
-        internal EntityPersistentDataReader(ref UnsafeParallelHashMap<Entity, TData> lookup)
-        {
-            m_Lookup = lookup;
-        }
-
         /// <summary>
         /// Gets the <typeparamref name="TData"/> for the specified <see cref="Entity"/>.
         /// </summary>
@@ -30,6 +25,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_Lookup[entity];
         }
+
+        /// <summary>
+        /// Returns whether the persistent data has no entries.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get => m_Lookup.IsEmpty;
+        }
+
+        internal EntityPersistentDataReader(ref UnsafeParallelHashMap<Entity, TData> lookup)
+        {
+            m_Lookup = lookup;
+        }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Count"/>
+        public int Count() => m_Lookup.Count();
 
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetKeyArray"/>>
         public NativeArray<Entity> GetKeyArray(AllocatorManager.AllocatorHandle allocator)

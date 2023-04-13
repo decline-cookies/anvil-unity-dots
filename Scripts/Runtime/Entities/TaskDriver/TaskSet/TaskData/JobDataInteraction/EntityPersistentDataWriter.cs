@@ -27,11 +27,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             set => m_Lookup[entity] = value;
         }
 
+        /// <summary>
+        /// Returns whether the persistent data has no entries.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get => m_Lookup.IsEmpty;
+        }
 
         internal EntityPersistentDataWriter(ref UnsafeParallelHashMap<Entity, TData> lookup)
         {
             m_Lookup = lookup;
         }
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Count"/>
+        public int Count() => m_Lookup.Count();
 
         /// <summary>
         /// Removes a key-value pair and disposes the value.
