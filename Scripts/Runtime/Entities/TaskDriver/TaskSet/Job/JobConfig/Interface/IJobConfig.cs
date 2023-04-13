@@ -175,6 +175,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData;
 
+        /// <summary>
+        /// Specifies a delegate to call to add additional requirements.
+        /// This allows requirements to be defined by a static method on the job rather than at the configuration call
+        /// site.
+        /// </summary>
+        /// <param name="taskDriver">The task driver instance that the job is being configured on. (usually this)</param>
+        /// <param name="configureRequirements">The delegate to call to configure requirements.</param>
+        /// <typeparam name="T">The type of the task driver instance.</typeparam>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
         IJobConfig AddRequirementsFrom<T>(T taskDriver, Func<T, IJobConfig, IJobConfig> configureRequirements)
             where T : AbstractTaskDriver;
     }
