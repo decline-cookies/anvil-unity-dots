@@ -10,16 +10,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TData">They type of <see cref="IEntityPersistentDataInstance"/> to read</typeparam>
     [BurstCompatible]
-    public readonly struct EntityPersistentDataReader<TData> 
+    public readonly struct EntityPersistentDataReader<TData>
         where TData : struct, IEntityPersistentDataInstance
     {
         [ReadOnly] private readonly UnsafeParallelHashMap<Entity, TData> m_Lookup;
 
-        internal EntityPersistentDataReader(ref UnsafeParallelHashMap<Entity, TData> lookup)
-        {
-            m_Lookup = lookup;
-        }
-        
         /// <summary>
         /// Gets the <typeparamref name="TData"/> for the specified <see cref="Entity"/>.
         /// </summary>
@@ -43,6 +38,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public int Count
         {
             get => m_Lookup.Count();
+        }
+
+        internal EntityPersistentDataReader(ref UnsafeParallelHashMap<Entity, TData> lookup)
+        {
+            m_Lookup = lookup;
         }
     }
 }
