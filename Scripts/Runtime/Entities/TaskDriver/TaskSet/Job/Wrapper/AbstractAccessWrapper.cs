@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public JobConfigDataID ID { get; }
 
-        protected AccessType AccessType { get; }
+        internal AccessType AccessType { get; }
 
 
         protected AbstractAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage)
