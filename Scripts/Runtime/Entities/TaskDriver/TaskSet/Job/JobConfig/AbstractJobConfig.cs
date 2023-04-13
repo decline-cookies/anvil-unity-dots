@@ -139,6 +139,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 throw new Exception($"There is no compatibility between ${nameof(AccessType)} requires on the same type. See previous message for details.");
             }
+
+            //TODO: #112(anvil-unity-core) - Emit as a verbose warning
+            // Logger.Warning($"Duplicate access requires resolved to {m_AccessWrappers[accessWrapper.ID].AccessType}. Existing:{existingAccessWrapper.AccessType}, Incoming:{accessWrapper.AccessType}"
+            //     + $"\nThis is not necessarily a problem but could degrade scheduling performance less restrictive access was expected.");
         }
 
 
