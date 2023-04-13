@@ -174,10 +174,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
 
-        public IJobConfig RequireGenericDataForRead<TData>(AccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedRead, Usage.Default));
+            AddAccessWrapper(new GenericDataReadOnlyAccessWrapper<TData>(collection, Usage.Default));
             return this;
         }
 
@@ -430,7 +430,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dataStreamPendingCancelActiveAccessWrapper.DataStream;
         }
 
-        internal TData GetGenericData<TData>()
+        internal TData GetGenericDataForReading<TData>()
+            where TData : struct
+        {
+            GenericDataReadOnlyAccessWrapper<TData> genericDataReadOnlyAccessWrapper
+                = GetAccessWrapper<GenericDataReadOnlyAccessWrapper<TData>>(Usage.Default);
+
+            return genericDataReadOnlyAccessWrapper.Data;
+        }
+
+        internal TData GetGenericDataForWriting<TData>()
             where TData : struct
         {
             GenericDataAccessWrapper<TData> genericDataAccessWrapper
