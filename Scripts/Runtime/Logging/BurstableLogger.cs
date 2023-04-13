@@ -59,7 +59,9 @@ namespace Anvil.Unity.DOTS.Logging
             m_ThreadIndex = UNSET_THREAD_INDEX;
             string managedMessagePrefix = logger.MessagePrefix + appendToMessagePrefix;
             MessagePrefix = default;
-            CopyError error = FixedStringMethods.CopyFrom(ref MessagePrefix, managedMessagePrefix);
+
+            CopyError error = MessagePrefix.CopyFrom(managedMessagePrefix);
+
 
             switch (error)
             {
