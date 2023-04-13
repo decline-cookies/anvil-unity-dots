@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -110,10 +111,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IEntityPersistentData<TData> entityPersistentData)
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
             return this;
+        }
+
+        public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
+            where T : AbstractTaskDriver
+        {
+            return configureRequirements(taskDriver, this);
         }
     }
 }

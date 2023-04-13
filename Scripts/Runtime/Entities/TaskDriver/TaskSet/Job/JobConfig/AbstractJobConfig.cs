@@ -110,11 +110,41 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         protected void AddAccessWrapper(AbstractAccessWrapper accessWrapper)
         {
-            Debug_EnsureWrapperValidity(accessWrapper.ID);
             Debug_EnsureWrapperUsage(accessWrapper);
 
-            m_AccessWrappers.Add(accessWrapper.ID, accessWrapper);
+            if (!m_AccessWrappers.TryAdd(accessWrapper.ID, accessWrapper))
+            {
+                ResolveDuplicateAccessWrappers(accessWrapper);
+            }
         }
+
+        private void ResolveDuplicateAccessWrappers(AbstractAccessWrapper accessWrapper)
+        {
+            AbstractAccessWrapper existingAccessWrapper = m_AccessWrappers[accessWrapper.ID];
+
+            // If the existing access wrapper facilitates the needs of the new one then just keep the existing one.
+            if (existingAccessWrapper.AccessType.IsCompatibleWith(accessWrapper.AccessType))
+            {
+                accessWrapper.Dispose();
+            }
+            // If the new access wrapper facilitates the needs of the existing one then dispose the existing wrapper and
+            // use the new access wrapper.
+            else if (accessWrapper.AccessType.IsCompatibleWith(existingAccessWrapper.AccessType))
+            {
+                existingAccessWrapper.Dispose();
+                m_AccessWrappers[accessWrapper.ID] = accessWrapper;
+            }
+            // If there is no compatibility between the two requires error. The developer needs to fix this.
+            else
+            {
+                throw new Exception($"There is no compatibility between ${nameof(AccessType)} requires on the same type. See previous message for details.");
+            }
+
+            //TODO: #112(anvil-unity-core) - Emit as a verbose warning
+            // Logger.Warning($"Duplicate access requires resolved to {m_AccessWrappers[accessWrapper.ID].AccessType}. Existing:{existingAccessWrapper.AccessType}, Incoming:{accessWrapper.AccessType}"
+            //     + $"\nThis is not necessarily a problem but could degrade scheduling performance less restrictive access was expected.");
+        }
+
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
@@ -255,13 +285,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IEntityPersistentData<TData> entityPersistentData)
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
             AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
 
             return this;
+        }
+
+        public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
+            where T : AbstractTaskDriver
+        {
+            return configureRequirements(taskDriver, this);
         }
 
         //*************************************************************************************************************
@@ -503,16 +539,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (!m_AccessWrappers.ContainsKey(id))
             {
                 throw new InvalidOperationException($"Job configured by {this} tried to access {id.AccessWrapperType.GetReadableName()} data for {id.Usage} but it wasn't found. Did you call the right Require function?");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureWrapperValidity(JobConfigDataID id)
-        {
-            //Straight duplicate check
-            if (m_AccessWrappers.ContainsKey(id))
-            {
-                throw new InvalidOperationException($"{this} is trying to require {id.AccessWrapperType.GetReadableName()} data for {id.Usage} but it is already being used! Only require the data for the same usage once!");
             }
         }
 

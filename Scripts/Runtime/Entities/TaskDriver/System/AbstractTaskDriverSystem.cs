@@ -7,7 +7,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase, ITaskSetOwner
+    //TODO: #188 - /// Document public API
+    public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
+                                                             ITaskSetOwner
     {
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
         private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
@@ -19,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
 
-        public AbstractTaskDriverSystem TaskDriverSystem
+        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
         {
             get => this;
         }
@@ -28,21 +30,35 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //Normally a system doesn't get a World until OnCreate is called and the System.World will return null.
         //We need a valid World in the constructor so we get one and assign it to this property instead.
         public new World World { get; }
-        public TaskSet TaskSet { get; }
-        public uint ID { get; }
 
-        public List<AbstractTaskDriver> SubTaskDrivers
+        internal TaskSet TaskSet { get; }
+        TaskSet ITaskSetOwner.TaskSet
+        {
+            get => TaskSet;
+        }
+        
+        internal uint ID { get; }
+        uint ITaskSetOwner.ID
+        {
+            get => ID;
+        }
+
+        List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
         {
             get => EMPTY_SUB_TASK_DRIVERS;
         }
 
-        public bool HasCancellableData
+        internal bool HasCancellableData
         {
             get
             {
                 Debug_EnsureHardened();
                 return m_HasCancellableData;
             }
+        }
+        bool ITaskSetOwner.HasCancellableData
+        {
+            get => HasCancellableData;
         }
 
         protected AbstractTaskDriverSystem(World world)
@@ -81,12 +97,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{GetType().GetReadableName()}|{ID}";
         }
 
-        public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
+        internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             m_TaskDrivers.Add(taskDriver);
         }
 
-        public ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(
+        internal ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(
             AbstractTaskDriver taskDriver,
             CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -96,7 +112,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
-        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+        internal EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>();
@@ -114,7 +130,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        public IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(
+        internal IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
@@ -133,7 +149,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 batchStrategy);
         }
 
-        public IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(
+        internal IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
@@ -156,7 +172,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // HARDENING
         //*************************************************************************************************************
 
-        public void Harden()
+        internal void Harden()
         {
             //This will get called multiple times but we only want to actually harden once
             if (m_IsHardened)
@@ -172,7 +188,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0;
         }
 
-        public void HardenUpdatePhase()
+        internal void HardenUpdatePhase()
         {
             Debug_EnsureNotHardenUpdatePhase();
             m_IsUpdatePhaseHardened = true;
@@ -188,7 +204,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_BulkJobScheduler = new BulkJobScheduler<AbstractJobConfig>(jobConfigs.ToArray());
         }
 
-        public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
+        void ITaskSetOwner.AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
         {
             TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
             foreach (AbstractTaskDriver taskDriver in m_TaskDrivers)

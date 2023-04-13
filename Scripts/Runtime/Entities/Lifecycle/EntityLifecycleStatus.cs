@@ -1,6 +1,5 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
-using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -19,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         private EntityQuery m_Query;
 
+        //TODO: Support EntityQueryDesc as well.
         public EntityLifecycleStatus(AbstractEntityLifecycleStatusSystem owningSystem, params ComponentType[] queryComponentTypes)
         {
             m_OwningSystem = owningSystem;
