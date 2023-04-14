@@ -174,24 +174,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
 
-        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadAccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataReadOnlyAccessWrapper<TData>(collection, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForWrite<TData>(ISharedWriteAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));
+            AddAccessWrapper(new GenericSharedWriteDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IExclusiveWriteAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.Default));
+            AddAccessWrapper(new GenericExclusiveWriteDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.Default));
             return this;
         }
 
@@ -439,11 +439,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return genericDataReadOnlyAccessWrapper.Data;
         }
 
-        internal TData GetGenericDataForWriting<TData>()
+        internal TData GetGenericDataForSharedWriting<TData>()
             where TData : struct
         {
-            GenericDataAccessWrapper<TData> genericDataAccessWrapper
-                = GetAccessWrapper<GenericDataAccessWrapper<TData>>(Usage.Default);
+            GenericSharedWriteDataAccessWrapper<TData> genericDataAccessWrapper
+                = GetAccessWrapper<GenericSharedWriteDataAccessWrapper<TData>>(Usage.Default);
+
+            return genericDataAccessWrapper.Data;
+        }
+
+        internal TData GetGenericDataForExclusiveWriting<TData>()
+            where TData : struct
+        {
+            GenericExclusiveWriteDataAccessWrapper<TData> genericDataAccessWrapper
+                = GetAccessWrapper<GenericExclusiveWriteDataAccessWrapper<TData>>(Usage.Default);
 
             return genericDataAccessWrapper.Data;
         }

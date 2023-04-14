@@ -3,10 +3,10 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class GenericDataAccessWrapper<TData> : AbstractAccessWrapper
+    internal class GenericExclusiveWriteDataAccessWrapper<TData> : AbstractAccessWrapper
         where TData : struct
     {
-        private readonly AccessControlledValue<TData> m_AccessControlledData;
+        private readonly IExclusiveWriteAccessControlledValue<TData> m_AccessControlledData;
         private TData m_Data;
 
         public TData Data
@@ -14,14 +14,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Data;
         }
 
-        public GenericDataAccessWrapper(AccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public GenericExclusiveWriteDataAccessWrapper(IExclusiveWriteAccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
             m_AccessControlledData = data;
         }
 
         public sealed override JobHandle AcquireAsync()
         {
-            return m_AccessControlledData.AcquireAsync(AccessType, out m_Data);
+            return m_AccessControlledData.AcquireExclusiveWriteAsync(out m_Data);
         }
 
         public sealed override void ReleaseAsync(JobHandle dependsOn)
