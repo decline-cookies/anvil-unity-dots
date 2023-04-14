@@ -105,10 +105,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <inheritdoc cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/>
         /// <remarks>
-        /// A version of <see cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and
-        /// readonly references.
+        /// A version of <see cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums.
         /// </remarks>
-        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList32Bytes<TEnum> list, TUnderlying value)
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this ref FixedList32Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
         {
@@ -125,10 +124,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <inheritdoc cref="FixedList64BytesExtensions.RemoveSwapBack{T,U}"/>
         /// <remarks>
-        /// A version of <see cref="FixedList64BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and
-        /// readonly references.
+        /// A version of <see cref="FixedList64BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums.
         /// </remarks>
-        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList64Bytes<TEnum> list, TUnderlying value)
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this ref FixedList64Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
         {
@@ -145,10 +143,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <inheritdoc cref="FixedList128BytesExtensions.RemoveSwapBack{T,U}"/>
         /// <remarks>
-        /// A version of <see cref="FixedList128BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and
-        /// readonly references.
+        /// A version of <see cref="FixedList128BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums.
         /// </remarks>
-        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList128Bytes<TEnum> list, TUnderlying value)
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this ref FixedList128Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
         {
@@ -165,9 +162,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <inheritdoc cref="FixedList512BytesExtensions.RemoveSwapBack{T,U}"/>
         /// <remarks>
-        /// A version of <see cref="FixedList512BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums and readonly references.
+        /// A version of <see cref="FixedList512BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums.
         /// </remarks>
-        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList512Bytes<TEnum> list, TUnderlying value)
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this ref FixedList512Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
         {
@@ -184,10 +181,9 @@ namespace Anvil.Unity.DOTS.Data
 
         /// <inheritdoc cref="FixedList4096BytesExtensions.RemoveSwapBack{T,U}"/>
         /// <remarks>
-        /// A version of <see cref="FixedList4096BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums
-        /// and readonly references.
+        /// A version of <see cref="FixedList4096BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums.
         /// </remarks>
-        public static bool RemoveSwapBack<TEnum, TUnderlying>(this in FixedList4096Bytes<TEnum> list, TUnderlying value)
+        public static bool RemoveSwapBack<TEnum, TUnderlying>(this ref FixedList4096Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
         {
