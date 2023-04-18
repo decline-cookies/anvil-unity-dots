@@ -14,16 +14,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="ecb">The <see cref="EntityCommandBuffer"/> to write to.</param>
         /// <param name="entitySpawnHelper">The <see cref="EntitySpawnHelper"/></param>
         /// <typeparam name="TDefinition">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
-        /// <returns>The created entity reference.</returns>
-        public static Entity CreateAndPopulate<TDefinition>(ref this TDefinition definition, ref EntityCommandBuffer ecb, in EntitySpawnHelper entitySpawnHelper) 
+        public static void CreateAndPopulate<TDefinition>(ref this TDefinition definition, ref EntityCommandBuffer ecb, in EntitySpawnHelper entitySpawnHelper)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
             Entity entity = ecb.CreateEntity(entitySpawnHelper.GetEntityArchetypeForDefinition<TDefinition>());
             definition.PopulateOnEntity(entity, ref ecb, entitySpawnHelper);
-
-            return entity;
         }
-        
+
         /// <summary>
         /// Create and populate an entity based on a <see cref="IEntitySpawnDefinition"/> using a prototype <see cref="Entity"/>
         /// </summary>
@@ -31,14 +28,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="ecb">The <see cref="EntityCommandBuffer"/> to write to.</param>
         /// <param name="entitySpawnHelper">The <see cref="EntitySpawnHelper"/></param>
         /// <typeparam name="TDefinition">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
-        /// <returns>The created entity reference.</returns>
-        public static Entity CreateAndPopulateWithPrototype<TDefinition>(ref this TDefinition definition, ref EntityCommandBuffer ecb, in EntitySpawnHelper entitySpawnHelper) 
+        public static void CreateAndPopulateWithPrototype<TDefinition>(ref this TDefinition definition, ref EntityCommandBuffer ecb, in EntitySpawnHelper entitySpawnHelper)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
             Entity entity = ecb.Instantiate(entitySpawnHelper.GetPrototypeEntityForDefinition<TDefinition>());
             definition.PopulateOnEntity(entity, ref ecb, entitySpawnHelper);
-
-            return entity;
         }
     }
 }
