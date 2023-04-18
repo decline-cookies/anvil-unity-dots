@@ -6,6 +6,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     public interface IResolvableJobConfigRequirements : IJobConfig
     {
+        public delegate IResolvableJobConfigRequirements ConfigureJobRequirementsDelegate<in T>(T taskDriver, IResolvableJobConfigRequirements jobConfig)
+            where T : AbstractTaskDriver;
+
         /// <summary>
         /// Requires a specific type of data that the job can resolve itself into.
         /// </summary>
@@ -13,5 +16,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
             where TResolveTargetType : unmanaged, IEntityProxyInstance;
+
+        IResolvableJobConfigRequirements AddRequirementsFrom<T>(T taskDriver, ConfigureJobRequirementsDelegate<T> configureRequirements)
+            where T : AbstractTaskDriver;
     }
 }
