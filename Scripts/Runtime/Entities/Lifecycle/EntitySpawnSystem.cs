@@ -112,7 +112,7 @@ namespace Anvil.Unity.DOTS.Entities
             return nativeArraySpawnDefinitions;
         }
 
-        private void MarkEntitySpawnerForUpdate(IEntitySpawner entitySpawner)
+        private void EntitySpawner_OnWriterAcquired(IEntitySpawner entitySpawner)
         {
             //By using this, we're writing immediately, but will need to execute later on when the system runs
             Enabled = true;
@@ -131,6 +131,7 @@ namespace Anvil.Unity.DOTS.Entities
                     m_EntityArchetypes,
                     m_EntityPrototypes,
                     EntitySpawnSystemReflectionHelper.SHOULD_DISABLE_BURST_LOOKUP[definitionType]);
+                entitySpawner.OnPendingWorkAdded += EntitySpawner_OnWriterAcquired;
                 m_EntitySpawners.Add(definitionType, entitySpawner);
             }
 
@@ -158,8 +159,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnDeferred(spawnDefinition);
-
-            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <summary>
@@ -179,8 +178,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnDeferred(spawnDefinitions);
-
-            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <inheritdoc cref="SpawnDeferred{TEntitySpawnDefinition}(NativeArray{TEntitySpawnDefinition})"/>
@@ -195,37 +192,19 @@ namespace Anvil.Unity.DOTS.Entities
         // SPAWN IN A JOB
         //*************************************************************************************************************
 
+        //TODO: Revise
         /// <summary>
-        /// Returns a <see cref="EntitySpawnWriter{TEntitySpawnDefinition}"/> to enable queueing
-        /// up <see cref="IEntitySpawnDefinition"/>s to spawn during the system's update phase while in a job.
+        /// Returns an <see cref="EntitySpawner{TEntitySpawnDefinition}"/> to enable acquiring a writer to spawn
+        /// <see cref="IEntitySpawnDefinition"/>s during the system's update phase while in a job.
         /// </summary>
-        /// <param name="entitySpawnWriter">The <see cref="EntitySpawnWriter{TEntitySpawnDefinition}"/> to use</param>
         /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         /// <returns>
-        /// A <see cref="JobHandle"/> representing when the <see cref="EntitySpawnWriter{TEntitySpawnDefinition}"/>
-        /// can be used.
+        /// An <see cref="EntitySpawner{TEntitySpawnDefinition}"/> to acquire a writer against.
         /// </returns>
-        public JobHandle AcquireEntitySpawnWriterAsync<TEntitySpawnDefinition>(out EntitySpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
+        public EntitySpawner<TEntitySpawnDefinition> GetSpawner<TEntitySpawnDefinition>()
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
-
-            MarkEntitySpawnerForUpdate(entitySpawner);
-
-            return entitySpawner.AcquireEntitySpawnWriterAsync(out entitySpawnWriter);
-        }
-
-        /// <summary>
-        /// Allows the system to know when other jobs have finished trying to queue
-        /// up <see cref="IEntitySpawnDefinition"/>s to be spawned.
-        /// </summary>
-        /// <param name="dependsOn">The <see cref="JobHandle"/> to wait on</param>
-        /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
-        public void ReleaseEntitySpawnWriterAsync<TEntitySpawnDefinition>(JobHandle dependsOn)
-            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
-        {
-            EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
-            entitySpawner.ReleaseEntitySpawnWriterAsync(dependsOn);
+            return GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
         }
 
 
@@ -253,8 +232,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnWithPrototypeDeferred(spawnDefinition, shouldDestroyPrototype);
-
-            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <summary>
@@ -277,8 +254,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             EntitySpawner<TEntitySpawnDefinition> entitySpawner = GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
             entitySpawner.SpawnWithPrototypeDeferred(spawnDefinitions, shouldDestroyPrototype);
-
-            MarkEntitySpawnerForUpdate(entitySpawner);
         }
 
         /// <summary>

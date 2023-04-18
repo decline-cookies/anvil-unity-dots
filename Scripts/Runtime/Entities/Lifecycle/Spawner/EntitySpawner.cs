@@ -11,10 +11,19 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     [UsedImplicitly]
-    internal class EntitySpawner<TEntitySpawnDefinition> : AbstractAnvilBase,
-                                                           IEntitySpawner
+    public class EntitySpawner<TEntitySpawnDefinition> : AbstractAnvilBase,
+                                                         ISharedWriteAccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>,
+                                                         IEntitySpawner
         where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
     {
+        private event Action<IEntitySpawner> OnPendingWorkAdded;
+
+        event Action<IEntitySpawner> IEntitySpawner.OnPendingWorkAdded
+        {
+            add => this.OnPendingWorkAdded += value;
+            remove => this.OnPendingWorkAdded -= value;
+        }
+
         private readonly AccessControlledValue<UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>> m_DefinitionsToSpawn;
         private readonly AccessControlledValue<UnsafeTypedStream<Entity>> m_PrototypesToDestroy;
         private readonly int m_MainThreadIndex;
@@ -26,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
         private EntityManager m_EntityManager;
 
 
-        public EntitySpawner(
+        internal EntitySpawner(
             EntityManager entityManager,
             NativeParallelHashMap<long, EntityArchetype> entityArchetypes,
             IReadAccessControlledValue<NativeParallelHashMap<long, Entity>> prototypes,
@@ -46,9 +55,16 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void DisposeSelf()
         {
+            OnPendingWorkAdded = null;
+
             m_DefinitionsToSpawn.Dispose();
             m_PrototypesToDestroy.Dispose();
             base.DisposeSelf();
+        }
+
+        private void DispatchPendingWorkAdded()
+        {
+            OnPendingWorkAdded?.Invoke(this);
         }
 
         private EntitySpawnHelper AcquireEntitySpawnHelper()
@@ -63,6 +79,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void InternalSpawn(TEntitySpawnDefinition element, PrototypeSpawnBehaviour prototypeSpawnBehaviour)
         {
+            DispatchPendingWorkAdded();
+
             // ReSharper disable once SuggestVarOrType_SimpleTypes
             using var handle = m_DefinitionsToSpawn.AcquireWithHandle(AccessType.SharedWrite);
             // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
@@ -71,6 +89,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private void InternalSpawn(NativeArray<TEntitySpawnDefinition> elements, PrototypeSpawnBehaviour prototypeSpawnBehaviour)
         {
+            DispatchPendingWorkAdded();
+
             // ReSharper disable once SuggestVarOrType_SimpleTypes
             using var handle = m_DefinitionsToSpawn.AcquireWithHandle(AccessType.SharedWrite);
             // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
@@ -157,16 +177,40 @@ namespace Anvil.Unity.DOTS.Entities
         // SPAWN API - IN JOB
         //*************************************************************************************************************
 
-        public JobHandle AcquireEntitySpawnWriterAsync(out EntitySpawnWriter<TEntitySpawnDefinition> entitySpawnWriter)
+        public AccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>.AccessHandle AcquireWithSharedWriteHandle()
         {
+            DispatchPendingWorkAdded();
+
+            var handle = m_DefinitionsToSpawn.AcquireWithHandle(AccessType.SharedWrite);
+            EntitySpawnWriter<TEntitySpawnDefinition> writer = new EntitySpawnWriter<TEntitySpawnDefinition>(handle.Value.AsWriter());
+            return AccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>.AccessHandle.CreateDerived(handle, writer);
+        }
+
+        public EntitySpawnWriter<TEntitySpawnDefinition> AcquireSharedWrite()
+        {
+            DispatchPendingWorkAdded();
+
+            UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> definitionsToSpawn = m_DefinitionsToSpawn.Acquire(AccessType.SharedWrite);
+            return new EntitySpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter());
+        }
+
+        public JobHandle AcquireSharedWriteAsync(out EntitySpawnWriter<TEntitySpawnDefinition> value)
+        {
+            DispatchPendingWorkAdded();
+
             JobHandle dependsOn = m_DefinitionsToSpawn.AcquireAsync(AccessType.SharedWrite, out UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> definitionsToSpawn);
-            entitySpawnWriter = new EntitySpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter());
+            value = new EntitySpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter());
             return dependsOn;
         }
 
-        public void ReleaseEntitySpawnWriterAsync(JobHandle dependsOn)
+        public void Release()
         {
-            m_DefinitionsToSpawn.ReleaseAsync(dependsOn);
+            m_DefinitionsToSpawn.Release();
+        }
+
+        public void ReleaseAsync(JobHandle releaseAccessDependency)
+        {
+            m_DefinitionsToSpawn.ReleaseAsync(releaseAccessDependency);
         }
 
 
