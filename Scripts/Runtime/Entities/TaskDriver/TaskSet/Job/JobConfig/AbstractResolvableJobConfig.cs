@@ -44,6 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IResolvableJobConfigRequirements.AddRequirementsFrom{TResolveTargetType}"/>
         public IResolvableJobConfigRequirements AddRequirementsFrom<T>(T taskDriver, IResolvableJobConfigRequirements.ConfigureJobRequirementsDelegate<T> configureRequirements)
             where T : AbstractTaskDriver
         {
