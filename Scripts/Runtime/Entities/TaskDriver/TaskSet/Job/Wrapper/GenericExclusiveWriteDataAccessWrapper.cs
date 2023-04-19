@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Data;
         }
 
-        public GenericExclusiveWriteDataAccessWrapper(IExclusiveWriteAccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public GenericExclusiveWriteDataAccessWrapper(IExclusiveWriteAccessControlledValue<TData> data, AbstractJobConfig.Usage usage) : base(AccessType.ExclusiveWrite, usage)
         {
             m_AccessControlledData = data;
         }

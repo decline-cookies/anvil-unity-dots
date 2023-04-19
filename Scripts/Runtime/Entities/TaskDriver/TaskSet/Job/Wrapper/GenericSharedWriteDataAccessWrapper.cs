@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Data;
         }
 
-        public GenericSharedWriteDataAccessWrapper(ISharedWriteAccessControlledValue<TData> data, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public GenericSharedWriteDataAccessWrapper(ISharedWriteAccessControlledValue<TData> data, AbstractJobConfig.Usage usage) : base(AccessType.SharedWrite, usage)
         {
             m_AccessControlledData = data;
         }
