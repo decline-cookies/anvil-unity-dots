@@ -1,7 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using JetBrains.Annotations;
 using System;
 using Unity.Burst;
 using Unity.Collections;
@@ -10,7 +9,6 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    [UsedImplicitly]
     public class EntitySpawner<TEntitySpawnDefinition> : AbstractAnvilBase,
                                                          ISharedWriteAccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>,
                                                          IEntitySpawner
@@ -20,8 +18,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         event Action<IEntitySpawner> IEntitySpawner.OnPendingWorkAdded
         {
-            add => this.OnPendingWorkAdded += value;
-            remove => this.OnPendingWorkAdded -= value;
+            add => OnPendingWorkAdded += value;
+            remove => OnPendingWorkAdded -= value;
         }
 
         private readonly AccessControlledValue<UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>> m_DefinitionsToSpawn;
