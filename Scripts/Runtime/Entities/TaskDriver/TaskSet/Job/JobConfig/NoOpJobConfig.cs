@@ -122,5 +122,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return configureRequirements(taskDriver, this);
         }
+
+        public IResolvableJobConfigRequirements AddRequirementsFrom<T>(T taskDriver, IResolvableJobConfigRequirements.ConfigureJobRequirementsDelegate<T> configureRequirements)
+            where T : AbstractTaskDriver
+        {
+            return configureRequirements(taskDriver, this);
+        }
     }
 }
