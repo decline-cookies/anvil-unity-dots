@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <typeparam name="TData">The type of data to write to.</typeparam>
         /// <returns>The <typeparamref name="TData"/> to write to.</returns>
-        public TData GetGenericDataForWriting<TData>()
+        public TData GetGenericDataForSharedWriting<TData>()
             where TData : struct
         {
             return m_JobConfig.GetGenericDataForSharedWriting<TData>();

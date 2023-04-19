@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
             where TData : struct;
 
 

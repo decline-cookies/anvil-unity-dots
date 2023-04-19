@@ -181,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(ISharedWriteAccessControlledValue<TData> collection)
+        public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericSharedWriteDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));

@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
             where TData : struct
         {
             return this;
