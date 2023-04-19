@@ -9,6 +9,14 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    /// <summary>
+    /// An access controlled instance responsible for spawning entities of a specific definition.
+    /// Will produce <see cref="EntitySpawnWriter{TEntitySpawnDefinition}"/> instances for scheduling entity spawning
+    /// from jobs.
+    /// </summary>
+    /// <typeparam name="TEntitySpawnDefinition">
+    /// The <see cref="IEntitySpawnDefinition"/> type that this spawner spawns.
+    /// </typeparam>
     public class EntitySpawner<TEntitySpawnDefinition> : AbstractAnvilBase,
                                                          ISharedWriteAccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>,
                                                          IEntitySpawner
@@ -104,16 +112,44 @@ namespace Anvil.Unity.DOTS.Entities
         // SPAWN API - REGULAR
         //*************************************************************************************************************
 
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> with the given definition later on when the associated
+        /// <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with.
+        /// </param>
         public void SpawnDeferred(TEntitySpawnDefinition spawnDefinition)
         {
             InternalSpawn(spawnDefinition, PrototypeSpawnBehaviour.None);
         }
 
+        /// <summary>
+        /// Spawns multiple <see cref="Entity"/>s with the given definitions later on when the associated
+        /// <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <remarks>
+        /// Will enable the system to be run for at least one frame. If no more spawn requests come in, the system
+        /// will disable itself until more requests come in.
+        /// </remarks>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with.
+        /// </param>
         public void SpawnDeferred(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
         {
             InternalSpawn(spawnDefinitions, PrototypeSpawnBehaviour.None);
         }
 
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> with the given definition immediately and returns it.
+        /// </summary>
+        /// <remarks>
+        /// This will not enable the owning system.
+        /// </remarks
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with.
+        /// </param>
+        /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnImmediate(TEntitySpawnDefinition spawnDefinition)
         {
             EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -132,21 +168,64 @@ namespace Anvil.Unity.DOTS.Entities
             return entity;
         }
 
+        //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
 
         //*************************************************************************************************************
         // SPAWN API - PROTOTYPE
         //*************************************************************************************************************
 
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> with the given definition by cloning the registered prototype
+        /// <see cref="Entity"/> when the associated <see cref="EntityCommandBufferSystem"/> runs later on.
+        /// </summary>
+        /// <remarks>
+        /// Will enable the owning system to be run for at least one frame. If no more spawn requests come in, the system
+        /// will disable itself until more requests come in.
+        /// </remarks>
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with.
+        /// </param>
+        /// <param name="shouldDestroyPrototype">
+        /// If true, will destroy the prototype <see cref="Entity"/> after creation.
+        /// </param>
         public void SpawnWithPrototypeDeferred(TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
         {
             InternalSpawn(spawnDefinition, shouldDestroyPrototype ? PrototypeSpawnBehaviour.Destroy : PrototypeSpawnBehaviour.Keep);
         }
 
+        /// <summary>
+        /// Spawns multiple <see cref="Entity"/>s with the given definitions later on when the associated
+        /// <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <remarks>
+        /// Will enable the owning system to be run for at least one frame. If no more spawn requests come in, the system
+        /// will disable itself until more requests come in.
+        /// </remarks>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with.
+        /// </param>
+        /// <param name="shouldDestroyPrototype">
+        /// If true, will destroy the prototype <see cref="Entity"/> after creation.
+        /// </param>
         public void SpawnWithPrototypeDeferred(NativeArray<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
         {
             InternalSpawn(spawnDefinitions, shouldDestroyPrototype ? PrototypeSpawnBehaviour.Destroy : PrototypeSpawnBehaviour.Keep);
         }
 
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> with the given definition immediately by cloning the passed in prototype
+        /// <see cref="Entity"/> and returns it immediately.
+        /// </summary>
+        /// <remarks>
+        /// This will not enable the owning system.
+        /// </remarks>
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with.
+        /// </param>
+        /// <param name="shouldDestroyPrototype">
+        /// If true, will destroy the prototype <see cref="Entity"/> after creation.
+        /// </param>
+        /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnWithPrototypeImmediate(TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
         {
             EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -170,11 +249,14 @@ namespace Anvil.Unity.DOTS.Entities
             return entity;
         }
 
+        //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
+
 
         //*************************************************************************************************************
         // SPAWN API - IN JOB
         //*************************************************************************************************************
 
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.AcquireWithSharedWriteHandle"/>
         public AccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>.AccessHandle AcquireWithSharedWriteHandle()
         {
             DispatchPendingWorkAdded();
@@ -184,6 +266,7 @@ namespace Anvil.Unity.DOTS.Entities
             return AccessControlledValue<EntitySpawnWriter<TEntitySpawnDefinition>>.AccessHandle.CreateDerived(handle, writer);
         }
 
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.AcquireSharedWrite"/>
         public EntitySpawnWriter<TEntitySpawnDefinition> AcquireSharedWrite()
         {
             DispatchPendingWorkAdded();
@@ -192,6 +275,7 @@ namespace Anvil.Unity.DOTS.Entities
             return new EntitySpawnWriter<TEntitySpawnDefinition>(definitionsToSpawn.AsWriter());
         }
 
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.AcquireSharedWriteAsync"/>
         public JobHandle AcquireSharedWriteAsync(out EntitySpawnWriter<TEntitySpawnDefinition> value)
         {
             DispatchPendingWorkAdded();
@@ -201,11 +285,13 @@ namespace Anvil.Unity.DOTS.Entities
             return dependsOn;
         }
 
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.Release"/>
         public void Release()
         {
             m_DefinitionsToSpawn.Release();
         }
 
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.ReleaseAsync"/>
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             m_DefinitionsToSpawn.ReleaseAsync(releaseAccessDependency);
@@ -216,7 +302,7 @@ namespace Anvil.Unity.DOTS.Entities
         // SPAWN API - IN JOB
         //*************************************************************************************************************
 
-        public JobHandle Schedule(
+        JobHandle IEntitySpawner.Schedule(
             JobHandle dependsOn,
             ref EntityCommandBuffer ecb)
         {

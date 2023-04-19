@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities
     {
         internal event Action<IEntitySpawner> OnPendingWorkAdded;
 
-        public JobHandle Schedule(
+        internal JobHandle Schedule(
             JobHandle dependsOn,
             ref EntityCommandBuffer ecb);
     }
