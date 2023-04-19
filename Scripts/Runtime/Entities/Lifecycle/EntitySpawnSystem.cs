@@ -66,9 +66,9 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnDestroy()
         {
             m_ActiveEntitySpawners.Clear();
+            m_EntitySpawners.DisposeAllValuesAndClear();
             m_EntityArchetypes.Dispose();
             m_EntityPrototypes.Dispose();
-            m_EntitySpawners.DisposeAllValuesAndClear();
             base.OnDestroy();
         }
 
@@ -370,6 +370,13 @@ namespace Anvil.Unity.DOTS.Entities
         public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
+            //If we're tearing down and this system was destroyed before whoever was trying to unregister, we 
+            //can't do anything. It's ok, because our Dispose would have handled freeing everything up.
+            if (m_EntityPrototypes.IsDisposed)
+            {
+                return;
+            }
+            
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
             long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
             DEBUG_EnsurePrototypeIsRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
