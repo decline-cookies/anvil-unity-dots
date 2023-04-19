@@ -112,11 +112,17 @@ namespace Anvil.Unity.DOTS.Entities
             // ReSharper disable once InvertIf
             if (!m_EntitySpawners.TryGetValue(definitionType, out IEntitySpawner entitySpawner))
             {
-                entitySpawner = new EntitySpawner<TEntitySpawnDefinition>(
-                    EntityManager,
-                    m_EntityArchetypes,
-                    m_EntityPrototypes,
-                    EntitySpawnSystemReflectionHelper.SHOULD_DISABLE_BURST_LOOKUP[definitionType]);
+                // TODO: #86 - When upgrading to Entities 1.0 we can use an unmanaged shared component which will let us
+                // TODO:       use burst for all spawners.
+                entitySpawner = EntitySpawnSystemReflectionHelper.SHOULD_DISABLE_BURST_LOOKUP[definitionType]
+                    ? new EntitySpawner<TEntitySpawnDefinition>(
+                        EntityManager,
+                        m_EntityArchetypes,
+                        m_EntityPrototypes)
+                    : new BurstEntitySpawner<TEntitySpawnDefinition>(
+                        EntityManager,
+                        m_EntityArchetypes,
+                        m_EntityPrototypes);
                 entitySpawner.OnPendingWorkAdded += EntitySpawner_OnWriterAcquired;
                 m_EntitySpawners.Add(definitionType, entitySpawner);
             }
