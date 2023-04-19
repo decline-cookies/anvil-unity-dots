@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// A reference to the <see cref="IResolvableJobConfigRequirements"/> instance passed in to continue chaining
         /// configuration methods.
         /// </returns>
-        public delegate IResolvableJobConfigRequirements ConfigureJobRequirementsDelegate<in T>(T taskDriver, IResolvableJobConfigRequirements jobConfig)
+        public new delegate IResolvableJobConfigRequirements ConfigureJobRequirementsDelegate<in T>(T taskDriver, IResolvableJobConfigRequirements jobConfig)
             where T : AbstractTaskDriver;
 
         /// <summary>
