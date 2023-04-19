@@ -42,6 +42,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.Count"/>
         public int Count() => m_Lookup.Count();
 
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.TryGetValue"/>
+        public bool TryGet(Entity entity, out TData data) => m_Lookup.TryGetValue(entity, out data);
+
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.ContainsKey"/>
+        public bool Contains(Entity entity) => m_Lookup.ContainsKey(entity);
+
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetKeyArray"/>>
         public NativeArray<Entity> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
         {
