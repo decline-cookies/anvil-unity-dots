@@ -28,9 +28,10 @@ namespace Anvil.Unity.DOTS.Data
         /// <param name="nativeArray">The <see cref="NativeArray{T}"/></param>
         /// <param name="index">The index to access. Must be in the range of [0..Length).</param>
         /// <returns>A reference to the element at the index.</returns>
-        public static ref readonly T ElementAtReadOnly<T>(this NativeArray<T> nativeArray, int index) where T : unmanaged
+        public static unsafe ref readonly T ElementAtReadOnly<T>(this NativeArray<T> nativeArray, int index) where T : unmanaged
         {
-            return ref nativeArray.ElementAt(index);
+            Debug.Assert(index >= 0 && index < nativeArray.Length);
+            return ref UnsafeUtility.ArrayElementAsRef<T>(nativeArray.GetUnsafeReadOnlyPtr(), index);
         }
         
         /// <summary>
