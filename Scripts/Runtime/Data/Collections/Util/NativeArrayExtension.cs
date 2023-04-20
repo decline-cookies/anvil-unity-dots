@@ -11,6 +11,30 @@ namespace Anvil.Unity.DOTS.Data
     public static class NativeArrayExtension
     {
         /// <summary>
+        /// Returns a reference to the element at a given index.
+        /// </summary>
+        /// <param name="nativeArray">The <see cref="NativeArray{T}"/></param>
+        /// <param name="index">The index to access. Must be in the range of [0..Length).</param>
+        /// <returns>A reference to the element at the index.</returns>
+        public static unsafe ref T ElementAt<T>(this NativeArray<T> nativeArray, int index) where T : unmanaged
+        {
+            Debug.Assert(index >= 0 && index < nativeArray.Length);
+            return ref UnsafeUtility.ArrayElementAsRef<T>(nativeArray.GetUnsafePtr(), index);
+        }
+        
+        /// <summary>
+        /// Returns a read only reference to the element at a given index.
+        /// </summary>
+        /// <param name="nativeArray">The <see cref="NativeArray{T}"/></param>
+        /// <param name="index">The index to access. Must be in the range of [0..Length).</param>
+        /// <returns>A reference to the element at the index.</returns>
+        public static unsafe ref readonly T ElementAtReadOnly<T>(this NativeArray<T> nativeArray, int index) where T : unmanaged
+        {
+            Debug.Assert(index >= 0 && index < nativeArray.Length);
+            return ref UnsafeUtility.ArrayElementAsRef<T>(nativeArray.GetUnsafeReadOnlyPtr(), index);
+        }
+        
+        /// <summary>
         /// Sets all elements in a collection to their default value.
         /// </summary>
         /// <typeparam name="T">The element type of the collection.</typeparam>
