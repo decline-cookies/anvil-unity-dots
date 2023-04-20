@@ -67,14 +67,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Specifies a generic struct to be read from in a shared-read context.
         /// </summary>
-        /// <param name="data">An <see cref="IReadOnlyAccessControlledValue{T}"/> of the data to be read</param>
-        /// <typeparam name="TData">The struct inside the <see cref="IReadOnlyAccessControlledValue{T}"/></typeparam>
+        /// <param name="data">An <see cref="IReadAccessControlledValue{T}"/> of the data to be read</param>
+        /// <typeparam name="TData">The struct inside the <see cref="IReadAccessControlledValue{T}"/></typeparam>
         /// <remarks>
         /// This is generally used to wrap a Native Collection like a <see cref="NativeArray{T}"/> or other collection
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadAccessControlledValue<TData> data)
             where TData : struct;
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
             where TData : struct;
 
 
@@ -115,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// for use in your job.
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IExclusiveWriteAccessControlledValue<TData> data)
             where TData : struct;
 
         /// <summary>

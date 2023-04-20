@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly bool m_MustDisableBurst;
 
         private readonly NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
-        private readonly IReadOnlyAccessControlledValue<NativeParallelHashMap<long, Entity>> m_Prototypes;
+        private readonly IReadAccessControlledValue<NativeParallelHashMap<long, Entity>> m_Prototypes;
 
         private EntityManager m_EntityManager;
 
@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
         public EntitySpawner(
             EntityManager entityManager,
             NativeParallelHashMap<long, EntityArchetype> entityArchetypes,
-            IReadOnlyAccessControlledValue<NativeParallelHashMap<long, Entity>> prototypes,
+            IReadAccessControlledValue<NativeParallelHashMap<long, Entity>> prototypes,
             bool mustDisableBurst)
         {
             m_DefinitionsToSpawn = new AccessControlledValue<UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>>(new UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>>(Allocator.Persistent));
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         private EntitySpawnHelper AcquireEntitySpawnHelper()
         {
-            return new EntitySpawnHelper(m_EntityArchetypes, m_Prototypes.AcquireReadOnly());
+            return new EntitySpawnHelper(m_EntityArchetypes, m_Prototypes.AcquireRead());
         }
 
         private void ReleaseEntitySpawnHelper()
@@ -123,7 +123,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             InternalSpawn(spawnDefinition, shouldDestroyPrototype ? PrototypeSpawnBehaviour.Destroy : PrototypeSpawnBehaviour.Keep);
         }
-        
+
         public void SpawnWithPrototypeDeferred(NativeArray<TEntitySpawnDefinition> spawnDefinitions, bool shouldDestroyPrototype)
         {
             InternalSpawn(spawnDefinitions, shouldDestroyPrototype ? PrototypeSpawnBehaviour.Destroy : PrototypeSpawnBehaviour.Keep);
@@ -147,7 +147,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
-            
+
             ReleaseEntitySpawnHelper();
             return entity;
         }
@@ -181,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities
             dependsOn = JobHandle.CombineDependencies(
                 dependsOn,
                 m_DefinitionsToSpawn.AcquireAsync(AccessType.ExclusiveWrite, out UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> definitions),
-                m_Prototypes.AcquireReadOnlyAsync(out var prototypes));
+                m_Prototypes.AcquireReadAsync(out var prototypes));
 
             EntitySpawnHelper entitySpawnHelper = new EntitySpawnHelper(m_EntityArchetypes, prototypes);
 
@@ -292,8 +292,8 @@ namespace Anvil.Unity.DOTS.Entities
                 spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
             }
         }
-        
-        
+
+
         private struct SpawnJobNoBurst : IJob
         {
             [ReadOnly] private UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;

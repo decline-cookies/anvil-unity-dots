@@ -10,7 +10,10 @@ namespace Anvil.Unity.DOTS.Jobs
     /// </summary>
     /// <typeparam name="T">The type of data to wrap access control to</typeparam>
     public class AccessControlledValue<T> : AbstractAnvilBase,
-                                            IReadOnlyAccessControlledValue<T>
+                                            IAccessControlledValue<T>,
+                                            IReadAccessControlledValue<T>,
+                                            ISharedWriteAccessControlledValue<T>,
+                                            IExclusiveWriteAccessControlledValue<T>
     {
         private readonly AccessController m_AccessController;
 
@@ -43,11 +46,11 @@ namespace Anvil.Unity.DOTS.Jobs
         /// may be performed without modifying the state of the controller.
         /// This is the same <see cref="JobHandle"/> that would be returned by
         /// <see cref="AccessControlledValue{T}.AcquireAsync"/> or
-        /// <see cref="AccessControlledValue{T}.AcquireReadOnlyAsync"/> when provided the same parameter.
+        /// <see cref="AcquireReadAsync"/> when provided the same parameter.
         /// </summary>
         /// <remarks>
         /// Generally <see cref="AccessControlledValue{T}.AcquireAsync"/> or
-        /// <see cref="AccessControlledValue{T}.AcquireReadOnlyAsync"/>should be used.
+        /// <see cref="AcquireReadAsync"/>should be used.
         /// This method is an advanced feature for specialized
         /// situations like detecting if a value has been acquired for writing between calls.
         /// </remarks>
@@ -60,84 +63,87 @@ namespace Anvil.Unity.DOTS.Jobs
             return m_AccessController.GetDependencyFor(accessType);
         }
 
-        /// <summary>
-        /// Acquires the data instance synchronously for a given <see cref="AccessType"/> and returns the data in an
-        /// <see cref="AccessControlledValue{T}.AccessHandle"/>.
-        /// This is the preferred method of synchronous value access vs <see cref="Acquire"/>/<see cref="AccessControlledValue{T}.Release"/>.
-        /// </summary>
-        /// <remarks>
-        /// The <see cref="AccessControlledValue{T}.AccessHandle"/> is a safer way to synchronously maintain access to an
-        /// <see cref="AccessControlledValue{T}"/>. Paired with a using statement access to the value will be released
-        /// when the handle falls out of scope.
-        /// </remarks>
-        /// <example>using var valueHandle = myAccessControlledValue.AcquireWithHandle(AccessType.SharedRead);</example>
-        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
-        /// <returns>
-        /// The <see cref="AccessControlledValue{T}.AccessHandle"/> that maintains access to the controlled value until disposed.
-        /// </returns>
+        /// <inheritdoc cref="IAccessControlledValue{T}.AcquireWithHandle"/>
         public AccessHandle AcquireWithHandle(AccessType accessType)
         {
-            return new AccessHandle(this, accessType);
+            return new AccessHandle(m_AccessController.AcquireWithHandle(accessType), m_Value);
         }
 
-        /// <summary>
-        /// Acquires the data instance synchronously for a given <see cref="AccessType"/>.
-        /// Will block on the calling thread if there are any jobs that need to complete before this data instance
-        /// can be used.
-        ///
-        /// Typically this is used when wanting to perform main thread work on the data.
-        /// </summary>
-        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
-        /// <returns>The data instance</returns>
+        /// <inheritdoc cref="IAccessControlledValue{T}.Acquire"/>
         public T Acquire(AccessType accessType)
         {
             m_AccessController.Acquire(accessType);
             return m_Value;
         }
 
-        /// <summary>
-        /// Acquires the data instance asynchronously for a given <see cref="AccessType"/>
-        /// The data will be returned immediately as well as a <see cref="JobHandle"/> to schedule actually
-        /// reading from/writing to the data.
-        ///
-        /// Not respecting the <see cref="JobHandle"/> could lead to dependency errors.
-        ///
-        /// Typically this is used when wanting to perform work on the data in a job to be scheduled.
-        /// </summary>
-        /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
-        /// <param name="value">The data instance</param>
-        /// <returns>A <see cref="JobHandle"/> to wait on before accessing the data</returns>
+        /// <inheritdoc cref="IAccessControlledValue{T}"/>
         public JobHandle AcquireAsync(AccessType accessType, out T value)
         {
             value = m_Value;
             return m_AccessController.AcquireAsync(accessType);
         }
 
-        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.AcquireWithReadOnlyHandle"/>
-        public AccessHandle AcquireWithReadOnlyHandle()
+        /// <inheritdoc cref="IReadAccessControlledValue{T}.AcquireWithReadHandle"/>
+        public AccessHandle AcquireWithReadHandle()
         {
             return AcquireWithHandle(AccessType.SharedRead);
         }
 
-        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.AcquireReadOnly"/>
-        public T AcquireReadOnly()
+        /// <inheritdoc cref="IReadAccessControlledValue{T}.AcquireRead"/>
+        public T AcquireRead()
         {
             return Acquire(AccessType.SharedRead);
         }
 
-        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.AcquireReadOnlyAsync"/>
-        public JobHandle AcquireReadOnlyAsync(out T value)
+        /// <inheritdoc cref="IReadAccessControlledValue{T}.AcquireReadAsync"/>
+        public JobHandle AcquireReadAsync(out T value)
         {
             return AcquireAsync(AccessType.SharedRead, out value);
         }
 
-        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.Release"/>
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.AcquireWithSharedWriteHandle"/>
+        public AccessHandle AcquireWithSharedWriteHandle()
+        {
+            return AcquireWithHandle(AccessType.SharedWrite);
+        }
+
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.AcquireSharedWrite"/>
+        public T AcquireSharedWrite()
+        {
+            return Acquire(AccessType.SharedWrite);
+        }
+
+        /// <inheritdoc cref="ISharedWriteAccessControlledValue{T}.AcquireSharedWriteAsync"/>
+        public JobHandle AcquireSharedWriteAsync(out T value)
+        {
+            return AcquireAsync(AccessType.SharedWrite, out value);
+        }
+
+        /// <inheritdoc cref="IExclusiveWriteAccessControlledValue{T}.AcquireWithExclusiveWriteHandle"/>
+        public AccessHandle AcquireWithExclusiveWriteHandle()
+        {
+            return AcquireWithHandle(AccessType.ExclusiveWrite);
+        }
+
+        /// <inheritdoc cref="IExclusiveWriteAccessControlledValue{T}.AcquireExclusiveWrite"/>
+        public T AcquireExclusiveWrite()
+        {
+            return Acquire(AccessType.ExclusiveWrite);
+        }
+
+        /// <inheritdoc cref="IExclusiveWriteAccessControlledValue{T}.AcquireExclusiveWriteAsync"/>
+        public JobHandle AcquireExclusiveWriteAsync(out T value)
+        {
+            return AcquireAsync(AccessType.ExclusiveWrite, out value);
+        }
+
+        /// <inheritdoc cref="IAccessControlledValue{T}.Release"/>
         public void Release()
         {
             m_AccessController.Release();
         }
 
-        /// <inheritdoc cref="IReadOnlyAccessControlledValue{T}.ReleaseAsync"/>
+        /// <inheritdoc cref="IAccessControlledValue{T}.ReleaseAsync"/>
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             m_AccessController.ReleaseAsync(releaseAccessDependency);
@@ -156,29 +162,45 @@ namespace Anvil.Unity.DOTS.Jobs
         public readonly struct AccessHandle : IDisposable
         {
             /// <summary>
+            /// Creates an access handle instance that derives from another access handle.
+            /// </summary>
+            /// <param name="sourceHandle">The access handle to derive from.</param>
+            /// <param name="derivedValue">The value being provided to the consumer.</param>
+            /// <typeparam name="U">The type of the value provided to the consumer.</typeparam>
+            /// <returns>The access handle instance.</returns>
+            /// <remarks>
+            /// This is useful for implementations of an access control interface that wrap one (or many) other access
+            /// controlled values or implementations that transform/wrap an access controlled value before exposing to
+            /// the consumer.
+            /// </remarks>
+            public static AccessHandle CreateDerived<U>(AccessControlledValue<U>.AccessHandle sourceHandle, T derivedValue)
+            {
+                return new AccessHandle(sourceHandle.m_ControllerHandle, derivedValue);
+            }
+
+            /// <summary>
             /// The controlled value
             /// </summary>
             public readonly T Value;
 
-            private readonly AccessControlledValue<T> m_Controller;
-
+            private readonly AccessController.AccessHandle m_ControllerHandle;
 
             /// <summary>
-            /// Creates a new instance that gains synchronous access from the provided
-            /// <see cref="AccessControlledValue{T}"/>.
+            /// Creates a new instance that wraps an <see cref="AccessController.AccessHandle"/> with the value
+            /// <see cref="T"/>.
             /// </summary>
-            /// <param name="controller">The <see cref="AccessControlledValue{T}"/> to acquire from.</param>
-            /// <param name="accessType">The type of <see cref="AccessType"/> needed.</param>
-            public AccessHandle(AccessControlledValue<T> controller, AccessType accessType)
+            /// <param name="controllerHandle">The handle from the backing <see cref="AccessController"/>.</param>
+            /// <param name="value">The value that is access controlled.</param>
+            public AccessHandle(in AccessController.AccessHandle controllerHandle, T value)
             {
-                Value = controller.Acquire(accessType);
-                m_Controller = controller;
+                m_ControllerHandle = controllerHandle;
+                Value = value;
             }
 
             /// <inheritdoc cref="IDisposable"/>
             public void Dispose()
             {
-                m_Controller.Release();
+                m_ControllerHandle.Dispose();
             }
         }
     }

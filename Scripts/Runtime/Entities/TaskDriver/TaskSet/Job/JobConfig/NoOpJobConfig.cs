@@ -1,5 +1,4 @@
 using Anvil.Unity.DOTS.Jobs;
-using System;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -29,19 +28,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForRead<TData>(IReadAccessControlledValue<TData> data)
             where TData : struct
         {
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
             where TData : struct
         {
             return this;
         }
 
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> data)
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IExclusiveWriteAccessControlledValue<TData> data)
             where TData : struct
         {
             return this;

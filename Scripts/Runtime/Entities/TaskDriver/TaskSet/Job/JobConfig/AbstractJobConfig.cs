@@ -150,6 +150,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
+        /// <inheritdoc cref="IJobConfig.RequireDataStreamForWrite{TInstance}"/>
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -157,6 +158,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireDataStreamForRead{TInstance}"/>
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -164,6 +166,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequestCancelFor"/>
         public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
         {
             AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
@@ -174,24 +177,27 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
         //*************************************************************************************************************
 
-        public IJobConfig RequireGenericDataForRead<TData>(IReadOnlyAccessControlledValue<TData> collection)
+        /// <inheritdoc cref="IJobConfig.RequireGenericDataForRead{TData}"/>
+        public IJobConfig RequireGenericDataForRead<TData>(IReadAccessControlledValue<TData> collection)
             where TData : struct
         {
             AddAccessWrapper(new GenericDataReadOnlyAccessWrapper<TData>(collection, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequireGenericDataForWrite<TData>(AccessControlledValue<TData> collection)
+        /// <inheritdoc cref="IJobConfig.RequireGenericDataForSharedWrite{TData}"/>
+        public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.SharedWrite, Usage.Default));
+            AddAccessWrapper(new GenericSharedWriteDataAccessWrapper<TData>(collection, Usage.Default));
             return this;
         }
 
-        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(AccessControlledValue<TData> collection)
+        /// <inheritdoc cref="IJobConfig.RequireGenericDataForExclusiveWrite{TData}"/>
+        public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IExclusiveWriteAccessControlledValue<TData> collection)
             where TData : struct
         {
-            AddAccessWrapper(new GenericDataAccessWrapper<TData>(collection, AccessType.ExclusiveWrite, Usage.Default));
+            AddAccessWrapper(new GenericExclusiveWriteDataAccessWrapper<TData>(collection, Usage.Default));
             return this;
         }
 
@@ -199,11 +205,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
         //*************************************************************************************************************
 
+        /// <inheritdoc cref="IJobConfig.RequireEntityNativeArrayFromQueryForRead"/>
         public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeArray(entityQuery));
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireIComponentDataNativeArrayFromQueryForRead"/>
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData
         {
@@ -228,12 +236,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
+        /// <inheritdoc cref="IJobConfig.RequireCDFEForRead{T}"/>
         public IJobConfig RequireCDFEForRead<T>() where T : struct, IComponentData
         {
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireCDFEForWrite{T}"/>
         public IJobConfig RequireCDFEForWrite<T>() where T : struct, IComponentData
         {
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
@@ -244,6 +254,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
         //*************************************************************************************************************
 
+        /// <inheritdoc cref="IJobConfig.RequireDBFEForRead{T}"/>
         public IJobConfig RequireDBFEForRead<T>() where T : struct, IBufferElementData
         {
             AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Default, TaskSetOwner.TaskDriverSystem));
@@ -251,6 +262,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireDBFEForExclusiveWrite{T}"/>
         public IJobConfig RequireDBFEForExclusiveWrite<T>() where T : struct, IBufferElementData
         {
             AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
@@ -258,6 +270,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
 
+        /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForWrite{TData}"/>
         public IJobConfig RequireThreadPersistentDataForWrite<TData>()
             where TData : unmanaged, IThreadPersistentDataInstance
         {
@@ -267,6 +280,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForRead{TData}"/>
         public IJobConfig RequireThreadPersistentDataForRead<TData>()
             where TData : unmanaged, IThreadPersistentDataInstance
         {
@@ -276,6 +290,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForWrite{TData}"/>
         public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
@@ -285,6 +300,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForRead{TData}"/>
         public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
@@ -294,6 +310,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.AddRequirementsFrom{T}"/>
         public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
             where T : AbstractTaskDriver
         {
@@ -439,11 +456,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return genericDataReadOnlyAccessWrapper.Data;
         }
 
-        internal TData GetGenericDataForWriting<TData>()
+        internal TData GetGenericDataForSharedWriting<TData>()
             where TData : struct
         {
-            GenericDataAccessWrapper<TData> genericDataAccessWrapper
-                = GetAccessWrapper<GenericDataAccessWrapper<TData>>(Usage.Default);
+            GenericSharedWriteDataAccessWrapper<TData> genericDataAccessWrapper
+                = GetAccessWrapper<GenericSharedWriteDataAccessWrapper<TData>>(Usage.Default);
+
+            return genericDataAccessWrapper.Data;
+        }
+
+        internal TData GetGenericDataForExclusiveWriting<TData>()
+            where TData : struct
+        {
+            GenericExclusiveWriteDataAccessWrapper<TData> genericDataAccessWrapper
+                = GetAccessWrapper<GenericExclusiveWriteDataAccessWrapper<TData>>(Usage.Default);
 
             return genericDataAccessWrapper.Data;
         }
