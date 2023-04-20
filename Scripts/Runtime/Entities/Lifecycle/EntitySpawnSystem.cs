@@ -130,7 +130,6 @@ namespace Anvil.Unity.DOTS.Entities
             return (EntitySpawner<TEntitySpawnDefinition>)entitySpawner;
         }
 
-        //TODO: Revise
         /// <summary>
         /// Returns an <see cref="EntitySpawner{TEntitySpawnDefinition}"/> to enable acquiring a writer to spawn
         /// <see cref="IEntitySpawnDefinition"/>s during the system's update phase while in a job.
@@ -161,13 +160,13 @@ namespace Anvil.Unity.DOTS.Entities
         public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
-            //If we're tearing down and this system was destroyed before whoever was trying to unregister, we 
+            //If we're tearing down and this system was destroyed before whoever was trying to unregister, we
             //can't do anything. It's ok, because our Dispose would have handled freeing everything up.
             if (m_EntityPrototypes.IsDisposed)
             {
                 return;
             }
-            
+
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
             long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
             DEBUG_EnsurePrototypeIsRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
