@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -208,7 +209,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Dependency = dependsOn;
         }
-
 
         //*************************************************************************************************************
         // SAFETY
