@@ -5,6 +5,8 @@ using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
 
+// TODO: #228 - Create a data structure to more efficiently interact with these methods every frame
+
 /// <summary>
 /// A collection of extension methods to help calculate the scheduling dependencies on <see cref="ComponentType"/>s.
 /// </summary>
