@@ -17,10 +17,16 @@ public static class ComponentTypeDependencyExtension
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Init()
     {
-        s_WriteTypeList_ScratchPad.Dispose();
+        if (s_WriteTypeList_ScratchPad.IsCreated)
+        {
+            s_WriteTypeList_ScratchPad.Dispose();
+        }
         s_WriteTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
 
-        s_ReadTypeList_ScratchPad.Dispose();
+        if (s_ReadTypeList_ScratchPad.IsCreated)
+        {
+            s_ReadTypeList_ScratchPad.Dispose();
+        }
         s_ReadTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
     }
 
