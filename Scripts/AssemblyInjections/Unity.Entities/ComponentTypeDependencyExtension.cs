@@ -10,8 +10,18 @@ using UnityEngine;
 [BurstCompatible]
 public static class ComponentTypeDependencyExtension
 {
-    private static UnsafeList<int> s_WriteTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
-    private static UnsafeList<int> s_ReadTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
+    private static UnsafeList<int> s_WriteTypeList_ScratchPad;
+    private static UnsafeList<int> s_ReadTypeList_ScratchPad;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void Init()
+    {
+        s_WriteTypeList_ScratchPad.Dispose();
+        s_WriteTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
+
+        s_ReadTypeList_ScratchPad.Dispose();
+        s_ReadTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
+    }
 
     /// <summary>
     /// Get the dependency of an individual component type.
