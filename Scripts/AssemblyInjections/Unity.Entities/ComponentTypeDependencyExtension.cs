@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -29,8 +30,8 @@ public static class ComponentTypeDependencyExtension
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="component">The component type to get the dependency of.</param>
-    /// <returns>The dependency for the component type</returns>
+    /// <param name="componentTypes">The component type to get the dependency of.</param>
+    /// <returns>The dependency for the component types</returns>
     public static unsafe JobHandle GetDependency(this EntityManager manager, ComponentType componentType)
     {
         return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentType);
@@ -42,7 +43,7 @@ public static class ComponentTypeDependencyExtension
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="component">The component types to calculate the dependency of.</param>
+    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
     /// <returns>The combined dependency for the component types</returns>
     [NotBurstCompatible]
     public static unsafe JobHandle GetDependency(this EntityManager manager, params ComponentType[] componentTypes)
@@ -55,66 +56,70 @@ public static class ComponentTypeDependencyExtension
     /// Useful for scheduling jobs that depend on components out of band with a system's
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
+    /// <typeparam name="T">The collection type.</typeparam>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="component">The component types to calculate the dependency of.</param>
+    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
     /// <returns>The combined dependency for the component types</returns>
-    public static unsafe JobHandle GetDependency(this EntityManager manager, NativeArray<ComponentType> componentTypes)
+    [NotBurstCompatible]
+    public static unsafe JobHandle GetDependency<T>(this EntityManager manager, T componentTypes)
+        where T : class, IEnumerable<ComponentType>
     {
         return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentTypes);
     }
 
     /// <summary>
+    /// Get the combined dependency of a collection of component types.
+    /// Useful for scheduling jobs that depend on components out of band with a system's
+    /// <see cref="ComponentSystemBase.OnUpdate"/>.
+    /// </summary>
+    /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
+    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
+    /// <returns>The combined dependency for the component types</returns>
+    public static unsafe JobHandle GetDependency(this EntityManager manager, ref NativeArray<ComponentType> componentTypes)
+    {
+        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, ref componentTypes);
+    }
+
+    /// <summary>
     /// Get the dependency of an individual component type.
     /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
-    /// <param name="system">
-    /// The system running the out of band job. If not in a system use the <see cref="EntityManager"/> extension instead.
-    /// </param>
-    /// <param name="component">The component type to get the dependency of.</param>
+    /// <param name="componentType">The component type to get the dependency of.</param>
+    /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <returns>The dependency for the component type</returns>
-    public static unsafe JobHandle GetDependency(this ComponentSystemBase system, ComponentType componentType)
+    public static unsafe JobHandle GetDependency(this ComponentType componentType, EntityManager manager)
     {
-        return GetDependency(system.CheckedState()->m_DependencyManager, componentType);
+        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentType);
     }
 
     /// <summary>
     /// Get the combined dependency of a collection of component types.
     /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
-    /// <param name="system">
-    /// The system running the out of band job. If not in a system use the <see cref="EntityManager"/> extension instead.
-    /// </param>
-    /// <param name="component">The component types to calculate the dependency of.</param>
+    /// <typeparam name="T">The collection type.</typeparam>
+    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
+    /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <returns>The combined dependency for the component types</returns>
     [NotBurstCompatible]
-    public static unsafe JobHandle GetDependency(this ComponentSystemBase system, params ComponentType[] componentTypes)
+    public static unsafe JobHandle GetDependency<T>(this T componentTypes, EntityManager manager)
+        where T : class, IEnumerable<ComponentType>
     {
-        return GetDependency(system.CheckedState()->m_DependencyManager, componentTypes);
+        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentTypes);
     }
 
     /// <summary>
     /// Get the combined dependency of a collection of component types.
     /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
-    /// <param name="system">
-    /// The system running the out of band job. If not in a system use the <see cref="EntityManager"/> extension instead.
-    /// </param>
-    /// <param name="component">The component types to calculate the dependency of.</param>
+    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
+    /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <returns>The combined dependency for the component types</returns>
-    public static unsafe JobHandle GetDependency(this ComponentSystemBase system, NativeArray<ComponentType> componentTypes)
+    [NotBurstCompatible]
+    public static unsafe JobHandle GetDependency(this ref NativeArray<ComponentType> componentTypes, EntityManager manager)
     {
-        return GetDependency(system.CheckedState()->m_DependencyManager, componentTypes);
+        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, ref componentTypes);
     }
 
-    /// <summary>
-    /// Get the dependency of an individual component type.
-    /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
-    /// </summary>
-    /// <param name="system">
-    /// The system running the out of band job. If not in a system use the <see cref="EntityManager"/> extension instead.
-    /// </param>
-    /// <param name="componentType">The component type to get the dependency of.</param>
-    /// <returns>The dependency for the component type</returns>
     private static unsafe JobHandle GetDependency(ComponentDependencyManager* dependencyManager, ComponentType componentType)
     {
         Debug.Assert(componentType.AccessModeType is ComponentType.AccessMode.ReadOnly or ComponentType.AccessMode.ReadWrite);
@@ -132,17 +137,9 @@ public static class ComponentTypeDependencyExtension
             ->GetDependency(typeIndexPtr, readerCount, typeIndexPtr, writerCount);
     }
 
-    /// <summary>
-    /// Get the combined dependency of a collection of component types.
-    /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
-    /// </summary>
-    /// <param name="system">
-    /// The system running the out of band job. If not in a system use the <see cref="EntityManager"/> extension instead.
-    /// </param>
-    /// <param name="component">The component types to calculate the dependency of.</param>
-    /// <returns>The combined dependency for the component types</returns>
     [NotBurstCompatible]
-    private static unsafe JobHandle GetDependency(ComponentDependencyManager* dependencyManager, ComponentType[] componentTypes)
+    private static unsafe JobHandle GetDependency<T>(ComponentDependencyManager* dependencyManager, T componentTypes)
+        where T : class, IEnumerable<ComponentType>
     {
         s_WriteTypeList_ScratchPad.Clear();
         s_ReadTypeList_ScratchPad.Clear();
@@ -156,16 +153,7 @@ public static class ComponentTypeDependencyExtension
             ->GetDependency(s_ReadTypeList_ScratchPad.Ptr, s_ReadTypeList_ScratchPad.Length, s_WriteTypeList_ScratchPad.Ptr, s_WriteTypeList_ScratchPad.Length);
     }
 
-    /// <summary>
-    /// Get the combined dependency of a collection of component types.
-    /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
-    /// </summary>
-    /// <param name="system">
-    /// The system running the out of band job. If not in a system use the <see cref="EntityManager"/> extension instead.
-    /// </param>
-    /// <param name="component">The component types to calculate the dependency of.</param>
-    /// <returns>The combined dependency for the component types</returns>
-    private static unsafe JobHandle GetDependency(ComponentDependencyManager* dependencyManager, NativeArray<ComponentType> componentTypes)
+    private static unsafe JobHandle GetDependency(ComponentDependencyManager* dependencyManager, ref NativeArray<ComponentType> componentTypes)
     {
         s_WriteTypeList_ScratchPad.Clear();
         s_ReadTypeList_ScratchPad.Clear();
