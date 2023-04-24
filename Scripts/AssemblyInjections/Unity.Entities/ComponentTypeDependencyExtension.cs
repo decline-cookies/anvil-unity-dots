@@ -34,7 +34,7 @@ public static class ComponentTypeDependencyExtension
     /// <returns>The dependency for the component types</returns>
     public static unsafe JobHandle GetDependency(this EntityManager manager, ComponentType componentType)
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentType);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, componentType);
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public static class ComponentTypeDependencyExtension
     [NotBurstCompatible]
     public static unsafe JobHandle GetDependency(this EntityManager manager, params ComponentType[] componentTypes)
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentTypes);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, componentTypes);
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public static class ComponentTypeDependencyExtension
     public static unsafe JobHandle GetDependency<T>(this EntityManager manager, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentTypes);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, componentTypes);
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public static class ComponentTypeDependencyExtension
     /// <returns>The combined dependency for the component types</returns>
     public static unsafe JobHandle GetDependency(this EntityManager manager, ref NativeArray<ComponentType> componentTypes)
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, ref componentTypes);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, ref componentTypes);
     }
 
     /// <summary>
@@ -89,7 +89,7 @@ public static class ComponentTypeDependencyExtension
     /// <returns>The dependency for the component type</returns>
     public static unsafe JobHandle GetDependency(this ComponentType componentType, EntityManager manager)
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentType);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, componentType);
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public static class ComponentTypeDependencyExtension
     public static unsafe JobHandle GetDependency<T>(this T componentTypes, EntityManager manager)
         where T : class, IEnumerable<ComponentType>
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, componentTypes);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, componentTypes);
     }
 
     /// <summary>
@@ -117,7 +117,7 @@ public static class ComponentTypeDependencyExtension
     [NotBurstCompatible]
     public static unsafe JobHandle GetDependency(this ref NativeArray<ComponentType> componentTypes, EntityManager manager)
     {
-        return GetDependency(manager.GetUncheckedEntityDataAccess()->DependencyManager, ref componentTypes);
+        return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, ref componentTypes);
     }
 
     private static unsafe JobHandle GetDependency(ComponentDependencyManager* dependencyManager, ComponentType componentType)
