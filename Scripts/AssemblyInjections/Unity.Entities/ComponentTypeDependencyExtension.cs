@@ -8,7 +8,8 @@ using UnityEngine;
 // TODO: #228 - Create a data structure to more efficiently interact with these methods every frame
 
 /// <summary>
-/// A collection of extension methods to help calculate the scheduling dependencies on <see cref="ComponentType"/>s.
+/// A collection of extension methods to help calculate and modify the dependencies on <see cref="ComponentType"/>s
+/// directly.
 /// </summary>
 [BurstCompatible]
 public static class ComponentTypeDependencyExtension
@@ -124,27 +125,26 @@ public static class ComponentTypeDependencyExtension
     }
 
     /// <summary>
-    /// Get the dependency of an individual component type.
+    /// Sets the dependency of an individual component type.
     /// Useful for scheduling jobs that depend on components out of band with a system's
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="componentTypes">The component type to get the dependency of.</param>
-    /// <returns>The dependency for the component types</returns>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
+    /// <param name="componentTypes">The component type to set the dependency of.</param>
     public static unsafe void AddDependency(this EntityManager manager, JobHandle dependency, ComponentType componentType)
     {
         AddDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, dependency, componentType);
     }
 
     /// <summary>
-    /// Get the combined dependency of a collection of component types.
+    /// Sets the combined dependency of a collection of component types.
     /// Useful for scheduling jobs that depend on components out of band with a system's
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="dependency"></param>
-    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
-    /// <returns>The combined dependency for the component types</returns>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
+    /// <param name="componentTypes">The component types to set the dependency of.</param>
     [NotBurstCompatible]
     public static unsafe void AddDependency(this EntityManager manager, JobHandle dependency, params ComponentType[] componentTypes)
     {
@@ -152,14 +152,14 @@ public static class ComponentTypeDependencyExtension
     }
 
     /// <summary>
-    /// Get the combined dependency of a collection of component types.
+    /// Sets the combined dependency of a collection of component types.
     /// Useful for scheduling jobs that depend on components out of band with a system's
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <typeparam name="T">The collection type.</typeparam>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
-    /// <returns>The combined dependency for the component types</returns>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
+    /// <param name="componentTypes">The component types to set the dependency of.</param>
     [NotBurstCompatible]
     public static unsafe void AddDependency<T>(this EntityManager manager, JobHandle dependency, T componentTypes)
         where T : class, IEnumerable<ComponentType>
@@ -168,38 +168,38 @@ public static class ComponentTypeDependencyExtension
     }
 
     /// <summary>
-    /// Get the combined dependency of a collection of component types.
+    /// Sets the combined dependency of a collection of component types.
     /// Useful for scheduling jobs that depend on components out of band with a system's
     /// <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
-    /// <returns>The combined dependency for the component types</returns>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
+    /// <param name="componentTypes">The component types to set the dependency of.</param>
     public static unsafe void AddDependency(this EntityManager manager, JobHandle dependency, ref NativeArray<ComponentType> componentTypes)
     {
         AddDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, dependency, ref componentTypes);
     }
 
     /// <summary>
-    /// Get the dependency of an individual component type.
+    /// Sets the dependency of an individual component type.
     /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
-    /// <param name="componentType">The component type to get the dependency of.</param>
+    /// <param name="componentType">The component type to set the dependency of.</param>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <returns>The dependency for the component type</returns>
     public static unsafe void AddDependency(this ComponentType componentType, JobHandle dependency, EntityManager manager)
     {
         AddDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, dependency, componentType);
     }
 
     /// <summary>
-    /// Get the combined dependency of a collection of component types.
+    /// Set the combined dependency of a collection of component types.
     /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
     /// <typeparam name="T">The collection type.</typeparam>
-    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
+    /// <param name="componentTypes">The component types to set the dependency of.</param>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <returns>The combined dependency for the component types</returns>
     [NotBurstCompatible]
     public static unsafe void AddDependency<T>(this T componentTypes, JobHandle dependency, EntityManager manager)
         where T : class, IEnumerable<ComponentType>
@@ -208,12 +208,12 @@ public static class ComponentTypeDependencyExtension
     }
 
     /// <summary>
-    /// Get the combined dependency of a collection of component types.
+    /// Set the combined dependency of a collection of component types.
     /// Useful for scheduling jobs out of band with a system's <see cref="ComponentSystemBase.OnUpdate"/>.
     /// </summary>
-    /// <param name="componentTypes">The component types to calculate the dependency of.</param>
+    /// <param name="componentTypes">The component types to set the dependency of.</param>
+    /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    /// <returns>The combined dependency for the component types</returns>
     [NotBurstCompatible]
     public static unsafe void AddDependency(this ref NativeArray<ComponentType> componentTypes, JobHandle dependency, EntityManager manager)
     {
