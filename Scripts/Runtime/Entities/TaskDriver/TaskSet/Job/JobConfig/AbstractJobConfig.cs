@@ -41,8 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
-
-        private readonly string m_TypeString;
+        
         private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
         private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
         private readonly PersistentDataSystem m_PersistentDataSystem;
@@ -153,6 +152,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
+            Debug_EnsureDataStreamContextWillBePreserved(dataStream);
             AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Default));
             return this;
         }
@@ -160,6 +160,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityProxyInstance
         {
+            Debug_EnsureDataStreamContextWillBePreserved(dataStream);
             AddAccessWrapper(new DataStreamActiveAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Default));
             return this;
         }
@@ -515,7 +516,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureIsHardened()
         {
             if (m_IsHardened == false)
@@ -524,7 +525,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
         {
             if (m_IsHardened == true)
@@ -533,7 +534,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureWrapperExists(JobConfigDataID id)
         {
             if (!m_AccessWrappers.ContainsKey(id))
@@ -542,7 +543,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureWrapperUsage(AbstractAccessWrapper wrapper)
         {
             if (wrapper.Debug_WrapperType != typeof(AbstractDataStreamAccessWrapper<>))
@@ -580,7 +581,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureWrapperUsageValid(JobConfigDataID id, params Usage[] allowedUsages)
         {
             foreach (Usage usage in USAGE_TYPES)
@@ -599,7 +600,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNoScheduleInfo()
         {
             if (m_ScheduleInfo != null)
@@ -609,12 +610,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureScheduleInfoExists()
         {
             if (m_ScheduleInfo == null)
             {
                 throw new InvalidOperationException($"{this} does not have a {nameof(AbstractScheduleInfo)} yet! Please schedule on some data first.");
+            }
+        }
+
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void Debug_EnsureDataStreamContextWillBePreserved<TInstance>(IAbstractDataStream<TInstance> dataStream)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            if (TaskSetOwner.TaskDriverSystem == TaskSetOwner && dataStream is IDriverDataStream<TInstance>)
+            {
+                throw new InvalidOperationException($"{this} is a system job that is trying to write to a {nameof(IDriverDataStream<TInstance>)} data stream. If there are more than one TaskDriver, this job will always only write to the first TaskDriver instance. Using {nameof(IResolvableJobConfigRequirements.RequireResolveTarget)} to properly pipe results to the correct TaskDriver instance.");
             }
         }
     }
