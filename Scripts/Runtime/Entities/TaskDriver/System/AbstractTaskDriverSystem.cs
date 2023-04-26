@@ -32,12 +32,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public new World World { get; }
 
         internal TaskSet TaskSet { get; }
+
         TaskSet ITaskSetOwner.TaskSet
         {
             get => TaskSet;
         }
-        
+
         internal uint ID { get; }
+
         uint ITaskSetOwner.ID
         {
             get => ID;
@@ -56,6 +58,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 return m_HasCancellableData;
             }
         }
+
         bool ITaskSetOwner.HasCancellableData
         {
             get => HasCancellableData;
@@ -99,6 +102,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
+            Debug_AssertWorldUniqueConstraint(taskDriver);
             m_TaskDrivers.Add(taskDriver);
         }
 
@@ -235,7 +239,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardenUpdatePhase()
         {
             if (m_IsUpdatePhaseHardened)
@@ -244,7 +248,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureHardened()
         {
             if (!m_IsHardened)
@@ -253,12 +257,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureWorldsAreTheSame()
         {
             if (World != base.World)
             {
                 throw new InvalidOperationException($"The passed in World {World} is not the same as the automatically assigned one {base.World} in {nameof(OnCreate)}!");
+            }
+        }
+
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void Debug_AssertWorldUniqueConstraint(AbstractTaskDriver taskDriver)
+        {
+            if (m_TaskDrivers.Count > 0
+                && Attribute.IsDefined(taskDriver.GetType(), typeof(WorldUniqueTaskDriverAttribute)))
+            {
+                throw new Exception($"Attempting to add multiple instance of a world unique task driver. World: {World.Name}, TaskDriver:{taskDriver.GetType().GetReadableName()}");
             }
         }
     }
