@@ -27,9 +27,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
 
+       
+        
         private readonly PersistentDataSystem m_PersistentDataSystem;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly uint m_ID;
+        private readonly string m_UniqueMigrationSuffix;
 
         private bool m_IsHardened;
         private bool m_HasCancellableData;
@@ -77,8 +80,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        protected AbstractTaskDriver(World world)
+        protected AbstractTaskDriver(World world, string uniqueMigrationSuffix = null)
         {
+            m_UniqueMigrationSuffix = uniqueMigrationSuffix ?? string.Empty;
             World = world;
             TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_PersistentDataSystem = World.GetOrCreateSystem<PersistentDataSystem>();
@@ -416,11 +420,52 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
         }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
 
+        internal void AddToMigrationLookup(
+            string parentPath, 
+            Dictionary<string, uint> migrationTaskSetOwnerIDLookup,
+            Dictionary<string, uint> migrationActiveIDLookup)
+        {
+            //Construct the unique path for this TaskDriver and ensure we don't need a user provided suffix
+            string typeName = GetType().GetReadableName();
+            string path = $"{parentPath}{typeName}{m_UniqueMigrationSuffix}-";
+            Debug_EnsureNoDuplicateMigrationData(path, migrationTaskSetOwnerIDLookup);
+            migrationTaskSetOwnerIDLookup.Add(path, m_ID);
+
+            //Get our TaskSet to populate all the possible ActiveIDs
+            TaskSet.AddToMigrationLookup(path, migrationActiveIDLookup);
+            
+            //Try and do the same for our system (there can only be one), will gracefully fail if we have.
+            string systemPath = $"{typeName}-System";
+            if (migrationTaskSetOwnerIDLookup.TryAdd(systemPath, TaskDriverSystem.ID))
+            {
+                TaskDriverSystem.TaskSet.AddToMigrationLookup(systemPath, migrationActiveIDLookup);
+            }
+
+            //Then recurse downward to catch all the sub task drivers
+            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
+            {
+                subTaskDriver.AddToMigrationLookup(path, migrationTaskSetOwnerIDLookup, migrationActiveIDLookup);
+            }
+        }
+        
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, uint> migrationTaskSetOwnerIDLookup)
+        {
+            if (migrationTaskSetOwnerIDLookup.ContainsKey(path))
+            {
+                throw new InvalidOperationException($"TaskDriver {GetType().GetReadableName()} at path {path} already exists. There are two or more of the same task driver at the same level. They will require a unique migration suffix to be set in their constructor.");
+            }
+        }
+        
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {

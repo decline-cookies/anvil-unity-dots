@@ -7,7 +7,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Explicit)]
     internal readonly struct EntityProxyInstanceWrapper<TInstance> : IEquatable<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
     {
@@ -24,8 +24,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return !(lhs == rhs);
         }
 
-        public readonly TInstance Payload;
-        public readonly EntityProxyInstanceID InstanceID;
+        [FieldOffset(0)] public readonly EntityProxyInstanceID InstanceID;
+        [FieldOffset(16)] public readonly TInstance Payload;
 
         public EntityProxyInstanceWrapper(Entity entity, uint taskSetOwnerID, uint activeID, ref TInstance payload)
         {

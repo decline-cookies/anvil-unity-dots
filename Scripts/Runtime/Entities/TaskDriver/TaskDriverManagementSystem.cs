@@ -1,11 +1,14 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Data;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Core;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -14,7 +17,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #108 - Custom Profiling -  https://github.com/decline-cookies/anvil-unity-dots/pull/111
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
-    internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase
+    internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase,
+                                                        IMigrationObserver
     {
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
@@ -25,6 +29,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
         private readonly List<CancelProgressFlow> m_CancelProgressFlows;
         private readonly Dictionary<Type, AccessController> m_UnityEntityDataAccessControllers;
+        private readonly Dictionary<string, uint> m_MigrationTaskSetOwnerIDLookup;
+        private readonly Dictionary<string, uint> m_MigrationActiveIDLookup;
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
@@ -45,6 +51,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
             m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
+            m_MigrationTaskSetOwnerIDLookup = new Dictionary<string, uint>();
+            m_MigrationActiveIDLookup = new Dictionary<string, uint>();
+        }
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            WorldEntityMigrationSystem worldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
+            worldEntityMigrationSystem.AddMigrationObserver(this);
         }
 
         protected override void OnStartRunning()
@@ -105,6 +120,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 topLevelTaskDriver.Harden();
             }
 
+            PopulateMigrationLookup();
+
             //All the data has been hardened, we can Harden the Update Phase for the Systems
             foreach (AbstractTaskDriverSystem taskDriverSystem in m_AllTaskDriverSystems)
             {
@@ -122,6 +139,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
+        }
+
+        private void PopulateMigrationLookup()
+        {
+            //Generate a World ID
+            foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
+            {
+                topLevelTaskDriver.AddToMigrationLookup(
+                    string.Empty, 
+                    m_MigrationTaskSetOwnerIDLookup, 
+                    m_MigrationTaskSetOwnerIDLookup);
+            }
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
@@ -209,6 +238,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Dependency = dependsOn;
         }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public void Migrate(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        {
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
+            Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
+            
+            //TODO: Lazy create a World to World mapping lookup for ActiveIDs and TaskSetOwnerIDs
+
+            Dictionary<Type, IDataSource> destinationEntityProxyDataSourcesByType = destinationTaskDriverManagementSystem.m_EntityProxyDataSourcesByType;
+
+            foreach (KeyValuePair<Type, IDataSource> entry in m_EntityProxyDataSourcesByType)
+            {
+                //We may not have a corresponding destination Data Source in the destination world but we still want to process the migration so that 
+                //we remove any references in this world. If we do have the corresponding data source, we'll transfer over to the other world.
+                destinationEntityProxyDataSourcesByType.TryGetValue(entry.Key, out IDataSource destinationDataSource);
+                entry.Value.MigrateTo(destinationDataSource, ref remapArray);
+            }
+        }
 
         //*************************************************************************************************************
         // SAFETY
@@ -220,6 +271,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Expected {this} to not yet be Hardened but {nameof(Harden)} has already been called!");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureOtherWorldTaskDriverManagementSystemExists(World destinationWorld, TaskDriverManagementSystem taskDriverManagementSystem)
+        {
+            if (taskDriverManagementSystem == null)
+            {
+                throw new InvalidOperationException($"Expected World {destinationWorld} to have a {nameof(TaskDriverManagementSystem)} but it does not!");
             }
         }
     }

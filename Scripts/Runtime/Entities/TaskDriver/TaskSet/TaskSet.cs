@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
@@ -331,18 +332,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             CancelRequestsDataStream.ReleasePending();
         }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public void AddToMigrationLookup(string parentPath, Dictionary<string, uint> migrationActiveIDLookup)
+        {
+            foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
+            {
+                string path = $"{parentPath}-{entry.Key.GetReadableName()}";
+                Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
+                migrationActiveIDLookup.Add(path, entry.Value.ActiveID);
+            }
+        }
 
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, uint> migrationActiveIDLookup)
+        {
+            if (migrationActiveIDLookup.ContainsKey(path))
+            {
+                throw new InvalidOperationException($"Trying to add migration data for {this} but {path} is already in the lookup!");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {
-            if (m_IsHardened)
-            {
-                throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
-            }
+            
         }
 
         [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]

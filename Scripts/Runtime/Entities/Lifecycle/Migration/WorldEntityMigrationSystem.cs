@@ -4,31 +4,41 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IMigratable
-    {
-        public void Migrate(NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
-    }
-    
     public class WorldEntityMigrationSystem : AbstractDataSystem
     {
-        private readonly List<IMigratable> m_Migratables;
+        private readonly HashSet<IMigrationObserver> m_MigrationObservers;
 
         public WorldEntityMigrationSystem()
         {
-            m_Migratables = new List<IMigratable>();
+            m_MigrationObservers = new HashSet<IMigrationObserver>();
         }
 
-        public void AddMigratable(IMigratable migratable)
+        public void AddMigrationObserver(IMigrationObserver migrationObserver)
         {
-            m_Migratables.Add(migratable);
+            m_MigrationObservers.Add(migrationObserver);
         }
 
-        public void Remap(NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        public void RemoveMigrationObserver(IMigrationObserver migrationObserver)
         {
-            foreach (IMigratable migratable in m_Migratables)
+            m_MigrationObservers.Remove(migrationObserver);
+        }
+
+        private void NotifyObservers(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        {
+            foreach (IMigrationObserver migrationObserver in m_MigrationObservers)
             {
-                migratable.Migrate(remapArray);
+                migrationObserver.Migrate(destinationWorld, ref remapArray);
             }
+        }
+
+        public void MigrateTo(World destinationWorld, EntityQuery entitiesToMigrateQuery)
+        {
+            // Do move
+            NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray = EntityManager.CreateEntityRemapArray(Allocator.TempJob);
+            destinationWorld.EntityManager.MoveEntitiesFrom(EntityManager, entitiesToMigrateQuery, remapArray);
+            
+            NotifyObservers(destinationWorld, ref remapArray);
+            remapArray.Dispose();
         }
     }
 }

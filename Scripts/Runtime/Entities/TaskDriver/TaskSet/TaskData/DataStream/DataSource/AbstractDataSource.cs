@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -132,6 +133,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_ConsolidationData.Add(new DataAccessWrapper(data, accessType));
         }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public abstract void MigrateTo(IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
 
         //*************************************************************************************************************
         // EXECUTION

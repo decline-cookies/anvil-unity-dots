@@ -91,6 +91,13 @@ namespace Anvil.Unity.DOTS.Entities
             }
         }
 
+        public static void PatchEntityIfMoved<T>()
+        {
+            long typeHash = BurstRuntime.GetHashCode64<T>();
+            TypeOffsetInfo typeOffsetInfo = s_TypeOffsetsLookup[typeHash];
+            
+        }
+
 
 
         public readonly struct TypeOffsetInfo
