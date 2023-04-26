@@ -1,4 +1,5 @@
 using Anvil.CSharp.Core;
+using System;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -6,7 +7,9 @@ namespace Anvil.Unity.DOTS.Entities
 {
     internal interface IEntitySpawner : IAnvilDisposable
     {
-        public JobHandle Schedule(
+        internal event Action<IEntitySpawner> OnPendingWorkAdded;
+
+        internal JobHandle Schedule(
             JobHandle dependsOn,
             ref EntityCommandBuffer ecb);
     }

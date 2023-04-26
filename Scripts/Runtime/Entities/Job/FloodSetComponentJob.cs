@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public unsafe void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            UnsafeCollectionUtil.FloodSetBuffer(chunk.GetComponentDataPtrRW(ref m_TypeHandle), firstEntityIndex, chunk.Count, m_Value);
+            UnsafeCollectionUtil.FloodSetBuffer(chunk.GetComponentDataPtrRW(ref m_TypeHandle), 0, chunk.Count, m_Value);
         }
     }
 }
