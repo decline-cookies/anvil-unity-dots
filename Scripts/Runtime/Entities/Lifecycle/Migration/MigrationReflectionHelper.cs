@@ -96,7 +96,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        public static unsafe void PatchEntityReferences<T>(this ref T instance, ref Entity remappedEntity)
+        public static unsafe void PatchEntityReferences<T>(this ref T instance, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             where T : struct
         {
             long typeHash = BurstRuntime.GetHashCode64<T>();
@@ -110,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 TypeManager.EntityOffsetInfo entityOffsetInfo = s_EntityOffsetList[i];
                 Entity* entityPtr = (Entity*)(instancePtr + entityOffsetInfo.Offset);
-                *entityPtr = remappedEntity;
+                *entityPtr = EntityRemapUtility.RemapEntity(ref remapArray, *entityPtr);
             }
 
             //TODO: Patch for Blobs and Weaks?

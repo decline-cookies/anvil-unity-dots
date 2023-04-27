@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 }
                 
                 //If we do have a destination, then we will want to patch the entity references
-                instance.PatchEntityReferences(ref remappedEntity);
+                instance.PatchEntityReferences(ref remapArray);
                 
                 //Rewrite the memory for the TaskSetOwnerID and ActiveID
                 instance.PatchIDs(

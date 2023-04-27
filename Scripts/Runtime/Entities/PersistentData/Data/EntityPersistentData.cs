@@ -116,7 +116,7 @@ namespace Anvil.Unity.DOTS.Entities
                 currentData.Remove(currentEntity);
                 T currentValue = currentElements.Values[i];
 
-                currentValue.PatchEntityReferences(ref remappedEntity);
+                currentValue.PatchEntityReferences(ref remapArray);
 
                 //TODO: Could this be a problem? Is there data already here that wasn't moved?
                 destinationData[remappedEntity] = currentValue;
