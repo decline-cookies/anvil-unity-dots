@@ -5,6 +5,6 @@ namespace Anvil.Unity.DOTS.Entities
 {
     public interface IMigrationObserver
     {
-        public void Migrate(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
+        public void MigrateTo(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
 }

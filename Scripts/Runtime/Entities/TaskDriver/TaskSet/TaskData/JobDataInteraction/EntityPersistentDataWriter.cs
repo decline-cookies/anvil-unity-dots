@@ -80,6 +80,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return m_Lookup.GetValueArray(allocator);
         }
 
+        /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetKeyValueArrays"/>>
+        public NativeKeyValueArrays<Entity, TData> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator)
+        {
+            return m_Lookup.GetKeyValueArrays(allocator);
+        }
+
         /// <inheritdoc cref="UnsafeParallelHashMap{TKey,TValue}.GetEnumerator"/>>
         public UnsafeParallelHashMap<Entity, TData>.Enumerator GetEnumerator()
         {

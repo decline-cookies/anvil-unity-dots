@@ -26,15 +26,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public readonly EntityProxyInstanceID InstanceID;
-        public readonly Entity TestA;
-        public readonly Entity TestB;
         public readonly TInstance Payload;
 
         public EntityProxyInstanceWrapper(Entity entity, uint taskSetOwnerID, uint activeID, ref TInstance payload)
         {
             InstanceID = new EntityProxyInstanceID(entity, taskSetOwnerID, activeID);
-            TestA = entity;
-            TestB = entity;
             Payload = payload;
         }
 
@@ -42,8 +38,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             EntityProxyInstanceID originalInstanceID = original.InstanceID;
             InstanceID = new EntityProxyInstanceID(originalInstanceID.Entity, originalInstanceID.TaskSetOwnerID, newActiveID);
-            TestA = originalInstanceID.Entity;
-            TestB = originalInstanceID.Entity;
             Payload = original.Payload;
         }
 

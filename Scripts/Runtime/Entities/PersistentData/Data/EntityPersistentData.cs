@@ -16,6 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
         public EntityPersistentData()
             : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
+            MigrationReflectionHelper.RegisterTypeForEntityPatching<T>();
         }
 
         protected override void DisposeData()
@@ -82,6 +83,47 @@ namespace Anvil.Unity.DOTS.Entities
         public void ReleaseWriter()
         {
             Release();
+        }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public override void MigrateTo(AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        {
+            //Our destination in the other world could be null... TODO: Should we create?
+            if (destinationPersistentData is not EntityPersistentData<T> destination)
+            {
+                return;
+            }
+            
+            EntityPersistentDataWriter<T> currentData = AcquireWriter();
+            EntityPersistentDataWriter<T> destinationData = destination.AcquireWriter();
+
+            NativeKeyValueArrays<Entity, T> currentElements = currentData.GetKeyValueArrays(Allocator.Temp);
+
+            for (int i = 0; i < currentElements.Length; ++i)
+            {
+                Entity currentEntity = currentElements.Keys[i];
+                Entity remappedEntity = EntityRemapUtility.RemapEntity(ref remapArray, currentEntity);
+                //We don't exist in the new world, we should just stay here.
+                if (remappedEntity == Entity.Null)
+                {
+                    continue;
+                }
+                
+                //Otherwise, prepare us in the migration data
+                currentData.Remove(currentEntity);
+                T currentValue = currentElements.Values[i];
+
+                currentValue.PatchEntityReferences(ref remappedEntity);
+
+                //TODO: Could this be a problem? Is there data already here that wasn't moved?
+                destinationData[remappedEntity] = currentValue;
+            }
+            
+            destination.ReleaseWriter();
+            ReleaseWriter();
         }
     }
 }

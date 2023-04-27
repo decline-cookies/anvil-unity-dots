@@ -1,10 +1,14 @@
 using Anvil.CSharp.Collections;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using Unity.Collections;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal partial class PersistentDataSystem : AbstractDataSystem
+    internal partial class PersistentDataSystem : AbstractDataSystem,
+                                                  IMigrationObserver
     {
         private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
         private static int s_InstanceCount;
@@ -15,6 +19,13 @@ namespace Anvil.Unity.DOTS.Entities
         {
             s_InstanceCount++;
             m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
+        }
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            WorldEntityMigrationSystem worldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
+            worldEntityMigrationSystem.AddMigrationObserver(this);
         }
 
         protected override void OnDestroy()
@@ -51,6 +62,39 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             return (EntityPersistentData<T>)persistentData;
+        }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public void MigrateTo(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        {
+            PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
+            Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
+
+            foreach (KeyValuePair<Type, AbstractPersistentData> entry in m_EntityPersistentData)
+            {
+                if (!destinationPersistentDataSystem.m_EntityPersistentData.TryGetValue(entry.Key, out AbstractPersistentData destinationPersistentData))
+                {
+                    continue;
+                }
+                
+                entry.Value.MigrateTo(destinationPersistentData, ref remapArray);
+            }
+        }
+
+        //*************************************************************************************************************
+        // SAFETY
+        //*************************************************************************************************************
+        
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void Debug_EnsureOtherWorldPersistentDataSystemExists(World destinationWorld, PersistentDataSystem persistentDataSystem)
+        {
+            if (persistentDataSystem == null)
+            {
+                throw new InvalidOperationException($"Expected World {destinationWorld} to have a {nameof(PersistentDataSystem)} but it does not!");
+            }
         }
     }
 }

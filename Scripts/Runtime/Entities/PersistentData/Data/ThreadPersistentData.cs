@@ -1,7 +1,9 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Entities.TaskDriver;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -53,6 +55,14 @@ namespace Anvil.Unity.DOTS.Entities
             //Thread data is only for one thread at a time so we can assume shared write.
             Acquire(AccessType.SharedWrite);
             return CreateThreadPersistentDataAccessor();
+        }
+
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+        public override void MigrateTo(AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        {
+            throw new NotSupportedException($"{nameof(ThreadPersistentData<T>)} isn't supported for migration because it is global to the app.");
         }
     }
 }

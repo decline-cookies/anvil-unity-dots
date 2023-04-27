@@ -23,11 +23,11 @@ namespace Anvil.Unity.DOTS.Entities
             m_MigrationObservers.Remove(migrationObserver);
         }
 
-        private void NotifyObservers(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        private void NotifyObserversToMigrateTo(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             foreach (IMigrationObserver migrationObserver in m_MigrationObservers)
             {
-                migrationObserver.Migrate(destinationWorld, ref remapArray);
+                migrationObserver.MigrateTo(destinationWorld, ref remapArray);
             }
         }
 
@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities
             NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray = EntityManager.CreateEntityRemapArray(Allocator.TempJob);
             destinationWorld.EntityManager.MoveEntitiesFrom(EntityManager, entitiesToMigrateQuery, remapArray);
             
-            NotifyObservers(destinationWorld, ref remapArray);
+            NotifyObserversToMigrateTo(destinationWorld, ref remapArray);
             remapArray.Dispose();
         }
     }
