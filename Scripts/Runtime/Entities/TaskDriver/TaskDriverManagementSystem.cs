@@ -29,8 +29,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
         private readonly List<CancelProgressFlow> m_CancelProgressFlows;
         private readonly Dictionary<Type, AccessController> m_UnityEntityDataAccessControllers;
-        private readonly Dictionary<string, uint> m_MigrationTaskSetOwnerIDLookup;
-        private readonly Dictionary<string, uint> m_MigrationActiveIDLookup;
+        private readonly TaskDriverMigrationData m_TaskDriverMigrationData;
+        
 
         private bool m_IsInitialized;
         private bool m_IsHardened;
@@ -51,8 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
             m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
-            m_MigrationTaskSetOwnerIDLookup = new Dictionary<string, uint>();
-            m_MigrationActiveIDLookup = new Dictionary<string, uint>();
+            m_TaskDriverMigrationData = new TaskDriverMigrationData();
         }
 
         protected override void OnCreate()
@@ -83,6 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
             m_CancelProgressFlows.DisposeAllAndTryClear();
             m_UnityEntityDataAccessControllers.DisposeAllValuesAndClear();
+            m_TaskDriverMigrationData.Dispose();
 
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
@@ -120,8 +120,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 topLevelTaskDriver.Harden();
             }
 
-            PopulateMigrationLookup();
-
             //All the data has been hardened, we can Harden the Update Phase for the Systems
             foreach (AbstractTaskDriverSystem taskDriverSystem in m_AllTaskDriverSystems)
             {
@@ -139,18 +137,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
-        }
-
-        private void PopulateMigrationLookup()
-        {
-            //Generate a World ID
-            foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
-            {
-                topLevelTaskDriver.AddToMigrationLookup(
-                    string.Empty, 
-                    m_MigrationTaskSetOwnerIDLookup, 
-                    m_MigrationTaskSetOwnerIDLookup);
-            }
+            
+            //Build the Migration Data for this world
+            m_TaskDriverMigrationData.PopulateMigrationLookup(m_TopLevelTaskDrivers);
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
@@ -249,6 +238,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
             
             //TODO: Lazy create a World to World mapping lookup for ActiveIDs and TaskSetOwnerIDs
+            DestinationWorldDataMap destinationWorldDataMap = m_TaskDriverMigrationData.GetOrCreateDestinationWorldDataMapFor(destinationWorld, destinationTaskDriverManagementSystem.m_TaskDriverMigrationData);
 
             Dictionary<Type, IDataSource> destinationEntityProxyDataSourcesByType = destinationTaskDriverManagementSystem.m_EntityProxyDataSourcesByType;
 
@@ -257,7 +247,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 //We may not have a corresponding destination Data Source in the destination world but we still want to process the migration so that 
                 //we remove any references in this world. If we do have the corresponding data source, we'll transfer over to the other world.
                 destinationEntityProxyDataSourcesByType.TryGetValue(entry.Key, out IDataSource destinationDataSource);
-                entry.Value.MigrateTo(destinationDataSource, ref remapArray);
+                entry.Value.MigrateTo(destinationDataSource, ref remapArray, destinationWorldDataMap);
             }
         }
 

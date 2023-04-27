@@ -1,5 +1,7 @@
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -38,6 +40,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             dependsOn = consolidateCancelRequestsDataSourceJob.Schedule(dependsOn);
 
             return dependsOn;
+        }
+
+        public override void MigrateTo(IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, DestinationWorldDataMap destinationWorldDataMap)
+        {
+            //DOES NOTHING RIGHT NOW
         }
 
         //*************************************************************************************************************

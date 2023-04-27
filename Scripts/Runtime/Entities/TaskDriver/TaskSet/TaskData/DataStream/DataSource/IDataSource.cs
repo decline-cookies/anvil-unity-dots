@@ -14,6 +14,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle Consolidate(JobHandle dependsOn);
         
-        public void MigrateTo(IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
+        public void MigrateTo(
+            IDataSource destinationDataSource, 
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
+            DestinationWorldDataMap destinationWorldDataMap);
     }
 }

@@ -1,4 +1,6 @@
 using System;
+using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -10,6 +12,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override JobHandle ConsolidateSelf(JobHandle dependsOn)
         {
             throw new InvalidOperationException($"CancelProgress Data Never needs to be consolidated");
+        }
+
+
+        public override void MigrateTo(IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, DestinationWorldDataMap destinationWorldDataMap)
+        {
+            //DOES NOTHING RIGHT NOW
         }
     }
 }

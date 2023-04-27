@@ -33,8 +33,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
-            //TODO: Move to abstract and make virtual
-            taskSetOwner.World.GetOrCreateSystem<WorldEntityMigrationSystem>().AddMigratable(m_DataSource);
 
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour);
 

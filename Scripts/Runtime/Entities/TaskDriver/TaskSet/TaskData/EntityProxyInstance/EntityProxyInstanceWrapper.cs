@@ -7,10 +7,11 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal readonly struct EntityProxyInstanceWrapper<TInstance> : IEquatable<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
     {
+        public static readonly int INSTANCE_ID_OFFSET = Marshal.OffsetOf<EntityProxyInstanceWrapper<TInstance>>(nameof(InstanceID)).ToInt32();
         public static bool operator ==(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {
             //Note that we are not checking if the Payload is equal because the wrapper is only for origin and lookup
@@ -24,12 +25,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return !(lhs == rhs);
         }
 
-        [FieldOffset(0)] public readonly EntityProxyInstanceID InstanceID;
-        [FieldOffset(16)] public readonly TInstance Payload;
+        public readonly EntityProxyInstanceID InstanceID;
+        public readonly Entity TestA;
+        public readonly Entity TestB;
+        public readonly TInstance Payload;
 
         public EntityProxyInstanceWrapper(Entity entity, uint taskSetOwnerID, uint activeID, ref TInstance payload)
         {
             InstanceID = new EntityProxyInstanceID(entity, taskSetOwnerID, activeID);
+            TestA = entity;
+            TestB = entity;
             Payload = payload;
         }
 
@@ -37,6 +42,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             EntityProxyInstanceID originalInstanceID = original.InstanceID;
             InstanceID = new EntityProxyInstanceID(originalInstanceID.Entity, originalInstanceID.TaskSetOwnerID, newActiveID);
+            TestA = originalInstanceID.Entity;
+            TestB = originalInstanceID.Entity;
             Payload = original.Payload;
         }
 

@@ -11,18 +11,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Maybe have this implement IEntityProxyInstance. https://github.com/decline-cookies/anvil-unity-dots/pull/157#discussion_r1093730973
     [BurstCompatible]
-    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityProxyInstanceID : IEquatable<EntityProxyInstanceID>
     {
-        public static readonly int TASK_SET_OWNER_ID_OFFSET = typeof(EntityProxyInstanceID)
-            .GetField(nameof(TaskSetOwnerID))
-            .GetCustomAttribute<FieldOffsetAttribute>()
-            .Value;
-
-        public static readonly int ACTIVE_ID_OFFSET = typeof(EntityProxyInstanceID)
-            .GetField(nameof(ActiveID))
-            .GetCustomAttribute<FieldOffsetAttribute>()
-            .Value;
+        public static readonly int TASK_SET_OWNER_ID_OFFSET = Marshal.OffsetOf<EntityProxyInstanceID>(nameof(TaskSetOwnerID)).ToInt32();
+        public static readonly int ACTIVE_ID_OFFSET = Marshal.OffsetOf<EntityProxyInstanceID>(nameof(ActiveID)).ToInt32();
 
         public static bool operator ==(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
         {
@@ -34,9 +27,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return !(lhs == rhs);
         }
 
-        [FieldOffset(0)] public readonly Entity Entity;
-        [FieldOffset(8)] public readonly uint TaskSetOwnerID;
-        [FieldOffset(12)] public readonly uint ActiveID;
+        public readonly Entity Entity;
+        public readonly uint TaskSetOwnerID;
+        public readonly uint ActiveID;
 
         public EntityProxyInstanceID(Entity entity, uint taskSetOwnerID, uint activeID)
         {

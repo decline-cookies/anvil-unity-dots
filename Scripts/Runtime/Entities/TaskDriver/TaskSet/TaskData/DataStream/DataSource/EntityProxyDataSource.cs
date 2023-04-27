@@ -45,16 +45,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public override void MigrateTo(
             IDataSource destinationDataSource, 
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-            ref NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping,
-            ref NativeParallelHashMap<uint, uint> activeIDMapping)
+            DestinationWorldDataMap destinationWorldDataMap)
         {
             EntityProxyDataSource<TInstance> destination = destinationDataSource as EntityProxyDataSource<TInstance>;
             
             PendingData.Acquire(AccessType.ExclusiveWrite);
+            destination.PendingData.Acquire(AccessType.ExclusiveWrite);
 
             UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> stream = PendingData.Pending;
             NativeArray<EntityProxyInstanceWrapper<TInstance>> instanceArray = stream.ToNativeArray(Allocator.Temp);
             stream.Clear();
+            
+            //TEMP Main Thread Writer
+            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter laneWriter = stream.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
+            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter destinationLaneWriter = destination.PendingData.Pending.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
+
 
             for (int i = 0; i < instanceArray.Length; ++i)
             {
@@ -67,65 +72,69 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 //If we were remapped to null, then we don't exist in the new world, we should just stay here
                 if (remappedEntity == Entity.Null)
                 {
-                    //TODO: Write back to the original stream, we stayed in this world
+                    laneWriter.Write(instance);
                     continue;
                 }
                 
                 //If we don't have a destination in the new world, then we can just let these cease to exist
-                if (destination == null)
+                //Check the TaskSetOwnerIDMapping/ActiveIDMapping
+                if (destination == null 
+                    || !destinationWorldDataMap.TaskSetOwnerIDMapping.TryGetValue(instanceID.TaskSetOwnerID, out uint destinationTaskSetOwnerID)
+                    || !destinationWorldDataMap.ActiveIDMapping.TryGetValue(instanceID.ActiveID, out uint destinationActiveID))
                 {
                     continue;
                 }
                 
                 //If we do have a destination, then we will want to patch the entity references
-                instance.PatchEntityReferences(remappedEntity);
+                instance.PatchEntityReferences(ref remappedEntity);
                 
                 //Rewrite the memory for the TaskSetOwnerID and ActiveID
                 instance.PatchIDs(
-                    taskSetOwnerIDMapping[instanceID.TaskSetOwnerID],
-                    activeIDMapping[instanceID.ActiveID]);
+                    destinationTaskSetOwnerID,
+                    destinationActiveID);
                 
-                //TODO: Write to the new stream
-                
+                //Write to the destination stream
+                destinationLaneWriter.Write(instance);
             }
 
             PendingData.Release();
+            destination.PendingData.Release();
         }
 
 
-        public unsafe void Migrate(NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
-        {
-            PendingData.Acquire(AccessType.ExclusiveWrite);
-            //TODO: Need to ensure this is actually the ref - look at NativeParallelHashMap
-            foreach (EntityProxyInstanceWrapper<TInstance> entry in PendingData.Pending)
-            {
-                EntityRemapUtility.CalculateFieldOffsetsUnmanaged(
-                    typeof(EntityProxyInstanceWrapper<TInstance>),
-                    out bool hasEntityRefs,
-                    out bool hasBlobRefs,
-                    out bool hasWeakAssetRefs,
-                    ref s_EntityOffsetList,
-                    ref s_BlobAssetRefOffsetList,
-                    ref s_WeakAssetRefOffsetList);
-
-                EntityProxyInstanceWrapper<TInstance> copy = entry;
-                byte* copyPtr = (byte*)UnsafeUtility.AddressOf(ref copy);
-                void* startCopyPtr = copyPtr;
-                for (int i = 0; i < s_EntityOffsetList.Length; ++i)
-                {
-                    TypeManager.EntityOffsetInfo offsetInfo = s_EntityOffsetList[i];
-                    copyPtr += offsetInfo.Offset;
-                    Entity* offsetEntity = (Entity*)copyPtr;
-                    *offsetEntity = EntityRemapUtility.RemapEntity(ref remapArray, *offsetEntity);
-                }
-
-
-                copy = *(EntityProxyInstanceWrapper<TInstance>*)startCopyPtr;
-
-                float a = 5.0f;
-            }
-            PendingData.Release();
-        }
+        // public unsafe void Migrate(NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        // {
+        //     PendingData.Acquire(AccessType.ExclusiveWrite);
+        //     //TODO: Need to ensure this is actually the ref - look at NativeParallelHashMap
+        //     foreach (EntityProxyInstanceWrapper<TInstance> entry in PendingData.Pending)
+        //     {
+        //         EntityRemapUtility.CalculateFieldOffsetsUnmanaged(
+        //             typeof(EntityProxyInstanceWrapper<TInstance>),
+        //             out bool hasEntityRefs,
+        //             out bool hasBlobRefs,
+        //             out bool hasWeakAssetRefs,
+        //             ref s_EntityOffsetList,
+        //             ref s_BlobAssetRefOffsetList,
+        //             ref s_WeakAssetRefOffsetList);
+        //
+        //         EntityProxyInstanceWrapper<TInstance> copy = entry;
+        //         byte* copyPtr = (byte*)UnsafeUtility.AddressOf(ref copy);
+        //         void* startCopyPtr = copyPtr;
+        //         for (int i = 0; i < s_EntityOffsetList.Length; ++i)
+        //         {
+        //             TypeManager.EntityOffsetInfo offsetInfo = s_EntityOffsetList[i];
+        //             copyPtr += offsetInfo.Offset;
+        //             Entity* offsetEntity = (Entity*)copyPtr;
+        //             *offsetEntity = EntityRemapUtility.RemapEntity(ref remapArray, *offsetEntity);
+        //         }
+        //
+        //
+        //         copy = *(EntityProxyInstanceWrapper<TInstance>*)startCopyPtr;
+        //
+        //         float a = 5.0f;
+        //     }
+        //     PendingData.Release();
+        // }
 
         //*************************************************************************************************************
         // EXECUTION

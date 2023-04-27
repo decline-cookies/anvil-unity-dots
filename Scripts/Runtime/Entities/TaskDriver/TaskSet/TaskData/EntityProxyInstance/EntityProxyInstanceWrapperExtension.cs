@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             uint activeID)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            byte* ptr = (byte*)UnsafeUtility.AddressOf(ref instanceWrapper);
+            byte* ptr = (byte*)UnsafeUtility.AddressOf(ref instanceWrapper) + EntityProxyInstanceWrapper<TInstance>.INSTANCE_ID_OFFSET;
             uint* taskSetOwnerIDPtr = (uint*)(ptr + EntityProxyInstanceID.TASK_SET_OWNER_ID_OFFSET);
             *taskSetOwnerIDPtr = taskSetOwnerID;
             uint* activeIDPtr = (uint*)(ptr + EntityProxyInstanceID.ACTIVE_ID_OFFSET);

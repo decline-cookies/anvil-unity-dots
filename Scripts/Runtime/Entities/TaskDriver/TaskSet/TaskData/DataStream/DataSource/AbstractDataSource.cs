@@ -138,7 +138,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // MIGRATION
         //*************************************************************************************************************
 
-        public abstract void MigrateTo(IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
+        public abstract void MigrateTo(
+            IDataSource destinationDataSource,
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
+            DestinationWorldDataMap destinationWorldDataMap);
 
         //*************************************************************************************************************
         // EXECUTION
