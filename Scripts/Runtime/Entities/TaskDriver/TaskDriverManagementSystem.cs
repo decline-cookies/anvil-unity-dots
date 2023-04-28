@@ -238,8 +238,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            // TODO : SYSTEM AND DRIVER PERSISTENT DATA
-
             TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
 
