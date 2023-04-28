@@ -12,6 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly Dictionary<string, uint> m_MigrationTaskSetOwnerIDLookup;
         private readonly Dictionary<string, uint> m_MigrationActiveIDLookup;
+        
         private readonly Dictionary<World, DestinationWorldDataMap> m_DestinationWorldDataMaps;
         private readonly Dictionary<Type, IDataSource> m_AllDataSources;
         // ReSharper disable once InconsistentNaming
@@ -51,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_MigrationDependencies_ScratchPad.ResizeUninitialized(m_AllDataSources.Count);
         }
         
-        public void PopulateMigrationLookup(List<AbstractTaskDriver> topLevelTaskDrivers)
+        public void PopulateMigrationLookup(World world, List<AbstractTaskDriver> topLevelTaskDrivers)
         {
             //Generate a World ID
             foreach (AbstractTaskDriver topLevelTaskDriver in topLevelTaskDrivers)
@@ -59,7 +60,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 topLevelTaskDriver.AddToMigrationLookup(
                     string.Empty, 
                     m_MigrationTaskSetOwnerIDLookup, 
-                    m_MigrationActiveIDLookup);
+                    m_MigrationActiveIDLookup,
+                    world.GetOrCreateSystem<PersistentDataSystem>());
             }
         }
 

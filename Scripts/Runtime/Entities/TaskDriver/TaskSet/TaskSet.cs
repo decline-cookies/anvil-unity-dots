@@ -119,7 +119,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (!m_EntityPersistentDataByType.TryGetValue(type, out AbstractPersistentData persistentData))
             {
                 persistentData = CreateEntityPersistentData<T>();
-                m_EntityPersistentDataByType.Add(type, persistentData);
             }
 
             return (EntityPersistentData<T>)persistentData;
@@ -129,6 +128,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
+            m_EntityPersistentDataByType.Add(typeof(T), entityPersistentData);
             return entityPersistentData;
         }
 
@@ -337,7 +337,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // MIGRATION
         //*************************************************************************************************************
 
-        public void AddToMigrationLookup(string parentPath, Dictionary<string, uint> migrationActiveIDLookup)
+        public void AddToMigrationLookup(
+            string parentPath, 
+            Dictionary<string, uint> migrationActiveIDLookup,
+            PersistentDataSystem persistentDataSystem)
         {
             foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
             {
@@ -366,6 +369,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 typeof(CancelCompleteDataStream).GetReadableName(), 
                 CancelCompleteDataStream.ActiveID, 
                 migrationActiveIDLookup);
+
+            foreach (AbstractPersistentData entry in m_EntityPersistentDataByType.Values)
+            {
+                persistentDataSystem.AddToMigrationLookup(parentPath, entry);
+            }
         }
 
         private void AddToMigrationLookup(string parentPath, string name, uint activeID, Dictionary<string, uint> migrationActiveIDLookup)
@@ -374,6 +382,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
             migrationActiveIDLookup.Add(path, activeID);
         }
+
 
         //*************************************************************************************************************
         // SAFETY
@@ -384,7 +393,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             if (migrationActiveIDLookup.ContainsKey(path))
             {
-                throw new InvalidOperationException($"Trying to add migration data for {this} but {path} is already in the lookup!");
+                throw new InvalidOperationException($"Trying to add ActiveID migration data for {this} but {path} is already in the lookup!");
             }
         }
 

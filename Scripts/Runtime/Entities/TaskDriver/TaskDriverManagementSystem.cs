@@ -48,12 +48,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
             m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
-            m_TaskDriverMigrationData = new TaskDriverMigrationData();
             
-            EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
+            m_TaskDriverMigrationData = new TaskDriverMigrationData();
             m_TaskDriverMigrationData.AddDataSource(m_CancelRequestsDataSource);
             m_TaskDriverMigrationData.AddDataSource(m_CancelProgressDataSource);
             m_TaskDriverMigrationData.AddDataSource(m_CancelCompleteDataSource);
+            
+            EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
         }
 
         protected override void OnCreate()
@@ -79,8 +80,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         protected sealed override void OnDestroy()
         {
-            
-            
             m_EntityProxyDataSourcesByType.DisposeAllValuesAndClear();
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
@@ -93,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressDataSource.Dispose();
 
             m_IDProvider.Dispose();
-
+            
             base.OnDestroy();
         }
 
@@ -143,7 +142,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
             
             //Build the Migration Data for this world
-            m_TaskDriverMigrationData.PopulateMigrationLookup(m_TopLevelTaskDrivers);
+            m_TaskDriverMigrationData.PopulateMigrationLookup(World, m_TopLevelTaskDrivers);
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()

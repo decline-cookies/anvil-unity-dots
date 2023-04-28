@@ -91,15 +91,14 @@ namespace Anvil.Unity.DOTS.Entities
         // MIGRATION
         //*************************************************************************************************************
 
-        public override JobHandle MigrateTo(JobHandle dependsOn, PersistentDataSystem destinationPersistentDataSystem, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        public override JobHandle MigrateTo(JobHandle dependsOn, AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            //This ensures there is a target on the other world to go to
-            EntityPersistentData<T> destinationPersistentData = destinationPersistentDataSystem.GetOrCreateEntityPersistentData<T>();
-            
+            EntityPersistentData<T> destinationEntityPersistentData = (EntityPersistentData<T>)destinationPersistentData;
+
             //Launch the migration job to get that burst speed
             dependsOn = JobHandle.CombineDependencies(dependsOn,
                 AcquireWriterAsync(out EntityPersistentDataWriter<T> currentData),
-                destinationPersistentData.AcquireWriterAsync(out EntityPersistentDataWriter<T> destinationData));
+                destinationEntityPersistentData.AcquireWriterAsync(out EntityPersistentDataWriter<T> destinationData));
 
             MigrateJob migrateJob = new MigrateJob(
                 currentData,
@@ -107,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities
                 ref remapArray);
             dependsOn = migrateJob.Schedule(dependsOn);
             
-            destinationPersistentData.ReleaseWriterAsync(dependsOn);
+            destinationEntityPersistentData.ReleaseWriterAsync(dependsOn);
             ReleaseWriterAsync(dependsOn);
 
             return dependsOn;

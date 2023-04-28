@@ -428,7 +428,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal void AddToMigrationLookup(
             string parentPath, 
             Dictionary<string, uint> migrationTaskSetOwnerIDLookup,
-            Dictionary<string, uint> migrationActiveIDLookup)
+            Dictionary<string, uint> migrationActiveIDLookup,
+            PersistentDataSystem persistentDataSystem)
         {
             //Construct the unique path for this TaskDriver and ensure we don't need a user provided suffix
             string typeName = GetType().GetReadableName();
@@ -437,19 +438,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             migrationTaskSetOwnerIDLookup.Add(path, m_ID);
 
             //Get our TaskSet to populate all the possible ActiveIDs
-            TaskSet.AddToMigrationLookup(path, migrationActiveIDLookup);
+            TaskSet.AddToMigrationLookup(path, migrationActiveIDLookup, persistentDataSystem);
             
             //Try and do the same for our system (there can only be one), will gracefully fail if we have already done this
             string systemPath = $"{typeName}-System";
             if (migrationTaskSetOwnerIDLookup.TryAdd(systemPath, TaskDriverSystem.ID))
             {
-                TaskDriverSystem.TaskSet.AddToMigrationLookup(systemPath, migrationActiveIDLookup);
+                TaskDriverSystem.TaskSet.AddToMigrationLookup(systemPath, migrationActiveIDLookup, persistentDataSystem);
             }
 
             //Then recurse downward to catch all the sub task drivers
             foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
             {
-                subTaskDriver.AddToMigrationLookup(path, migrationTaskSetOwnerIDLookup, migrationActiveIDLookup);
+                subTaskDriver.AddToMigrationLookup(path, migrationTaskSetOwnerIDLookup, migrationActiveIDLookup, persistentDataSystem);
             }
         }
         

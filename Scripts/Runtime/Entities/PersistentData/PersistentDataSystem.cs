@@ -1,4 +1,5 @@
 using Anvil.CSharp.Collections;
+using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,11 +12,13 @@ namespace Anvil.Unity.DOTS.Entities
     internal partial class PersistentDataSystem : AbstractDataSystem,
                                                   IMigrationObserver
     {
+        private const string WORLD_PATH = "World";
         private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
         private static int s_InstanceCount;
 
         private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentData;
 
+        private readonly Dictionary<string, AbstractPersistentData> m_MigrationPersistentDataLookup;
         // ReSharper disable once InconsistentNaming
         private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
 
@@ -24,6 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             s_InstanceCount++;
             m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
             m_MigrationDependencies_ScratchPad = new NativeList<JobHandle>(8, Allocator.Persistent);
+            m_MigrationPersistentDataLookup = new Dictionary<string, AbstractPersistentData>();
         }
 
         protected override void OnCreate()
@@ -65,7 +69,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 persistentData = new EntityPersistentData<T>();
                 m_EntityPersistentData.Add(type, persistentData);
-                m_MigrationDependencies_ScratchPad.ResizeUninitialized(m_EntityPersistentData.Count);
+                AddToMigrationLookup(WORLD_PATH, persistentData);
             }
 
             return (EntityPersistentData<T>)persistentData;
@@ -81,13 +85,25 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
 
             int index = 0;
-            foreach (KeyValuePair<Type, AbstractPersistentData> entry in m_EntityPersistentData)
+            foreach (KeyValuePair<string, AbstractPersistentData> entry in m_MigrationPersistentDataLookup)
             {
-                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationPersistentDataSystem, ref remapArray);
+                if (!destinationPersistentDataSystem.m_MigrationPersistentDataLookup.TryGetValue(entry.Key, out AbstractPersistentData destinationPersistentData))
+                {
+                    throw new InvalidOperationException($"Current World {World} has Entity Persistent Data of {entry.Key} but it doesn't exist in the destination world {destinationWorld}!");
+                }
+                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationPersistentData, ref remapArray);
                 index++;
             }
 
             return JobHandle.CombineDependencies(m_MigrationDependencies_ScratchPad.AsArray());
+        }
+        
+        public void AddToMigrationLookup(string parentPath, AbstractPersistentData entityPersistentData)
+        {
+            string path = $"{parentPath}-{entityPersistentData.GetType().GetReadableName()}";
+            Debug_EnsureNoDuplicateMigrationData(path);
+            m_MigrationPersistentDataLookup.Add(path, entityPersistentData);
+            m_MigrationDependencies_ScratchPad.ResizeUninitialized(m_MigrationPersistentDataLookup.Count);
         }
 
         //*************************************************************************************************************
@@ -100,6 +116,15 @@ namespace Anvil.Unity.DOTS.Entities
             if (persistentDataSystem == null)
             {
                 throw new InvalidOperationException($"Expected World {destinationWorld} to have a {nameof(PersistentDataSystem)} but it does not!");
+            }
+        }
+        
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateMigrationData(string path)
+        {
+            if (m_MigrationPersistentDataLookup.ContainsKey(path))
+            {
+                throw new InvalidOperationException($"Trying to add Entity Persistent Data migration data for {this} but {path} is already in the lookup!");
             }
         }
     }
