@@ -42,9 +42,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dependsOn;
         }
 
-        public override void MigrateTo(IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, DestinationWorldDataMap destinationWorldDataMap)
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public override JobHandle MigrateTo(JobHandle dependsOn, IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, DestinationWorldDataMap destinationWorldDataMap)
         {
             //DOES NOTHING RIGHT NOW
+            //TODO: IMPLEMENT
+            return dependsOn;
         }
 
         //*************************************************************************************************************

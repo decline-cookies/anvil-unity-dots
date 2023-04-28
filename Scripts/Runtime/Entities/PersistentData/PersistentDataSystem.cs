@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -14,11 +15,15 @@ namespace Anvil.Unity.DOTS.Entities
         private static int s_InstanceCount;
 
         private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentData;
-        
+
+        // ReSharper disable once InconsistentNaming
+        private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
+
         public PersistentDataSystem()
         {
             s_InstanceCount++;
             m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
+            m_MigrationDependencies_ScratchPad = new NativeList<JobHandle>(8, Allocator.Persistent);
         }
 
         protected override void OnCreate()
@@ -30,6 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnDestroy()
         {
+            m_MigrationDependencies_ScratchPad.Dispose();
             m_EntityPersistentData.DisposeAllValuesAndClear();
             s_InstanceCount--;
             if (s_InstanceCount <= 0)
@@ -59,6 +65,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 persistentData = new EntityPersistentData<T>();
                 m_EntityPersistentData.Add(type, persistentData);
+                m_MigrationDependencies_ScratchPad.Resize(m_EntityPersistentData.Count, NativeArrayOptions.UninitializedMemory);
             }
 
             return (EntityPersistentData<T>)persistentData;
@@ -68,20 +75,19 @@ namespace Anvil.Unity.DOTS.Entities
         // MIGRATION
         //*************************************************************************************************************
 
-        public void MigrateTo(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
 
+            int index = 0;
             foreach (KeyValuePair<Type, AbstractPersistentData> entry in m_EntityPersistentData)
             {
-                if (!destinationPersistentDataSystem.m_EntityPersistentData.TryGetValue(entry.Key, out AbstractPersistentData destinationPersistentData))
-                {
-                    continue;
-                }
-                
-                entry.Value.MigrateTo(destinationPersistentData, ref remapArray);
+                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationPersistentDataSystem, ref remapArray);
+                index++;
             }
+
+            return JobHandle.CombineDependencies(m_MigrationDependencies_ScratchPad.AsArray());
         }
 
         //*************************************************************************************************************

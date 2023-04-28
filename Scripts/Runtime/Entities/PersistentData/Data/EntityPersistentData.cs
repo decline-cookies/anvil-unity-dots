@@ -1,9 +1,12 @@
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Entities.TaskDriver;
 using Anvil.Unity.DOTS.Jobs;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Profiling;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -11,12 +14,16 @@ namespace Anvil.Unity.DOTS.Entities
                                              IDriverEntityPersistentData<T>,
                                              ISystemEntityPersistentData<T>,
                                              IWorldEntityPersistentData<T>
-        where T : struct, IEntityPersistentDataInstance
+        where T : unmanaged, IEntityPersistentDataInstance
     {
+        private readonly ProfilerMarker m_ProfilerMarker;
+        
         public EntityPersistentData()
             : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
-            MigrationReflectionHelper.RegisterTypeForEntityPatching<T>();
+            m_ProfilerMarker = new ProfilerMarker(GetType().GetReadableName());
+            //We don't know what will be stored in here, but if there are Entity references we want to be able to patch them
+            MigrationUtil.RegisterTypeForEntityPatching<T>();
         }
 
         protected override void DisposeData()
@@ -89,41 +96,78 @@ namespace Anvil.Unity.DOTS.Entities
         // MIGRATION
         //*************************************************************************************************************
 
-        public override void MigrateTo(AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        public override JobHandle MigrateTo(JobHandle dependsOn, PersistentDataSystem destinationPersistentDataSystem, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            //Our destination in the other world could be null... TODO: Should we create?
-            if (destinationPersistentData is not EntityPersistentData<T> destination)
-            {
-                return;
-            }
+            //This ensures there is a target on the other world to go to
+            EntityPersistentData<T> destinationPersistentData = destinationPersistentDataSystem.GetOrCreateEntityPersistentData<T>();
             
-            EntityPersistentDataWriter<T> currentData = AcquireWriter();
-            EntityPersistentDataWriter<T> destinationData = destination.AcquireWriter();
+            //Launch the migration job to get that burst speed
+            dependsOn = JobHandle.CombineDependencies(dependsOn,
+                AcquireWriterAsync(out EntityPersistentDataWriter<T> currentData),
+                destinationPersistentData.AcquireWriterAsync(out EntityPersistentDataWriter<T> destinationData));
 
-            NativeKeyValueArrays<Entity, T> currentElements = currentData.GetKeyValueArrays(Allocator.Temp);
+            MigrateJob migrateJob = new MigrateJob(
+                currentData,
+                destinationData,
+                ref remapArray,
+                m_ProfilerMarker);
+            dependsOn = migrateJob.Schedule(dependsOn);
+            
+            destinationPersistentData.ReleaseWriterAsync(dependsOn);
+            ReleaseWriterAsync(dependsOn);
 
-            for (int i = 0; i < currentElements.Length; ++i)
+            return dependsOn;
+        }
+
+        [BurstCompile]
+        private struct MigrateJob : IJob
+        {
+            private EntityPersistentDataWriter<T> m_CurrentData;
+            private EntityPersistentDataWriter<T> m_DestinationData;
+            [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
+            
+            private ProfilerMarker m_Marker;
+
+            public MigrateJob(
+                EntityPersistentDataWriter<T> currentData, 
+                EntityPersistentDataWriter<T> destinationData, 
+                ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
+                ProfilerMarker marker)
             {
-                Entity currentEntity = currentElements.Keys[i];
-                Entity remappedEntity = EntityRemapUtility.RemapEntity(ref remapArray, currentEntity);
-                //We don't exist in the new world, we should just stay here.
-                if (remappedEntity == Entity.Null)
+                m_CurrentData = currentData;
+                m_DestinationData = destinationData;
+                m_RemapArray = remapArray;
+                m_Marker = marker;
+            }
+
+            public void Execute()
+            {
+                m_Marker.Begin();
+                //Can't remove while iterating so we collapse to an array first of our current keys/values
+                NativeKeyValueArrays<Entity, T> currentEntries = m_CurrentData.GetKeyValueArrays(Allocator.Temp);
+
+                for (int i = 0; i < currentEntries.Length; ++i)
                 {
-                    continue;
+                    Entity currentEntity = currentEntries.Keys[i];
+                    //If we don't exist in the new world we can just skip, we stayed in this world
+                    if (!currentEntity.IfEntityIsRemapped(ref m_RemapArray, out Entity remappedEntity))
+                    {
+                        continue;
+                    }
+
+                    //Otherwise, remove us from this world's lookup
+                    m_CurrentData.Remove(currentEntity);
+                    
+                    //Get our data and patch it
+                    T currentValue = currentEntries.Values[i];
+                    currentValue.PatchEntityReferences(ref m_RemapArray);
+
+                    //TODO: Could this be a problem? Is there data already here that wasn't moved?
+                    //Then write the newly remapped data to the new world's lookup
+                    m_DestinationData[remappedEntity] = currentValue;
                 }
-                
-                //Otherwise, prepare us in the migration data
-                currentData.Remove(currentEntity);
-                T currentValue = currentElements.Values[i];
-
-                currentValue.PatchEntityReferences(ref remapArray);
-
-                //TODO: Could this be a problem? Is there data already here that wasn't moved?
-                destinationData[remappedEntity] = currentValue;
+                m_Marker.End();
             }
-            
-            destination.ReleaseWriter();
-            ReleaseWriter();
         }
     }
 }

@@ -53,6 +53,6 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
-        public abstract void MigrateTo(AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
+        public abstract JobHandle MigrateTo(JobHandle dependsOn, PersistentDataSystem destinationPersistentDataSystem, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
 }

@@ -60,7 +60,8 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
-        public override void MigrateTo(AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+
+        public override JobHandle MigrateTo(JobHandle dependsOn, PersistentDataSystem destinationPersistentDataSystem, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             throw new NotSupportedException($"{nameof(ThreadPersistentData<T>)} isn't supported for migration because it is global to the app.");
         }

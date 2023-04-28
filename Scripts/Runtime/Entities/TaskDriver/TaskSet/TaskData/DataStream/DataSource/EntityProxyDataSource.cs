@@ -1,9 +1,12 @@
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Profiling;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -12,9 +15,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
 
+        private readonly ProfilerMarker m_ProfilerMarker;
+
         public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
         {
-            MigrationReflectionHelper.RegisterTypeForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
+            m_ProfilerMarker = new ProfilerMarker(GetType().GetReadableName());
+            MigrationUtil.RegisterTypeForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
+            EntityProxyInstanceWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
         }
 
         protected override void DisposeSelf()
@@ -39,104 +46,135 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_Consolidator = new EntityProxyDataSourceConsolidator<TInstance>(PendingData, ActiveDataLookupByID);
         }
-        
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
-        
-        public override void MigrateTo(
-            IDataSource destinationDataSource, 
+
+        public override JobHandle MigrateTo(
+            JobHandle dependsOn,
+            IDataSource destinationDataSource,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
             DestinationWorldDataMap destinationWorldDataMap)
         {
             EntityProxyDataSource<TInstance> destination = destinationDataSource as EntityProxyDataSource<TInstance>;
-            
-            PendingData.Acquire(AccessType.ExclusiveWrite);
-            destination.PendingData.Acquire(AccessType.ExclusiveWrite);
+            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationWriter = default;
 
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> stream = PendingData.Pending;
-            NativeArray<EntityProxyInstanceWrapper<TInstance>> instanceArray = stream.ToNativeArray(Allocator.Temp);
-            stream.Clear();
-            
-            //TEMP Main Thread Writer
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter laneWriter = stream.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter destinationLaneWriter = destination.PendingData.Pending.AsLaneWriter(ParallelAccessUtil.CollectionIndexForMainThread());
-
-
-            for (int i = 0; i < instanceArray.Length; ++i)
+            if (destination == null)
             {
-                //If we didn't move, we need to rewrite to the stream since we didn't move
-                EntityProxyInstanceWrapper<TInstance> instance = instanceArray[i];
-                EntityProxyInstanceID instanceID = instance.InstanceID;
+                dependsOn = JobHandle.CombineDependencies(
+                    dependsOn,
+                    PendingData.AcquireAsync(AccessType.ExclusiveWrite));
+            }
+            else
+            {
+                dependsOn = JobHandle.CombineDependencies(
+                    dependsOn,
+                    PendingData.AcquireAsync(AccessType.ExclusiveWrite),
+                    destination.PendingData.AcquireAsync(AccessType.ExclusiveWrite));
 
-                //See what our entity was remapped to
-                Entity remappedEntity = EntityRemapUtility.RemapEntity(ref remapArray, instanceID.Entity);
-                //If we were remapped to null, then we don't exist in the new world, we should just stay here
-                if (remappedEntity == Entity.Null)
-                {
-                    laneWriter.Write(instance);
-                    continue;
-                }
-                
-                //If we don't have a destination in the new world, then we can just let these cease to exist
-                //Check the TaskSetOwnerIDMapping/ActiveIDMapping
-                if (destination == null 
-                    || !destinationWorldDataMap.TaskSetOwnerIDMapping.TryGetValue(instanceID.TaskSetOwnerID, out uint destinationTaskSetOwnerID)
-                    || !destinationWorldDataMap.ActiveIDMapping.TryGetValue(instanceID.ActiveID, out uint destinationActiveID))
-                {
-                    continue;
-                }
-                
-                //If we do have a destination, then we will want to patch the entity references
-                instance.PatchEntityReferences(ref remapArray);
-                
-                //Rewrite the memory for the TaskSetOwnerID and ActiveID
-                instance.PatchIDs(
-                    destinationTaskSetOwnerID,
-                    destinationActiveID);
-                
-                //Write to the destination stream
-                destinationLaneWriter.Write(instance);
+                destinationWriter = destination.PendingWriter;
             }
 
+            MigrateJob migrateJob = new MigrateJob(
+                PendingData.Pending,
+                destinationWriter,
+                remapArray,
+                destinationWorldDataMap.TaskSetOwnerIDMapping,
+                destinationWorldDataMap.ActiveIDMapping,
+                m_ProfilerMarker);
+            dependsOn = migrateJob.Schedule(dependsOn);
+
             PendingData.Release();
-            destination.PendingData.Release();
+            destination?.PendingData.Release();
+
+            return dependsOn;
         }
 
+        [BurstCompile]
+        private struct MigrateJob : IJob
+        {
+            private const int UNSET_ID = -1;
 
-        // public unsafe void Migrate(NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
-        // {
-        //     PendingData.Acquire(AccessType.ExclusiveWrite);
-        //     //TODO: Need to ensure this is actually the ref - look at NativeParallelHashMap
-        //     foreach (EntityProxyInstanceWrapper<TInstance> entry in PendingData.Pending)
-        //     {
-        //         EntityRemapUtility.CalculateFieldOffsetsUnmanaged(
-        //             typeof(EntityProxyInstanceWrapper<TInstance>),
-        //             out bool hasEntityRefs,
-        //             out bool hasBlobRefs,
-        //             out bool hasWeakAssetRefs,
-        //             ref s_EntityOffsetList,
-        //             ref s_BlobAssetRefOffsetList,
-        //             ref s_WeakAssetRefOffsetList);
-        //
-        //         EntityProxyInstanceWrapper<TInstance> copy = entry;
-        //         byte* copyPtr = (byte*)UnsafeUtility.AddressOf(ref copy);
-        //         void* startCopyPtr = copyPtr;
-        //         for (int i = 0; i < s_EntityOffsetList.Length; ++i)
-        //         {
-        //             TypeManager.EntityOffsetInfo offsetInfo = s_EntityOffsetList[i];
-        //             copyPtr += offsetInfo.Offset;
-        //             Entity* offsetEntity = (Entity*)copyPtr;
-        //             *offsetEntity = EntityRemapUtility.RemapEntity(ref remapArray, *offsetEntity);
-        //         }
-        //
-        //
-        //         copy = *(EntityProxyInstanceWrapper<TInstance>*)startCopyPtr;
-        //
-        //         float a = 5.0f;
-        //     }
-        //     PendingData.Release();
-        // }
+            private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_CurrentStream;
+            private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_DestinationStreamWriter;
+            [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
+            [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_TaskSetOwnerIDMapping;
+            [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_ActiveIDMapping;
+            [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
+
+            private ProfilerMarker m_Marker;
+
+            public MigrateJob(
+                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> currentStream,
+                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationStreamWriter,
+                NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
+                NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping,
+                NativeParallelHashMap<uint, uint> activeIDMapping,
+                ProfilerMarker marker)
+            {
+                m_CurrentStream = currentStream;
+                m_DestinationStreamWriter = destinationStreamWriter;
+                m_RemapArray = remapArray;
+                m_TaskSetOwnerIDMapping = taskSetOwnerIDMapping;
+                m_ActiveIDMapping = activeIDMapping;
+                m_Marker = marker;
+
+                m_NativeThreadIndex = UNSET_ID;
+            }
+
+            public void Execute()
+            {
+                m_Marker.Begin();
+                //Can't modify while iterating so we collapse down to a single array and clean the underlying stream.
+                //We'll build this stream back up if anything should still remain
+                NativeArray<EntityProxyInstanceWrapper<TInstance>> currentInstanceArray = m_CurrentStream.ToNativeArray(Allocator.Temp);
+                m_CurrentStream.Clear();
+
+                int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
+
+                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter currentLaneWriter = m_CurrentStream.AsLaneWriter(laneIndex);
+                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter destinationLaneWriter = 
+                    m_DestinationStreamWriter.IsCreated 
+                        ? m_DestinationStreamWriter.AsLaneWriter(laneIndex) 
+                        : default;
+
+                for (int i = 0; i < currentInstanceArray.Length; ++i)
+                {
+                    EntityProxyInstanceWrapper<TInstance> instance = currentInstanceArray[i];
+                    EntityProxyInstanceID instanceID = instance.InstanceID;
+
+                    //If we don't exist in the new world then we stayed in this world and we need to rewrite ourselves 
+                    //to our own stream
+                    if (!instanceID.Entity.IfEntityIsRemapped(ref m_RemapArray, out Entity remappedEntity))
+                    {
+                        currentLaneWriter.Write(ref instance);
+                        continue;
+                    }
+
+                    //If we don't have a destination in the new world, then we can just let these cease to exist
+                    //Check the TaskSetOwnerIDMapping/ActiveIDMapping
+                    if (!destinationLaneWriter.IsCreated
+                        || !m_TaskSetOwnerIDMapping.TryGetValue(instanceID.TaskSetOwnerID, out uint destinationTaskSetOwnerID)
+                        || !m_ActiveIDMapping.TryGetValue(instanceID.ActiveID, out uint destinationActiveID))
+                    {
+                        continue;
+                    }
+
+                    //If we do have a destination, then we will want to patch the entity references
+                    instance.PatchEntityReferences(ref m_RemapArray);
+
+                    //Rewrite the memory for the TaskSetOwnerID and ActiveID
+                    instance.PatchIDs(
+                        destinationTaskSetOwnerID,
+                        destinationActiveID);
+
+                    //Write to the destination stream
+                    destinationLaneWriter.Write(instance);
+                }
+                m_Marker.End();
+            }
+        }
 
         //*************************************************************************************************************
         // EXECUTION
