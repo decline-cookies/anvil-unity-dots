@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #138 - Maybe we should have DriverTaskSet vs SystemTaskSet that extend AbstractTaskSet
     internal class TaskSet : AbstractAnvilBase
     {
-        private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
+        private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
         private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentDataByType;
 
@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
-            m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
+            m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             m_EntityPersistentDataByType = new Dictionary<Type, AbstractPersistentData>();
 
@@ -341,10 +341,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
             {
-                string path = $"{parentPath}-{entry.Key.GetReadableName()}";
-                Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
-                migrationActiveIDLookup.Add(path, entry.Value.ActiveID);
+                AddToMigrationLookup(parentPath, entry.Key.GetReadableName(), entry.Value.ActiveID, migrationActiveIDLookup);
             }
+
+            foreach (ICancellableDataStream entry in m_DataStreamsWithExplicitCancellation)
+            {
+                AddToMigrationLookup(parentPath, $"{entry.InstanceType.GetReadableName()}-ExplicitCancel", entry.PendingCancelActiveID, migrationActiveIDLookup);
+            }
+            
+            AddToMigrationLookup(
+                parentPath, 
+                typeof(CancelRequestsDataStream).GetReadableName(), 
+                CancelRequestsDataStream.ActiveID, 
+                migrationActiveIDLookup);
+            
+            AddToMigrationLookup(
+                parentPath, 
+                typeof(CancelProgressDataStream).GetReadableName(), 
+                CancelProgressDataStream.ActiveID, 
+                migrationActiveIDLookup);
+            
+            AddToMigrationLookup(
+                parentPath, 
+                typeof(CancelCompleteDataStream).GetReadableName(), 
+                CancelCompleteDataStream.ActiveID, 
+                migrationActiveIDLookup);
+        }
+
+        private void AddToMigrationLookup(string parentPath, string name, uint activeID, Dictionary<string, uint> migrationActiveIDLookup)
+        {
+            string path = $"{parentPath}-{name}";
+            Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
+            migrationActiveIDLookup.Add(path, activeID);
         }
 
         //*************************************************************************************************************

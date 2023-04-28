@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         //NOTE: Be careful messing with this - See Debug_EnsureOffsetsAreCorrect
         // ReSharper disable once StaticMemberInGenericType
-        public static readonly int INSTANCE_ID_OFFSET = 0;
+        public const int INSTANCE_ID_OFFSET = 0;
 
         public static bool operator ==(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {

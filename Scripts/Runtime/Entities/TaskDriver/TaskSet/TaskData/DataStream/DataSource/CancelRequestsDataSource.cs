@@ -1,12 +1,10 @@
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
-using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class CancelRequestsDataSource : AbstractDataSource<EntityProxyInstanceID>
+    internal class CancelRequestsDataSource : AbstractEntityProxyInstanceIDDataSource
     {
         private CancelRequestsDataSourceConsolidator m_Consolidator;
 
@@ -39,17 +37,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ConsolidateCancelRequestsDataSourceJob consolidateCancelRequestsDataSourceJob = new ConsolidateCancelRequestsDataSourceJob(m_Consolidator);
             dependsOn = consolidateCancelRequestsDataSourceJob.Schedule(dependsOn);
 
-            return dependsOn;
-        }
-
-        //*************************************************************************************************************
-        // MIGRATION
-        //*************************************************************************************************************
-
-        public override JobHandle MigrateTo(JobHandle dependsOn, IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, DestinationWorldDataMap destinationWorldDataMap)
-        {
-            //DOES NOTHING RIGHT NOW
-            //TODO: IMPLEMENT
             return dependsOn;
         }
 

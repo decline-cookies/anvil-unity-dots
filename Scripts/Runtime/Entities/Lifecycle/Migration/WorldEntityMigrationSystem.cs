@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void AddMigrationObserver(IMigrationObserver migrationObserver)
         {
             m_MigrationObservers.Add(migrationObserver);
-            m_Dependencies_ScratchPad.Resize(m_MigrationObservers.Count, NativeArrayOptions.UninitializedMemory);
+            m_Dependencies_ScratchPad.ResizeUninitialized(m_MigrationObservers.Count);
         }
         
         /// <summary>
@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void RemoveMigrationObserver(IMigrationObserver migrationObserver)
         {
             m_MigrationObservers.Remove(migrationObserver);
-            m_Dependencies_ScratchPad.Resize(m_MigrationObservers.Count, NativeArrayOptions.UninitializedMemory);
+            m_Dependencies_ScratchPad.ResizeUninitialized(m_MigrationObservers.Count);
         }
 
         /// <summary>

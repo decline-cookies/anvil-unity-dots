@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -7,7 +8,10 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #137 - Too much complexity that is not needed
-    internal class EntityProxyDataStream<TInstance> : AbstractDataStream, IDriverDataStream<TInstance>, ISystemDataStream<TInstance>
+    internal class EntityProxyDataStream<TInstance> : AbstractDataStream,
+                                                      IDriverDataStream<TInstance>,
+                                                      ISystemDataStream<TInstance>,
+                                                      ICancellableDataStream
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceWrapper<TInstance>>();
@@ -23,6 +27,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_ActiveArrayData.ID;
         }
+
+        public uint PendingCancelActiveID
+        {
+            get => m_PendingCancelActiveArrayData.ID;
+        }
+
+        public Type InstanceType { get; }
 
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
@@ -44,6 +55,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
+            
+            InstanceType = typeof(TInstance);
         }
 
         public EntityProxyDataStream(AbstractTaskDriver taskDriver, EntityProxyDataStream<TInstance> systemDataStream)
@@ -58,6 +71,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: #136 - Not good to expose these just for the CancelComplete case.
             PendingData = systemDataStream.PendingData;
             PendingWriter = systemDataStream.PendingWriter;
+            
+            InstanceType = typeof(TInstance);
         }
 
         //TODO: #137 - Gross!!! This is a special case only for CancelComplete
@@ -71,6 +86,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: #136 - Not good to expose these just for the CancelComplete case.
             PendingWriter = m_DataSource.PendingWriter;
             PendingData = m_DataSource.PendingData;
+            
+            InstanceType = typeof(TInstance);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

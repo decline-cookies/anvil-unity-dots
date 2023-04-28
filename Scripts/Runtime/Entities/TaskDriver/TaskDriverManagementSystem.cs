@@ -33,9 +33,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_IsHardened;
         private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
         private BulkJobScheduler<CancelProgressFlow> m_CancelProgressFlowBulkJobScheduler;
-        
-        // ReSharper disable once InconsistentNaming
-        private NativeArray<JobHandle> m_MigrationDependencies_ScratchPad;
 
         private readonly IDProvider m_IDProvider;
 
@@ -54,6 +51,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDriverMigrationData = new TaskDriverMigrationData();
             
             EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
+            m_TaskDriverMigrationData.AddDataSource(m_CancelRequestsDataSource);
+            m_TaskDriverMigrationData.AddDataSource(m_CancelProgressDataSource);
+            m_TaskDriverMigrationData.AddDataSource(m_CancelCompleteDataSource);
         }
 
         protected override void OnCreate()
@@ -79,10 +79,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         protected sealed override void OnDestroy()
         {
-            if (m_MigrationDependencies_ScratchPad.IsCreated)
-            {
-                m_MigrationDependencies_ScratchPad.Dispose();
-            }
+            
             
             m_EntityProxyDataSourcesByType.DisposeAllValuesAndClear();
             m_EntityProxyDataSourceBulkJobScheduler?.Dispose();
@@ -116,8 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             m_EntityProxyDataSourceBulkJobScheduler = new BulkJobScheduler<IDataSource>(m_EntityProxyDataSourcesByType.Values.ToArray());
-            m_MigrationDependencies_ScratchPad = new NativeArray<JobHandle>(m_EntityProxyDataSourcesByType.Count, Allocator.Persistent);
-            
+
             //For all the TaskDrivers, filter to find the ones that don't have Parents.
             //Those are our top level TaskDrivers
             m_TopLevelTaskDrivers.AddRange(m_AllTaskDrivers.Where(taskDriver => taskDriver.Parent == null));
@@ -158,6 +154,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 dataSource = new EntityProxyDataSource<TInstance>(this);
                 m_EntityProxyDataSourcesByType.Add(type, dataSource);
+                m_TaskDriverMigrationData.AddDataSource(dataSource);
             }
 
             return (EntityProxyDataSource<TInstance>)dataSource;
@@ -242,28 +239,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            TODO : SYSTEM AND DRIVER PERSISTENT DATA
-                    TODO: CANCEL PROGRESS and CANCEL REQUEST and CANCEL COMPLETE
-            
+            // TODO : SYSTEM AND DRIVER PERSISTENT DATA
+
             TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
-            
-            //Lazy create a World to World mapping lookup for ActiveIDs and TaskSetOwnerIDs
-            DestinationWorldDataMap destinationWorldDataMap = m_TaskDriverMigrationData.GetOrCreateDestinationWorldDataMapFor(destinationWorld, destinationTaskDriverManagementSystem.m_TaskDriverMigrationData);
 
-            Dictionary<Type, IDataSource> destinationEntityProxyDataSourcesByType = destinationTaskDriverManagementSystem.m_EntityProxyDataSourcesByType;
-
-            int index = 0;
-            foreach (KeyValuePair<Type, IDataSource> entry in m_EntityProxyDataSourcesByType)
-            {
-                //We may not have a corresponding destination Data Source in the destination world but we still want to process the migration so that 
-                //we remove any references in this world. If we do have the corresponding data source, we'll transfer over to the other world.
-                destinationEntityProxyDataSourcesByType.TryGetValue(entry.Key, out IDataSource destinationDataSource);
-                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationDataSource, ref remapArray, destinationWorldDataMap);
-                index++;
-            }
-
-            return JobHandle.CombineDependencies(m_MigrationDependencies_ScratchPad);
+            return m_TaskDriverMigrationData.MigrateTo(dependsOn, destinationWorld, destinationTaskDriverManagementSystem.m_TaskDriverMigrationData, ref remapArray);
         }
 
         //*************************************************************************************************************

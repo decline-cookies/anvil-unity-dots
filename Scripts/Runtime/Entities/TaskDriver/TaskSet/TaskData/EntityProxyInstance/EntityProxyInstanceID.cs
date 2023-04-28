@@ -14,8 +14,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal readonly struct EntityProxyInstanceID : IEquatable<EntityProxyInstanceID>
     {
         //NOTE: Be careful messing with these - See Debug_EnsureOffsetsAreCorrect
-        public static readonly int TASK_SET_OWNER_ID_OFFSET = 8;
-        public static readonly int ACTIVE_ID_OFFSET = 12;
+        public const int TASK_SET_OWNER_ID_OFFSET = 8;
+        public const int ACTIVE_ID_OFFSET = 12;
 
         public static bool operator ==(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
         {

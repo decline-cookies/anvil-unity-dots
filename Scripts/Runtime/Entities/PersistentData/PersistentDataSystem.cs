@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 persistentData = new EntityPersistentData<T>();
                 m_EntityPersistentData.Add(type, persistentData);
-                m_MigrationDependencies_ScratchPad.Resize(m_EntityPersistentData.Count, NativeArrayOptions.UninitializedMemory);
+                m_MigrationDependencies_ScratchPad.ResizeUninitialized(m_EntityPersistentData.Count);
             }
 
             return (EntityPersistentData<T>)persistentData;

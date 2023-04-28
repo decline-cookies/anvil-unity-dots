@@ -1,4 +1,3 @@
-using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
@@ -6,7 +5,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Profiling;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -76,13 +74,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             MigrateJob migrateJob = new MigrateJob(
                 PendingData.Pending,
                 destinationWriter,
-                remapArray,
+                ref remapArray,
                 destinationWorldDataMap.TaskSetOwnerIDMapping,
                 destinationWorldDataMap.ActiveIDMapping);
             dependsOn = migrateJob.Schedule(dependsOn);
 
-            PendingData.Release();
-            destination?.PendingData.Release();
+            PendingData.ReleaseAsync(dependsOn);
+            destination?.PendingData.ReleaseAsync(dependsOn);
 
             return dependsOn;
         }
@@ -102,7 +100,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             public MigrateJob(
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> currentStream,
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationStreamWriter,
-                NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
+                ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
                 NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping,
                 NativeParallelHashMap<uint, uint> activeIDMapping)
             {
@@ -125,9 +123,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
 
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter currentLaneWriter = m_CurrentStream.AsLaneWriter(laneIndex);
-                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter destinationLaneWriter = 
-                    m_DestinationStreamWriter.IsCreated 
-                        ? m_DestinationStreamWriter.AsLaneWriter(laneIndex) 
+                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter destinationLaneWriter =
+                    m_DestinationStreamWriter.IsCreated
+                        ? m_DestinationStreamWriter.AsLaneWriter(laneIndex)
                         : default;
 
                 for (int i = 0; i < currentInstanceArray.Length; ++i)
