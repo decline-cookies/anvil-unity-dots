@@ -122,7 +122,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{m_ID}";
+            return $"{GetType().GetReadableName()}|{m_ID}|{m_UniqueMigrationSuffix}";
         }
 
         private ComponentSystemGroup GetSystemGroup()
@@ -439,7 +439,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //Get our TaskSet to populate all the possible ActiveIDs
             TaskSet.AddToMigrationLookup(path, migrationActiveIDLookup);
             
-            //Try and do the same for our system (there can only be one), will gracefully fail if we have.
+            //Try and do the same for our system (there can only be one), will gracefully fail if we have already done this
             string systemPath = $"{typeName}-System";
             if (migrationTaskSetOwnerIDLookup.TryAdd(systemPath, TaskDriverSystem.ID))
             {
@@ -462,7 +462,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             if (migrationTaskSetOwnerIDLookup.ContainsKey(path))
             {
-                throw new InvalidOperationException($"TaskDriver {GetType().GetReadableName()} at path {path} already exists. There are two or more of the same task driver at the same level. They will require a unique migration suffix to be set in their constructor.");
+                throw new InvalidOperationException($"TaskDriver {this} at path {path} already exists. There are two or more of the same task driver at the same level. They will require a unique migration suffix to be set in their constructor.");
             }
         }
         

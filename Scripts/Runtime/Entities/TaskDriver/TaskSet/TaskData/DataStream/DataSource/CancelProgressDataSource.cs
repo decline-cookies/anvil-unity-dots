@@ -20,8 +20,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         
         public override JobHandle MigrateTo(JobHandle dependsOn, IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, DestinationWorldDataMap destinationWorldDataMap)
         {
-            //DOES NOTHING RIGHT NOW
-            //TODO: IMPLEMENT
+            CancelProgressDataSource destination = destinationDataSource as CancelProgressDataSource;
+
             return dependsOn;
         }
     }

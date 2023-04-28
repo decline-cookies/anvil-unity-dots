@@ -15,11 +15,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
 
-        private readonly ProfilerMarker m_ProfilerMarker;
-
         public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
         {
-            m_ProfilerMarker = new ProfilerMarker(GetType().GetReadableName());
             MigrationUtil.RegisterTypeForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
             EntityProxyInstanceWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
         }
@@ -81,8 +78,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 destinationWriter,
                 remapArray,
                 destinationWorldDataMap.TaskSetOwnerIDMapping,
-                destinationWorldDataMap.ActiveIDMapping,
-                m_ProfilerMarker);
+                destinationWorldDataMap.ActiveIDMapping);
             dependsOn = migrateJob.Schedule(dependsOn);
 
             PendingData.Release();
@@ -103,29 +99,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_ActiveIDMapping;
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
-            private ProfilerMarker m_Marker;
-
             public MigrateJob(
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> currentStream,
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationStreamWriter,
                 NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
                 NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping,
-                NativeParallelHashMap<uint, uint> activeIDMapping,
-                ProfilerMarker marker)
+                NativeParallelHashMap<uint, uint> activeIDMapping)
             {
                 m_CurrentStream = currentStream;
                 m_DestinationStreamWriter = destinationStreamWriter;
                 m_RemapArray = remapArray;
                 m_TaskSetOwnerIDMapping = taskSetOwnerIDMapping;
                 m_ActiveIDMapping = activeIDMapping;
-                m_Marker = marker;
 
                 m_NativeThreadIndex = UNSET_ID;
             }
 
             public void Execute()
             {
-                m_Marker.Begin();
                 //Can't modify while iterating so we collapse down to a single array and clean the underlying stream.
                 //We'll build this stream back up if anything should still remain
                 NativeArray<EntityProxyInstanceWrapper<TInstance>> currentInstanceArray = m_CurrentStream.ToNativeArray(Allocator.Temp);
@@ -153,7 +144,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     }
 
                     //If we don't have a destination in the new world, then we can just let these cease to exist
-                    //Check the TaskSetOwnerIDMapping/ActiveIDMapping
                     if (!destinationLaneWriter.IsCreated
                         || !m_TaskSetOwnerIDMapping.TryGetValue(instanceID.TaskSetOwnerID, out uint destinationTaskSetOwnerID)
                         || !m_ActiveIDMapping.TryGetValue(instanceID.ActiveID, out uint destinationActiveID))
@@ -172,7 +162,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     //Write to the destination stream
                     destinationLaneWriter.Write(instance);
                 }
-                m_Marker.End();
             }
         }
 

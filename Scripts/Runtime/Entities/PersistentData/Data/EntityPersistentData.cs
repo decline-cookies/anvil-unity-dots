@@ -1,4 +1,3 @@
-using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Entities.TaskDriver;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
@@ -6,7 +5,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Profiling;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -16,12 +14,9 @@ namespace Anvil.Unity.DOTS.Entities
                                              IWorldEntityPersistentData<T>
         where T : unmanaged, IEntityPersistentDataInstance
     {
-        private readonly ProfilerMarker m_ProfilerMarker;
-        
         public EntityPersistentData()
             : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
-            m_ProfilerMarker = new ProfilerMarker(GetType().GetReadableName());
             //We don't know what will be stored in here, but if there are Entity references we want to be able to patch them
             MigrationUtil.RegisterTypeForEntityPatching<T>();
         }
@@ -109,8 +104,7 @@ namespace Anvil.Unity.DOTS.Entities
             MigrateJob migrateJob = new MigrateJob(
                 currentData,
                 destinationData,
-                ref remapArray,
-                m_ProfilerMarker);
+                ref remapArray);
             dependsOn = migrateJob.Schedule(dependsOn);
             
             destinationPersistentData.ReleaseWriterAsync(dependsOn);
@@ -125,24 +119,19 @@ namespace Anvil.Unity.DOTS.Entities
             private EntityPersistentDataWriter<T> m_CurrentData;
             private EntityPersistentDataWriter<T> m_DestinationData;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
-            
-            private ProfilerMarker m_Marker;
 
             public MigrateJob(
                 EntityPersistentDataWriter<T> currentData, 
                 EntityPersistentDataWriter<T> destinationData, 
-                ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-                ProfilerMarker marker)
+                ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             {
                 m_CurrentData = currentData;
                 m_DestinationData = destinationData;
                 m_RemapArray = remapArray;
-                m_Marker = marker;
             }
 
             public void Execute()
             {
-                m_Marker.Begin();
                 //Can't remove while iterating so we collapse to an array first of our current keys/values
                 NativeKeyValueArrays<Entity, T> currentEntries = m_CurrentData.GetKeyValueArrays(Allocator.Temp);
 
@@ -161,12 +150,10 @@ namespace Anvil.Unity.DOTS.Entities
                     //Get our data and patch it
                     T currentValue = currentEntries.Values[i];
                     currentValue.PatchEntityReferences(ref m_RemapArray);
-
-                    //TODO: Could this be a problem? Is there data already here that wasn't moved?
+                    
                     //Then write the newly remapped data to the new world's lookup
                     m_DestinationData[remappedEntity] = currentValue;
                 }
-                m_Marker.End();
             }
         }
     }

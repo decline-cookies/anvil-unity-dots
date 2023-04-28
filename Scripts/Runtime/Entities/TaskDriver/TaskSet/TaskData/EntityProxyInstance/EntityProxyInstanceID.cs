@@ -13,6 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityProxyInstanceID : IEquatable<EntityProxyInstanceID>
     {
+        //NOTE: Be careful messing with these - See Debug_EnsureOffsetsAreCorrect
         public static readonly int TASK_SET_OWNER_ID_OFFSET = 8;
         public static readonly int ACTIVE_ID_OFFSET = 12;
 

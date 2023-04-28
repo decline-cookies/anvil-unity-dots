@@ -363,7 +363,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {
-            
+            if (m_IsHardened)
+            {
+                throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+            }
         }
 
         [Conditional("ANVIL_DEBUG_SAFETY_EXPENSIVE")]

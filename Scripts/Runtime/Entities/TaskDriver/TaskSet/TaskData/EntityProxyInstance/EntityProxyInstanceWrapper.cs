@@ -14,6 +14,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal readonly struct EntityProxyInstanceWrapper<TInstance> : IEquatable<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
     {
+        //NOTE: Be careful messing with this - See Debug_EnsureOffsetsAreCorrect
+        // ReSharper disable once StaticMemberInGenericType
         public static readonly int INSTANCE_ID_OFFSET = 0;
 
         public static bool operator ==(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)

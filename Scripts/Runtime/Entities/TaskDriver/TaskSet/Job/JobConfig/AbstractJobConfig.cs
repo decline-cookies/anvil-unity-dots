@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -42,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
         private static readonly Usage[] USAGE_TYPES = (Usage[])Enum.GetValues(typeof(Usage));
-        
+
         private readonly Dictionary<JobConfigDataID, AbstractAccessWrapper> m_AccessWrappers;
         private readonly List<AbstractAccessWrapper> m_SchedulingAccessWrappers;
         private readonly PersistentDataSystem m_PersistentDataSystem;
