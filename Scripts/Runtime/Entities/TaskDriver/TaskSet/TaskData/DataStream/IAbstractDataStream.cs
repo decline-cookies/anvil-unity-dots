@@ -74,5 +74,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// The first is a parallel writable collection to be able to write pending instances to.
     /// The second is a narrow array collection for reading.
     /// </summary>
-    public interface IAbstractDataStream { }
+    public interface IAbstractDataStream
+    {
+        
+    }
 }

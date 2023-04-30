@@ -4,7 +4,9 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class CancelRequestsDataStream : AbstractDataStream
+    internal class CancelRequestsDataStream : AbstractDataStream,
+                                              IDriverCancelRequestDataStream,
+                                              ISystemCancelRequestDataStream
     {
         private readonly CancelRequestsDataSource m_DataSource;
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
@@ -49,6 +51,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public CancelRequestsWriter CreateCancelRequestsWriter()
         {
             return new CancelRequestsWriter(m_DataSource.PendingWriter, TaskSetOwner.TaskSet.CancelRequestsContexts);
+        }
+
+        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
+        {
+            JobHandle dependsOn = AcquirePendingAsync(AccessType.SharedWrite);
+            cancelRequestsWriter = CreateCancelRequestsWriter();
+            return dependsOn;
+        }
+
+        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
+        {
+            ReleasePendingAsync(dependsOn);
+        }
+
+        public CancelRequestsWriter AcquireCancelRequestsWriter()
+        {
+            AcquirePending(AccessType.SharedWrite);
+            return CreateCancelRequestsWriter();
+        }
+
+        public void ReleaseCancelRequestsWriter()
+        {
+            ReleasePending();
         }
     }
 }

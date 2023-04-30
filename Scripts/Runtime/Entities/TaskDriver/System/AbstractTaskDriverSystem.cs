@@ -20,6 +20,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
+        
+        /// <summary>
+        /// Data Stream representing requests to Cancel an <see cref="Entity"/>
+        /// </summary>
+        public ISystemCancelRequestDataStream CancelRequestDataStream
+        {
+            get => TaskSet.CancelRequestsDataStream;
+        }
+
+        /// <summary>
+        /// Data Stream representing when Cancel Requests are Complete
+        /// </summary>
+        public ISystemDataStream<CancelComplete> CancelCompleteDataStream
+        {
+            get => TaskSet.CancelCompleteDataStream;
+        }
 
         AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
         {
