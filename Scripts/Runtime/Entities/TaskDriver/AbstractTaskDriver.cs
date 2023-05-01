@@ -109,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //If this is the first TaskDriver of this type, then the System will have been created for this World.
             System = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
             //If not, then we will want to explicitly create it and ensure it is part of the lifecycle.
-            if (TaskDriverSystem == null)
+            if (System == null)
             {
                 System = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
                 World.AddSystem(System);
