@@ -1,6 +1,7 @@
 using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
@@ -8,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -214,6 +216,8 @@ namespace Anvil.Unity.DOTS.Entities
             UpdateSharedStatics();
         }
         
+        //TODO: #233 - This likely won't be a safety function when fully implemented as we'll need to store the type offsets for patching
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private static void ScanForCollections(string parentPathString, Type type)
         {
             //One of these fields might be a collection or contain a collection, best way to tell is to scan it and see if it has a pointer
@@ -227,7 +231,8 @@ namespace Anvil.Unity.DOTS.Entities
                 }
                 if (fieldType.IsPointer)
                 {
-                    Debug.LogWarning($"{parentPathString}/{type.GetReadableName()} has a field named {field.Name} which is a pointer. This is probably a collection. As a result, we cannot automatically patch any entity references inside this collection. It would need to be handled manually until automatic work can handle in from https://github.com/decline-cookies/anvil-unity-dots/issues/233.");
+                    //TODO: #233 - Update instructions when implemented.
+                    Debug.LogWarning($"{parentPathString}/{type.GetReadableName()} has a field named {field.Name} which is a pointer. This is probably a collection. As a result, we cannot automatically patch any entity references inside this collection.");
                     continue;
                 }
                 ScanForCollections($"{parentPathString}/{type.GetReadableName()}", fieldType);
