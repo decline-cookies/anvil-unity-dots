@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Entities;
-using Unity.Jobs;
 using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -42,6 +41,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal AbstractTaskDriver Parent { get; private set; }
         internal AbstractTaskDriverSystem TaskDriverSystem { get; }
         internal TaskSet TaskSet { get; }
+
+        /// <summary>
+        /// Data Stream representing requests to Cancel an <see cref="Entity"/>
+        /// </summary>
+        public IDriverCancelRequestDataStream CancelRequestDataStream
+        {
+            get => TaskSet.CancelRequestsDataStream;
+        }
+
+        /// <summary>
+        /// Data Stream representing when Cancel Requests are Complete
+        /// </summary>
+        public IDriverDataStream<CancelComplete> CancelCompleteDataStream
+        {
+            get => TaskSet.CancelCompleteDataStream;
+        }
 
         protected AbstractAnvilSystemBase System
         {
@@ -243,7 +258,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
         /// <typeparam name="TInstance">The type of instance contained in the <see cref="IDriverDataStream{TInstance}"/></typeparam>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobTriggeredBy<TInstance>(
+        protected IJobConfig ConfigureDriverJobTriggeredBy<TInstance>(
             IDriverDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
@@ -263,7 +278,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobTriggeredBy(
+        protected IJobConfig ConfigureDriverJobTriggeredBy(
             EntityQuery entityQuery,
             JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
             BatchStrategy batchStrategy)
@@ -274,110 +289,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 batchStrategy);
         }
 
-        /// <summary>
-        /// Configures a Job that is triggered by the cancellation of instances in this <see cref="AbstractTaskDriver"/>
-        /// completing.
-        /// </summary>
-        /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
-        /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for executing the job.</param>
-        /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
-        public IJobConfig ConfigureDriverJobWhenCancelComplete(
-            JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
-            BatchStrategy batchStrategy)
-        {
-            return TaskSet.ConfigureJobWhenCancelComplete(
-                scheduleJobFunction,
-                batchStrategy);
-        }
-
-
         //TODO: #73 - Implement other job types
-
-        //*************************************************************************************************************
-        // EXTERNAL USAGE
-        //*************************************************************************************************************
-
-        /// <summary>
-        /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use in a job outside the Task Driver context.
-        /// Requires a call to <see cref="ReleaseCancelCompleteReaderAsync"/> after scheduling the job.
-        /// </summary>
-        /// <param name="cancelCompleteReader">The <see cref="DataStreamActiveReader{CancelComplete}"/></param>
-        /// <returns>A <see cref="JobHandle"/> to wait on</returns>
-        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
-        {
-            return TaskSet.AcquireCancelCompleteReaderAsync(out cancelCompleteReader);
-        }
-
-        /// <summary>
-        /// Allows other jobs to use the underlying data for the <see cref="DataStreamActiveReader{CancelComplete}"/>
-        /// and ensures data integrity across those other usages.
-        /// </summary>
-        /// <param name="dependsOn">The <see cref="JobHandle"/> that used this data.</param>
-        public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
-        {
-            TaskSet.ReleaseCancelCompleteReaderAsync(dependsOn);
-        }
-
-        /// <summary>
-        /// Gets a <see cref="DataStreamActiveReader{CancelComplete}"/> for use on the main thread outside the Task Driver
-        /// context.
-        /// Requires a call to <see cref="ReleaseCancelCompleteReader"/> when done.
-        /// </summary>
-        /// <returns>The <see cref="DataStreamActiveReader{CancelComplete}"/></returns>
-        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
-        {
-            return TaskSet.AcquireCancelCompleteReader();
-        }
-
-        /// <summary>
-        /// Allows other jobs or code to use to underlying data for the <see cref="DataStreamActiveReader{CancelComplete}"/>
-        /// and ensures data integrity across those other usages.
-        /// </summary>
-        public void ReleaseCancelCompleteReader()
-        {
-            TaskSet.ReleaseCancelCompleteReader();
-        }
-
-        /// <summary>
-        /// Gets a <see cref="CancelRequestsWriter"/> for use in a job outside the Task Driver context.
-        /// Requires a call to <see cref="ReleaseCancelRequestsWriterAsync"/> after scheduling the job.
-        /// </summary>
-        /// <param name="cancelRequestsWriter">The <see cref="CancelRequestsWriter"/></param>
-        /// <returns>A <see cref="JobHandle"/> to wait on</returns>
-        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
-        {
-            return TaskSet.AcquireCancelRequestsWriterAsync(out cancelRequestsWriter);
-        }
-
-        /// <summary>
-        /// Allows other jobs to use the underlying data for the <see cref="CancelRequestsWriter"/>
-        /// and ensures data integrity across those other usages.
-        /// </summary>
-        /// <param name="dependsOn">The <see cref="JobHandle"/> that used this data.</param>
-        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
-        {
-            TaskSet.ReleaseCancelRequestsWriterAsync(dependsOn);
-        }
-
-        /// <summary>
-        /// Gets a <see cref="CancelRequestsWriter"/> for use on the main thread outside the Task Driver
-        /// context.
-        /// Requires a call to <see cref="ReleaseCancelRequestsWriter"/> when done.
-        /// </summary>
-        /// <returns>The <see cref="CancelRequestsWriter"/></returns>
-        public CancelRequestsWriter AcquireCancelRequestsWriter()
-        {
-            return TaskSet.AcquireCancelRequestsWriter();
-        }
-
-        /// <summary>
-        /// Allows other jobs or code to use to underlying data for the <see cref="CancelRequestsWriter"/>
-        /// and ensures data integrity across those other usages.
-        /// </summary>
-        public void ReleaseCancelRequestsWriter()
-        {
-            TaskSet.ReleaseCancelRequestsWriter();
-        }
 
         //*************************************************************************************************************
         // HARDENING

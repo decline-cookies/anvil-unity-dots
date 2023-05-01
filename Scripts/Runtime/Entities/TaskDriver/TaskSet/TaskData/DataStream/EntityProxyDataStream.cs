@@ -7,7 +7,9 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #137 - Too much complexity that is not needed
-    internal class EntityProxyDataStream<TInstance> : AbstractDataStream, IDriverDataStream<TInstance>, ISystemDataStream<TInstance>
+    internal class EntityProxyDataStream<TInstance> : AbstractDataStream, 
+                                                      IDriverDataStream<TInstance>, 
+                                                      ISystemDataStream<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
         public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceWrapper<TInstance>>();
