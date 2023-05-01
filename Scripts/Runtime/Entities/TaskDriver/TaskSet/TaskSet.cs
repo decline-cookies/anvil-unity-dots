@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
-using UnityEngine.UI;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -230,23 +228,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryComponentJobConfig;
         }
 
-        public IJobConfig ConfigureJobWhenCancelComplete(
-            in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
-            BatchStrategy batchStrategy)
-        {
-            Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
-
-            CancelCompleteJobConfig cancelCompleteJobConfig
-                = JobConfigFactory.CreateCancelCompleteJobConfig(
-                    TaskSetOwner,
-                    CancelCompleteDataStream,
-                    scheduleJobFunction,
-                    batchStrategy);
-            m_JobConfigs.Add(cancelCompleteJobConfig);
-            return cancelCompleteJobConfig;
-        }
-
-
         public void Harden()
         {
             Debug_EnsureNotHardened();
@@ -284,53 +265,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 taskDriver.TaskSet.AddCancelRequestContextsTo(contexts);
             }
-        }
-
-
-        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
-        {
-            JobHandle dependsOn = CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
-            cancelCompleteReader = CancelCompleteDataStream.CreateDataStreamActiveReader();
-            return dependsOn;
-        }
-
-        public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
-        {
-            CancelCompleteDataStream.ReleaseActiveAsync(dependsOn);
-        }
-
-        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
-        {
-            CancelCompleteDataStream.AcquireActive(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateDataStreamActiveReader();
-        }
-
-        public void ReleaseCancelCompleteReader()
-        {
-            CancelCompleteDataStream.ReleaseActive();
-        }
-
-        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
-        {
-            JobHandle dependsOn = CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
-            cancelRequestsWriter = CancelRequestsDataStream.CreateCancelRequestsWriter();
-            return dependsOn;
-        }
-
-        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
-        {
-            CancelRequestsDataStream.ReleasePendingAsync(dependsOn);
-        }
-
-        public CancelRequestsWriter AcquireCancelRequestsWriter()
-        {
-            CancelRequestsDataStream.AcquirePending(AccessType.SharedWrite);
-            return CancelRequestsDataStream.CreateCancelRequestsWriter();
-        }
-
-        public void ReleaseCancelRequestsWriter()
-        {
-            CancelRequestsDataStream.ReleasePending();
         }
         
         //*************************************************************************************************************
@@ -382,7 +316,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
             migrationActiveIDLookup.Add(path, activeID);
         }
-
 
         //*************************************************************************************************************
         // SAFETY

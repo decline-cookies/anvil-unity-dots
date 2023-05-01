@@ -178,7 +178,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureNotHardened();
             m_AllTaskDrivers.Add(taskDriver);
-            m_AllTaskDriverSystems.Add(taskDriver.TaskDriverSystem);
+            m_AllTaskDriverSystems.Add(taskDriver.System);
         }
 
         public AccessController GetOrCreateCDFEAccessController<T>()
