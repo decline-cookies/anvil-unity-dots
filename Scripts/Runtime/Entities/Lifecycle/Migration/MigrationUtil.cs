@@ -1,5 +1,6 @@
 using Anvil.CSharp.Logging;
 using System;
+using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -36,14 +37,14 @@ namespace Anvil.Unity.DOTS.Entities
             SharedTypeOffsetInfo.REF.Data = s_TypeOffsetsLookup;
             UpdateSharedStatics();
         }
-        
+
         private static void CurrentDomain_OnDomainUnload(object sender, EventArgs e)
         {
             SharedTypeOffsetInfo.REF.Data = default;
             SharedEntityOffsetInfo.REF.Data = default;
             SharedBlobAssetRefInfo.REF.Data = default;
             SharedWeakAssetRefInfo.REF.Data = default;
-            
+
             if (s_TypeOffsetsLookup.IsCreated)
             {
                 s_TypeOffsetsLookup.Dispose();
@@ -61,7 +62,7 @@ namespace Anvil.Unity.DOTS.Entities
                 s_WeakAssetRefOffsetList.Dispose();
             }
         }
-        
+
         /// <summary>
         /// Registers the Type that may contain Entity references so that it can be used with
         /// <see cref="PatchEntityReferences{T}"/> to remap Entity references.
@@ -72,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             RegisterTypeForEntityPatching(typeof(T));
         }
-        
+
         /// <inheritdoc cref="RegisterTypeForEntityPatching{T}"/>
         /// <exception cref="InvalidOperationException">
         /// Occurs when the Type is not a Value type.
@@ -83,6 +84,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Type {type.GetReadableName()} must be a value type in order to register for Entity Patching.");
             }
+
+            ScanForCollections(string.Empty, type);
 
             long typeHash = BurstRuntime.GetHashCode64(type);
             //We've already added this type, no need to do so again
@@ -113,10 +116,30 @@ namespace Anvil.Unity.DOTS.Entities
                 new TypeOffsetInfo(
                     entityOffsetStartIndex,
                     s_EntityOffsetList.Length));
-            
+
             //The size of the underlying data could have changed such that we re-allocated the memory, so we'll update
             //our shared statics
             UpdateSharedStatics();
+        }
+
+        private static void ScanForCollections(string parentPathString, Type type)
+        {
+            //One of these fields might be a collection or contain a collection, best way to tell is to scan it and see if it has a pointer
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (FieldInfo field in fields)
+            {
+                Type fieldType = field.FieldType;
+                if (fieldType.IsPrimitive)
+                {
+                    continue;
+                }
+                if (fieldType.IsPointer)
+                {
+                    Debug.LogWarning($"{parentPathString}/{type.GetReadableName()} has a field named {field.Name} which is a pointer. This is probably a collection. As a result, we cannot automatically patch any entity references inside this collection. It would need to be handled manually until automatic work can handle in from https://github.com/decline-cookies/anvil-unity-dots/issues/233.");
+                    continue;
+                }
+                ScanForCollections($"{parentPathString}/{type.GetReadableName()}", fieldType);
+            }
         }
 
         private static unsafe void UpdateSharedStatics()
@@ -125,11 +148,11 @@ namespace Anvil.Unity.DOTS.Entities
             SharedBlobAssetRefInfo.REF.Data = new IntPtr(s_BlobAssetRefOffsetList.GetUnsafePtr());
             SharedWeakAssetRefInfo.REF.Data = new IntPtr(s_WeakAssetRefOffsetList.GetUnsafePtr());
         }
-        
+
         //*************************************************************************************************************
         // BURST RUNTIME CALLS
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Checks if the Entity was remapped by Unity during a world transfer.
         /// </summary>
@@ -194,7 +217,7 @@ namespace Anvil.Unity.DOTS.Entities
                 *entityPtr = EntityRemapUtility.RemapEntity(ref remapArray, *entityPtr);
             }
         }
-        
+
         //*************************************************************************************************************
         // HELPER TYPES
         //*************************************************************************************************************
@@ -215,35 +238,33 @@ namespace Anvil.Unity.DOTS.Entities
                 EntityOffsetEndIndex = entityOffsetEndIndex;
             }
         }
-        
+
         //*************************************************************************************************************
         // SHARED STATIC REQUIREMENTS
         //*************************************************************************************************************
-        
+
         // ReSharper disable once ConvertToStaticClass
         // ReSharper disable once ClassNeverInstantiated.Local
         private sealed class MigrationUtilContext
         {
-            private MigrationUtilContext()
-            {
-            }
+            private MigrationUtilContext() { }
         }
-        
+
         private sealed class SharedTypeOffsetInfo
         {
             public static readonly SharedStatic<UnsafeParallelHashMap<long, TypeOffsetInfo>> REF = SharedStatic<UnsafeParallelHashMap<long, TypeOffsetInfo>>.GetOrCreate<MigrationUtilContext, SharedTypeOffsetInfo>();
         }
-        
+
         private sealed class SharedEntityOffsetInfo
         {
             public static readonly SharedStatic<IntPtr> REF = SharedStatic<IntPtr>.GetOrCreate<MigrationUtilContext, SharedEntityOffsetInfo>();
         }
-        
+
         private sealed class SharedBlobAssetRefInfo
         {
             public static readonly SharedStatic<IntPtr> REF = SharedStatic<IntPtr>.GetOrCreate<MigrationUtilContext, SharedBlobAssetRefInfo>();
         }
-        
+
         private sealed class SharedWeakAssetRefInfo
         {
             public static readonly SharedStatic<IntPtr> REF = SharedStatic<IntPtr>.GetOrCreate<MigrationUtilContext, SharedWeakAssetRefInfo>();
