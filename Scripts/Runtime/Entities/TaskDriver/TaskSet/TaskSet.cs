@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
-        private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentDataByType;
+        private readonly Dictionary<Type, IMigratablePersistentData> m_MigratableEntityPersistentDataByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            m_EntityPersistentDataByType = new Dictionary<Type, AbstractPersistentData>();
+            m_MigratableEntityPersistentDataByType = new Dictionary<Type, IMigratablePersistentData>();
 
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
-            m_EntityPersistentDataByType.DisposeAllValuesAndClear();
+            m_MigratableEntityPersistentDataByType.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
         }
@@ -113,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Type type = typeof(T);
-            if (!m_EntityPersistentDataByType.TryGetValue(type, out AbstractPersistentData persistentData))
+            if (!m_MigratableEntityPersistentDataByType.TryGetValue(type, out IMigratablePersistentData persistentData))
             {
                 persistentData = CreateEntityPersistentData<T>();
             }
@@ -125,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
-            m_EntityPersistentDataByType.Add(typeof(T), entityPersistentData);
+            m_MigratableEntityPersistentDataByType.Add(typeof(T), entityPersistentData);
             return entityPersistentData;
         }
 
@@ -303,7 +303,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 CancelCompleteDataStream.ActiveID,
                 migrationActiveIDLookup);
 
-            foreach (AbstractPersistentData entry in m_EntityPersistentDataByType.Values)
+            foreach (IMigratablePersistentData entry in m_MigratableEntityPersistentDataByType.Values)
             {
                 persistentDataSystem.AddToMigrationLookup(parentPath, entry);
             }

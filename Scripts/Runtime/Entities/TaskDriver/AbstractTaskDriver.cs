@@ -96,6 +96,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => new ContextTaskDriverSystemWrapper(TaskDriverSystem, this);
         }
 
+        /// <summary>
+        /// Creates a new instance of a <see cref="AbstractTaskDriver"/>
+        /// </summary>
+        /// <param name="world">The <see cref="World"/> this Task Driver is a part of.</param>
+        /// <param name="uniqueMigrationSuffix">
+        /// An optional unique suffix to identify this TaskDriver by. This is necessary when there are two or more of the
+        /// same type of TaskDrivers at the same level in the hierarchy.
+        /// Ex.
+        /// ShootTaskDriver
+        ///  - TimerTaskDriver (for time between shots)
+        ///  - TimerTaskDriver (for reloading)
+        /// 
+        /// Both TimerTaskDriver's would conflict as being siblings of the ShootTaskDriver so they would need a unique
+        /// migration suffix to distinguish them for ensuring migration happens properly between worlds.
+        /// </param>
         protected AbstractTaskDriver(World world, string uniqueMigrationSuffix = null)
         {
             m_UniqueMigrationSuffix = uniqueMigrationSuffix ?? string.Empty;
@@ -295,7 +310,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Dictionary<string, uint> migrationActiveIDLookup,
             PersistentDataSystem persistentDataSystem)
         {
-            //Construct the unique path for this TaskDriver and ensure we don't need a user provided suffix
+            //Construct the unique path for this TaskDriver. By default, out unique migration suffix is empty but if we
+            //conflict with another, then we'll need to get the user to provide one.
             string typeName = GetType().GetReadableName();
             string path = $"{parentPath}{typeName}{m_UniqueMigrationSuffix}-";
             Debug_EnsureNoDuplicateMigrationData(path, migrationTaskSetOwnerIDLookup);

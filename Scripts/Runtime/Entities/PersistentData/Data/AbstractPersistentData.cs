@@ -49,10 +49,5 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_AccessController.Release();
         }
-        
-        //*************************************************************************************************************
-        // MIGRATION
-        //*************************************************************************************************************
-        public abstract JobHandle MigrateTo(JobHandle dependsOn, AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
 }

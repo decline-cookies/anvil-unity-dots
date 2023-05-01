@@ -107,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                     //If we don't exist in the new world then we stayed in this world and we need to rewrite ourselves 
                     //to our own stream
-                    if (!instanceID.Entity.IfEntityIsRemapped(ref m_RemapArray, out Entity remappedEntity))
+                    if (!instanceID.Entity.TryGetRemappedEntity(ref m_RemapArray, out Entity remappedEntity))
                     {
                         currentLaneWriter.Write(ref instanceID);
                         continue;

@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// NOTE: The jobs that are scheduled will be completed immediately, but this allows for taking advantage of
     /// multiple cores. 
     /// </summary>
-    public interface IMigrationObserver
+    public interface IWorldMigrationObserver
     {
         /// <summary>
         /// Implement to handle any custom migration work.

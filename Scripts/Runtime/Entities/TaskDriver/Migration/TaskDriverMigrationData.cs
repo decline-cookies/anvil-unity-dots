@@ -67,32 +67,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private DestinationWorldDataMap GetOrCreateDestinationWorldDataMapFor(World destinationWorld, TaskDriverMigrationData destinationMigrationData)
         {
+            //TODO: Optimization: Might be able to jobify if we switch to fixed strings and UnsafeWorlds?
             if (!m_DestinationWorldDataMaps.TryGetValue(destinationWorld, out DestinationWorldDataMap destinationWorldDataMap))
             {
-                //We're going to the Destination World so we can't have more than they have 
-                NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping = new NativeParallelHashMap<uint, uint>(destinationMigrationData.TaskSetOwnerCount, Allocator.Persistent);
-                NativeParallelHashMap<uint, uint> activeIDMapping = new NativeParallelHashMap<uint, uint>(destinationMigrationData.ActiveIDCount, Allocator.Persistent);
-
-                foreach (KeyValuePair<string, uint> entry in m_MigrationTaskSetOwnerIDLookup)
-                {
-                    if (!destinationMigrationData.m_MigrationTaskSetOwnerIDLookup.TryGetValue(entry.Key, out uint dstTaskSetOwnerID))
-                    {
-                        continue;
-                    }
-                    taskSetOwnerIDMapping.Add(entry.Value, dstTaskSetOwnerID);
-                }
+                destinationWorldDataMap = new DestinationWorldDataMap(m_MigrationTaskSetOwnerIDLookup,
+                    destinationMigrationData.m_MigrationTaskSetOwnerIDLookup,
+                    m_MigrationActiveIDLookup,
+                    destinationMigrationData.m_MigrationActiveIDLookup);
                 
-                foreach (KeyValuePair<string, uint> entry in m_MigrationActiveIDLookup)
-                {
-                    if (!destinationMigrationData.m_MigrationActiveIDLookup.TryGetValue(entry.Key, out uint dstActiveID))
-                    {
-                        continue;
-                    }
-                    activeIDMapping.Add(entry.Value, dstActiveID);
-                }
-                
-                
-                destinationWorldDataMap = new DestinationWorldDataMap(taskSetOwnerIDMapping, activeIDMapping);
                 m_DestinationWorldDataMaps.Add(destinationWorld, destinationWorldDataMap);
             }
             return destinationWorldDataMap;
