@@ -49,6 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, 
             DestinationWorldDataMap destinationWorldDataMap)
         {
+            //TODO: Optimization by using a list of entities that moved and iterating through that instead. See: https://github.com/decline-cookies/anvil-unity-dots/pull/232#discussion_r1181717999
             int index = 0;
             foreach (KeyValuePair<uint, AbstractData> entry in ActiveDataLookupByID)
             {
@@ -148,7 +149,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 {
                     EntityProxyInstanceID currentID = currentEntries.Keys[i];
                     //If we don't exist in the new world, we can just skip, we stayed in this world
-                    if (!currentID.Entity.IfEntityIsRemapped(ref m_RemapArray, out Entity remappedEntity))
+                    if (!currentID.Entity.TryGetRemappedEntity(ref m_RemapArray, out Entity remappedEntity))
                     {
                         continue;
                     }

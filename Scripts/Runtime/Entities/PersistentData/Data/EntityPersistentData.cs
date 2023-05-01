@@ -11,14 +11,15 @@ namespace Anvil.Unity.DOTS.Entities
     internal class EntityPersistentData<T> : AbstractTypedPersistentData<UnsafeParallelHashMap<Entity, T>>,
                                              IDriverEntityPersistentData<T>,
                                              ISystemEntityPersistentData<T>,
-                                             IWorldEntityPersistentData<T>
+                                             IWorldEntityPersistentData<T>,
+                                             IMigratablePersistentData
         where T : unmanaged, IEntityPersistentDataInstance
     {
         public EntityPersistentData()
             : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
             //We don't know what will be stored in here, but if there are Entity references we want to be able to patch them
-            MigrationUtil.RegisterTypeForEntityPatching<T>();
+            WorldEntityMigrationSystem.RegisterForEntityPatching<T>();
         }
 
         protected override void DisposeData()
@@ -91,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities
         // MIGRATION
         //*************************************************************************************************************
 
-        public override JobHandle MigrateTo(JobHandle dependsOn, AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        public JobHandle MigrateTo(JobHandle dependsOn, IMigratablePersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             EntityPersistentData<T> destinationEntityPersistentData = (EntityPersistentData<T>)destinationPersistentData;
 
@@ -131,6 +132,8 @@ namespace Anvil.Unity.DOTS.Entities
 
             public void Execute()
             {
+                //TODO: Optimization: Could pass through the array of entities that were moving to avoid the copy. See: https://github.com/decline-cookies/anvil-unity-dots/pull/232#discussion_r1181697951
+                
                 //Can't remove while iterating so we collapse to an array first of our current keys/values
                 NativeKeyValueArrays<Entity, T> currentEntries = m_CurrentData.GetKeyValueArrays(Allocator.Temp);
 
@@ -138,7 +141,7 @@ namespace Anvil.Unity.DOTS.Entities
                 {
                     Entity currentEntity = currentEntries.Keys[i];
                     //If we don't exist in the new world we can just skip, we stayed in this world
-                    if (!currentEntity.IfEntityIsRemapped(ref m_RemapArray, out Entity remappedEntity))
+                    if (!currentEntity.TryGetRemappedEntity(ref m_RemapArray, out Entity remappedEntity))
                     {
                         continue;
                     }

@@ -1,8 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.CompilerServices;
-using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -49,10 +47,5 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_AccessController.Release();
         }
-        
-        //*************************************************************************************************************
-        // MIGRATION
-        //*************************************************************************************************************
-        public abstract JobHandle MigrateTo(JobHandle dependsOn, AbstractPersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
 }

@@ -10,7 +10,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal partial class PersistentDataSystem : AbstractDataSystem,
-                                                  IMigrationObserver
+                                                  IWorldMigrationObserver
     {
         private const string WORLD_PATH = "World";
         private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
@@ -18,23 +18,24 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentData;
 
-        private readonly Dictionary<string, AbstractPersistentData> m_MigrationPersistentDataLookup;
+        private readonly Dictionary<string, IMigratablePersistentData> m_MigrationPersistentDataLookup;
         // ReSharper disable once InconsistentNaming
         private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
+        private WorldEntityMigrationSystem m_WorldEntityMigrationSystem;
 
         public PersistentDataSystem()
         {
             s_InstanceCount++;
             m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
             m_MigrationDependencies_ScratchPad = new NativeList<JobHandle>(8, Allocator.Persistent);
-            m_MigrationPersistentDataLookup = new Dictionary<string, AbstractPersistentData>();
+            m_MigrationPersistentDataLookup = new Dictionary<string, IMigratablePersistentData>();
         }
 
         protected override void OnCreate()
         {
             base.OnCreate();
-            WorldEntityMigrationSystem worldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
-            worldEntityMigrationSystem.AddMigrationObserver(this);
+            m_WorldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
+            m_WorldEntityMigrationSystem.RegisterMigrationObserver(this);
         }
 
         protected override void OnDestroy()
@@ -46,6 +47,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 s_ThreadPersistentData.DisposeAllValuesAndClear();
             }
+            
+            m_WorldEntityMigrationSystem.UnregisterMigrationObserver(this);
             base.OnDestroy();
         }
 
@@ -69,7 +72,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 persistentData = new EntityPersistentData<T>();
                 m_EntityPersistentData.Add(type, persistentData);
-                AddToMigrationLookup(WORLD_PATH, persistentData);
+                AddToMigrationLookup(WORLD_PATH, (EntityPersistentData<T>)persistentData);
             }
 
             return (EntityPersistentData<T>)persistentData;
@@ -79,15 +82,15 @@ namespace Anvil.Unity.DOTS.Entities
         // MIGRATION
         //*************************************************************************************************************
 
-        public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        JobHandle IWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
 
             int index = 0;
-            foreach (KeyValuePair<string, AbstractPersistentData> entry in m_MigrationPersistentDataLookup)
+            foreach (KeyValuePair<string, IMigratablePersistentData> entry in m_MigrationPersistentDataLookup)
             {
-                if (!destinationPersistentDataSystem.m_MigrationPersistentDataLookup.TryGetValue(entry.Key, out AbstractPersistentData destinationPersistentData))
+                if (!destinationPersistentDataSystem.m_MigrationPersistentDataLookup.TryGetValue(entry.Key, out IMigratablePersistentData destinationPersistentData))
                 {
                     throw new InvalidOperationException($"Current World {World} has Entity Persistent Data of {entry.Key} but it doesn't exist in the destination world {destinationWorld}!");
                 }
@@ -98,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities
             return JobHandle.CombineDependencies(m_MigrationDependencies_ScratchPad.AsArray());
         }
         
-        public void AddToMigrationLookup(string parentPath, AbstractPersistentData entityPersistentData)
+        public void AddToMigrationLookup(string parentPath, IMigratablePersistentData entityPersistentData)
         {
             string path = $"{parentPath}-{entityPersistentData.GetType().GetReadableName()}";
             Debug_EnsureNoDuplicateMigrationData(path);

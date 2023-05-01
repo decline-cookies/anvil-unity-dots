@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase,
-                                                        IMigrationObserver
+                                                        IWorldMigrationObserver
     {
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
@@ -61,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             base.OnCreate();
             WorldEntityMigrationSystem worldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
-            worldEntityMigrationSystem.AddMigrationObserver(this);
+            worldEntityMigrationSystem.RegisterMigrationObserver(this);
         }
 
         protected override void OnStartRunning()
@@ -236,7 +236,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // MIGRATION
         //*************************************************************************************************************
 
-        public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        JobHandle IWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);

@@ -1,14 +1,11 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
-using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
-using UnityEngine.UI;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -17,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
-        private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentDataByType;
+        private readonly Dictionary<Type, IMigratablePersistentData> m_MigratableEntityPersistentDataByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
@@ -46,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            m_EntityPersistentDataByType = new Dictionary<Type, AbstractPersistentData>();
+            m_MigratableEntityPersistentDataByType = new Dictionary<Type, IMigratablePersistentData>();
 
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
@@ -62,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
-            m_EntityPersistentDataByType.DisposeAllValuesAndClear();
+            m_MigratableEntityPersistentDataByType.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
         }
@@ -116,7 +113,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Type type = typeof(T);
-            if (!m_EntityPersistentDataByType.TryGetValue(type, out AbstractPersistentData persistentData))
+            if (!m_MigratableEntityPersistentDataByType.TryGetValue(type, out IMigratablePersistentData persistentData))
             {
                 persistentData = CreateEntityPersistentData<T>();
             }
@@ -128,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
-            m_EntityPersistentDataByType.Add(typeof(T), entityPersistentData);
+            m_MigratableEntityPersistentDataByType.Add(typeof(T), entityPersistentData);
             return entityPersistentData;
         }
 
@@ -230,23 +227,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryComponentJobConfig;
         }
 
-        public IJobConfig ConfigureJobWhenCancelComplete(
-            in JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<CancelComplete> scheduleJobFunction,
-            BatchStrategy batchStrategy)
-        {
-            Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
-
-            CancelCompleteJobConfig cancelCompleteJobConfig
-                = JobConfigFactory.CreateCancelCompleteJobConfig(
-                    TaskSetOwner,
-                    CancelCompleteDataStream,
-                    scheduleJobFunction,
-                    batchStrategy);
-            m_JobConfigs.Add(cancelCompleteJobConfig);
-            return cancelCompleteJobConfig;
-        }
-
-
         public void Harden()
         {
             Debug_EnsureNotHardened();
@@ -286,59 +266,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-
-        public JobHandle AcquireCancelCompleteReaderAsync(out DataStreamActiveReader<CancelComplete> cancelCompleteReader)
-        {
-            JobHandle dependsOn = CancelCompleteDataStream.AcquireActiveAsync(AccessType.SharedRead);
-            cancelCompleteReader = CancelCompleteDataStream.CreateDataStreamActiveReader();
-            return dependsOn;
-        }
-
-        public void ReleaseCancelCompleteReaderAsync(JobHandle dependsOn)
-        {
-            CancelCompleteDataStream.ReleaseActiveAsync(dependsOn);
-        }
-
-        public DataStreamActiveReader<CancelComplete> AcquireCancelCompleteReader()
-        {
-            CancelCompleteDataStream.AcquireActive(AccessType.SharedRead);
-            return CancelCompleteDataStream.CreateDataStreamActiveReader();
-        }
-
-        public void ReleaseCancelCompleteReader()
-        {
-            CancelCompleteDataStream.ReleaseActive();
-        }
-
-        public JobHandle AcquireCancelRequestsWriterAsync(out CancelRequestsWriter cancelRequestsWriter)
-        {
-            JobHandle dependsOn = CancelRequestsDataStream.AcquirePendingAsync(AccessType.SharedWrite);
-            cancelRequestsWriter = CancelRequestsDataStream.CreateCancelRequestsWriter();
-            return dependsOn;
-        }
-
-        public void ReleaseCancelRequestsWriterAsync(JobHandle dependsOn)
-        {
-            CancelRequestsDataStream.ReleasePendingAsync(dependsOn);
-        }
-
-        public CancelRequestsWriter AcquireCancelRequestsWriter()
-        {
-            CancelRequestsDataStream.AcquirePending(AccessType.SharedWrite);
-            return CancelRequestsDataStream.CreateCancelRequestsWriter();
-        }
-
-        public void ReleaseCancelRequestsWriter()
-        {
-            CancelRequestsDataStream.ReleasePending();
-        }
-        
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
 
         public void AddToMigrationLookup(
-            string parentPath, 
+            string parentPath,
             Dictionary<string, uint> migrationActiveIDLookup,
             PersistentDataSystem persistentDataSystem)
         {
@@ -351,26 +284,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 AddToMigrationLookup(parentPath, $"{entry.InstanceType.GetReadableName()}-ExplicitCancel", entry.PendingCancelActiveID, migrationActiveIDLookup);
             }
-            
+
             AddToMigrationLookup(
-                parentPath, 
-                typeof(CancelRequestsDataStream).GetReadableName(), 
-                CancelRequestsDataStream.ActiveID, 
-                migrationActiveIDLookup);
-            
-            AddToMigrationLookup(
-                parentPath, 
-                typeof(CancelProgressDataStream).GetReadableName(), 
-                CancelProgressDataStream.ActiveID, 
-                migrationActiveIDLookup);
-            
-            AddToMigrationLookup(
-                parentPath, 
-                typeof(CancelCompleteDataStream).GetReadableName(), 
-                CancelCompleteDataStream.ActiveID, 
+                parentPath,
+                typeof(CancelRequestsDataStream).GetReadableName(),
+                CancelRequestsDataStream.ActiveID,
                 migrationActiveIDLookup);
 
-            foreach (AbstractPersistentData entry in m_EntityPersistentDataByType.Values)
+            AddToMigrationLookup(
+                parentPath,
+                typeof(CancelProgressDataStream).GetReadableName(),
+                CancelProgressDataStream.ActiveID,
+                migrationActiveIDLookup);
+
+            AddToMigrationLookup(
+                parentPath,
+                typeof(CancelCompleteDataStream).GetReadableName(),
+                CancelCompleteDataStream.ActiveID,
+                migrationActiveIDLookup);
+
+            foreach (IMigratablePersistentData entry in m_MigratableEntityPersistentDataByType.Values)
             {
                 persistentDataSystem.AddToMigrationLookup(parentPath, entry);
             }
@@ -382,7 +315,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
             migrationActiveIDLookup.Add(path, activeID);
         }
-
 
         //*************************************************************************************************************
         // SAFETY
