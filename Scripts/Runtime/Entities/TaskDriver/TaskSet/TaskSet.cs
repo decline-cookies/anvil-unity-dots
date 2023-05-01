@@ -1,7 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
-using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -266,13 +265,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 taskDriver.TaskSet.AddCancelRequestContextsTo(contexts);
             }
         }
-        
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
 
         public void AddToMigrationLookup(
-            string parentPath, 
+            string parentPath,
             Dictionary<string, uint> migrationActiveIDLookup,
             PersistentDataSystem persistentDataSystem)
         {
@@ -285,23 +284,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 AddToMigrationLookup(parentPath, $"{entry.InstanceType.GetReadableName()}-ExplicitCancel", entry.PendingCancelActiveID, migrationActiveIDLookup);
             }
-            
+
             AddToMigrationLookup(
-                parentPath, 
-                typeof(CancelRequestsDataStream).GetReadableName(), 
-                CancelRequestsDataStream.ActiveID, 
+                parentPath,
+                typeof(CancelRequestsDataStream).GetReadableName(),
+                CancelRequestsDataStream.ActiveID,
                 migrationActiveIDLookup);
-            
+
             AddToMigrationLookup(
-                parentPath, 
-                typeof(CancelProgressDataStream).GetReadableName(), 
-                CancelProgressDataStream.ActiveID, 
+                parentPath,
+                typeof(CancelProgressDataStream).GetReadableName(),
+                CancelProgressDataStream.ActiveID,
                 migrationActiveIDLookup);
-            
+
             AddToMigrationLookup(
-                parentPath, 
-                typeof(CancelCompleteDataStream).GetReadableName(), 
-                CancelCompleteDataStream.ActiveID, 
+                parentPath,
+                typeof(CancelCompleteDataStream).GetReadableName(),
+                CancelCompleteDataStream.ActiveID,
                 migrationActiveIDLookup);
 
             foreach (AbstractPersistentData entry in m_EntityPersistentDataByType.Values)

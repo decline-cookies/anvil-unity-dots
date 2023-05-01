@@ -26,8 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
 
-       
-        
+
         private readonly PersistentDataSystem m_PersistentDataSystem;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
         private readonly uint m_ID;
@@ -42,9 +41,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public World World { get; }
 
         internal AbstractTaskDriver Parent { get; private set; }
-        
-        internal AbstractTaskDriverSystem System { get; }
-        
+
+        internal AbstractTaskDriverSystem TaskDriverSystem { get; }
+
         internal TaskSet TaskSet { get; }
 
         /// <summary>
@@ -65,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
         {
-            get => System;
+            get => TaskDriverSystem;
         }
 
         TaskSet ITaskSetOwner.TaskSet
@@ -91,10 +90,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 return m_HasCancellableData;
             }
         }
-        
-        protected ITaskDriverSystem TaskDriverSystem
+
+        protected ITaskDriverSystem System
         {
-            get => new ContextTaskDriverSystemWrapper(System, this);
+            get => new ContextTaskDriverSystemWrapper(TaskDriverSystem, this);
         }
 
         protected AbstractTaskDriver(World world, string uniqueMigrationSuffix = null)
@@ -111,17 +110,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
 
             //If this is the first TaskDriver of this type, then the System will have been created for this World.
-            System = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
+            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
             //If not, then we will want to explicitly create it and ensure it is part of the lifecycle.
-            if (System == null)
+            if (TaskDriverSystem == null)
             {
-                System = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
-                World.AddSystem(System);
+                TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
+                World.AddSystem(TaskDriverSystem);
                 ComponentSystemGroup systemGroup = GetSystemGroup();
-                systemGroup.AddSystemToUpdateList(System);
+                systemGroup.AddSystemToUpdateList(TaskDriverSystem);
             }
 
-            System.RegisterTaskDriver(this);
+            TaskDriverSystem.RegisterTaskDriver(this);
 
             m_ID = taskDriverManagementSystem.GetNextID();
             taskDriverManagementSystem.RegisterTaskDriver(this);
@@ -173,7 +172,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return subTaskDriver;
         }
-        
+
         protected IDriverDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -265,14 +264,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             //Harden our TaskDriverSystem if it hasn't been already
-            System.Harden();
+            TaskDriverSystem.Harden();
 
             //Harden our own TaskSet
             TaskSet.Harden();
 
             //TODO: #138 - Can we consolidate this into the TaskSet and have TaskSets aware of parenting instead
             m_HasCancellableData = TaskSet.ExplicitCancellationCount > 0
-                || System.HasCancellableData
+                || TaskDriverSystem.HasCancellableData
                 || m_SubTaskDrivers.Any(subtaskDriver => subtaskDriver.m_HasCancellableData);
         }
 
@@ -285,13 +284,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
         }
-        
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
 
         internal void AddToMigrationLookup(
-            string parentPath, 
+            string parentPath,
             Dictionary<string, uint> migrationTaskSetOwnerIDLookup,
             Dictionary<string, uint> migrationActiveIDLookup,
             PersistentDataSystem persistentDataSystem)
@@ -304,12 +303,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             //Get our TaskSet to populate all the possible ActiveIDs
             TaskSet.AddToMigrationLookup(path, migrationActiveIDLookup, persistentDataSystem);
-            
+
             //Try and do the same for our system (there can only be one), will gracefully fail if we have already done this
             string systemPath = $"{typeName}-System";
-            if (migrationTaskSetOwnerIDLookup.TryAdd(systemPath, System.ID))
+            if (migrationTaskSetOwnerIDLookup.TryAdd(systemPath, TaskDriverSystem.ID))
             {
-                System.TaskSet.AddToMigrationLookup(systemPath, migrationActiveIDLookup, persistentDataSystem);
+                TaskDriverSystem.TaskSet.AddToMigrationLookup(systemPath, migrationActiveIDLookup, persistentDataSystem);
             }
 
             //Then recurse downward to catch all the sub task drivers
@@ -318,7 +317,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 subTaskDriver.AddToMigrationLookup(path, migrationTaskSetOwnerIDLookup, migrationActiveIDLookup, persistentDataSystem);
             }
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
@@ -331,7 +330,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"TaskDriver {this} at path {path} already exists. There are two or more of the same task driver at the same level. They will require a unique migration suffix to be set in their constructor.");
             }
         }
-        
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
         {
