@@ -2,6 +2,17 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
+    /// <summary>
+    /// Helper class to wrap a <see cref="AbstractTaskDriverSystem"/> so that it has the context of the calling
+    /// <see cref="AbstractTaskDriver"/>.
+    /// </summary>
+    /// <remarks>
+    /// These functions just pipe directly to the system but handle passing along the context. This avoids errors of
+    /// passing along the wrong context but also keeps the API the same as the Driver API.
+    /// The consumer gets an <see cref="ITaskDriverSystem"/> to interface with and isn't aware of this wrapper.
+    /// The <see cref="AbstractTaskDriverSystem"/> corresponding methods are marked internal so that they can't be
+    /// accessed without going through here.
+    /// </remarks>
     internal class ContextTaskDriverSystemWrapper : ITaskDriverSystem
     {
         private readonly AbstractTaskDriverSystem m_TaskDriverSystem;
@@ -62,7 +73,5 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return $"{m_TaskDriverSystem} via context {m_ContextTaskDriver}";
         }
-        
-        
     }
 }

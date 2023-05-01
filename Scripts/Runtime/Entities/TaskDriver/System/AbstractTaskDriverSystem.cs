@@ -7,7 +7,6 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    //TODO: #188 - /// Document public API
     public abstract partial class AbstractTaskDriverSystem : AbstractAnvilSystemBase,
                                                              ITaskSetOwner
     {
@@ -22,6 +21,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
         
+        //Note - This represents the World that was passed in by the TaskDriver during this system's construction.
+        //Normally a system doesn't get a World until OnCreate is called and the System.World will return null.
+        //We need a valid World in the constructor so we get one and assign it to this property instead.
+        public new World World { get; }
+        internal TaskSet TaskSet { get; }
+        
+        uint ITaskSetOwner.ID
+        {
+            get => m_ID;
+        }
+        
         internal ISystemCancelRequestDataStream CancelRequestDataStream
         {
             get => TaskSet.CancelRequestsDataStream;
@@ -31,34 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => TaskSet.CancelCompleteDataStream;
         }
-
-        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
-        {
-            get => this;
-        }
-
-        //Note - This represents the World that was passed in by the TaskDriver during this system's construction.
-        //Normally a system doesn't get a World until OnCreate is called and the System.World will return null.
-        //We need a valid World in the constructor so we get one and assign it to this property instead.
-        public new World World { get; }
-
-        internal TaskSet TaskSet { get; }
-
-        TaskSet ITaskSetOwner.TaskSet
-        {
-            get => TaskSet;
-        }
-
-        uint ITaskSetOwner.ID
-        {
-            get => m_ID;
-        }
-
-        List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
-        {
-            get => EMPTY_SUB_TASK_DRIVERS;
-        }
-
+        
         internal bool HasCancellableData
         {
             get
@@ -71,6 +54,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         bool ITaskSetOwner.HasCancellableData
         {
             get => HasCancellableData;
+        }
+
+        AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
+        {
+            get => this;
+        }
+
+        TaskSet ITaskSetOwner.TaskSet
+        {
+            get => TaskSet;
+        }
+        
+        List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
+        {
+            get => EMPTY_SUB_TASK_DRIVERS;
         }
 
         protected AbstractTaskDriverSystem(World world)
