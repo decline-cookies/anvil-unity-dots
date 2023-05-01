@@ -1,8 +1,6 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.CompilerServices;
-using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities

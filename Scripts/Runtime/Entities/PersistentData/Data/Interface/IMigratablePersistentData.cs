@@ -5,7 +5,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IMigratablePersistentData : IDisposable
+    internal interface IMigratablePersistentData : IDisposable
     {
         public JobHandle MigrateTo(JobHandle dependsOn, IMigratablePersistentData destinationPersistentData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
