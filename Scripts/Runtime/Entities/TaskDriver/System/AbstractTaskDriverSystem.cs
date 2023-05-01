@@ -14,6 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
         private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
 
+        private readonly uint m_ID;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
@@ -21,18 +22,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
         
-        /// <summary>
-        /// Data Stream representing requests to Cancel an <see cref="Entity"/>
-        /// </summary>
-        public ISystemCancelRequestDataStream CancelRequestDataStream
+        internal ISystemCancelRequestDataStream CancelRequestDataStream
         {
             get => TaskSet.CancelRequestsDataStream;
         }
-
-        /// <summary>
-        /// Data Stream representing when Cancel Requests are Complete
-        /// </summary>
-        public ISystemDataStream<CancelComplete> CancelCompleteDataStream
+        
+        internal ISystemDataStream<CancelComplete> CancelCompleteDataStream
         {
             get => TaskSet.CancelCompleteDataStream;
         }
@@ -54,11 +49,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => TaskSet;
         }
 
-        internal uint ID { get; }
-
         uint ITaskSetOwner.ID
         {
-            get => ID;
+            get => m_ID;
         }
 
         List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
@@ -88,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
-            ID = taskDriverManagementSystem.GetNextID();
+            m_ID = taskDriverManagementSystem.GetNextID();
 
             TaskSet = new TaskSet(this);
         }
@@ -113,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{ID}";
+            return $"{GetType().GetReadableName()}|{m_ID}";
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -122,17 +115,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDrivers.Add(taskDriver);
         }
 
-        internal ISystemDataStream<TInstance> GetOrCreateDataStream<TInstance>(
-            AbstractTaskDriver taskDriver,
-            CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
+        internal ISystemDataStream<TInstance> CreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour);
             //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
-
-        internal EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+        
+        internal ISystemEntityPersistentData<T> CreateEntityPersistentData<T>()
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>();
@@ -150,7 +141,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // JOB CONFIGURATION - SYSTEM LEVEL
         //*************************************************************************************************************
 
-        internal IResolvableJobConfigRequirements ConfigureSystemJobToUpdate<TInstance>(
+        internal IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
@@ -169,7 +160,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 batchStrategy);
         }
 
-        internal IResolvableJobConfigRequirements ConfigureSystemJobToCancel<TInstance>(
+        internal IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
