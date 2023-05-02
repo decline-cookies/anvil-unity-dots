@@ -1,12 +1,15 @@
 using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -175,6 +178,8 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Type {type.GetReadableName()} must be a value type in order to register for Entity Patching.");
             }
+            
+            ScanForCollections(string.Empty, type);
 
             long typeHash = BurstRuntime.GetHashCode64(type);
             //We've already added this type, no need to do so again
@@ -209,6 +214,29 @@ namespace Anvil.Unity.DOTS.Entities
             //The size of the underlying data could have changed such that we re-allocated the memory, so we'll update
             //our shared statics
             UpdateSharedStatics();
+        }
+        
+        //TODO: #233 - This likely won't be a safety function when fully implemented as we'll need to store the type offsets for patching
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private static void ScanForCollections(string parentPathString, Type type)
+        {
+            //One of these fields might be a collection or contain a collection, best way to tell is to scan it and see if it has a pointer
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (FieldInfo field in fields)
+            {
+                Type fieldType = field.FieldType;
+                if (fieldType.IsPrimitive)
+                {
+                    continue;
+                }
+                if (fieldType.IsPointer)
+                {
+                    //TODO: #233 - Update instructions when implemented.
+                    Debug.LogWarning($"{parentPathString}/{type.GetReadableName()} has a field named {field.Name} which is a pointer. This is probably a collection. As a result, we cannot automatically patch any entity references inside this collection.");
+                    continue;
+                }
+                ScanForCollections($"{parentPathString}/{type.GetReadableName()}", fieldType);
+            }
         }
 
         //*************************************************************************************************************
