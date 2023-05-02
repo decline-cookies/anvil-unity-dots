@@ -15,21 +15,21 @@ namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// World specific system for handling Migration.
-    /// Register <see cref="IWorldMigrationObserver"/>s here to be notified when Migration occurs
+    /// Register <see cref="IEntityWorldMigrationObserver"/>s here to be notified when Migration occurs
     ///
     /// NOTE: Use <see cref="MoveEntitiesAndMigratableDataTo"/> on this System instead of directly interfacing with
     /// <see cref="EntityManager.MoveEntitiesFrom"/>
     /// </summary>
-    public class WorldEntityMigrationSystem : AbstractDataSystem
+    public class EntityWorldMigrationSystem : AbstractDataSystem
     {
-        private readonly HashSet<IWorldMigrationObserver> m_MigrationObservers;
+        private readonly HashSet<IEntityWorldMigrationObserver> m_MigrationObservers;
 
         // ReSharper disable once InconsistentNaming
         private NativeList<JobHandle> m_Dependencies_ScratchPad;
 
-        public WorldEntityMigrationSystem()
+        public EntityWorldMigrationSystem()
         {
-            m_MigrationObservers = new HashSet<IWorldMigrationObserver>();
+            m_MigrationObservers = new HashSet<IEntityWorldMigrationObserver>();
             m_Dependencies_ScratchPad = new NativeList<JobHandle>(8, Allocator.Persistent);
         }
 
@@ -40,34 +40,34 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <summary>
-        /// Adds a <see cref="IWorldMigrationObserver"/> to be notified when Migration occurs and be given the chance to
+        /// Adds a <see cref="IEntityWorldMigrationObserver"/> to be notified when Migration occurs and be given the chance to
         /// respond to it.
         /// </summary>
-        /// <param name="worldMigrationObserver">The <see cref="IWorldMigrationObserver"/></param>
-        public void RegisterMigrationObserver(IWorldMigrationObserver worldMigrationObserver)
+        /// <param name="entityWorldMigrationObserver">The <see cref="IEntityWorldMigrationObserver"/></param>
+        public void RegisterMigrationObserver(IEntityWorldMigrationObserver entityWorldMigrationObserver)
         {
-            m_MigrationObservers.Add(worldMigrationObserver);
+            m_MigrationObservers.Add(entityWorldMigrationObserver);
             m_Dependencies_ScratchPad.ResizeUninitialized(m_MigrationObservers.Count);
         }
 
         /// <summary>
-        /// Removes a <see cref="IWorldMigrationObserver"/> if it no longer wishes to be notified of when a Migration occurs.
+        /// Removes a <see cref="IEntityWorldMigrationObserver"/> if it no longer wishes to be notified of when a Migration occurs.
         /// </summary>
-        /// <param name="worldMigrationObserver">The <see cref="IWorldMigrationObserver"/></param>
-        public void UnregisterMigrationObserver(IWorldMigrationObserver worldMigrationObserver)
+        /// <param name="entityWorldMigrationObserver">The <see cref="IEntityWorldMigrationObserver"/></param>
+        public void UnregisterMigrationObserver(IEntityWorldMigrationObserver entityWorldMigrationObserver)
         {
             //We've already been destroyed, no need to unregister
             if (!m_Dependencies_ScratchPad.IsCreated)
             {
                 return;
             }
-            m_MigrationObservers.Remove(worldMigrationObserver);
+            m_MigrationObservers.Remove(entityWorldMigrationObserver);
             m_Dependencies_ScratchPad.ResizeUninitialized(m_MigrationObservers.Count);
         }
 
         /// <summary>
         /// Migrates Entities from this <see cref="World"/> to the destination world with the provided query.
-        /// This will then handle notifying all <see cref="IWorldMigrationObserver"/>s to have the chance to respond with
+        /// This will then handle notifying all <see cref="IEntityWorldMigrationObserver"/>s to have the chance to respond with
         /// custom migration work.
         /// </summary>
         /// <param name="destinationWorld">The <see cref="World"/> to move Entities to.</param>
@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities
         private JobHandle NotifyObserversOfMigrateTo(World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             int index = 0;
-            foreach (IWorldMigrationObserver migrationObserver in m_MigrationObservers)
+            foreach (IEntityWorldMigrationObserver migrationObserver in m_MigrationObservers)
             {
                 m_Dependencies_ScratchPad[index] = migrationObserver.MigrateTo(default, destinationWorld, ref remapArray);
                 index++;
@@ -159,7 +159,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         /// <summary>
         /// Registers the Type that may contain Entity references so that it can be used with
-        /// <see cref="WorldEntityMigrationHelper.PatchEntityReferences{T}"/> to remap Entity references.
+        /// <see cref="EntityWorldMigrationExtension.PatchEntityReferences{T}"/> to remap Entity references.
         /// </summary>
         /// <typeparam name="T">The type to register</typeparam>
         public static void RegisterForEntityPatching<T>()

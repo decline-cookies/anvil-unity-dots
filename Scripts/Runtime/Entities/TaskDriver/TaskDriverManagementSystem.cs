@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase,
-                                                        IWorldMigrationObserver
+                                                        IEntityWorldMigrationObserver
     {
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
@@ -60,8 +60,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void OnCreate()
         {
             base.OnCreate();
-            WorldEntityMigrationSystem worldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
-            worldEntityMigrationSystem.RegisterMigrationObserver(this);
+            EntityWorldMigrationSystem entityWorldMigrationSystem = World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            entityWorldMigrationSystem.RegisterMigrationObserver(this);
         }
 
         protected override void OnStartRunning()
@@ -236,7 +236,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // MIGRATION
         //*************************************************************************************************************
 
-        JobHandle IWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        JobHandle IEntityWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);

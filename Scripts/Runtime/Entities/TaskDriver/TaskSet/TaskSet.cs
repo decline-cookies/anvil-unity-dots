@@ -4,8 +4,10 @@ using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine.UI;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -277,29 +279,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
             {
-                AddToMigrationLookup(parentPath, entry.Key.GetReadableName(), entry.Value.ActiveID, migrationActiveIDLookup);
+                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.Key), entry.Value.ActiveID, migrationActiveIDLookup);
             }
 
             foreach (ICancellableDataStream entry in m_DataStreamsWithExplicitCancellation)
             {
-                AddToMigrationLookup(parentPath, $"{entry.InstanceType.GetReadableName()}-ExplicitCancel", entry.PendingCancelActiveID, migrationActiveIDLookup);
+                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.InstanceType) ^ BurstRuntime.GetHashCode64<ICancellableDataStream>(), entry.PendingCancelActiveID, migrationActiveIDLookup);
             }
 
             AddToMigrationLookup(
                 parentPath,
-                typeof(CancelRequestsDataStream).GetReadableName(),
+                BurstRuntime.GetHashCode64(typeof(CancelRequestsDataStream)),
                 CancelRequestsDataStream.ActiveID,
                 migrationActiveIDLookup);
 
             AddToMigrationLookup(
                 parentPath,
-                typeof(CancelProgressDataStream).GetReadableName(),
+                BurstRuntime.GetHashCode64(typeof(CancelProgressDataStream)),
                 CancelProgressDataStream.ActiveID,
                 migrationActiveIDLookup);
 
             AddToMigrationLookup(
                 parentPath,
-                typeof(CancelCompleteDataStream).GetReadableName(),
+                BurstRuntime.GetHashCode64(typeof(CancelCompleteDataStream)),
                 CancelCompleteDataStream.ActiveID,
                 migrationActiveIDLookup);
 
@@ -309,9 +311,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        private void AddToMigrationLookup(string parentPath, string name, uint activeID, Dictionary<string, uint> migrationActiveIDLookup)
+        private void AddToMigrationLookup(string parentPath, long typeHash, uint activeID, Dictionary<string, uint> migrationActiveIDLookup)
         {
-            string path = $"{parentPath}-{name}";
+            string path = $"{parentPath}-{typeHash}";
             Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
             migrationActiveIDLookup.Add(path, activeID);
         }

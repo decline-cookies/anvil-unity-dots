@@ -5,14 +5,14 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// Implement and register with <see cref="WorldEntityMigrationSystem"/> to receive a notification when
+    /// Implement and register with <see cref="EntityWorldMigrationSystem"/> to receive a notification when
     /// Entities are being migrated from one <see cref="World"/> to another. This will allow for scheduling jobs to
     /// handle any custom migration for data that refers to <see cref="Entity"/>s but is not automatically handled by
     /// Unity.
     /// NOTE: The jobs that are scheduled will be completed immediately, but this allows for taking advantage of
     /// multiple cores. 
     /// </summary>
-    public interface IWorldMigrationObserver
+    public interface IEntityWorldMigrationObserver
     {
         /// <summary>
         /// Implement to handle any custom migration work.
