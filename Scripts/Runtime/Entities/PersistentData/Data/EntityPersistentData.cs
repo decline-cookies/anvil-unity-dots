@@ -92,8 +92,8 @@ namespace Anvil.Unity.DOTS.Entities
             //Launch the migration job to get that burst speed
             dependsOn = JobHandle.CombineDependencies(
                 dependsOn,
-                AcquireWriterAsync(out EntityPersistentDataWriter<T> currentData),
-                destinationEntityPersistentData.AcquireWriterAsync(out EntityPersistentDataWriter<T> destinationData));
+                AcquireSharedWriteAsync(out EntityPersistentDataWriter<T> currentData),
+                destinationEntityPersistentData.AcquireSharedWriteAsync(out EntityPersistentDataWriter<T> destinationData));
 
             MigrateJob migrateJob = new MigrateJob(
                 currentData,
@@ -101,8 +101,8 @@ namespace Anvil.Unity.DOTS.Entities
                 ref remapArray);
             dependsOn = migrateJob.Schedule(dependsOn);
 
-            destinationEntityPersistentData.ReleaseWriterAsync(dependsOn);
-            ReleaseWriterAsync(dependsOn);
+            destinationEntityPersistentData.ReleaseAsync(dependsOn);
+            ReleaseAsync(dependsOn);
 
             return dependsOn;
         }
