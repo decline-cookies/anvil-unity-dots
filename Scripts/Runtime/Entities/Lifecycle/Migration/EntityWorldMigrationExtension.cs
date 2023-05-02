@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <summary>
     /// Helper class for when Entities are migrating from one <see cref="World"/> to another.
     /// </summary>
-    public static class WorldEntityMigrationHelper
+    public static class EntityWorldMigrationExtension
     {
         //*************************************************************************************************************
         // MIGRATION
@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         /// <summary>
         /// Migrates Entities from this <see cref="World"/> to the destination world with the provided query.
-        /// This will then handle notifying all <see cref="IWorldMigrationObserver"/>s to have the chance to respond with
+        /// This will then handle notifying all <see cref="IEntityWorldMigrationObserver"/>s to have the chance to respond with
         /// custom migration work.
         /// NOTE: Use this instead of <see cref="EntityManager.MoveEntitiesFrom"/> in order for migration callbacks
         /// to occur in non IComponentData 
@@ -28,8 +28,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="entitiesToMigrateQuery">The <see cref="EntityQuery"/> to select the Entities to migrate.</param>
         public static void MoveEntitiesAndMigratableDataTo(this EntityManager srcEntityManager, World destinationWorld, EntityQuery entitiesToMigrateQuery)
         {
-            WorldEntityMigrationSystem worldEntityMigrationSystem = srcEntityManager.World.GetOrCreateSystem<WorldEntityMigrationSystem>();
-            worldEntityMigrationSystem.MoveEntitiesAndMigratableDataTo(destinationWorld, entitiesToMigrateQuery);
+            EntityWorldMigrationSystem entityWorldMigrationSystem = srcEntityManager.World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            entityWorldMigrationSystem.MoveEntitiesAndMigratableDataTo(destinationWorld, entitiesToMigrateQuery);
         }
 
         //*************************************************************************************************************
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="remapArray">The Unity provided remap array</param>
         /// <typeparam name="T">The type of struct to patch</typeparam>
         /// <exception cref="InvalidOperationException">
-        /// Occurs if this type was not registered via <see cref="WorldEntityMigrationSystem.RegisterForEntityPatching{T}"/>
+        /// Occurs if this type was not registered via <see cref="EntityWorldMigrationSystem.RegisterForEntityPatching{T}"/>
         /// </exception>
         [BurstCompatible]
         public static unsafe void PatchEntityReferences<T>(this ref T instance, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
@@ -75,9 +75,9 @@ namespace Anvil.Unity.DOTS.Entities
             long typeHash = BurstRuntime.GetHashCode64<T>();
             //Easy way to check if we remembered to register our type. Unfortunately it's a lot harder to figure out which type is missing due to the hash
             //but usually you're going to run into this right away and be able to figure it out. Not using the actual Type class so we can Burst this.
-            if (!WorldEntityMigrationSystem.SharedTypeOffsetInfo.REF.Data.TryGetValue(typeHash, out WorldEntityMigrationSystem.TypeOffsetInfo typeOffsetInfo))
+            if (!EntityWorldMigrationSystem.SharedTypeOffsetInfo.REF.Data.TryGetValue(typeHash, out EntityWorldMigrationSystem.TypeOffsetInfo typeOffsetInfo))
             {
-                throw new InvalidOperationException($"Tried to patch type with BurstRuntime hash of {typeHash} but it wasn't registered. Did you call {nameof(WorldEntityMigrationSystem.RegisterForEntityPatching)}?");
+                throw new InvalidOperationException($"Tried to patch type with BurstRuntime hash of {typeHash} but it wasn't registered. Did you call {nameof(EntityWorldMigrationSystem.RegisterForEntityPatching)}?");
             }
 
             //If there's nothing to remap, we'll just return
@@ -90,7 +90,7 @@ namespace Anvil.Unity.DOTS.Entities
             //to remap to the new entity
             byte* instancePtr = (byte*)UnsafeUtility.AddressOf(ref instance);
             //Beginning of the list
-            TypeManager.EntityOffsetInfo* entityOffsetInfoPtr = (TypeManager.EntityOffsetInfo*)WorldEntityMigrationSystem.SharedEntityOffsetInfo.REF.Data;
+            TypeManager.EntityOffsetInfo* entityOffsetInfoPtr = (TypeManager.EntityOffsetInfo*)EntityWorldMigrationSystem.SharedEntityOffsetInfo.REF.Data;
             for (int i = typeOffsetInfo.EntityOffsetStartIndex; i < typeOffsetInfo.EntityOffsetEndIndex; ++i)
             {
                 //Index into the list

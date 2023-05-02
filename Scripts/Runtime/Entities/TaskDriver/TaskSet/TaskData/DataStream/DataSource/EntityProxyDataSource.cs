@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
         {
-            WorldEntityMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
+            EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
             EntityProxyInstanceWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
         }
 

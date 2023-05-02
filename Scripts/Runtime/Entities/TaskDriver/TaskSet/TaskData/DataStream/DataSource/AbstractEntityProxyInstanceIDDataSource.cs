@@ -88,6 +88,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             public void Execute()
             {
+                //TODO: Optimization - Look into adding a RemoveSwapBack like function the UnsafeTypedStream. We could then avoid
+                //this copy to the array and the clear and instead just iterate through the stream and remove the instances we don't need. 
+                //See: https://github.com/decline-cookies/anvil-unity-dots/pull/232#discussion_r1181714399
+                
                 //Can't modify while iterating so we collapse down to a single array and clean the underlying stream.
                 //We'll build this stream back up if anything should still remain
                 NativeArray<EntityProxyInstanceID> currentInstanceArray = m_CurrentStream.ToNativeArray(Allocator.Temp);

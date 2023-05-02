@@ -10,7 +10,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal partial class PersistentDataSystem : AbstractDataSystem,
-                                                  IWorldMigrationObserver
+                                                  IEntityWorldMigrationObserver
     {
         private const string WORLD_PATH = "World";
         private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly Dictionary<string, IMigratablePersistentData> m_MigrationPersistentDataLookup;
         // ReSharper disable once InconsistentNaming
         private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
-        private WorldEntityMigrationSystem m_WorldEntityMigrationSystem;
+        private EntityWorldMigrationSystem m_EntityWorldMigrationSystem;
 
         public PersistentDataSystem()
         {
@@ -34,8 +34,8 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            m_WorldEntityMigrationSystem = World.GetOrCreateSystem<WorldEntityMigrationSystem>();
-            m_WorldEntityMigrationSystem.RegisterMigrationObserver(this);
+            m_EntityWorldMigrationSystem = World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            m_EntityWorldMigrationSystem.RegisterMigrationObserver(this);
         }
 
         protected override void OnDestroy()
@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Entities
                 s_ThreadPersistentData.DisposeAllValuesAndClear();
             }
             
-            m_WorldEntityMigrationSystem.UnregisterMigrationObserver(this);
+            m_EntityWorldMigrationSystem.UnregisterMigrationObserver(this);
             base.OnDestroy();
         }
 
@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities
         // MIGRATION
         //*************************************************************************************************************
 
-        JobHandle IWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        JobHandle IEntityWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);

@@ -275,9 +275,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Dictionary<string, uint> migrationActiveIDLookup,
             PersistentDataSystem persistentDataSystem)
         {
+            //TODO: Instead of the AssemblyQualifiedName, maybe just hash the AssemblyQualifiedName to get smaller paths.
+            
             foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
             {
-                AddToMigrationLookup(parentPath, entry.Key.GetReadableName(), entry.Value.ActiveID, migrationActiveIDLookup);
+                AddToMigrationLookup(parentPath, entry.Key.AssemblyQualifiedName, entry.Value.ActiveID, migrationActiveIDLookup);
             }
 
             foreach (ICancellableDataStream entry in m_DataStreamsWithExplicitCancellation)
@@ -287,19 +289,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             AddToMigrationLookup(
                 parentPath,
-                typeof(CancelRequestsDataStream).GetReadableName(),
+                typeof(CancelRequestsDataStream).AssemblyQualifiedName,
                 CancelRequestsDataStream.ActiveID,
                 migrationActiveIDLookup);
 
             AddToMigrationLookup(
                 parentPath,
-                typeof(CancelProgressDataStream).GetReadableName(),
+                typeof(CancelProgressDataStream).AssemblyQualifiedName,
                 CancelProgressDataStream.ActiveID,
                 migrationActiveIDLookup);
 
             AddToMigrationLookup(
                 parentPath,
-                typeof(CancelCompleteDataStream).GetReadableName(),
+                typeof(CancelCompleteDataStream).AssemblyQualifiedName,
                 CancelCompleteDataStream.ActiveID,
                 migrationActiveIDLookup);
 

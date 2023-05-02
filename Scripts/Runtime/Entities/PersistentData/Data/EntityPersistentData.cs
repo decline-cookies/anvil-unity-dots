@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities
             : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
         {
             //We don't know what will be stored in here, but if there are Entity references we want to be able to patch them
-            WorldEntityMigrationSystem.RegisterForEntityPatching<T>();
+            EntityWorldMigrationSystem.RegisterForEntityPatching<T>();
         }
 
         protected override void DisposeData()
