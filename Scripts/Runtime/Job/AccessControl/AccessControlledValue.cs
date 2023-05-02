@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Jobs
             return m_Value;
         }
 
-        /// <inheritdoc cref="IAccessControlledValue{T}"/>
+        /// <inheritdoc cref="IAccessControlledValue{T}.AcquireAsync"/>
         public JobHandle AcquireAsync(AccessType accessType, out T value)
         {
             value = m_Value;
