@@ -1,19 +1,22 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine.UI;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #138 - Maybe we should have DriverTaskSet vs SystemTaskSet that extend AbstractTaskSet
     internal class TaskSet : AbstractAnvilBase
     {
-        private readonly List<AbstractDataStream> m_DataStreamsWithExplicitCancellation;
+        private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
-        private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentDataByType;
+        private readonly Dictionary<Type, IMigratablePersistentData> m_MigratableEntityPersistentDataByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
@@ -40,9 +43,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
-            m_DataStreamsWithExplicitCancellation = new List<AbstractDataStream>();
+            m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            m_EntityPersistentDataByType = new Dictionary<Type, AbstractPersistentData>();
+            m_MigratableEntityPersistentDataByType = new Dictionary<Type, IMigratablePersistentData>();
 
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
@@ -58,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
-            m_EntityPersistentDataByType.DisposeAllValuesAndClear();
+            m_MigratableEntityPersistentDataByType.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
         }
@@ -112,10 +115,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Type type = typeof(T);
-            if (!m_EntityPersistentDataByType.TryGetValue(type, out AbstractPersistentData persistentData))
+            if (!m_MigratableEntityPersistentDataByType.TryGetValue(type, out IMigratablePersistentData persistentData))
             {
                 persistentData = CreateEntityPersistentData<T>();
-                m_EntityPersistentDataByType.Add(type, persistentData);
             }
 
             return (EntityPersistentData<T>)persistentData;
@@ -125,6 +127,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEntityPersistentDataInstance
         {
             EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
+            m_MigratableEntityPersistentDataByType.Add(typeof(T), entityPersistentData);
             return entityPersistentData;
         }
 
@@ -266,8 +269,67 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
+
+        public void AddToMigrationLookup(
+            string parentPath,
+            Dictionary<string, uint> migrationActiveIDLookup,
+            PersistentDataSystem persistentDataSystem)
+        {
+            foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
+            {
+                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.Key), entry.Value.ActiveID, migrationActiveIDLookup);
+            }
+
+            foreach (ICancellableDataStream entry in m_DataStreamsWithExplicitCancellation)
+            {
+                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.InstanceType) ^ BurstRuntime.GetHashCode64<ICancellableDataStream>(), entry.PendingCancelActiveID, migrationActiveIDLookup);
+            }
+
+            AddToMigrationLookup(
+                parentPath,
+                BurstRuntime.GetHashCode64(typeof(CancelRequestsDataStream)),
+                CancelRequestsDataStream.ActiveID,
+                migrationActiveIDLookup);
+
+            AddToMigrationLookup(
+                parentPath,
+                BurstRuntime.GetHashCode64(typeof(CancelProgressDataStream)),
+                CancelProgressDataStream.ActiveID,
+                migrationActiveIDLookup);
+
+            AddToMigrationLookup(
+                parentPath,
+                BurstRuntime.GetHashCode64(typeof(CancelCompleteDataStream)),
+                CancelCompleteDataStream.ActiveID,
+                migrationActiveIDLookup);
+
+            foreach (IMigratablePersistentData entry in m_MigratableEntityPersistentDataByType.Values)
+            {
+                persistentDataSystem.AddToMigrationLookup(parentPath, entry);
+            }
+        }
+
+        private void AddToMigrationLookup(string parentPath, long typeHash, uint activeID, Dictionary<string, uint> migrationActiveIDLookup)
+        {
+            string path = $"{parentPath}-{typeHash}";
+            Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
+            migrationActiveIDLookup.Add(path, activeID);
+        }
+
+        //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, uint> migrationActiveIDLookup)
+        {
+            if (migrationActiveIDLookup.ContainsKey(path))
+            {
+                throw new InvalidOperationException($"Trying to add ActiveID migration data for {this} but {path} is already in the lookup!");
+            }
+        }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()

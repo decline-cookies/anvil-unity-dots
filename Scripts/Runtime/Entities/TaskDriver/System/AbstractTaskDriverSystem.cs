@@ -13,35 +13,36 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private static readonly NoOpJobConfig NO_OP_JOB_CONFIG = new NoOpJobConfig();
         private static readonly List<AbstractTaskDriver> EMPTY_SUB_TASK_DRIVERS = new List<AbstractTaskDriver>();
 
-        private readonly uint m_ID;
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
-        
+
         //Note - This represents the World that was passed in by the TaskDriver during this system's construction.
         //Normally a system doesn't get a World until OnCreate is called and the System.World will return null.
         //We need a valid World in the constructor so we get one and assign it to this property instead.
         public new World World { get; }
         internal TaskSet TaskSet { get; }
-        
+
+        internal uint ID { get; }
+
         uint ITaskSetOwner.ID
         {
-            get => m_ID;
+            get => ID;
         }
-        
+
         internal ISystemCancelRequestDataStream CancelRequestDataStream
         {
             get => TaskSet.CancelRequestsDataStream;
         }
-        
+
         internal ISystemDataStream<CancelComplete> CancelCompleteDataStream
         {
             get => TaskSet.CancelCompleteDataStream;
         }
-        
+
         internal bool HasCancellableData
         {
             get
@@ -65,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => TaskSet;
         }
-        
+
         List<AbstractTaskDriver> ITaskSetOwner.SubTaskDrivers
         {
             get => EMPTY_SUB_TASK_DRIVERS;
@@ -79,7 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_TaskDrivers = new List<AbstractTaskDriver>();
 
-            m_ID = taskDriverManagementSystem.GetNextID();
+            ID = taskDriverManagementSystem.GetNextID();
 
             TaskSet = new TaskSet(this);
         }
@@ -104,7 +105,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{m_ID}";
+            return $"{GetType().GetReadableName()}|{ID}";
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -120,7 +121,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
-        
+
         internal ISystemEntityPersistentData<T> CreateEntityPersistentData<T>()
             where T : unmanaged, IEntityPersistentDataInstance
         {

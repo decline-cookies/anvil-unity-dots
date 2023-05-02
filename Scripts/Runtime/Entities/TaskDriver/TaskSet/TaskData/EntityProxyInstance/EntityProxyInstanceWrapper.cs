@@ -1,8 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -11,6 +14,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal readonly struct EntityProxyInstanceWrapper<TInstance> : IEquatable<EntityProxyInstanceWrapper<TInstance>>
         where TInstance : unmanaged, IEntityProxyInstance
     {
+        //NOTE: Be careful messing with this - See Debug_EnsureOffsetsAreCorrect
+        // ReSharper disable once StaticMemberInGenericType
+        public const int INSTANCE_ID_OFFSET = 0;
+
         public static bool operator ==(EntityProxyInstanceWrapper<TInstance> lhs, EntityProxyInstanceWrapper<TInstance> rhs)
         {
             //Note that we are not checking if the Payload is equal because the wrapper is only for origin and lookup
@@ -24,8 +31,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return !(lhs == rhs);
         }
 
-        public readonly TInstance Payload;
         public readonly EntityProxyInstanceID InstanceID;
+        public readonly TInstance Payload;
 
         public EntityProxyInstanceWrapper(Entity entity, uint taskSetOwnerID, uint activeID, ref TInstance payload)
         {
@@ -80,6 +87,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (lhs.InstanceID == rhs.InstanceID && !lhs.Payload.Equals(rhs.Payload))
             {
                 throw new InvalidOperationException($"Equality check for {typeof(EntityProxyInstanceWrapper<TInstance>)} where the ID's are the same but the Payloads are different. This should never happen!");
+            }
+        }
+        
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        public static void Debug_EnsureOffsetsAreCorrect()
+        {
+            int actualOffset = UnsafeUtility.GetFieldOffset(typeof(EntityProxyInstanceWrapper<TInstance>).GetField(nameof(InstanceID)));
+            if (actualOffset != INSTANCE_ID_OFFSET)
+            {
+                throw new InvalidOperationException($"{nameof(InstanceID)} has changed location in the struct. The hardcoded burst compatible offset of {nameof(INSTANCE_ID_OFFSET)} = {INSTANCE_ID_OFFSET} needs to be changed to {actualOffset}!");
             }
         }
     }

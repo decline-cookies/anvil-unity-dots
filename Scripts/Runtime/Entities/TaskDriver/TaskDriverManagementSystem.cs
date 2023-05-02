@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -13,7 +14,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #108 - Custom Profiling -  https://github.com/decline-cookies/anvil-unity-dots/pull/111
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
-    internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase
+    internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase,
+                                                        IEntityWorldMigrationObserver
     {
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
         private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
@@ -24,7 +26,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
         private readonly List<CancelProgressFlow> m_CancelProgressFlows;
         private readonly Dictionary<Type, AccessController> m_UnityEntityDataAccessControllers;
-
+        private readonly TaskDriverMigrationData m_TaskDriverMigrationData;
+        
+        
         private bool m_IsInitialized;
         private bool m_IsHardened;
         private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
@@ -44,6 +48,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
             m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
+            
+            m_TaskDriverMigrationData = new TaskDriverMigrationData();
+            m_TaskDriverMigrationData.AddDataSource(m_CancelRequestsDataSource);
+            m_TaskDriverMigrationData.AddDataSource(m_CancelProgressDataSource);
+            m_TaskDriverMigrationData.AddDataSource(m_CancelCompleteDataSource);
+            
+            EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
+        }
+
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            EntityWorldMigrationSystem entityWorldMigrationSystem = World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            entityWorldMigrationSystem.RegisterMigrationObserver(this);
         }
 
         protected override void OnStartRunning()
@@ -67,13 +85,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
             m_CancelProgressFlows.DisposeAllAndTryClear();
             m_UnityEntityDataAccessControllers.DisposeAllValuesAndClear();
+            m_TaskDriverMigrationData.Dispose();
 
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
             m_CancelProgressDataSource.Dispose();
 
             m_IDProvider.Dispose();
-
+            
             base.OnDestroy();
         }
 
@@ -121,6 +140,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
+            
+            //Build the Migration Data for this world
+            m_TaskDriverMigrationData.PopulateMigrationLookup(World, m_TopLevelTaskDrivers);
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
@@ -131,6 +153,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 dataSource = new EntityProxyDataSource<TInstance>(this);
                 m_EntityProxyDataSourcesByType.Add(type, dataSource);
+                m_TaskDriverMigrationData.AddDataSource(dataSource);
             }
 
             return (EntityProxyDataSource<TInstance>)dataSource;
@@ -155,7 +178,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureNotHardened();
             m_AllTaskDrivers.Add(taskDriver);
-            m_AllTaskDriverSystems.Add(taskDriver.System);
+            m_AllTaskDriverSystems.Add(taskDriver.TaskDriverSystem);
         }
 
         public AccessController GetOrCreateCDFEAccessController<T>()
@@ -208,18 +231,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Dependency = dependsOn;
         }
+        
+        //*************************************************************************************************************
+        // MIGRATION
+        //*************************************************************************************************************
 
+        JobHandle IEntityWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
+        {
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
+            Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
+
+            return m_TaskDriverMigrationData.MigrateTo(dependsOn, destinationWorld, destinationTaskDriverManagementSystem.m_TaskDriverMigrationData, ref remapArray);
+        }
 
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
         {
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Expected {this} to not yet be Hardened but {nameof(Harden)} has already been called!");
+            }
+        }
+        
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void Debug_EnsureOtherWorldTaskDriverManagementSystemExists(World destinationWorld, TaskDriverManagementSystem taskDriverManagementSystem)
+        {
+            if (taskDriverManagementSystem == null)
+            {
+                throw new InvalidOperationException($"Expected World {destinationWorld} to have a {nameof(TaskDriverManagementSystem)} but it does not!");
             }
         }
     }

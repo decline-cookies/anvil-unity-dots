@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class CancelRequestsDataSource : AbstractDataSource<EntityProxyInstanceID>
+    internal class CancelRequestsDataSource : AbstractEntityProxyInstanceIDDataSource
     {
         private CancelRequestsDataSourceConsolidator m_Consolidator;
 

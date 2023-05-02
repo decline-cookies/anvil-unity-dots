@@ -1,6 +1,8 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using System.Reflection;
+using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -11,5 +13,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public void Harden();
 
         public JobHandle Consolidate(JobHandle dependsOn);
+        
+        public JobHandle MigrateTo(
+            JobHandle dependsOn,
+            IDataSource destinationDataSource, 
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
+            DestinationWorldDataMap destinationWorldDataMap);
     }
 }
