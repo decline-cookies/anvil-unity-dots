@@ -42,52 +42,45 @@ namespace Anvil.Unity.DOTS.Entities
             return new EntityPersistentDataWriter<T>(ref Data);
         }
 
-        public JobHandle AcquireReaderAsync(out EntityPersistentDataReader<T> reader)
+        public JobHandle AcquireReadAsync(out EntityPersistentDataReader<T> reader)
         {
-            JobHandle dependsOn = AcquireAsync(AccessType.SharedRead);
             reader = CreateEntityPersistentDataReader();
-            return dependsOn;
+            return AcquireAsync(AccessType.SharedRead);
+            ;
         }
 
-        public void ReleaseReaderAsync(JobHandle dependsOn)
-        {
-            ReleaseAsync(dependsOn);
-        }
-
-        public EntityPersistentDataReader<T> AcquireReader()
+        public EntityPersistentDataReader<T> AcquireRead()
         {
             Acquire(AccessType.SharedRead);
             return CreateEntityPersistentDataReader();
         }
 
-        public void ReleaseReader()
+        public AccessControlledValue<EntityPersistentDataReader<T>>.AccessHandle AcquireWithReadHandle()
         {
-            Release();
+            return new AccessControlledValue<EntityPersistentDataReader<T>>.AccessHandle(
+                AcquireWithHandle(AccessType.SharedRead),
+                CreateEntityPersistentDataReader());
         }
 
-        public JobHandle AcquireWriterAsync(out EntityPersistentDataWriter<T> writer)
+        public JobHandle AcquireSharedWriteAsync(out EntityPersistentDataWriter<T> writer)
         {
-            JobHandle dependsOn = AcquireAsync(AccessType.SharedWrite);
             writer = CreateEntityPersistentDataWriter();
-            return dependsOn;
+            return AcquireAsync(AccessType.SharedWrite);
         }
 
-        public void ReleaseWriterAsync(JobHandle dependsOn)
-        {
-            ReleaseAsync(dependsOn);
-        }
-
-        public EntityPersistentDataWriter<T> AcquireWriter()
+        public EntityPersistentDataWriter<T> AcquireSharedWrite()
         {
             Acquire(AccessType.SharedWrite);
             return CreateEntityPersistentDataWriter();
         }
 
-        public void ReleaseWriter()
+        public AccessControlledValue<EntityPersistentDataWriter<T>>.AccessHandle AcquireWithSharedWriteHandle()
         {
-            Release();
+            return new AccessControlledValue<EntityPersistentDataWriter<T>>.AccessHandle(
+                AcquireWithHandle(AccessType.SharedWrite),
+                CreateEntityPersistentDataWriter());
         }
-        
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
@@ -97,7 +90,8 @@ namespace Anvil.Unity.DOTS.Entities
             EntityPersistentData<T> destinationEntityPersistentData = (EntityPersistentData<T>)destinationPersistentData;
 
             //Launch the migration job to get that burst speed
-            dependsOn = JobHandle.CombineDependencies(dependsOn,
+            dependsOn = JobHandle.CombineDependencies(
+                dependsOn,
                 AcquireWriterAsync(out EntityPersistentDataWriter<T> currentData),
                 destinationEntityPersistentData.AcquireWriterAsync(out EntityPersistentDataWriter<T> destinationData));
 
@@ -106,7 +100,7 @@ namespace Anvil.Unity.DOTS.Entities
                 destinationData,
                 ref remapArray);
             dependsOn = migrateJob.Schedule(dependsOn);
-            
+
             destinationEntityPersistentData.ReleaseWriterAsync(dependsOn);
             ReleaseWriterAsync(dependsOn);
 
@@ -121,8 +115,8 @@ namespace Anvil.Unity.DOTS.Entities
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
 
             public MigrateJob(
-                EntityPersistentDataWriter<T> currentData, 
-                EntityPersistentDataWriter<T> destinationData, 
+                EntityPersistentDataWriter<T> currentData,
+                EntityPersistentDataWriter<T> destinationData,
                 ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             {
                 m_CurrentData = currentData;
@@ -133,7 +127,7 @@ namespace Anvil.Unity.DOTS.Entities
             public void Execute()
             {
                 //TODO: Optimization: Could pass through the array of entities that were moving to avoid the copy. See: https://github.com/decline-cookies/anvil-unity-dots/pull/232#discussion_r1181697951
-                
+
                 //Can't remove while iterating so we collapse to an array first of our current keys/values
                 NativeKeyValueArrays<Entity, T> currentEntries = m_CurrentData.GetKeyValueArrays(Allocator.Temp);
 
@@ -148,11 +142,11 @@ namespace Anvil.Unity.DOTS.Entities
 
                     //Otherwise, remove us from this world's lookup
                     m_CurrentData.Remove(currentEntity);
-                    
+
                     //Get our data and patch it
                     T currentValue = currentEntries.Values[i];
                     currentValue.PatchEntityReferences(ref m_RemapArray);
-                    
+
                     //Then write the newly remapped data to the new world's lookup
                     m_DestinationData[remappedEntity] = currentValue;
                 }
