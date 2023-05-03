@@ -13,6 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <typeparam name="T">The type of <see cref="IEntityPersistentDataInstance"/></typeparam>
     public interface IEntityPersistentData<T> : IAbstractPersistentData,
                                                 IReadOnlyEntityPersistentData<T>,
-                                                ISharedWriteAccessControlledValue<EntityPersistentDataWriter<T>>
+                                                ISharedWriteAccessControlledValue<EntityPersistentDataWriter<T>>,
+                                                IExclusiveWriteAccessControlledValue<EntityPersistentDataWriter<T>>
         where T : struct, IEntityPersistentDataInstance { }
 }

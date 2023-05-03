@@ -81,6 +81,26 @@ namespace Anvil.Unity.DOTS.Entities
                 CreateEntityPersistentDataWriter());
         }
 
+        public JobHandle AcquireExclusiveWriteAsync(out EntityPersistentDataWriter<T> writer)
+        {
+            writer = CreateEntityPersistentDataWriter();
+            return AcquireAsync(AccessType.ExclusiveWrite);
+        }
+
+        public EntityPersistentDataWriter<T> AcquireExclusiveWrite()
+        {
+            Acquire(AccessType.ExclusiveWrite);
+            return CreateEntityPersistentDataWriter();
+        }
+
+        public AccessControlledValue<EntityPersistentDataWriter<T>>.AccessHandle AcquireWithExclusiveWriteHandle()
+        {
+            return new AccessControlledValue<EntityPersistentDataWriter<T>>.AccessHandle(
+                AcquireWithHandle(AccessType.ExclusiveWrite),
+                CreateEntityPersistentDataWriter());
+        }
+
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
