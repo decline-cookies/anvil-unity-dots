@@ -47,5 +47,11 @@ namespace Anvil.Unity.DOTS.Entities
         {
             m_AccessController.Release();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AccessController.AccessHandle AcquireWithHandle(AccessType accessType)
+        {
+            return m_AccessController.AcquireWithHandle(accessType);
+        }
     }
 }
