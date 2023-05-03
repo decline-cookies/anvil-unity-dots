@@ -55,6 +55,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDriverMigrationData.AddDataSource(m_CancelCompleteDataSource);
             
             EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
+            EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceID>();
         }
 
         protected override void OnCreate()
