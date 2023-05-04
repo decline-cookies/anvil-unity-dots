@@ -19,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public static bool operator ==(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
         {
-            return lhs.Entity == rhs.Entity && lhs.TaskSetOwnerID == rhs.TaskSetOwnerID;
+            return lhs.Entity == rhs.Entity && lhs.DataOwnerID == rhs.DataOwnerID;
         }
 
         public static bool operator !=(EntityProxyInstanceID lhs, EntityProxyInstanceID rhs)
@@ -28,20 +28,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public readonly Entity Entity;
-        public readonly TaskSetOwnerID TaskSetOwnerID;
+        public readonly DataOwnerID DataOwnerID;
         public readonly DataTargetID DataTargetID;
 
-        public EntityProxyInstanceID(Entity entity, TaskSetOwnerID taskSetOwnerID, DataTargetID dataTargetID)
+        public EntityProxyInstanceID(Entity entity, DataOwnerID dataOwnerID, DataTargetID dataTargetID)
         {
             Entity = entity;
-            TaskSetOwnerID = taskSetOwnerID;
+            DataOwnerID = dataOwnerID;
             DataTargetID = dataTargetID;
         }
 
-        public EntityProxyInstanceID(EntityProxyInstanceID originalID, TaskSetOwnerID taskSetOwnerID)
+        public EntityProxyInstanceID(EntityProxyInstanceID originalID, DataOwnerID dataOwnerID)
         {
             Entity = originalID.Entity;
-            TaskSetOwnerID = taskSetOwnerID;
+            DataOwnerID = dataOwnerID;
             DataTargetID = originalID.DataTargetID;
         }
 
@@ -57,12 +57,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode(TaskSetOwnerID.GetHashCode(), Entity.Index);
+            return HashCodeUtil.GetHashCode(DataOwnerID.GetHashCode(), Entity.Index);
         }
 
         public override string ToString()
         {
-            return $"{Entity.ToString()} - TaskSetOwnerID: {TaskSetOwnerID}, DataTargetID: {DataTargetID}";
+            return $"{Entity.ToString()} - DataOwnerID: {DataOwnerID}, DataTargetID: {DataTargetID}";
         }
 
         [BurstCompatible]
@@ -71,8 +71,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             FixedString64Bytes fs = new FixedString64Bytes();
             // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable
             fs.Append(Entity.ToFixedString());
-            fs.Append((FixedString32Bytes)" - TaskSetOwnerID: ");
-            fs.Append(TaskSetOwnerID.ToFixedString());
+            fs.Append((FixedString32Bytes)" - DataOwnerID: ");
+            fs.Append(DataOwnerID.ToFixedString());
             fs.Append((FixedString32Bytes)", DataTargetID: ");
             fs.Append(DataTargetID.ToFixedString());
             return fs;
@@ -85,10 +85,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [Conditional("ANVIL_DEBUG_SAFETY")]
         public static void Debug_EnsureOffsetsAreCorrect()
         {
-            int actualOffset = UnsafeUtility.GetFieldOffset(typeof(EntityProxyInstanceID).GetField(nameof(TaskSetOwnerID)));
+            int actualOffset = UnsafeUtility.GetFieldOffset(typeof(EntityProxyInstanceID).GetField(nameof(DataOwnerID)));
             if (actualOffset != TASK_SET_OWNER_ID_OFFSET)
             {
-                throw new InvalidOperationException($"{nameof(TaskSetOwnerID)} has changed location in the struct. The hardcoded burst compatible offset of {nameof(TASK_SET_OWNER_ID_OFFSET)} = {TASK_SET_OWNER_ID_OFFSET} needs to be changed to {actualOffset}!");
+                throw new InvalidOperationException($"{nameof(DataOwnerID)} has changed location in the struct. The hardcoded burst compatible offset of {nameof(TASK_SET_OWNER_ID_OFFSET)} = {TASK_SET_OWNER_ID_OFFSET} needs to be changed to {actualOffset}!");
             }
             
             actualOffset = UnsafeUtility.GetFieldOffset(typeof(EntityProxyInstanceID).GetField(nameof(DataTargetID)));

@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 PendingData.Pending,
                 destinationWriter,
                 remapArray,
-                destinationWorldDataMap.TaskSetOwnerIDMapping,
+                destinationWorldDataMap.DataOwnerIDMapping,
                 destinationWorldDataMap.DataTargetIDMapping);
             dependsOn = migrateJob.Schedule(dependsOn);
 
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             private UnsafeTypedStream<EntityProxyInstanceID> m_CurrentStream;
             private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_DestinationStreamWriter;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
-            [ReadOnly] private readonly NativeParallelHashMap<TaskSetOwnerID, TaskSetOwnerID> m_TaskSetOwnerIDMapping;
+            [ReadOnly] private readonly NativeParallelHashMap<DataOwnerID, DataOwnerID> m_DataOwnerIDMapping;
             [ReadOnly] private readonly NativeParallelHashMap<DataTargetID, DataTargetID> m_DataTargetIDMapping;
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
@@ -74,13 +74,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 UnsafeTypedStream<EntityProxyInstanceID> currentStream,
                 UnsafeTypedStream<EntityProxyInstanceID>.Writer destinationStreamWriter,
                 NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-                NativeParallelHashMap<TaskSetOwnerID, TaskSetOwnerID> taskSetOwnerIDMapping,
+                NativeParallelHashMap<DataOwnerID, DataOwnerID> dataOwnerIDMapping,
                 NativeParallelHashMap<DataTargetID, DataTargetID> dataTargetIDMapping)
             {
                 m_CurrentStream = currentStream;
                 m_DestinationStreamWriter = destinationStreamWriter;
                 m_RemapArray = remapArray;
-                m_TaskSetOwnerIDMapping = taskSetOwnerIDMapping;
+                m_DataOwnerIDMapping = dataOwnerIDMapping;
                 m_DataTargetIDMapping = dataTargetIDMapping;
 
                 m_NativeThreadIndex = UNSET_ID;
@@ -119,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                     //If we don't have a destination in the new world, then we can just let these cease to exist
                     if (!destinationLaneWriter.IsCreated
-                        || !m_TaskSetOwnerIDMapping.TryGetValue(instanceID.TaskSetOwnerID, out TaskSetOwnerID destinationTaskSetOwnerID)
+                        || !m_DataOwnerIDMapping.TryGetValue(instanceID.DataOwnerID, out DataOwnerID destinationDataOwnerID)
                         || !m_DataTargetIDMapping.TryGetValue(instanceID.DataTargetID, out DataTargetID destinationDataTargetID))
                     {
                         continue;

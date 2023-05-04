@@ -272,21 +272,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
         /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForWrite{TData}"/>
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>()
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
             where TData : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<TData> data = m_PersistentDataSystem.GetOrCreateThreadPersistentData<TData>();
-            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
+            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>((ThreadPersistentData<TData>)threadPersistentData, AccessType.SharedWrite, Usage.Default));
 
             return this;
         }
 
         /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForRead{TData}"/>
-        public IJobConfig RequireThreadPersistentDataForRead<TData>()
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
             where TData : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<TData> data = m_PersistentDataSystem.GetOrCreateThreadPersistentData<TData>();
-            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
+            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>((ThreadPersistentData<TData>)threadPersistentData, AccessType.SharedRead, Usage.Default));
 
             return this;
         }

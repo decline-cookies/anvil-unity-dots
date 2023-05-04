@@ -16,6 +16,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => ActiveLookupData.DataTargetID;
         }
 
+        public override IDataSource DataSource
+        {
+            get => m_DataSource;
+        }
+
         public CancelRequestsDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();

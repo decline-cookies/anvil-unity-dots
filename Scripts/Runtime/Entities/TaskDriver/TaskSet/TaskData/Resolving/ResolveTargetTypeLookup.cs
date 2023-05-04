@@ -37,16 +37,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        public unsafe void Resolve<TResolveTargetType>(TaskSetOwnerID taskSetOwnerID, int laneIndex, ref TResolveTargetType resolvedInstance)
+        public unsafe void Resolve<TResolveTargetType>(DataOwnerID dataOwnerID, int laneIndex, ref TResolveTargetType resolvedInstance)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             uint typeID = ResolveTargetUtil.GetResolveTargetID<TResolveTargetType>();
-            ResolveTargetID targetID = new ResolveTargetID(typeID, taskSetOwnerID);
+            ResolveTargetID targetID = new ResolveTargetID(typeID, dataOwnerID);
             Debug_EnsurePresent(targetID);
             ResolveTargetWriteData resolveTargetWriteData = m_ResolveTargetWriteDataByID[targetID];
             void* writerPtr = (void*)resolveTargetWriteData.PendingWriterPointerAddress;
             DataStreamPendingWriter<TResolveTargetType> writer
-                = new DataStreamPendingWriter<TResolveTargetType>(writerPtr, taskSetOwnerID, resolveTargetWriteData.DataTargetID, laneIndex);
+                = new DataStreamPendingWriter<TResolveTargetType>(writerPtr, dataOwnerID, resolveTargetWriteData.DataTargetID, laneIndex);
             writer.Add(ref resolvedInstance);
         }
 

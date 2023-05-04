@@ -28,6 +28,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_ActiveArrayData.DataTargetID;
         }
 
+        public override IDataSource DataSource
+        {
+            get => m_DataSource;
+        }
+
         public DataTargetID PendingCancelDataTargetID
         {
             get => m_PendingCancelActiveArrayData.DataTargetID;

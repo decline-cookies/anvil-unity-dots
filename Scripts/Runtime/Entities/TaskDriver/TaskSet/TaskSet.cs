@@ -16,6 +16,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
         private readonly Dictionary<Type, IMigratablePersistentData> m_MigratableEntityPersistentDataByType;
 
+        private readonly HashSet<AbstractPersistentData> m_AllPersistentData;
+
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
 
@@ -41,6 +43,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
+            m_AllPersistentData = new HashSet<AbstractPersistentData>();
+
             m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
             m_MigratableEntityPersistentDataByType = new Dictionary<Type, IMigratablePersistentData>();
@@ -62,6 +66,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_MigratableEntityPersistentDataByType.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
+        }
+
+        public void GenerateWorldUniqueID(Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
+        {
+            foreach (AbstractPersistentData persistentData in m_AllPersistentData)
+            {
+                persistentData.GenerateWorldUniqueID();
+                Debug_EnsureNoDuplicates(persistentData, persistentDataByUniqueID);
+                persistentDataByUniqueID.Add(persistentData.DataTargetID, persistentData);
+            }
         }
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
@@ -109,22 +123,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dataStream;
         }
 
-        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Type type = typeof(T);
             if (!m_MigratableEntityPersistentDataByType.TryGetValue(type, out IMigratablePersistentData persistentData))
             {
-                persistentData = CreateEntityPersistentData<T>();
+                persistentData = CreateEntityPersistentData<T>(uniqueContextIdentifier);
             }
 
             return (EntityPersistentData<T>)persistentData;
         }
 
-        public EntityPersistentData<T> CreateEntityPersistentData<T>()
+        public EntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
+            EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
+            m_AllPersistentData.Add(entityPersistentData);
             m_MigratableEntityPersistentDataByType.Add(typeof(T), entityPersistentData);
             return entityPersistentData;
         }
@@ -320,7 +335,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, DataTargetID> migrationDataTargetIDLookup)
         {
             if (migrationDataTargetIDLookup.ContainsKey(path))
@@ -329,12 +344,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
         {
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
+            }
+        }
+
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void Debug_EnsureNoDuplicates(AbstractPersistentData persistentData, Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
+        {
+            if (persistentDataByUniqueID.ContainsKey(persistentData.DataTargetID))
+            {
+                throw new InvalidOperationException($"Persistent Data {persistentData} with TaskSetOwner of {TaskSetOwner} has ID of {persistentData.DataTargetID} but it already exists in the lookup. Please set a Unique Context Identifier.");
             }
         }
 

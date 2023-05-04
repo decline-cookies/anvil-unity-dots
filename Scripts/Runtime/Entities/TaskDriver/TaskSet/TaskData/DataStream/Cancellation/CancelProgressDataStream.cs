@@ -7,6 +7,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => ActiveLookupData.DataTargetID;
         }
 
+        public override IDataSource DataSource
+        {
+            get => m_DataSource;
+        }
+
         private readonly CancelProgressDataSource m_DataSource;
 
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }

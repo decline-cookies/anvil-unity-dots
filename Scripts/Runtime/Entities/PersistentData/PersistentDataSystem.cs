@@ -10,7 +10,8 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal partial class PersistentDataSystem : AbstractDataSystem,
-                                                  IEntityWorldMigrationObserver
+                                                  IEntityWorldMigrationObserver,
+                                                  IDataOwner
     {
         private const string WORLD_PATH = "World";
         private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
@@ -23,12 +24,16 @@ namespace Anvil.Unity.DOTS.Entities
         private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
         private EntityWorldMigrationSystem m_EntityWorldMigrationSystem;
 
+        public DataOwnerID WorldUniqueID { get; }
+
         public PersistentDataSystem()
         {
             s_InstanceCount++;
             m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
             m_MigrationDependencies_ScratchPad = new NativeList<JobHandle>(8, Allocator.Persistent);
             m_MigrationPersistentDataLookup = new Dictionary<string, IMigratablePersistentData>();
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void OnCreate()
@@ -52,26 +57,28 @@ namespace Anvil.Unity.DOTS.Entities
             base.OnDestroy();
         }
 
-        public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>()
+        public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
             Type type = typeof(T);
             if (!s_ThreadPersistentData.TryGetValue(type, out AbstractPersistentData persistentData))
             {
-                persistentData = new ThreadPersistentData<T>();
+                persistentData = new ThreadPersistentData<T>(this, uniqueContextIdentifier);
                 s_ThreadPersistentData.Add(type, persistentData);
+                persistentData.GenerateWorldUniqueID();
             }
             return (ThreadPersistentData<T>)persistentData;
         }
         
-        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Type type = typeof(T);
             if (!m_EntityPersistentData.TryGetValue(type, out AbstractPersistentData persistentData))
             {
-                persistentData = new EntityPersistentData<T>();
+                persistentData = new EntityPersistentData<T>(this, uniqueContextIdentifier);
                 m_EntityPersistentData.Add(type, persistentData);
+                persistentData.GenerateWorldUniqueID();
                 AddToMigrationLookup(WORLD_PATH, (EntityPersistentData<T>)persistentData);
             }
 

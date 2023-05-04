@@ -2,22 +2,20 @@ using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.TaskDriver
+namespace Anvil.Unity.DOTS.Entities
 {
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct TaskSetOwnerID : IEquatable<TaskSetOwnerID>
+    public readonly struct DataOwnerID : IEquatable<DataOwnerID>
     {
-        private static readonly TaskSetOwnerID UNSET_TASKSET_OWNER_ID = default; 
-        // public static implicit operator TaskSetOwnerID(int id) => new TaskSetOwnerID(id);
-        // public static implicit operator int(TaskSetOwnerID id) => id.m_Value;
-        
-        public static bool operator ==(TaskSetOwnerID lhs, TaskSetOwnerID rhs)
+        private static readonly DataOwnerID UNSET_DATA_OWNER_ID = default;
+
+        public static bool operator ==(DataOwnerID lhs, DataOwnerID rhs)
         {
             return lhs.m_Value == rhs.m_Value && lhs.m_Value == rhs.m_Value;
         }
 
-        public static bool operator !=(TaskSetOwnerID lhs, TaskSetOwnerID rhs)
+        public static bool operator !=(DataOwnerID lhs, DataOwnerID rhs)
         {
             return !(lhs == rhs);
         }
@@ -27,22 +25,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public bool IsValid
         {
-            get => this != UNSET_TASKSET_OWNER_ID;
+            get => this != UNSET_DATA_OWNER_ID;
         }
 
-        public TaskSetOwnerID(int value)
+        public DataOwnerID(int value)
         {
             m_Value = value;
         }
         
-        public bool Equals(TaskSetOwnerID other)
+        public bool Equals(DataOwnerID other)
         {
             return this == other;
         }
 
         public override bool Equals(object compare)
         {
-            return compare is TaskSetOwnerID id && Equals(id);
+            return compare is DataOwnerID id && Equals(id);
         }
 
         public override int GetHashCode()

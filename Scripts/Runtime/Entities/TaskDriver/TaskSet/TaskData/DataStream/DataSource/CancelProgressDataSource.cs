@@ -106,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 currentLookupData.Lookup,
                 destinationLookupData?.Lookup ?? default,
                 ref remapArray,
-                destinationWorldDataMap.TaskSetOwnerIDMapping,
+                destinationWorldDataMap.DataOwnerIDMapping,
                 destinationWorldDataMap.DataTargetIDMapping);
 
             dependsOn = migrateJob.Schedule(dependsOn);
@@ -123,20 +123,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CurrentLookup;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_DestinationLookup;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
-            [ReadOnly] private readonly NativeParallelHashMap<TaskSetOwnerID, TaskSetOwnerID> m_TaskSetOwnerIDMapping;
+            [ReadOnly] private readonly NativeParallelHashMap<DataOwnerID, DataOwnerID> m_DataOwnerIDMapping;
             [ReadOnly] private readonly NativeParallelHashMap<DataTargetID, DataTargetID> m_DataTargetIDMapping;
 
             public MigrateJob(
                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> currentLookup, 
                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> destinationLookup, 
                 ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, 
-                NativeParallelHashMap<TaskSetOwnerID, TaskSetOwnerID> taskSetOwnerIDMapping, 
+                NativeParallelHashMap<DataOwnerID, DataOwnerID> dataOwnerIDMapping, 
                 NativeParallelHashMap<DataTargetID, DataTargetID> dataTargetIDMapping)
             {
                 m_CurrentLookup = currentLookup;
                 m_DestinationLookup = destinationLookup;
                 m_RemapArray = remapArray;
-                m_TaskSetOwnerIDMapping = taskSetOwnerIDMapping;
+                m_DataOwnerIDMapping = dataOwnerIDMapping;
                 m_DataTargetIDMapping = dataTargetIDMapping;
             }
 
@@ -158,7 +158,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     m_CurrentLookup.Remove(currentID);
 
                     //If we don't have a destination in the new world, then we can just let these cease to exist
-                    if (!m_TaskSetOwnerIDMapping.TryGetValue(currentID.TaskSetOwnerID, out TaskSetOwnerID destinationTaskSetOwnerID)
+                    if (!m_DataOwnerIDMapping.TryGetValue(currentID.DataOwnerID, out DataOwnerID destinationDataOwnerID)
                         || !m_DataTargetIDMapping.TryGetValue(currentID.DataTargetID, out DataTargetID destinationDataTargetID))
                     {
                         continue;

@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer m_CompleteWriter;
             private readonly DataTargetID m_CancelCompleteDataTargetID;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ParentProgressLookup;
-            private readonly TaskSetOwnerID m_TaskSetOwnerID;
+            private readonly DataOwnerID m_DataOwnerID;
 
             private UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.LaneWriter m_CompleteLaneWriter;
 
@@ -109,14 +109,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> progressLookup,
                 UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer completeWriter,
                 DataTargetID cancelCompleteDataTargetID,
-                TaskSetOwnerID taskSetOwnerID,
+                DataOwnerID dataOwnerID,
                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> parentProgressLookup)
             {
                 m_ProgressLookup = progressLookup;
                 m_CompleteWriter = completeWriter;
                 m_CancelCompleteDataTargetID = cancelCompleteDataTargetID;
                 m_ParentProgressLookup = parentProgressLookup;
-                m_TaskSetOwnerID = taskSetOwnerID;
+                m_DataOwnerID = dataOwnerID;
 
                 m_NativeThreadIndex = UNSET_THREAD_INDEX;
                 m_CompleteLaneWriter = default;
@@ -145,7 +145,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ParentProgressLookup)
                 {
                     ref bool isParentProcessing = ref entry.Value;
-                    EntityProxyInstanceID id = new EntityProxyInstanceID(entry.Key, m_TaskSetOwnerID);
+                    EntityProxyInstanceID id = new EntityProxyInstanceID(entry.Key, m_DataOwnerID);
 
                     bool willComplete = CheckIfWillComplete(m_ProgressLookup[id], ref id);
                     if (!willComplete)
@@ -194,7 +194,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     m_CompleteLaneWriter.Write(
                         new EntityProxyInstanceWrapper<CancelComplete>(
                             id.Entity,
-                            id.TaskSetOwnerID,
+                            id.DataOwnerID,
                             m_CancelCompleteDataTargetID,
                             ref cancelComplete));
 

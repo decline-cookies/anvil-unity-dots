@@ -20,8 +20,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //TODO: MOVE THIS TO SHARED-STATIC so we can access in burst
         private readonly Dictionary<int, string> m_TaskSetOwnerDebugMapping;
 
-        private readonly Dictionary<TaskSetOwnerID, ITaskSetOwner> m_TaskSetOwnersByUniqueID;
+        private readonly Dictionary<DataOwnerID, ITaskSetOwner> m_TaskSetOwnersByUniqueID;
         private readonly Dictionary<DataTargetID, AbstractData> m_DataStreamDataByUniqueID;
+        private readonly Dictionary<DataTargetID, AbstractPersistentData> m_PersistentDataByUniqueID;
 
 
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
@@ -45,8 +46,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public TaskDriverManagementSystem()
         {
-            m_TaskSetOwnersByUniqueID = new Dictionary<TaskSetOwnerID, ITaskSetOwner>();
+            m_TaskSetOwnersByUniqueID = new Dictionary<DataOwnerID, ITaskSetOwner>();
             m_DataStreamDataByUniqueID = new Dictionary<DataTargetID, AbstractData>();
+            m_PersistentDataByUniqueID = new Dictionary<DataTargetID, AbstractPersistentData>();
             
             m_EntityProxyDataSourcesByType = new Dictionary<Type, IDataSource>();
             m_AllTaskDrivers = new HashSet<AbstractTaskDriver>();
@@ -120,7 +122,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //Trickle down and get all the ID's generated
             foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
             {
-                topLevelTaskDriver.GenerateWorldUniqueID(m_TaskSetOwnersByUniqueID);
+                topLevelTaskDriver.GenerateWorldUniqueID(
+                    m_TaskSetOwnersByUniqueID,
+                    m_PersistentDataByUniqueID);
             }
             
             //Then generate ID's for all the data
@@ -128,8 +132,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 dataSource.GenerateWorldUniqueID(m_DataStreamDataByUniqueID);
             }
-            
-            //TODO: EntityPersistentData
         }
         
         private void Harden()

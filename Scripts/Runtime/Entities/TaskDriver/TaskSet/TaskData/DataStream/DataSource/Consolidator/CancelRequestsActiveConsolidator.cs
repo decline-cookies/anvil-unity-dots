@@ -60,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 completeLaneWriter.Write(
                     new EntityProxyInstanceWrapper<CancelComplete>(
                         id.Entity,
-                        id.TaskSetOwnerID,
+                        id.DataOwnerID,
                         m_CompleteDataTargetID,
                         ref cancelComplete));
             }

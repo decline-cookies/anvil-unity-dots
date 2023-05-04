@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
 
-        private TaskSetOwnerID m_WorldUniqueID;
+        private DataOwnerID m_WorldUniqueID;
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public new World World { get; }
         internal TaskSet TaskSet { get; }
 
-        internal TaskSetOwnerID WorldUniqueID
+        internal DataOwnerID WorldUniqueID
         {
             get
             {
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        TaskSetOwnerID ITaskSetOwner.WorldUniqueID
+        DataOwnerID IDataOwner.WorldUniqueID
         {
             get => WorldUniqueID;
         }
@@ -126,10 +126,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
-        internal ISystemEntityPersistentData<T> CreateEntityPersistentData<T>()
+        internal ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>();
+            EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>(uniqueContextIdentifier);
             return entityPersistentData;
         }
 
@@ -186,7 +186,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // HARDENING
         //*************************************************************************************************************
 
-        internal void GenerateWorldUniqueID(Dictionary<TaskSetOwnerID, ITaskSetOwner> taskSetOwnersByUniqueID)
+        internal void GenerateWorldUniqueID(
+            Dictionary<DataOwnerID, ITaskSetOwner> taskSetOwnersByUniqueID,
+            Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
         {
             //This will get called multiple times but we only want to calculate once
             if (m_WorldUniqueID.IsValid)
@@ -195,8 +197,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
             //There can only be one of these systems per world, so we can just use our type
             string idPath = $"{GetType().AssemblyQualifiedName}";
-            m_WorldUniqueID = new TaskSetOwnerID(idPath.GetBurstHashCode32());
+            m_WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
             taskSetOwnersByUniqueID.Add(m_WorldUniqueID, this);
+            
+            TaskSet.GenerateWorldUniqueID(persistentDataByUniqueID);
         }
         
         internal void Harden()

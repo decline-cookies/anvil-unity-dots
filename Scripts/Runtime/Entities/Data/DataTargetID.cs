@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 
-namespace Anvil.Unity.DOTS.Entities.TaskDriver
+namespace Anvil.Unity.DOTS.Entities
 {
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]

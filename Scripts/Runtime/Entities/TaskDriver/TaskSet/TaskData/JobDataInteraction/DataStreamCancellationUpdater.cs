@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CancelProgressLookup;
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
-        private TaskSetOwnerID m_CurrentTaskSetOwnerID;
+        private DataOwnerID m_CurrentDataOwnerID;
         private DataTargetID m_CurrentDataTargetID;
 
         internal DataStreamCancellationUpdater(
@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_PendingLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
 
-            m_CurrentTaskSetOwnerID = default;
+            m_CurrentDataOwnerID = default;
             m_CurrentDataTargetID = default;
 
             Debug_InitializeUpdaterState();
@@ -77,13 +77,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_PendingLaneWriter.Write(
                 new EntityProxyInstanceWrapper<TInstance>(
                     instance.Entity,
-                    m_CurrentTaskSetOwnerID,
+                    m_CurrentDataOwnerID,
                     m_CurrentDataTargetID,
                     ref instance));
 
 
             //Hold open the progress so we can keep processing
-            EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Entity, m_CurrentTaskSetOwnerID, m_CurrentDataTargetID);
+            EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Entity, m_CurrentDataOwnerID, m_CurrentDataTargetID);
             Debug_EnsureIDIsPresent(id);
             m_CancelProgressLookup[id] = true;
         }
@@ -100,7 +100,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: #69 - Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
             //TODO: manually create the lane writer and handle wrapping ourselves with ProxyInstanceWrapper
             m_ResolveTargetTypeLookup.Resolve(
-                m_CurrentTaskSetOwnerID,
+                m_CurrentDataOwnerID,
                 m_LaneIndex,
                 ref resolvedInstance);
         }
@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 Debug_EnsureCanUpdate();
                 EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Active[index];
-                m_CurrentTaskSetOwnerID = instanceWrapper.InstanceID.TaskSetOwnerID;
+                m_CurrentDataOwnerID = instanceWrapper.InstanceID.DataOwnerID;
                 m_CurrentDataTargetID = instanceWrapper.InstanceID.DataTargetID;
                 return instanceWrapper.Payload;
             }

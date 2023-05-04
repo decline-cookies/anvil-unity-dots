@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class TaskDriverMigrationData : AbstractAnvilBase
     {
-        private readonly Dictionary<string, TaskSetOwnerID> m_MigrationTaskSetOwnerIDLookup;
+        private readonly Dictionary<string, DataOwnerID> m_MigrationDataOwnerIDLookup;
         private readonly Dictionary<string, DataTargetID> m_MigrationDataTargetIDLookup;
         
         private readonly Dictionary<World, DestinationWorldDataMap> m_DestinationWorldDataMaps;
@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public int TaskSetOwnerCount
         {
-            get => m_MigrationTaskSetOwnerIDLookup.Count;
+            get => m_MigrationDataOwnerIDLookup.Count;
         }
 
         public int DataTargetIDCount
@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public TaskDriverMigrationData() 
         {
-            m_MigrationTaskSetOwnerIDLookup = new Dictionary<string, TaskSetOwnerID>();
+            m_MigrationDataOwnerIDLookup = new Dictionary<string, DataOwnerID>();
             m_MigrationDataTargetIDLookup = new Dictionary<string, DataTargetID>();
             m_DestinationWorldDataMaps = new Dictionary<World, DestinationWorldDataMap>();
             m_AllDataSources = new Dictionary<Type, IDataSource>();
@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 topLevelTaskDriver.AddToMigrationLookup(
                     string.Empty, 
-                    m_MigrationTaskSetOwnerIDLookup, 
+                    m_MigrationDataOwnerIDLookup, 
                     m_MigrationDataTargetIDLookup,
                     world.GetOrCreateSystem<PersistentDataSystem>());
             }
@@ -70,8 +70,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: Optimization: Might be able to jobify if we switch to fixed strings and UnsafeWorlds?
             if (!m_DestinationWorldDataMaps.TryGetValue(destinationWorld, out DestinationWorldDataMap destinationWorldDataMap))
             {
-                destinationWorldDataMap = new DestinationWorldDataMap(m_MigrationTaskSetOwnerIDLookup,
-                    destinationMigrationData.m_MigrationTaskSetOwnerIDLookup,
+                destinationWorldDataMap = new DestinationWorldDataMap(m_MigrationDataOwnerIDLookup,
+                    destinationMigrationData.m_MigrationDataOwnerIDLookup,
                     m_MigrationDataTargetIDLookup,
                     destinationMigrationData.m_MigrationDataTargetIDLookup);
                 
@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, TaskDriverMigrationData destinationTaskDriverMigrationData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            //Lazy create a World to World mapping lookup for DataTargetIDs and TaskSetOwnerIDs
+            //Lazy create a World to World mapping lookup for DataTargetIDs and DataOwnerIDs
             DestinationWorldDataMap destinationWorldDataMap = GetOrCreateDestinationWorldDataMapFor(destinationWorld, destinationTaskDriverMigrationData);
 
             Dictionary<Type, IDataSource> destinationDataSourcesByType = destinationTaskDriverMigrationData.m_AllDataSources;
