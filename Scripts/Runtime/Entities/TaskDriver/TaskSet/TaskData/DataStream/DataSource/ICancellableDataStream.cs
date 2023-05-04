@@ -4,7 +4,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal interface ICancellableDataStream
     {
-        public uint PendingCancelActiveID { get; }
+        public DataTargetID PendingCancelDataTargetID { get; }
         
         public Type InstanceType { get; }
     }

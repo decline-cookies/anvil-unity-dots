@@ -16,6 +16,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
+
+        private TaskSetOwnerID m_WorldUniqueID;
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
@@ -26,11 +28,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public new World World { get; }
         internal TaskSet TaskSet { get; }
 
-        internal uint ID { get; }
-
-        uint ITaskSetOwner.ID
+        internal TaskSetOwnerID WorldUniqueID
         {
-            get => ID;
+            get
+            {
+                //Make sure we're only calling this after we've generated the ID
+                Debug.Assert(m_WorldUniqueID.IsValid);
+                return m_WorldUniqueID;
+            }
+        }
+
+        TaskSetOwnerID ITaskSetOwner.WorldUniqueID
+        {
+            get => WorldUniqueID;
         }
 
         internal ISystemCancelRequestDataStream CancelRequestDataStream
@@ -75,13 +85,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;
-            TaskDriverManagementSystem taskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
-
-
             m_TaskDrivers = new List<AbstractTaskDriver>();
-
-            ID = taskDriverManagementSystem.GetNextID();
-
             TaskSet = new TaskSet(this);
         }
 
@@ -105,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{ID}";
+            return $"{GetType().GetReadableName()}|{m_WorldUniqueID}";
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -114,10 +118,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDrivers.Add(taskDriver);
         }
 
-        internal ISystemDataStream<TInstance> CreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
+        internal ISystemDataStream<TInstance> CreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour);
+            EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier ?? string.Empty);
             //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
@@ -182,6 +186,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // HARDENING
         //*************************************************************************************************************
 
+        internal void GenerateWorldUniqueID(Dictionary<TaskSetOwnerID, ITaskSetOwner> taskSetOwnersByUniqueID)
+        {
+            //This will get called multiple times but we only want to calculate once
+            if (m_WorldUniqueID.IsValid)
+            {
+                return;
+            }
+            //There can only be one of these systems per world, so we can just use our type
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            m_WorldUniqueID = new TaskSetOwnerID(idPath.GetBurstHashCode32());
+            taskSetOwnersByUniqueID.Add(m_WorldUniqueID, this);
+        }
+        
         internal void Harden()
         {
             //This will get called multiple times but we only want to actually harden once
@@ -189,7 +206,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 return;
             }
-
             m_IsHardened = true;
 
             //Harden our TaskSet

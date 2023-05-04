@@ -15,42 +15,42 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
-        private UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>> m_ActiveConsolidatorsByID;
+        private UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>> m_ActiveConsolidatorsByDataTargetID;
 
         public EntityProxyDataSourceConsolidator(
             PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
-            Dictionary<uint, AbstractData> dataMapping)
+            Dictionary<DataTargetID, AbstractData> dataMapping)
         {
             m_Pending = pendingData.Pending;
 
-            m_ActiveConsolidatorsByID
-                = new UnsafeParallelHashMap<uint, EntityProxyActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
-            foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
+            m_ActiveConsolidatorsByDataTargetID
+                = new UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
+            foreach (KeyValuePair<DataTargetID, AbstractData> entry in dataMapping)
             {
                 ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)entry.Value;
-                m_ActiveConsolidatorsByID.Add(entry.Key, new EntityProxyActiveConsolidator<TInstance>(activeArrayData));
+                m_ActiveConsolidatorsByDataTargetID.Add(entry.Key, new EntityProxyActiveConsolidator<TInstance>(activeArrayData));
             }
         }
 
         public void Dispose()
         {
-            if (m_ActiveConsolidatorsByID.IsCreated)
+            if (m_ActiveConsolidatorsByDataTargetID.IsCreated)
             {
-                m_ActiveConsolidatorsByID.Dispose();
+                m_ActiveConsolidatorsByDataTargetID.Dispose();
             }
         }
 
         public void Consolidate()
         {
-            foreach (KeyValue<uint, EntityProxyActiveConsolidator<TInstance>> entry in m_ActiveConsolidatorsByID)
+            foreach (KeyValue<DataTargetID, EntityProxyActiveConsolidator<TInstance>> entry in m_ActiveConsolidatorsByDataTargetID)
             {
                 entry.Value.PrepareForConsolidation();
             }
 
             foreach (EntityProxyInstanceWrapper<TInstance> entry in m_Pending)
             {
-                uint activeID = entry.InstanceID.ActiveID;
-                EntityProxyActiveConsolidator<TInstance> entityProxyActiveConsolidator = m_ActiveConsolidatorsByID[activeID];
+                DataTargetID dataTargetID = entry.InstanceID.DataTargetID;
+                EntityProxyActiveConsolidator<TInstance> entityProxyActiveConsolidator = m_ActiveConsolidatorsByDataTargetID[dataTargetID];
                 entityProxyActiveConsolidator.WriteToActive(entry);
             }
 

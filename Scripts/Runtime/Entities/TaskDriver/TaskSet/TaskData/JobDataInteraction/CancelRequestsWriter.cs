@@ -80,7 +80,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     new EntityProxyInstanceID(
                         entity,
                         cancelRequestContext.TaskSetOwnerID,
-                        cancelRequestContext.ActiveID));
+                        cancelRequestContext.DataTargetID));
             }
         }
 
@@ -103,7 +103,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
                 m_PendingWriter.AsLaneWriter(laneIndex)
-                    .Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.ActiveID));
+                    .Write(new EntityProxyInstanceID(entity, cancelRequestContext.TaskSetOwnerID, cancelRequestContext.DataTargetID));
             }
         }
 

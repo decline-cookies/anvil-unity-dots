@@ -15,17 +15,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
 
         private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
-        private UnsafeParallelHashMap<uint, CancelRequestsActiveConsolidator> m_ActiveConsolidatorsByID;
+        private UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator> m_ActiveConsolidatorsByDataTargetID;
 
-        public CancelRequestsDataSourceConsolidator(PendingData<EntityProxyInstanceID> pendingData, Dictionary<uint, AbstractData> dataMapping)
+        public CancelRequestsDataSourceConsolidator(PendingData<EntityProxyInstanceID> pendingData, Dictionary<DataTargetID, AbstractData> dataMapping)
         {
             m_Pending = pendingData.Pending;
-            m_ActiveConsolidatorsByID
-                = new UnsafeParallelHashMap<uint, CancelRequestsActiveConsolidator>(dataMapping.Count, Allocator.Persistent);
-            foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
+            m_ActiveConsolidatorsByDataTargetID
+                = new UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator>(dataMapping.Count, Allocator.Persistent);
+            foreach (KeyValuePair<DataTargetID, AbstractData> entry in dataMapping)
             {
                 ActiveLookupData<EntityProxyInstanceID> activeLookupData = (ActiveLookupData<EntityProxyInstanceID>)entry.Value;
-                m_ActiveConsolidatorsByID.Add(
+                m_ActiveConsolidatorsByDataTargetID.Add(
                     entry.Key,
                     new CancelRequestsActiveConsolidator(activeLookupData.Lookup, activeLookupData.TaskSetOwner));
             }
@@ -35,9 +35,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public void Dispose()
         {
-            if (m_ActiveConsolidatorsByID.IsCreated)
+            if (m_ActiveConsolidatorsByDataTargetID.IsCreated)
             {
-                m_ActiveConsolidatorsByID.Dispose();
+                m_ActiveConsolidatorsByDataTargetID.Dispose();
             }
         }
 
@@ -45,15 +45,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
 
-            foreach (KeyValue<uint, CancelRequestsActiveConsolidator> entry in m_ActiveConsolidatorsByID)
+            foreach (KeyValue<DataTargetID, CancelRequestsActiveConsolidator> entry in m_ActiveConsolidatorsByDataTargetID)
             {
                 entry.Value.PrepareForConsolidation();
             }
 
             foreach (EntityProxyInstanceID entry in m_Pending)
             {
-                uint activeID = entry.ActiveID;
-                CancelRequestsActiveConsolidator activeConsolidator = m_ActiveConsolidatorsByID[activeID];
+                DataTargetID dataTargetID = entry.DataTargetID;
+                CancelRequestsActiveConsolidator activeConsolidator = m_ActiveConsolidatorsByDataTargetID[dataTargetID];
                 activeConsolidator.WriteToActive(entry, laneIndex);
             }
 

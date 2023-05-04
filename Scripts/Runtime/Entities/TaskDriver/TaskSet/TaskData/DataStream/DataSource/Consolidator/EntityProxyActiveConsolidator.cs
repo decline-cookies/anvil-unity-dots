@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CancelRequestsLookup;
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ActiveBufferPointer;
         [NativeDisableUnsafePtrRestriction] private readonly void* m_PendingCancelActiveBufferPointer;
-        private readonly uint m_PendingCancelActiveID;
+        private readonly DataTargetID m_PendingCancelDataTargetID;
         private readonly CancelRequestBehaviour m_CancelRequestBehaviour;
 
 
@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 m_PendingCancelActiveBufferPointer = pendingCancelActiveData.Active.GetBufferPointer();
                 Debug_EnsurePointerNotNull(m_PendingCancelActiveBufferPointer);
 
-                m_PendingCancelActiveID = pendingCancelActiveData.ID;
+                m_PendingCancelDataTargetID = pendingCancelActiveData.DataTargetID;
             }
 
             m_CancelRequestBehaviour = activeArrayData.CancelRequestBehaviour;
@@ -87,7 +87,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (m_CancelRequestsLookup.ContainsKey(instance.InstanceID))
             {
                 DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_PendingCancelActiveBufferPointer);
-                deferredNativeArray.Add(new EntityProxyInstanceWrapper<TInstance>(ref instance, m_PendingCancelActiveID));
+                deferredNativeArray.Add(new EntityProxyInstanceWrapper<TInstance>(ref instance, m_PendingCancelDataTargetID));
                 return;
             }
             //Otherwise it wasn't cancelled so write it

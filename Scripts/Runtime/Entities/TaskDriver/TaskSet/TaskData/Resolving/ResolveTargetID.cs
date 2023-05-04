@@ -18,9 +18,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public readonly uint TypeID;
-        public readonly uint TaskSetOwnerID;
+        public readonly TaskSetOwnerID TaskSetOwnerID;
 
-        public ResolveTargetID(uint typeID, uint taskSetOwnerID)
+        public ResolveTargetID(uint typeID, TaskSetOwnerID taskSetOwnerID)
         {
             TypeID = typeID;
             TaskSetOwnerID = taskSetOwnerID;
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode((int)TaskSetOwnerID, (int)TypeID);
+            return HashCodeUtil.GetHashCode(TaskSetOwnerID.GetHashCode(), (int)TypeID);
         }
 
         public override string ToString()

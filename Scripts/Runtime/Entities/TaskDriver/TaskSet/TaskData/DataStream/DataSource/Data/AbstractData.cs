@@ -3,6 +3,7 @@ using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -10,19 +11,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal abstract class AbstractData : AbstractAnvilBase
     {
         private readonly AccessController m_AccessController;
+        private readonly string m_UniqueContextIdentifier;
 
-        public uint ID { get; }
+        public DataTargetID DataTargetID
+        {
+            get
+            {
+                Debug.Assert(m_DataTargetID.IsValid);
+                return m_DataTargetID;
+            }
+        }
         public CancelRequestBehaviour CancelRequestBehaviour { get; }
 
         public ITaskSetOwner TaskSetOwner { get; }
 
         public AbstractData PendingCancelActiveData { get; }
 
+        private DataTargetID m_DataTargetID;
 
-        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData)
+
+        protected AbstractData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData, string uniqueContextIdentifier)
         {
             m_AccessController = new AccessController();
-            ID = id;
+            m_UniqueContextIdentifier = uniqueContextIdentifier;
             TaskSetOwner = taskSetOwner;
             CancelRequestBehaviour = cancelRequestBehaviour;
             PendingCancelActiveData = pendingCancelActiveData;
@@ -40,6 +51,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}";
+        }
+        
+        public void GenerateWorldUniqueID()
+        {
+            Debug.Assert(TaskSetOwner == null || TaskSetOwner.WorldUniqueID.IsValid);
+            string idPath = $"{(TaskSetOwner != null ? TaskSetOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
+            m_DataTargetID = new DataTargetID(idPath.GetBurstHashCode32());
         }
 
         protected abstract void DisposeData();

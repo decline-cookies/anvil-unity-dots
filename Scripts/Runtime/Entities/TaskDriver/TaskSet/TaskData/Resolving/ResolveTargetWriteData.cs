@@ -3,12 +3,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal readonly struct ResolveTargetWriteData
     {
         public readonly long PendingWriterPointerAddress;
-        public readonly uint ActiveID;
+        public readonly DataTargetID DataTargetID;
 
-        public ResolveTargetWriteData(long pendingWriterPointerAddress, uint activeID)
+        public ResolveTargetWriteData(long pendingWriterPointerAddress, DataTargetID dataTargetID)
         {
             PendingWriterPointerAddress = pendingWriterPointerAddress;
-            ActiveID = activeID;
+            DataTargetID = dataTargetID;
         }
     }
 }

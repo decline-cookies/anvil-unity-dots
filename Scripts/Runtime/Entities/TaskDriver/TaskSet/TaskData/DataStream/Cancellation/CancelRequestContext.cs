@@ -2,18 +2,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal readonly struct CancelRequestContext
     {
-        public readonly uint TaskSetOwnerID;
-        public readonly uint ActiveID;
+        public readonly TaskSetOwnerID TaskSetOwnerID;
+        public readonly DataTargetID DataTargetID;
 
-        public CancelRequestContext(uint taskSetOwnerID, uint activeID)
+        public CancelRequestContext(TaskSetOwnerID taskSetOwnerID, DataTargetID dataTargetID)
         {
             TaskSetOwnerID = taskSetOwnerID;
-            ActiveID = activeID;
+            DataTargetID = dataTargetID;
         }
 
         public override string ToString()
         {
-            return $"TaskSetOwnerID: {TaskSetOwnerID}, ActiveID: {ActiveID}";
+            return $"TaskSetOwnerID: {TaskSetOwnerID}, DataTargetID: {DataTargetID}";
         }
     }
 }

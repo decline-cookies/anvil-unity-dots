@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // ReSharper disable once InconsistentNaming
         private NativeArray<JobHandle> m_MigrationDependencies_ScratchPad;
         
-        public CancelProgressDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem) { }
+        public CancelProgressDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem, "CANCEL_PROGRESS") { }
 
         protected override void DisposeSelf()
         {
@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             base.HardenSelf();
 
             //One extra for base dependency
-            m_MigrationDependencies_ScratchPad = new NativeArray<JobHandle>(ActiveDataLookupByID.Count + 1, Allocator.Persistent);
+            m_MigrationDependencies_ScratchPad = new NativeArray<JobHandle>(ActiveDataLookupByDataTargetID.Count + 1, Allocator.Persistent);
         }
         
         protected override JobHandle ConsolidateSelf(JobHandle dependsOn)
@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             //TODO: Optimization by using a list of entities that moved and iterating through that instead. See: https://github.com/decline-cookies/anvil-unity-dots/pull/232#discussion_r1181717999
             int index = 0;
-            foreach (KeyValuePair<uint, AbstractData> entry in ActiveDataLookupByID)
+            foreach (KeyValuePair<DataTargetID, AbstractData> entry in ActiveDataLookupByDataTargetID)
             {
                 ActiveLookupData<EntityProxyInstanceID> activeLookupData = (ActiveLookupData<EntityProxyInstanceID>)entry.Value;
 
@@ -83,9 +83,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             
             //If we don't have a destination or a mapping to a destination active ID...
             if (destinationDataSource is not CancelProgressDataSource destination 
-                || !destinationWorldDataMap.ActiveIDMapping.TryGetValue(
-                    currentLookupData.ID, 
-                    out uint destinationActiveID))
+                || !destinationWorldDataMap.DataTargetIDMapping.TryGetValue(
+                    currentLookupData.DataTargetID, 
+                    out DataTargetID destinationDataTargetID))
             {
                 //Then we can only deal with ourselves
                 dependsOn = JobHandle.CombineDependencies(
@@ -94,7 +94,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
             else
             {
-                destinationLookupData = (ActiveLookupData<EntityProxyInstanceID>)destination.ActiveDataLookupByID[destinationActiveID];
+                destinationLookupData = (ActiveLookupData<EntityProxyInstanceID>)destination.ActiveDataLookupByDataTargetID[destinationDataTargetID];
                 
                 dependsOn = JobHandle.CombineDependencies(
                     dependsOn,
@@ -107,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 destinationLookupData?.Lookup ?? default,
                 ref remapArray,
                 destinationWorldDataMap.TaskSetOwnerIDMapping,
-                destinationWorldDataMap.ActiveIDMapping);
+                destinationWorldDataMap.DataTargetIDMapping);
 
             dependsOn = migrateJob.Schedule(dependsOn);
 
@@ -123,21 +123,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CurrentLookup;
             private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_DestinationLookup;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
-            [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_TaskSetOwnerIDMapping;
-            [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_ActiveIDMapping;
+            [ReadOnly] private readonly NativeParallelHashMap<TaskSetOwnerID, TaskSetOwnerID> m_TaskSetOwnerIDMapping;
+            [ReadOnly] private readonly NativeParallelHashMap<DataTargetID, DataTargetID> m_DataTargetIDMapping;
 
             public MigrateJob(
                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> currentLookup, 
                 UnsafeParallelHashMap<EntityProxyInstanceID, bool> destinationLookup, 
                 ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, 
-                NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping, 
-                NativeParallelHashMap<uint, uint> activeIDMapping)
+                NativeParallelHashMap<TaskSetOwnerID, TaskSetOwnerID> taskSetOwnerIDMapping, 
+                NativeParallelHashMap<DataTargetID, DataTargetID> dataTargetIDMapping)
             {
                 m_CurrentLookup = currentLookup;
                 m_DestinationLookup = destinationLookup;
                 m_RemapArray = remapArray;
                 m_TaskSetOwnerIDMapping = taskSetOwnerIDMapping;
-                m_ActiveIDMapping = activeIDMapping;
+                m_DataTargetIDMapping = dataTargetIDMapping;
             }
 
             public void Execute()
@@ -158,16 +158,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     m_CurrentLookup.Remove(currentID);
 
                     //If we don't have a destination in the new world, then we can just let these cease to exist
-                    if (!m_TaskSetOwnerIDMapping.TryGetValue(currentID.TaskSetOwnerID, out uint destinationTaskSetOwnerID)
-                        || !m_ActiveIDMapping.TryGetValue(currentID.ActiveID, out uint destinationActiveID))
+                    if (!m_TaskSetOwnerIDMapping.TryGetValue(currentID.TaskSetOwnerID, out TaskSetOwnerID destinationTaskSetOwnerID)
+                        || !m_DataTargetIDMapping.TryGetValue(currentID.DataTargetID, out DataTargetID destinationDataTargetID))
                     {
                         continue;
                     }
                     
                     //Patch our ID with new values
                     currentID.PatchEntityReferences(ref m_RemapArray);
-                    currentID.PatchIDs(destinationTaskSetOwnerID, destinationActiveID);
-                    
+
                     //Write to the destination lookup
                     m_DestinationLookup.Add(currentID, currentEntries.Values[i]);
                 }

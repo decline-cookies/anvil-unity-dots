@@ -22,8 +22,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
-        private uint m_CurrentTaskSetOwnerID;
-        private uint m_CurrentActiveID;
+        private TaskSetOwnerID m_CurrentTaskSetOwnerID;
+        private DataTargetID m_CurrentDataTargetID;
 
         internal DataStreamUpdater(
             UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_LaneIndex = UNSET_LANE_INDEX;
 
             m_CurrentTaskSetOwnerID = default;
-            m_CurrentActiveID = default;
+            m_CurrentDataTargetID = default;
 
             Debug_InitializeUpdaterState();
         }
@@ -78,7 +78,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 new EntityProxyInstanceWrapper<TInstance>(
                     instance.Entity,
                     m_CurrentTaskSetOwnerID,
-                    m_CurrentActiveID,
+                    m_CurrentDataTargetID,
                     ref instance));
         }
 
@@ -106,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 Debug_EnsureCanUpdate();
                 EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Active[index];
                 m_CurrentTaskSetOwnerID = instanceWrapper.InstanceID.TaskSetOwnerID;
-                m_CurrentActiveID = instanceWrapper.InstanceID.ActiveID;
+                m_CurrentDataTargetID = instanceWrapper.InstanceID.DataTargetID;
                 return instanceWrapper.Payload;
             }
         }

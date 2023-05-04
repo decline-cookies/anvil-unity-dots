@@ -29,15 +29,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             foreach (AbstractDataStream dataStream in dataStreams)
             {
-                ResolveTargetID targetID = new ResolveTargetID(targetDefinition.TypeID, dataStream.TaskSetOwner.ID);
+                ResolveTargetID targetID = new ResolveTargetID(targetDefinition.TypeID, dataStream.TaskSetOwner.WorldUniqueID);
                 ResolveTargetWriteData resolveTargetWriteData
-                    = new ResolveTargetWriteData(targetDefinition.PendingWriterPointerAddress, dataStream.ActiveID);
+                    = new ResolveTargetWriteData(targetDefinition.PendingWriterPointerAddress, dataStream.DataTargetID);
                 Debug_EnsureNotPresent(targetID);
                 m_ResolveTargetWriteDataByID.Add(targetID, resolveTargetWriteData);
             }
         }
 
-        public unsafe void Resolve<TResolveTargetType>(uint taskSetOwnerID, int laneIndex, ref TResolveTargetType resolvedInstance)
+        public unsafe void Resolve<TResolveTargetType>(TaskSetOwnerID taskSetOwnerID, int laneIndex, ref TResolveTargetType resolvedInstance)
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             uint typeID = ResolveTargetUtil.GetResolveTargetID<TResolveTargetType>();
@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ResolveTargetWriteData resolveTargetWriteData = m_ResolveTargetWriteDataByID[targetID];
             void* writerPtr = (void*)resolveTargetWriteData.PendingWriterPointerAddress;
             DataStreamPendingWriter<TResolveTargetType> writer
-                = new DataStreamPendingWriter<TResolveTargetType>(writerPtr, taskSetOwnerID, resolveTargetWriteData.ActiveID, laneIndex);
+                = new DataStreamPendingWriter<TResolveTargetType>(writerPtr, taskSetOwnerID, resolveTargetWriteData.DataTargetID, laneIndex);
             writer.Add(ref resolvedInstance);
         }
 

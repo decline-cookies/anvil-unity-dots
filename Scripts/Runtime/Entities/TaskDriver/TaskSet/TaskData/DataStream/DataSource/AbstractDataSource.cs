@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -20,29 +21,31 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private NativeArray<JobHandle> m_ConsolidationDependencies;
         private readonly List<DataAccessWrapper> m_ConsolidationData;
+        private readonly HashSet<AbstractData> m_AllAbstractData;
 
         public UnsafeTypedStream<T>.Writer PendingWriter { get; }
         public unsafe void* PendingWriterPointer { get; }
 
         public PendingData<T> PendingData { get; }
-        protected Dictionary<uint, AbstractData> ActiveDataLookupByID { get; }
+        protected Dictionary<DataTargetID, AbstractData> ActiveDataLookupByDataTargetID { get; }
 
         protected TaskDriverManagementSystem TaskDriverManagementSystem { get; }
 
-        protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
+        protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem, string pendingDataUniqueContextIdentifier)
         {
             TaskDriverManagementSystem = taskDriverManagementSystem;
-            PendingData = new PendingData<T>(TaskDriverManagementSystem.GetNextID());
+            PendingData = new PendingData<T>(pendingDataUniqueContextIdentifier);
             PendingWriter = PendingData.PendingWriter;
             PendingWriterPointer = PendingData.PendingWriterPointer;
-            ActiveDataLookupByID = new Dictionary<uint, AbstractData>();
+            m_AllAbstractData = new HashSet<AbstractData>();
+            ActiveDataLookupByDataTargetID = new Dictionary<DataTargetID, AbstractData>();
             m_ConsolidationData = new List<DataAccessWrapper>();
         }
 
         protected override void DisposeSelf()
         {
             PendingData.Dispose();
-            ActiveDataLookupByID.DisposeAllValuesAndClear();
+            ActiveDataLookupByDataTargetID.DisposeAllValuesAndClear();
 
             if (m_ConsolidationDependencies.IsCreated)
             {
@@ -52,7 +55,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             base.DisposeSelf();
         }
 
-        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour)
+        public override string ToString()
+        {
+            return $"{GetType().GetReadableName()}";
+        }
+
+        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
         {
             Debug_EnsureNotHardened();
             //TODO: #136 - Kinda gross, we shouldn't know about Cancelling here.
@@ -61,20 +69,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ActiveArrayData<T> pendingCancelArrayData = null;
             if (cancelRequestBehaviour is CancelRequestBehaviour.Unwind)
             {
-                pendingCancelArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore, null);
+                pendingCancelArrayData = new ActiveArrayData<T>(taskSetOwner, CancelRequestBehaviour.Ignore, null, $"{uniqueContextIdentifier}PENDING-CANCEL");
+                m_AllAbstractData.Add(pendingCancelArrayData);
             }
 
-            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelRequestBehaviour, pendingCancelArrayData);
-            ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
-
+            //TODO: Pass through uniqueContextIdentifier
+            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(taskSetOwner, cancelRequestBehaviour, pendingCancelArrayData, uniqueContextIdentifier);
+            m_AllAbstractData.Add(activeArrayData);
             return activeArrayData;
         }
 
-        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner)
+        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner, string uniqueContextIdentifier)
         {
             Debug_EnsureNotHardened();
-            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore);
-            ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
+            //TODO: Pass through uniqueContextIdentifier
+            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(taskSetOwner, CancelRequestBehaviour.Ignore, uniqueContextIdentifier);
+            m_AllAbstractData.Add(activeLookupData);
             return activeLookupData;
         }
 
@@ -102,6 +112,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             PendingData.Release();
         }
 
+        public void GenerateWorldUniqueID(Dictionary<DataTargetID, AbstractData> dataStreamDataByUniqueID)
+        {
+            PendingData.GenerateWorldUniqueID();
+            Debug_EnsureNoDuplicates(PendingData, dataStreamDataByUniqueID);
+            dataStreamDataByUniqueID.Add(PendingData.DataTargetID, PendingData);
+            foreach (AbstractData data in m_AllAbstractData)
+            {
+                data.GenerateWorldUniqueID();
+                Debug_EnsureNoDuplicates(data, dataStreamDataByUniqueID);
+                ActiveDataLookupByDataTargetID.Add(data.DataTargetID, data);
+                dataStreamDataByUniqueID.Add(data.DataTargetID, data);
+            }
+        }
+
         public void Harden()
         {
             Debug_EnsureNotHardened();
@@ -111,14 +135,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             HardenSelf();
 
             //For each piece of active data, we want exclusive access to it when consolidating. We're going to be writing to it via one thread.
-            foreach (AbstractData data in ActiveDataLookupByID.Values)
+            foreach (AbstractData data in ActiveDataLookupByDataTargetID.Values)
             {
                 AddConsolidationData(data, AccessType.ExclusiveWrite);
-                //Add any Pending Cancel Active data as well.
-                if (data.PendingCancelActiveData != null)
-                {
-                    AddConsolidationData(data.PendingCancelActiveData, AccessType.ExclusiveWrite);
-                }
             }
             //We'll also add our own Pending data. We want exclusive access because we'll be reading from it and then clearing the collection.
             AddConsolidationData(PendingData, AccessType.ExclusiveWrite);
@@ -184,7 +203,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
         {
             if (m_IsHardened)
@@ -192,6 +211,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Expected {this} to not be hardened but {nameof(Harden)} has already been called!");
             }
         }
+
+        [Conditional("ANVIL_DEBUG_SAFETY")]
+        private void Debug_EnsureNoDuplicates(AbstractData data, Dictionary<DataTargetID, AbstractData> dataStreamDataByUniqueID)
+        {
+            if (dataStreamDataByUniqueID.ContainsKey(data.DataTargetID))
+            {
+                throw new InvalidOperationException($"Data {this} with TaskSetOwner of {data.TaskSetOwner} with type {data.GetType().GetReadableName()} has ID of {data.DataTargetID} but it already exists in the lookup. Please set a Unique Context Identifier.");
+            }
+        }
+        
 
         //*************************************************************************************************************
         // INNER CLASS

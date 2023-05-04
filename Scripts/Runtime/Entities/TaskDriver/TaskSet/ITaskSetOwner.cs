@@ -7,7 +7,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal interface ITaskSetOwner
     {
         public TaskSet TaskSet { get; }
-        public uint ID { get; }
+        public TaskSetOwnerID WorldUniqueID { get; }
         public World World { get; }
         public AbstractTaskDriverSystem TaskDriverSystem { get; }
 
