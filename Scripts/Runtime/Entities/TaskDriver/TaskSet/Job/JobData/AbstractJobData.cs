@@ -31,43 +31,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             World = m_JobConfig.TaskSetOwner.World;
         }
 
-        /// <summary>
-        /// Gets a <see cref="CancelRequestsWriter"/> job-safe struct to use for requesting a cancel.
-        /// </summary>
-        /// <returns>The <see cref="CancelRequestsWriter"/></returns>
-        public CancelRequestsWriter GetCancelRequestsWriter()
+        public void Fulfill(out CancelRequestsWriter instance)
         {
             CancelRequestsDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestsDataStream();
-            CancelRequestsWriter cancelRequestsWriter = cancelRequestDataStream.CreateCancelRequestsWriter();
-            return cancelRequestsWriter;
+            instance = cancelRequestDataStream.CreateCancelRequestsWriter();
         }
 
-        /// <summary>
-        /// Gets a <see cref="DataStreamPendingWriter{TInstance}"/> job-safe struct to use for writing new instances to a
-        /// data stream.
-        /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> to write.</typeparam>
-        /// <returns>The <see cref="DataStreamPendingWriter{TInstance}"/></returns>
-        public DataStreamPendingWriter<TInstance> GetDataStreamWriter<TInstance>()
+        public void Fulfill<TInstance>(out DataStreamPendingWriter<TInstance> instance)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Default);
-            DataStreamPendingWriter<TInstance> writer = dataStream.CreateDataStreamPendingWriter();
-            return writer;
+            instance = dataStream.CreateDataStreamPendingWriter();
         }
 
-        /// <summary>
-        /// Gets a <see cref="GetDataStreamReader{TInstance}"/> job-safe struct to use for reading from a data stream.
-        /// </summary>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> to read.</typeparam>
-        /// <returns>The <see cref="DataStreamActiveReader{TInstance}"/></returns>
-        public DataStreamActiveReader<TInstance> GetDataStreamReader<TInstance>()
+        public void Fulfill<TInstance>(out DataStreamActiveReader<TInstance> instance)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetActiveDataStream<TInstance>(AbstractJobConfig.Usage.Default);
-            DataStreamActiveReader<TInstance> reader = dataStream.CreateDataStreamActiveReader();
-            return reader;
+            instance = dataStream.CreateDataStreamActiveReader();
         }
+
 
         //*************************************************************************************************************
         // NATIVE ARRAY
@@ -106,26 +89,34 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return m_JobConfig.GetGenericDataForExclusiveWriting<TData>();
         }
 
-
-        public ThreadPersistentDataAccessor<TData> GetThreadPersistentDataAccessorForWriting<TData>()
+        /// <summary>
+        /// Fulfills assigns an instance of the provided type for the job.
+        /// </summary>
+        public void Fulfill<TData>(out ThreadPersistentDataAccessor<TData> instance)
             where TData : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<TData> persistentData = m_JobConfig.GetThreadPersistentData<TData>();
-            return persistentData.CreateThreadPersistentDataAccessor();
+            m_JobConfig.Fulfill(out ThreadPersistentData<TData> persistentData);
+            instance = persistentData.CreateThreadPersistentDataAccessor();
         }
 
-        public EntityPersistentDataReader<TData> GetEntityPersistentDataReader<TData>()
+        /// <summary>
+        /// Fulfills assigns an instance of the provided type for the job.
+        /// </summary>
+        public void Fulfill<TData>(out EntityPersistentDataReader<TData> instance)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<TData> persistentData = m_JobConfig.GetEntityPersistentData<TData>();
-            return persistentData.CreateEntityPersistentDataReader();
+            m_JobConfig.Fulfill(out EntityPersistentData<TData> persistentData);
+            instance = persistentData.CreateEntityPersistentDataReader();
         }
 
-        public EntityPersistentDataWriter<TData> GetEntityPersistentDataWriter<TData>()
+        /// <summary>
+        /// Fulfills assigns an instance of the provided type for the job.
+        /// </summary>
+        public void Fulfill<TData>(out EntityPersistentDataWriter<TData> instance)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<TData> persistentData = m_JobConfig.GetEntityPersistentData<TData>();
-            return persistentData.CreateEntityPersistentDataWriter();
+            m_JobConfig.Fulfill(out EntityPersistentData<TData> persistentData);
+            instance = persistentData.CreateEntityPersistentDataWriter();
         }
 
         //*************************************************************************************************************
@@ -158,51 +149,39 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <summary>
-        /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from in a job.
+        /// Fulfills assigns an instance of the provided type for the job.
         /// </summary>
-        /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>The <see cref="CDFEReader{T}"/></returns>
-        public CDFEReader<T> GetCDFEReader<T>()
+        public void Fulfill<T>(out CDFEReader<T> instance)
             where T : struct, IComponentData
         {
-            return m_JobConfig.GetCDFEReader<T>();
+            m_JobConfig.Fulfill(out instance);
         }
 
         /// <summary>
-        /// Gets a <see cref="ComponentDataFromEntity{T}"/> to read from and write to in a job.
+        /// Fulfills assigns an instance of the provided type for the job.
         /// </summary>
-        /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE</typeparam>
-        /// <returns>The <see cref="CDFEWriter{T}"/></returns>
-        public CDFEWriter<T> GetCDFEWriter<T>()
+        public void Fulfill<T>(out CDFEWriter<T> instance)
             where T : struct, IComponentData
         {
-            return m_JobConfig.GetCDFEWriter<T>();
-        }
-
-        //*************************************************************************************************************
-        // DYNAMIC BUFFER
-        //*************************************************************************************************************
-
-        /// <summary>
-        /// Gets a <see cref="BufferFromEntity{T}"/> to read from in a job.
-        /// </summary>
-        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE</typeparam>
-        /// <returns>The <see cref="DBFEForRead{T}"/></returns>
-        public DBFEForRead<T> GetDBFEForRead<T>()
-            where T : struct, IBufferElementData
-        {
-            return m_JobConfig.GetDBFEForRead<T>();
+            m_JobConfig.Fulfill(out instance);
         }
 
         /// <summary>
-        /// Gets a <see cref="BufferFromEntity{T}"/> to read from and write to in a job.
+        /// Fulfills assigns an instance of the provided type for the job.
         /// </summary>
-        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE</typeparam>
-        /// <returns>The <see cref="DBFEForExclusiveWrite{T}"/></returns>
-        public DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
+        public void Fulfill<T>(out DBFEForRead<T> instance)
             where T : struct, IBufferElementData
         {
-            return m_JobConfig.GetDBFEForExclusiveWrite<T>();
+            m_JobConfig.Fulfill(out instance);
+        }
+
+        /// <summary>
+        /// Fulfills assigns an instance of the provided type for the job.
+        /// </summary>
+        public void Fulfill<T>(out DBFEForExclusiveWrite<T> instance)
+            where T : struct, IBufferElementData
+        {
+            m_JobConfig.Fulfill(out instance);
         }
     }
 }
