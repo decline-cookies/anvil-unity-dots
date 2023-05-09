@@ -12,19 +12,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                            IWorldUniqueID<DataTargetID>
     {
         private readonly AccessController m_AccessController;
-        private readonly string m_UniqueContextIdentifier;
 
-        public DataTargetID WorldUniqueID
-        {
-            get
-            {
-                if (!m_WorldUniqueID.IsValid)
-                {
-                    m_WorldUniqueID = GenerateWorldUniqueID();
-                }
-                return m_WorldUniqueID;
-            }
-        }
+        public DataTargetID WorldUniqueID { get; }
         public CancelRequestBehaviour CancelRequestBehaviour { get; }
 
         public IDataOwner DataOwner { get; }
@@ -37,10 +26,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected AbstractData(IDataOwner dataOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData, string uniqueContextIdentifier)
         {
             m_AccessController = new AccessController();
-            m_UniqueContextIdentifier = uniqueContextIdentifier;
             DataOwner = dataOwner;
             CancelRequestBehaviour = cancelRequestBehaviour;
             PendingCancelActiveData = pendingCancelActiveData;
+            WorldUniqueID = GenerateWorldUniqueID(uniqueContextIdentifier);
         }
 
         protected sealed override void DisposeSelf()
@@ -57,10 +46,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{GetType().GetReadableName()}";
         }
         
-        private DataTargetID GenerateWorldUniqueID()
+        private DataTargetID GenerateWorldUniqueID(string uniqueContextIdentifier)
         {
             Debug.Assert(DataOwner == null || DataOwner.WorldUniqueID.IsValid);
-            string idPath = $"{(DataOwner != null ? DataOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
+            string idPath = $"{(DataOwner != null ? DataOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{uniqueContextIdentifier}";
             return new DataTargetID(idPath.GetBurstHashCode32());
         }
 

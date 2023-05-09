@@ -26,12 +26,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
 
-
         private readonly PersistentDataSystem m_PersistentDataSystem;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
-        private readonly string m_UniqueContextIdentifier;
 
-        private DataOwnerID m_WorldUniqueID;
         private bool m_IsHardened;
         private bool m_HasCancellableData;
 
@@ -40,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         public World World { get; }
 
-        internal AbstractTaskDriver Parent { get; private set; }
+        internal AbstractTaskDriver Parent { get; }
 
         internal AbstractTaskDriverSystem TaskDriverSystem { get; }
 
@@ -61,20 +58,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => TaskSet.CancelCompleteDataStream;
         }
-        
-        internal DataOwnerID WorldUniqueID
-        {
-            get
-            {
-                //Lazy create the ID and traverse up the parent tree to lazy create theirs if not already done
-                if (!m_WorldUniqueID.IsValid)
-                {
-                    m_WorldUniqueID = GenerateWorldUniqueID();
-                }
-                return m_WorldUniqueID;
-            }
-        }
-        
+
+        internal DataOwnerID WorldUniqueID { get; }
+
         protected ITaskDriverSystem System
         {
             get => new ContextTaskDriverSystemWrapper(TaskDriverSystem, this);
@@ -116,6 +102,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Creates a new instance of a <see cref="AbstractTaskDriver"/>
         /// </summary>
         /// <param name="world">The <see cref="World"/> this Task Driver is a part of.</param>
+        /// <param name="parent">TODO: IMPLEMENT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</param>
         /// <param name="uniqueContextIdentifier">
         /// An optional unique identifier to identify this TaskDriver by. This is necessary when there are two or more of the
         /// same type of TaskDrivers at the same level in the hierarchy.
@@ -128,10 +115,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// context identifier to distinguish them for ensuring migration happens properly between worlds and data
         /// goes to the correct location.
         /// </param>
-        protected AbstractTaskDriver(World world, string uniqueContextIdentifier = null)
+        protected AbstractTaskDriver(World world, AbstractTaskDriver parent = null, string uniqueContextIdentifier = null)
         {
-            m_UniqueContextIdentifier = uniqueContextIdentifier ?? string.Empty;
             World = world;
+            Parent = parent;
+            Parent?.m_SubTaskDrivers.Add(this);
+            WorldUniqueID = GenerateWorldUniqueID(uniqueContextIdentifier);
+            
             TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_PersistentDataSystem = World.GetOrCreateSystem<PersistentDataSystem>();
 
@@ -153,7 +143,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             TaskDriverSystem.RegisterTaskDriver(this);
-            taskDriverManagementSystem.InitRegisterTaskDriver(this, m_UniqueContextIdentifier);
+            taskDriverManagementSystem.RegisterTaskDriver(this);
+        }
+
+        private DataOwnerID GenerateWorldUniqueID(string uniqueContextIdentifier)
+        {
+            //If we have a parent, we include their id in ours, otherwise we're top level.
+            string idPath = $"{(Parent != null ? Parent.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{uniqueContextIdentifier ?? string.Empty}";
+            return new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void DisposeSelf()
@@ -168,7 +165,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{WorldUniqueID}|{m_UniqueContextIdentifier}";
+            return $"{GetType().GetReadableName()}|{WorldUniqueID}";
         }
 
         private ComponentSystemGroup GetSystemGroup()
@@ -193,21 +190,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION
         //*************************************************************************************************************
 
-        protected TTaskDriver AddSubTaskDriver<TTaskDriver>(TTaskDriver subTaskDriver)
-            where TTaskDriver : AbstractTaskDriver
-        {
-            Debug.Assert(subTaskDriver.Parent == null);
-            subTaskDriver.Parent = this;
-            m_SubTaskDrivers.Add(subTaskDriver);
-
-            return subTaskDriver;
-        }
-
         protected IDriverDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
             where TInstance : unmanaged, IEntityProxyInstance
         {
             IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier ?? string.Empty);
-
             return dataStream;
         }
 
@@ -221,14 +207,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected IWorldEntityPersistentData<T> GetOrCreateWorldEntityPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.InitGetOrCreateEntityPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
             return entityPersistentData;
         }
 
         protected IThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.InitGetOrCreateThreadPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.GetOrCreateThreadPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
             return threadPersistentData;
         }
 
@@ -280,13 +266,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // HARDENING
         //*************************************************************************************************************
-
-        private DataOwnerID GenerateWorldUniqueID()
-        {
-            //If we have a parent, we include their id in ours, otherwise we're top level.
-            string idPath = $"{(Parent != null ? Parent.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
-            return new DataOwnerID(idPath.GetBurstHashCode32());
-        }
 
         internal void Harden()
         {

@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            m_DataSource = taskDriverManagementSystem.InitGetOrCreateEntityProxyDataSource<TInstance>();
+            m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
 

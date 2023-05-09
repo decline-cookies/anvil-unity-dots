@@ -118,13 +118,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            return m_PersistentDataSystem.InitGetOrCreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
+            return m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
         }
 
         public EntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            return m_PersistentDataSystem.InitCreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
+            return m_PersistentDataSystem.CreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
         }
 
         public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)

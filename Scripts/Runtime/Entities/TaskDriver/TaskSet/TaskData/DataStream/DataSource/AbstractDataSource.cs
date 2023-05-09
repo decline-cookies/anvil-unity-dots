@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
         {
             TaskDriverManagementSystem = taskDriverManagementSystem;
-            PendingData = taskDriverManagementSystem.InitCreatePendingData<T>(GetType().AssemblyQualifiedName);
+            PendingData = taskDriverManagementSystem.CreatePendingData<T>(GetType().AssemblyQualifiedName);
             PendingWriter = PendingData.PendingWriter;
             PendingWriterPointer = PendingData.PendingWriterPointer;
             m_ConsolidationData = new List<DataAccessWrapper>();
@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ActiveArrayData<T> pendingCancelArrayData = null;
             if (cancelRequestBehaviour is CancelRequestBehaviour.Unwind)
             {
-                pendingCancelArrayData = TaskDriverManagementSystem.InitCreateActiveArrayData<T>(
+                pendingCancelArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
                     taskSetOwner,
                     CancelRequestBehaviour.Ignore,
                     null,
@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 DataTargets.Add(pendingCancelArrayData);
             }
 
-            ActiveArrayData<T> activeArrayData = TaskDriverManagementSystem.InitCreateActiveArrayData<T>(
+            ActiveArrayData<T> activeArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
                 taskSetOwner,
                 cancelRequestBehaviour,
                 pendingCancelArrayData,
@@ -96,7 +96,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner, string uniqueContextIdentifier)
         {
             Debug_EnsureNotHardened();
-            ActiveLookupData<T> activeLookupData = TaskDriverManagementSystem.InitCreateActiveLookupData<T>(
+            ActiveLookupData<T> activeLookupData = TaskDriverManagementSystem.CreateActiveLookupData<T>(
                 taskSetOwner,
                 CancelRequestBehaviour.Ignore,
                 uniqueContextIdentifier);

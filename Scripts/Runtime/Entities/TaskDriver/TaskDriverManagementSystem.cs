@@ -39,6 +39,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public TaskDriverManagementSystem()
         {
+            WorldUniqueID = GenerateWorldUniqueID();
+            
             m_TaskSetOwners = new WorldDataOwnerLookup<DataOwnerID, ITaskSetOwner>();
             m_DataTargets = new WorldDataOwnerLookup<DataTargetID, AbstractData>();
 
@@ -51,9 +53,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
             EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceID>();
+        }
 
+        private DataOwnerID GenerateWorldUniqueID()
+        {
             string idPath = $"{GetType().AssemblyQualifiedName}";
-            WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
+            return new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void OnCreate()
@@ -96,8 +101,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-
-            HardenIDLookups();
 
             //For all the TaskDrivers, filter to find the ones that don't have Parents.
             //Those are our top level TaskDrivers
@@ -152,24 +155,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDriverMigrationData = new TaskDriverMigrationData(dataSources);
         }
 
-        private void HardenIDLookups()
-        {
-            m_TaskSetOwners.Harden();
-            m_DataTargets.Harden();
-        }
-
         //*************************************************************************************************************
         // INIT
         //*************************************************************************************************************
 
-        public void InitRegisterTaskDriver(AbstractTaskDriver taskDriver, string uniqueContextIdentifier)
+        public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
         {
             Debug_EnsureNotHardened();
-            m_TaskSetOwners.InitAdd(taskDriver, taskDriver.Parent == null ? this : taskDriver.Parent, uniqueContextIdentifier);
-            m_TaskSetOwners.InitAdd(taskDriver.TaskDriverSystem, this, string.Empty);
+            //If we're a top level task driver, then this TaskDriverManagementSystem is our owner, otherwise it's our parent.
+            m_TaskSetOwners.Add(taskDriver, taskDriver.Parent == null ? this : taskDriver.Parent);
+            //All systems are owned by this
+            m_TaskSetOwners.TryAdd(taskDriver.TaskDriverSystem, this);
         }
 
-        public EntityProxyDataSource<TInstance> InitGetOrCreateEntityProxyDataSource<TInstance>()
+        public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
             Debug_EnsureNotHardened();
@@ -182,20 +181,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return (EntityProxyDataSource<TInstance>)dataSource;
         }
 
-        public PendingData<T> InitCreatePendingData<T>(string uniqueContextIdentifier)
+        public PendingData<T> CreatePendingData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEquatable<T>
         {
             Debug_EnsureNotHardened();
-            return m_DataTargets.InitCreate(InitCreatePendingDataInstance<T>, this, uniqueContextIdentifier);
+            return m_DataTargets.Create(CreatePendingDataInstance<T>, this, uniqueContextIdentifier);
         }
 
-        private PendingData<T> InitCreatePendingDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+        private PendingData<T> CreatePendingDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEquatable<T>
         {
             return new PendingData<T>(dataOwner, uniqueContextIdentifier);
         }
 
-        public ActiveArrayData<T> InitCreateActiveArrayData<T>(
+        public ActiveArrayData<T> CreateActiveArrayData<T>(
             IDataOwner dataOwner,
             CancelRequestBehaviour cancelRequestBehaviour,
             AbstractData pendingCancelData,
@@ -203,7 +202,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IEquatable<T>
         {
             Debug_EnsureNotHardened();
-            return m_DataTargets.InitCreate(
+            return m_DataTargets.Create(
                 (createDataOwner, createUniqueContextIdentifier) => new ActiveArrayData<T>(
                     createDataOwner,
                     cancelRequestBehaviour,
@@ -213,14 +212,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 uniqueContextIdentifier);
         }
 
-        public ActiveLookupData<T> InitCreateActiveLookupData<T>(
+        public ActiveLookupData<T> CreateActiveLookupData<T>(
             IDataOwner dataOwner,
             CancelRequestBehaviour cancelRequestBehaviour,
             string uniqueContextIdentifier)
             where T : unmanaged, IEquatable<T>
         {
             Debug_EnsureNotHardened();
-            return m_DataTargets.InitCreate(
+            return m_DataTargets.Create(
                 (createDataOwner, createUniqueContextIdentifier) => new ActiveLookupData<T>(
                     createDataOwner,
                     cancelRequestBehaviour,

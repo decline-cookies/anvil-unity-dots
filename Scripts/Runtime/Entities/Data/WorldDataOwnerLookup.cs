@@ -2,7 +2,6 @@ using Anvil.CSharp.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -15,25 +14,19 @@ namespace Anvil.Unity.DOTS.Entities
         public delegate TSpecificData CreateInstanceFunction<out TSpecificData>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where TSpecificData : TBaseData;
         
-        private readonly Dictionary<IDataOwner, DataOwnerLookup<TWorldUniqueID, TBaseData>> m_InitLookups;
-        private readonly Dictionary<TWorldUniqueID, TBaseData> m_HardenedLookup;
+        private readonly Dictionary<IDataOwner, DataOwnerLookup<TWorldUniqueID, TBaseData>> m_DataOwnerLookups;
+        private readonly Dictionary<TWorldUniqueID, TBaseData> m_WorldLookup;
         private readonly bool m_IsDataDisposable;
-
-        public bool IsHardened { get; private set; }
 
         public int Count
         {
-            get
-            {
-                Debug_EnsureHardened();
-                return m_HardenedLookup.Count;
-            }
+            get => m_WorldLookup.Count;
         }
 
         public WorldDataOwnerLookup()
         {
-            m_InitLookups = new Dictionary<IDataOwner, DataOwnerLookup<TWorldUniqueID, TBaseData>>();
-            m_HardenedLookup = new Dictionary<TWorldUniqueID, TBaseData>();
+            m_DataOwnerLookups = new Dictionary<IDataOwner, DataOwnerLookup<TWorldUniqueID, TBaseData>>();
+            m_WorldLookup = new Dictionary<TWorldUniqueID, TBaseData>();
             m_IsDataDisposable = I_DISPOSABLE.IsAssignableFrom(typeof(TBaseData));
         }
 
@@ -41,12 +34,12 @@ namespace Anvil.Unity.DOTS.Entities
         {
             if (m_IsDataDisposable)
             {
-                foreach (IDisposable disposableData in m_HardenedLookup.Values)
+                foreach (IDisposable disposableData in m_WorldLookup.Values)
                 {
                     disposableData.Dispose();
                 }
             }
-            m_HardenedLookup.Clear();
+            m_WorldLookup.Clear();
             base.DisposeSelf();
         }
 
@@ -54,56 +47,55 @@ namespace Anvil.Unity.DOTS.Entities
         // INIT
         //*************************************************************************************************************
 
-        public void InitAdd<TSpecificData>(TSpecificData data, IDataOwner dataOwner, string uniqueContextIdentifier)
+        public void Add<TSpecificData>(TSpecificData data, IDataOwner dataOwner)
             where TSpecificData : TBaseData
         {
-            Debug_EnsureHardened();
-            DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup = InitGetOrCreate(dataOwner);
-            dataOwnerLookup.InitAdd(data, uniqueContextIdentifier);
-        }
-        
-        public TSpecificData InitCreate<TSpecificData>(CreateInstanceFunction<TSpecificData> createInstanceFunction, IDataOwner dataOwner, string uniqueContextIdentifier)
-            where TSpecificData : TBaseData
-        {
-            Debug_EnsureNotHardened();
-            DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup = InitGetOrCreate(dataOwner);
-            return dataOwnerLookup.InitCreate(createInstanceFunction, uniqueContextIdentifier);
-        }
-        
-        public TSpecificData InitGetOrCreate<TSpecificData>(CreateInstanceFunction<TSpecificData> createInstanceFunction, IDataOwner dataOwner, string uniqueContextIdentifier)
-            where TSpecificData : TBaseData
-        {
-            Debug_EnsureNotHardened();
-            DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup = InitGetOrCreate(dataOwner);
-            return dataOwnerLookup.InitGetOrCreate(createInstanceFunction, uniqueContextIdentifier);
+            DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup = GetOrCreateDataOwnerLookup(dataOwner);
+            dataOwnerLookup.Add(data);
+            m_WorldLookup.Add(data.WorldUniqueID, data);
         }
 
-        private DataOwnerLookup<TWorldUniqueID, TBaseData> InitGetOrCreate(IDataOwner dataOwner)
+        public bool TryAdd<TSpecificData>(TSpecificData data, IDataOwner dataOwner)
+            where TSpecificData : TBaseData
         {
-            Debug_EnsureNotHardened();
-            if (!m_InitLookups.TryGetValue(dataOwner, out DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup))
+            DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup = GetOrCreateDataOwnerLookup(dataOwner);
+            if (!dataOwnerLookup.TryAdd(data))
+            {
+                return false;
+            }
+            m_WorldLookup.Add(data.WorldUniqueID, data);
+            return true;
+        }
+        
+        public TSpecificData Create<TSpecificData>(CreateInstanceFunction<TSpecificData> createInstanceFunction, IDataOwner dataOwner, string uniqueContextIdentifier)
+            where TSpecificData : TBaseData
+        {
+            DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup = GetOrCreateDataOwnerLookup(dataOwner);
+            TSpecificData data = dataOwnerLookup.Create(createInstanceFunction, uniqueContextIdentifier);
+            m_WorldLookup.Add(data.WorldUniqueID, data);
+            return data;
+        }
+        
+        public TSpecificData GetOrCreate<TSpecificData>(TWorldUniqueID worldUniqueID, CreateInstanceFunction<TSpecificData> createInstanceFunction, IDataOwner dataOwner, string uniqueContextIdentifier)
+            where TSpecificData : TBaseData
+        {
+            if (!m_WorldLookup.TryGetValue(worldUniqueID, out TBaseData data))
+            {
+                data = Create(createInstanceFunction, dataOwner, uniqueContextIdentifier);
+            }
+            return (TSpecificData)data;
+        }
+
+        private DataOwnerLookup<TWorldUniqueID, TBaseData> GetOrCreateDataOwnerLookup(IDataOwner dataOwner)
+        {
+            if (!m_DataOwnerLookups.TryGetValue(dataOwner, out DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup))
             {
                 dataOwnerLookup = new DataOwnerLookup<TWorldUniqueID, TBaseData>(dataOwner, m_IsDataDisposable);
-                m_InitLookups.Add(dataOwner, dataOwnerLookup);
+                m_DataOwnerLookups.Add(dataOwner, dataOwnerLookup);
             }
             return dataOwnerLookup;
         }
-        
-        //*************************************************************************************************************
-        // HARDENING
-        //*************************************************************************************************************
-        public void Harden()
-        {
-            Debug_EnsureNotHardened();
-            IsHardened = true;
-            foreach (DataOwnerLookup<TWorldUniqueID, TBaseData> dataOwnerLookup in m_InitLookups.Values)
-            {
-                dataOwnerLookup.Harden(m_HardenedLookup);
-            }
-            
-            m_InitLookups.Clear();
-        }
-        
+
         //*************************************************************************************************************
         // ACCESS
         //*************************************************************************************************************
@@ -120,36 +112,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         public Dictionary<TWorldUniqueID, TBaseData>.Enumerator GetEnumerator()
         {
-            Debug_EnsureHardened();
-            return m_HardenedLookup.GetEnumerator();
+            return m_WorldLookup.GetEnumerator();
         }
 
         public bool TryGetData(TWorldUniqueID id, out TBaseData data)
         {
-            Debug_EnsureHardened();
-            return m_HardenedLookup.TryGetValue(id, out data);
+            return m_WorldLookup.TryGetValue(id, out data);
         }
         
-        //*************************************************************************************************************
-        // SAFETY
-        //*************************************************************************************************************
-
-        [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsureNotHardened()
-        {
-            if (IsHardened)
-            {
-                throw new InvalidOperationException($"{this} is already Hardened! It was not expected to be.");
-            }
-        }
-        
-        [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsureHardened()
-        {
-            if (!IsHardened)
-            {
-                throw new InvalidOperationException($"{this} isn't Hardened! It should be before calling the caller.");
-            }
-        }
     }
 }

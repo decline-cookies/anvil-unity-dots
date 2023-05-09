@@ -1,4 +1,3 @@
-using Anvil.Unity.DOTS.Entities.TaskDriver;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -65,51 +64,71 @@ namespace Anvil.Unity.DOTS.Entities
             m_EntityWorldMigrationSystem.UnregisterMigrationObserver(this);
             base.OnDestroy();
         }
-        
+
         //*************************************************************************************************************
         // INIT
         //*************************************************************************************************************
 
-        public ThreadPersistentData<T> InitGetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
+        public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
             Debug_EnsureNotHardened();
-            return s_ThreadPersistentData.InitGetOrCreate(InitCreateThreadPersistentDataInstance<T>, this, uniqueContextIdentifier);
+
+            DataTargetID worldUniqueID = AbstractPersistentData.GetWorldUniqueID(
+                this,
+                typeof(ThreadPersistentData<T>),
+                uniqueContextIdentifier);
+
+            return s_ThreadPersistentData.GetOrCreate(
+                worldUniqueID,
+                CreateThreadPersistentDataInstance<T>,
+                this,
+                uniqueContextIdentifier);
         }
 
-        public EntityPersistentData<T> InitGetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Debug_EnsureNotHardened();
-            return InitGetOrCreateEntityPersistentData<T>(this, uniqueContextIdentifier);
+            return GetOrCreateEntityPersistentData<T>(this, uniqueContextIdentifier);
         }
 
-        public EntityPersistentData<T> InitGetOrCreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Debug_EnsureNotHardened();
-            return m_EntityPersistentData.InitGetOrCreate(InitCreateEntityPersistentDataInstance<T>, dataOwner, uniqueContextIdentifier);
+
+            DataTargetID worldUniqueID = AbstractPersistentData.GetWorldUniqueID(
+                dataOwner,
+                typeof(EntityPersistentData<T>),
+                uniqueContextIdentifier);
+
+            return m_EntityPersistentData.GetOrCreate(
+                worldUniqueID,
+                CreateEntityPersistentDataInstance<T>,
+                dataOwner,
+                uniqueContextIdentifier);
         }
 
-        public EntityPersistentData<T> InitCreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+        public EntityPersistentData<T> CreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             Debug_EnsureNotHardened();
-            return m_EntityPersistentData.InitCreate(InitCreateEntityPersistentDataInstance<T>, dataOwner, uniqueContextIdentifier);
+            return m_EntityPersistentData.Create(CreateEntityPersistentDataInstance<T>, dataOwner, uniqueContextIdentifier);
         }
 
-        private EntityPersistentData<T> InitCreateEntityPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+        private EntityPersistentData<T> CreateEntityPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             return new EntityPersistentData<T>(dataOwner, uniqueContextIdentifier);
         }
-        
-        private ThreadPersistentData<T> InitCreateThreadPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+
+        private ThreadPersistentData<T> CreateThreadPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
             return new ThreadPersistentData<T>(dataOwner, uniqueContextIdentifier);
         }
-        
+
         //*************************************************************************************************************
         // HARDENING
         //*************************************************************************************************************
@@ -118,11 +137,6 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
-            if (!s_ThreadPersistentData.IsHardened)
-            {
-                s_ThreadPersistentData.Harden();
-            }
-            m_EntityPersistentData.Harden();
             m_MigrationDependencies_ScratchPad = new NativeArray<JobHandle>(m_EntityPersistentData.Count, Allocator.Persistent);
         }
 

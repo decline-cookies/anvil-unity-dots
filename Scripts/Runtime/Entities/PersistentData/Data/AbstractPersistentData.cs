@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
 using UnityEngine;
@@ -10,27 +11,23 @@ namespace Anvil.Unity.DOTS.Entities
     internal abstract class AbstractPersistentData : AbstractAnvilBase,
                                                      IWorldUniqueID<DataTargetID>
     {
+        private static readonly Type ABSTRACT_PERSISTENT_DATA_TYPE = typeof(AbstractPersistentData);
+        public static DataTargetID GetWorldUniqueID(IDataOwner dataOwner, Type persistentDataType, string uniqueContextIdentifier)
+        {
+            Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
+            Debug.Assert(ABSTRACT_PERSISTENT_DATA_TYPE.IsAssignableFrom(persistentDataType));
+            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{persistentDataType.AssemblyQualifiedName}{uniqueContextIdentifier}";
+            return new DataTargetID(idPath.GetBurstHashCode32());
+        }
+        
         private readonly AccessController m_AccessController;
-        private readonly string m_UniqueContextIdentifier;
-        private readonly IDataOwner m_DataOwner;
         private DataTargetID m_WorldUniqueID;
         
-        public DataTargetID WorldUniqueID
-        {
-            get
-            {
-                if (!m_WorldUniqueID.IsValid)
-                {
-                    m_WorldUniqueID = GenerateWorldUniqueID();
-                }
-                return m_WorldUniqueID;
-            }
-        }
+        public DataTargetID WorldUniqueID { get; }
 
         protected AbstractPersistentData(IDataOwner dataOwner, string uniqueContextIdentifier)
         {
-            m_DataOwner = dataOwner;
-            m_UniqueContextIdentifier = uniqueContextIdentifier;
+            WorldUniqueID = GetWorldUniqueID(dataOwner, GetType(), uniqueContextIdentifier);
             m_AccessController = new AccessController();
         }
 
@@ -47,13 +44,6 @@ namespace Anvil.Unity.DOTS.Entities
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}";
-        }
-
-        private DataTargetID GenerateWorldUniqueID()
-        {
-            Debug.Assert(m_DataOwner == null || m_DataOwner.WorldUniqueID.IsValid);
-            string idPath = $"{(m_DataOwner != null ? m_DataOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
-            return new DataTargetID(idPath.GetBurstHashCode32());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

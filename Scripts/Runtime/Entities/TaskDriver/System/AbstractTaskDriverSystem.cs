@@ -79,14 +79,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;
-            
-            //We can do this right away because we don't have a parent
-            //There can only be one of these systems per world, so we can just use our type
-            string idPath = $"{GetType().AssemblyQualifiedName}";
-            WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
+            WorldUniqueID = GenerateWorldUniqueID();
             
             m_TaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
+        }
+
+        private DataOwnerID GenerateWorldUniqueID()
+        {
+            //There can only be one of these systems per world, so we can just use our type
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            return new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void OnCreate()

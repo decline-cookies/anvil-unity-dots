@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TResolveTargetType : unmanaged, IEntityProxyInstance
         {
             TaskDriverManagementSystem taskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            EntityProxyDataSource<TResolveTargetType> dataSource = taskDriverManagementSystem.InitGetOrCreateEntityProxyDataSource<TResolveTargetType>();
+            EntityProxyDataSource<TResolveTargetType> dataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TResolveTargetType>();
 
             m_ResolveTargetDefinitions.Add(ResolveTargetDefinition.Create<TResolveTargetType>(dataSource.PendingWriterPointer));
             return this;
