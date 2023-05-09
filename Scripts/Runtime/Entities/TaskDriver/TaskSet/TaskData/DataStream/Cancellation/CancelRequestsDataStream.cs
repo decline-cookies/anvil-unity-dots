@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override DataTargetID DataTargetID
         {
-            get => ActiveLookupData.DataTargetID;
+            get => ActiveLookupData.WorldUniqueID;
         }
 
         public override IDataSource DataSource

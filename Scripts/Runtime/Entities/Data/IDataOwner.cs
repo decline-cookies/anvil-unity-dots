@@ -2,9 +2,8 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    public interface IDataOwner
+    internal interface IDataOwner : IWorldUniqueID<DataOwnerID>
     {
-        public DataOwnerID WorldUniqueID { get; }
         public World World { get; }
     }
 }

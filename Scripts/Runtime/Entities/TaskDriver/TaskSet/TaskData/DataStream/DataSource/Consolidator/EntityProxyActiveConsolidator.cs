@@ -31,11 +31,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 m_PendingCancelActiveBufferPointer = pendingCancelActiveData.Active.GetBufferPointer();
                 Debug_EnsurePointerNotNull(m_PendingCancelActiveBufferPointer);
 
-                m_PendingCancelDataTargetID = pendingCancelActiveData.DataTargetID;
+                m_PendingCancelDataTargetID = pendingCancelActiveData.WorldUniqueID;
             }
 
             m_CancelRequestBehaviour = activeArrayData.CancelRequestBehaviour;
-            m_CancelRequestsLookup = activeArrayData.TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData.Lookup;
+            m_CancelRequestsLookup = ((ITaskSetOwner)activeArrayData.DataOwner).TaskSet.CancelRequestsDataStream.ActiveLookupData.Lookup;
         }
 
         public void PrepareForConsolidation()

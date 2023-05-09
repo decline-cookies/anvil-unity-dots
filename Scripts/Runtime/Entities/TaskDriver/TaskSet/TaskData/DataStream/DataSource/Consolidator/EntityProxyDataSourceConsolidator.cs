@@ -19,16 +19,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public EntityProxyDataSourceConsolidator(
             PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
-            Dictionary<DataTargetID, AbstractData> dataMapping)
+            HashSet<AbstractData> dataTargets)
         {
             m_Pending = pendingData.Pending;
 
             m_ActiveConsolidatorsByDataTargetID
-                = new UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>>(dataMapping.Count, Allocator.Persistent);
-            foreach (KeyValuePair<DataTargetID, AbstractData> entry in dataMapping)
+                = new UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>>(dataTargets.Count, Allocator.Persistent);
+            foreach (AbstractData dataTarget in dataTargets)
             {
-                ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)entry.Value;
-                m_ActiveConsolidatorsByDataTargetID.Add(entry.Key, new EntityProxyActiveConsolidator<TInstance>(activeArrayData));
+                ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)dataTarget;
+                m_ActiveConsolidatorsByDataTargetID.Add(dataTarget.WorldUniqueID, new EntityProxyActiveConsolidator<TInstance>(activeArrayData));
             }
         }
 

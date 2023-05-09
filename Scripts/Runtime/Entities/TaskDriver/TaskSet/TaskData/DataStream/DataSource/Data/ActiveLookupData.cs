@@ -13,11 +13,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public UnsafeParallelHashMap<T, bool> Lookup { get; }
 
         public ActiveLookupData(
-            ITaskSetOwner taskSetOwner, 
+            IDataOwner dataOwner, 
             CancelRequestBehaviour cancelRequestBehaviour, 
             string uniqueContextIdentifier) 
             : base(
-                taskSetOwner, 
+                dataOwner, 
                 cancelRequestBehaviour, 
                 null,
                 uniqueContextIdentifier)

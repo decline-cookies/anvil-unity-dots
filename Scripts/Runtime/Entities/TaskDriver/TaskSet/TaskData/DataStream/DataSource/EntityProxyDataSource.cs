@@ -13,7 +13,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
 
-        public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem, string.Empty)
+        public EntityProxyDataSource(
+            TaskDriverManagementSystem taskDriverManagementSystem) 
+            : base(taskDriverManagementSystem)
         {
             EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
             EntityProxyInstanceWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
@@ -30,16 +32,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             base.HardenSelf();
 
             //We need to ensure we get the right access to any of the cancel data structures
-            foreach (AbstractData data in ActiveDataLookupByDataTargetID.Values)
+            foreach (AbstractData data in DataTargets)
             {
                 //If this piece of data can be cancelled, we need to be able to read the associated Cancel Request lookup
                 if (data.CancelRequestBehaviour is CancelRequestBehaviour.Delete or CancelRequestBehaviour.Unwind)
                 {
-                    AddConsolidationData(data.TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData, AccessType.SharedRead);
+                    AddConsolidationData(((ITaskSetOwner)data.DataOwner).TaskSet.CancelRequestsDataStream.ActiveLookupData, AccessType.SharedRead);
                 }
             }
 
-            m_Consolidator = new EntityProxyDataSourceConsolidator<TInstance>(PendingData, ActiveDataLookupByDataTargetID);
+            m_Consolidator = new EntityProxyDataSourceConsolidator<TInstance>(PendingData, DataTargets);
         }
 
         //*************************************************************************************************************
@@ -49,8 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public override JobHandle MigrateTo(
             JobHandle dependsOn,
             IDataSource destinationDataSource,
-            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-            DestinationWorldDataMap destinationWorldDataMap)
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             EntityProxyDataSource<TInstance> destination = destinationDataSource as EntityProxyDataSource<TInstance>;
             UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationWriter = default;
@@ -74,9 +75,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             MigrateJob migrateJob = new MigrateJob(
                 PendingData.Pending,
                 destinationWriter,
-                ref remapArray,
-                destinationWorldDataMap.DataOwnerIDMapping,
-                destinationWorldDataMap.DataTargetIDMapping);
+                ref remapArray);
             dependsOn = migrateJob.Schedule(dependsOn);
 
             PendingData.ReleaseAsync(dependsOn);
@@ -93,22 +92,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_CurrentStream;
             private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_DestinationStreamWriter;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
-            [ReadOnly] private readonly NativeParallelHashMap<DataOwnerID, DataOwnerID> m_DataOwnerIDMapping;
-            [ReadOnly] private readonly NativeParallelHashMap<DataTargetID, DataTargetID> m_DataTargetIDMapping;
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
             public MigrateJob(
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> currentStream,
                 UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationStreamWriter,
-                ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-                NativeParallelHashMap<DataOwnerID, DataOwnerID> dataOwnerIDMapping,
-                NativeParallelHashMap<DataTargetID, DataTargetID> dataTargetIDMapping)
+                ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             {
                 m_CurrentStream = currentStream;
                 m_DestinationStreamWriter = destinationStreamWriter;
                 m_RemapArray = remapArray;
-                m_DataOwnerIDMapping = dataOwnerIDMapping;
-                m_DataTargetIDMapping = dataTargetIDMapping;
 
                 m_NativeThreadIndex = UNSET_ID;
             }
@@ -142,9 +135,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     }
 
                     //If we don't have a destination in the new world, then we can just let these cease to exist
-                    if (!destinationLaneWriter.IsCreated
-                        || !m_DataOwnerIDMapping.TryGetValue(instanceID.DataOwnerID, out DataOwnerID destinationDataOwnerID)
-                        || !m_DataTargetIDMapping.TryGetValue(instanceID.DataTargetID, out DataTargetID destinationDataTargetID))
+                    if (!destinationLaneWriter.IsCreated)
                     {
                         continue;
                     }

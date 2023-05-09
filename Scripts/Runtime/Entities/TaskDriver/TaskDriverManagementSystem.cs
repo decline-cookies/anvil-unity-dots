@@ -1,5 +1,4 @@
 using Anvil.CSharp.Collections;
-using Anvil.CSharp.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Collections.Generic;
@@ -15,64 +14,46 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: #86 - Revisit with Entities 1.0 for "Create Before/After"
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     internal partial class TaskDriverManagementSystem : AbstractAnvilSystemBase,
-                                                        IEntityWorldMigrationObserver
+                                                        IEntityWorldMigrationObserver,
+                                                        IDataOwner
     {
-        //TODO: MOVE THIS TO SHARED-STATIC so we can access in burst
+        //TODO: MOVE THIS TO SHARED-STATIC so we can access in burst and IMPLEMENT
         private readonly Dictionary<int, string> m_TaskSetOwnerDebugMapping;
 
-        private readonly Dictionary<DataOwnerID, ITaskSetOwner> m_TaskSetOwnersByUniqueID;
-        private readonly Dictionary<DataTargetID, AbstractData> m_DataStreamDataByUniqueID;
-        private readonly Dictionary<DataTargetID, AbstractPersistentData> m_PersistentDataByUniqueID;
-
+        private readonly WorldDataOwnerLookup<DataOwnerID, ITaskSetOwner> m_TaskSetOwners;
+        private readonly WorldDataOwnerLookup<DataTargetID, AbstractData> m_DataTargets;
 
         private readonly Dictionary<Type, IDataSource> m_EntityProxyDataSourcesByType;
-        private readonly HashSet<AbstractTaskDriver> m_AllTaskDrivers;
-        private readonly HashSet<AbstractTaskDriverSystem> m_AllTaskDriverSystems;
-        private readonly HashSet<IDataSource> m_AllDataSources;
-        
-        private readonly List<AbstractTaskDriver> m_TopLevelTaskDrivers;
         private readonly CancelRequestsDataSource m_CancelRequestsDataSource;
         private readonly CancelProgressDataSource m_CancelProgressDataSource;
         private readonly CancelCompleteDataSource m_CancelCompleteDataSource;
         private readonly List<CancelProgressFlow> m_CancelProgressFlows;
         private readonly Dictionary<Type, AccessController> m_UnityEntityDataAccessControllers;
-        private readonly TaskDriverMigrationData m_TaskDriverMigrationData;
-        
-        
-        private bool m_IsInitialized;
+
         private bool m_IsHardened;
         private BulkJobScheduler<IDataSource> m_EntityProxyDataSourceBulkJobScheduler;
         private BulkJobScheduler<CancelProgressFlow> m_CancelProgressFlowBulkJobScheduler;
+        private TaskDriverMigrationData m_TaskDriverMigrationData;
+
+        public DataOwnerID WorldUniqueID { get; }
 
         public TaskDriverManagementSystem()
         {
-            m_TaskSetOwnersByUniqueID = new Dictionary<DataOwnerID, ITaskSetOwner>();
-            m_DataStreamDataByUniqueID = new Dictionary<DataTargetID, AbstractData>();
-            m_PersistentDataByUniqueID = new Dictionary<DataTargetID, AbstractPersistentData>();
-            
-            m_EntityProxyDataSourcesByType = new Dictionary<Type, IDataSource>();
-            m_AllTaskDrivers = new HashSet<AbstractTaskDriver>();
-            m_AllTaskDriverSystems = new HashSet<AbstractTaskDriverSystem>();
+            m_TaskSetOwners = new WorldDataOwnerLookup<DataOwnerID, ITaskSetOwner>();
+            m_DataTargets = new WorldDataOwnerLookup<DataTargetID, AbstractData>();
 
-            m_AllDataSources = new HashSet<IDataSource>();
-            m_TopLevelTaskDrivers = new List<AbstractTaskDriver>();
+            m_EntityProxyDataSourcesByType = new Dictionary<Type, IDataSource>();
             m_CancelRequestsDataSource = new CancelRequestsDataSource(this);
             m_CancelProgressDataSource = new CancelProgressDataSource(this);
             m_CancelCompleteDataSource = new CancelCompleteDataSource(this);
             m_CancelProgressFlows = new List<CancelProgressFlow>();
             m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
-            
-            m_TaskDriverMigrationData = new TaskDriverMigrationData();
-            m_TaskDriverMigrationData.AddDataSource(m_CancelRequestsDataSource);
-            m_TaskDriverMigrationData.AddDataSource(m_CancelProgressDataSource);
-            m_TaskDriverMigrationData.AddDataSource(m_CancelCompleteDataSource);
-
-            m_AllDataSources.Add(m_CancelRequestsDataSource);
-            m_AllDataSources.Add(m_CancelProgressDataSource);
-            m_AllDataSources.Add(m_CancelCompleteDataSource);
 
             EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
             EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceID>();
+
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void OnCreate()
@@ -86,14 +67,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             base.OnStartRunning();
 
-            if (m_IsInitialized)
+            if (m_IsHardened)
             {
                 return;
             }
-
-            m_IsInitialized = true;
-
-            GenerateWorldUniqueIDs();
             Harden();
         }
 
@@ -104,40 +81,32 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressFlowBulkJobScheduler?.Dispose();
             m_CancelProgressFlows.DisposeAllAndTryClear();
             m_UnityEntityDataAccessControllers.DisposeAllValuesAndClear();
-            m_TaskDriverMigrationData.Dispose();
 
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
             m_CancelProgressDataSource.Dispose();
+            
+            m_TaskDriverMigrationData?.Dispose();
+            
 
             base.OnDestroy();
         }
 
-        private void GenerateWorldUniqueIDs()
-        {
-            //For all the TaskDrivers, filter to find the ones that don't have Parents.
-            //Those are our top level TaskDrivers
-            m_TopLevelTaskDrivers.AddRange(m_AllTaskDrivers.Where(taskDriver => taskDriver.Parent == null));
-            
-            //Trickle down and get all the ID's generated
-            foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
-            {
-                topLevelTaskDriver.GenerateWorldUniqueID(
-                    m_TaskSetOwnersByUniqueID,
-                    m_PersistentDataByUniqueID);
-            }
-            
-            //Then generate ID's for all the data
-            foreach (IDataSource dataSource in m_AllDataSources)
-            {
-                dataSource.GenerateWorldUniqueID(m_DataStreamDataByUniqueID);
-            }
-        }
-        
         private void Harden()
         {
             Debug_EnsureNotHardened();
             m_IsHardened = true;
+
+            HardenIDLookups();
+
+            //For all the TaskDrivers, filter to find the ones that don't have Parents.
+            //Those are our top level TaskDrivers
+            List<AbstractTaskDriver> topLevelTaskDrivers = m_TaskSetOwners
+                .Select(entry => entry.Value)
+                .Where(entry => entry.IsTaskDriver)
+                .Cast<AbstractTaskDriver>()
+                .Where(taskDriver => taskDriver.Parent == null)
+                .ToList();
 
             foreach (IDataSource dataSource in m_EntityProxyDataSourcesByType.Values)
             {
@@ -145,15 +114,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             m_EntityProxyDataSourceBulkJobScheduler = new BulkJobScheduler<IDataSource>(m_EntityProxyDataSourcesByType.Values.ToArray());
-            
+
             //Then tell each top level Task Driver to Harden - This will Harden the associated sub task driver and the Task Driver System
-            foreach (AbstractTaskDriver topLevelTaskDriver in m_TopLevelTaskDrivers)
+            foreach (AbstractTaskDriver topLevelTaskDriver in topLevelTaskDrivers)
             {
                 topLevelTaskDriver.Harden();
             }
 
+            List<AbstractTaskDriverSystem> taskDriverSystems = m_TaskSetOwners
+                .Select(entry => entry.Value)
+                .Where(taskSetOwner => taskSetOwner is AbstractTaskDriverSystem)
+                .Cast<AbstractTaskDriverSystem>()
+                .ToList();
+
             //All the data has been hardened, we can Harden the Update Phase for the Systems
-            foreach (AbstractTaskDriverSystem taskDriverSystem in m_AllTaskDriverSystems)
+            foreach (AbstractTaskDriverSystem taskDriverSystem in taskDriverSystems)
             {
                 taskDriverSystem.HardenUpdatePhase();
             }
@@ -165,29 +140,103 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             //Construct the CancelProgressFlows - Only create them if there is cancellable data
             m_CancelProgressFlows.AddRange(
-                m_TopLevelTaskDrivers.Where((topLevelTaskDriver) => ((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
+                topLevelTaskDrivers.Where((topLevelTaskDriver) => ((ITaskSetOwner)topLevelTaskDriver).HasCancellableData)
                     .Select((topLevelTaskDriver) => new CancelProgressFlow(topLevelTaskDriver)));
 
             m_CancelProgressFlowBulkJobScheduler = new BulkJobScheduler<CancelProgressFlow>(m_CancelProgressFlows.ToArray());
-            
-            //Build the Migration Data for this world
-            m_TaskDriverMigrationData.PopulateMigrationLookup(World, m_TopLevelTaskDrivers);
+
+            List<IDataSource> dataSources = new List<IDataSource>(m_EntityProxyDataSourcesByType.Values);
+            dataSources.Add(m_CancelRequestsDataSource);
+            dataSources.Add(m_CancelProgressDataSource);
+            dataSources.Add(m_CancelCompleteDataSource);
+            m_TaskDriverMigrationData = new TaskDriverMigrationData(dataSources);
         }
 
-        public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
+        private void HardenIDLookups()
+        {
+            m_TaskSetOwners.Harden();
+            m_DataTargets.Harden();
+        }
+
+        //*************************************************************************************************************
+        // INIT
+        //*************************************************************************************************************
+
+        public void InitRegisterTaskDriver(AbstractTaskDriver taskDriver, string uniqueContextIdentifier)
+        {
+            Debug_EnsureNotHardened();
+            m_TaskSetOwners.InitAdd(taskDriver, taskDriver.Parent == null ? this : taskDriver.Parent, uniqueContextIdentifier);
+            m_TaskSetOwners.InitAdd(taskDriver.TaskDriverSystem, this, string.Empty);
+        }
+
+        public EntityProxyDataSource<TInstance> InitGetOrCreateEntityProxyDataSource<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
+            Debug_EnsureNotHardened();
             Type type = typeof(TInstance);
             if (!m_EntityProxyDataSourcesByType.TryGetValue(type, out IDataSource dataSource))
             {
                 dataSource = new EntityProxyDataSource<TInstance>(this);
                 m_EntityProxyDataSourcesByType.Add(type, dataSource);
-                m_AllDataSources.Add(dataSource);
-                m_TaskDriverMigrationData.AddDataSource(dataSource);
             }
-
             return (EntityProxyDataSource<TInstance>)dataSource;
         }
+
+        public PendingData<T> InitCreatePendingData<T>(string uniqueContextIdentifier)
+            where T : unmanaged, IEquatable<T>
+        {
+            Debug_EnsureNotHardened();
+            return m_DataTargets.InitCreate(InitCreatePendingDataInstance<T>, this, uniqueContextIdentifier);
+        }
+
+        private PendingData<T> InitCreatePendingDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+            where T : unmanaged, IEquatable<T>
+        {
+            return new PendingData<T>(dataOwner, uniqueContextIdentifier);
+        }
+
+        public ActiveArrayData<T> InitCreateActiveArrayData<T>(
+            IDataOwner dataOwner,
+            CancelRequestBehaviour cancelRequestBehaviour,
+            AbstractData pendingCancelData,
+            string uniqueContextIdentifier)
+            where T : unmanaged, IEquatable<T>
+        {
+            Debug_EnsureNotHardened();
+            return m_DataTargets.InitCreate(
+                (createDataOwner, createUniqueContextIdentifier) => new ActiveArrayData<T>(
+                    createDataOwner,
+                    cancelRequestBehaviour,
+                    pendingCancelData,
+                    createUniqueContextIdentifier),
+                dataOwner,
+                uniqueContextIdentifier);
+        }
+
+        public ActiveLookupData<T> InitCreateActiveLookupData<T>(
+            IDataOwner dataOwner,
+            CancelRequestBehaviour cancelRequestBehaviour,
+            string uniqueContextIdentifier)
+            where T : unmanaged, IEquatable<T>
+        {
+            Debug_EnsureNotHardened();
+            return m_DataTargets.InitCreate(
+                (createDataOwner, createUniqueContextIdentifier) => new ActiveLookupData<T>(
+                    createDataOwner,
+                    cancelRequestBehaviour,
+                    createUniqueContextIdentifier),
+                dataOwner,
+                uniqueContextIdentifier);
+        }
+
+        public bool TryGetActiveLookupDataByID<T>(DataTargetID dataTargetID, out ActiveLookupData<T> lookupData)
+            where T : unmanaged, IEquatable<T>
+        {
+            bool doesExist = m_DataTargets.TryGetData(dataTargetID, out AbstractData data);
+            lookupData = data as ActiveLookupData<T>;
+            return doesExist;
+        }
+
 
         public CancelRequestsDataSource GetCancelRequestsDataSource()
         {
@@ -204,12 +253,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return m_CancelProgressDataSource;
         }
 
-        public void RegisterTaskDriver(AbstractTaskDriver taskDriver)
-        {
-            Debug_EnsureNotHardened();
-            m_AllTaskDrivers.Add(taskDriver);
-            m_AllTaskDriverSystems.Add(taskDriver.TaskDriverSystem);
-        }
 
         public AccessController GetOrCreateCDFEAccessController<T>()
             where T : struct, IComponentData
@@ -261,7 +304,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Dependency = dependsOn;
         }
-        
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
@@ -271,7 +314,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
 
-            return m_TaskDriverMigrationData.MigrateTo(dependsOn, destinationWorld, destinationTaskDriverManagementSystem.m_TaskDriverMigrationData, ref remapArray);
+            return m_TaskDriverMigrationData.MigrateTo(
+                dependsOn, 
+                destinationTaskDriverManagementSystem.m_TaskDriverMigrationData, 
+                ref remapArray);
         }
 
         //*************************************************************************************************************
@@ -286,7 +332,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Expected {this} to not yet be Hardened but {nameof(Harden)} has already been called!");
             }
         }
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureOtherWorldTaskDriverManagementSystemExists(World destinationWorld, TaskDriverManagementSystem taskDriverManagementSystem)
         {

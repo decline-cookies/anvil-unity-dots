@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.DataTargetID} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.DataTargetID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID}";
+            return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.DataTargetID} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.WorldUniqueID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID}";
         }
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
@@ -72,7 +72,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 m_ProgressLookupData.Lookup,
                 m_CancelCompleteData.PendingWriter,
                 m_CancelCompleteDataTargetID,
-                m_ProgressLookupData.TaskSetOwner.WorldUniqueID,
+                m_ProgressLookupData.DataOwner.WorldUniqueID,
                 m_Parent != null ? m_ParentProgressLookupData.Lookup : default);
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);

@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override DataTargetID DataTargetID
         {
-            get => m_ActiveArrayData.DataTargetID;
+            get => m_ActiveArrayData.WorldUniqueID;
         }
 
         public override IDataSource DataSource
@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataTargetID PendingCancelDataTargetID
         {
-            get => m_PendingCancelActiveArrayData.DataTargetID;
+            get => m_PendingCancelActiveArrayData.WorldUniqueID;
         }
 
         public Type InstanceType { get; }
@@ -48,7 +48,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
+            m_DataSource = taskDriverManagementSystem.InitGetOrCreateEntityProxyDataSource<TInstance>();
 
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
 
@@ -158,7 +158,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataStreamPendingWriter<TInstance> CreateDataStreamPendingWriter()
         {
-            return new DataStreamPendingWriter<TInstance>(m_DataSource.PendingWriter, TaskSetOwner.WorldUniqueID, m_ActiveArrayData.DataTargetID);
+            return new DataStreamPendingWriter<TInstance>(m_DataSource.PendingWriter, TaskSetOwner.WorldUniqueID, m_ActiveArrayData.WorldUniqueID);
         }
 
         public DataStreamActiveReader<TInstance> CreateDataStreamActiveReader()

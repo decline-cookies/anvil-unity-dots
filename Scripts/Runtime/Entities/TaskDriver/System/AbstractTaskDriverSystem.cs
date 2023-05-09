@@ -17,7 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
 
-        private DataOwnerID m_WorldUniqueID;
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
@@ -28,20 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public new World World { get; }
         internal TaskSet TaskSet { get; }
 
-        internal DataOwnerID WorldUniqueID
-        {
-            get
-            {
-                //Make sure we're only calling this after we've generated the ID
-                Debug.Assert(m_WorldUniqueID.IsValid);
-                return m_WorldUniqueID;
-            }
-        }
-
-        DataOwnerID IDataOwner.WorldUniqueID
-        {
-            get => WorldUniqueID;
-        }
+        internal DataOwnerID WorldUniqueID { get; }
 
         internal ISystemCancelRequestDataStream CancelRequestDataStream
         {
@@ -81,10 +67,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => EMPTY_SUB_TASK_DRIVERS;
         }
+        
+        DataOwnerID IWorldUniqueID<DataOwnerID>.WorldUniqueID
+        {
+            get => WorldUniqueID;
+        }
+
+        bool ITaskSetOwner.IsTaskDriver { get => false; }
+        bool ITaskSetOwner.IsTaskSystem { get => true; }
 
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;
+            
+            //We can do this right away because we don't have a parent
+            //There can only be one of these systems per world, so we can just use our type
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
+            
             m_TaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
         }
@@ -109,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{m_WorldUniqueID}";
+            return $"{GetType().GetReadableName()}|{WorldUniqueID}";
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -186,23 +186,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // HARDENING
         //*************************************************************************************************************
 
-        internal void GenerateWorldUniqueID(
-            Dictionary<DataOwnerID, ITaskSetOwner> taskSetOwnersByUniqueID,
-            Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
-        {
-            //This will get called multiple times but we only want to calculate once
-            if (m_WorldUniqueID.IsValid)
-            {
-                return;
-            }
-            //There can only be one of these systems per world, so we can just use our type
-            string idPath = $"{GetType().AssemblyQualifiedName}";
-            m_WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
-            taskSetOwnersByUniqueID.Add(m_WorldUniqueID, this);
-            
-            TaskSet.GenerateWorldUniqueID(persistentDataByUniqueID);
-        }
-        
         internal void Harden()
         {
             //This will get called multiple times but we only want to actually harden once

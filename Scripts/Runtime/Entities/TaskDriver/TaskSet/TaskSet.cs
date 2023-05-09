@@ -3,7 +3,7 @@ using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Burst;
+using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -14,12 +14,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
         private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
-        private readonly Dictionary<Type, IMigratablePersistentData> m_MigratableEntityPersistentDataByType;
-
-        private readonly HashSet<AbstractPersistentData> m_AllPersistentData;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
+        private readonly PersistentDataSystem m_PersistentDataSystem;
+        private readonly TaskDriverManagementSystem m_TaskDriverManagementSystem;
 
         private bool m_IsHardened;
 
@@ -40,14 +39,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TaskSet(ITaskSetOwner taskSetOwner)
         {
             TaskSetOwner = taskSetOwner;
+
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
+            m_TaskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
-            m_AllPersistentData = new HashSet<AbstractPersistentData>();
-
             m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
             m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            m_MigratableEntityPersistentDataByType = new Dictionary<Type, IMigratablePersistentData>();
 
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
@@ -63,19 +63,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
-            m_MigratableEntityPersistentDataByType.DisposeAllValuesAndClear();
+            //TODO: Figure out who has the responsibility to dispose
+            // m_PersistentDataSystem.DisposeEntityPersistentDataOwnedBy(TaskSetOwner);
 
             base.DisposeSelf();
-        }
-
-        public void GenerateWorldUniqueID(Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
-        {
-            foreach (AbstractPersistentData persistentData in m_AllPersistentData)
-            {
-                persistentData.GenerateWorldUniqueID();
-                Debug_EnsureNoDuplicates(persistentData, persistentDataByUniqueID);
-                persistentDataByUniqueID.Add(persistentData.DataTargetID, persistentData);
-            }
         }
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
@@ -118,6 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
 
+            //TODO: Need to use the local ID aspect of this since Type could be duplicated
             m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
 
             return dataStream;
@@ -126,22 +118,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            Type type = typeof(T);
-            if (!m_MigratableEntityPersistentDataByType.TryGetValue(type, out IMigratablePersistentData persistentData))
-            {
-                persistentData = CreateEntityPersistentData<T>(uniqueContextIdentifier);
-            }
-
-            return (EntityPersistentData<T>)persistentData;
+            return m_PersistentDataSystem.InitGetOrCreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
         }
 
         public EntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
-            m_AllPersistentData.Add(entityPersistentData);
-            m_MigratableEntityPersistentDataByType.Add(typeof(T), entityPersistentData);
-            return entityPersistentData;
+            return m_PersistentDataSystem.InitCreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
         }
 
         public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)
@@ -282,67 +265,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //*************************************************************************************************************
-        // MIGRATION
-        //*************************************************************************************************************
-
-        public void AddToMigrationLookup(
-            string parentPath,
-            Dictionary<string, DataTargetID> migrationDataTargetIDLookup,
-            PersistentDataSystem persistentDataSystem)
-        {
-            foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
-            {
-                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.Key), entry.Value.DataTargetID, migrationDataTargetIDLookup);
-            }
-
-            foreach (ICancellableDataStream entry in m_DataStreamsWithExplicitCancellation)
-            {
-                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.InstanceType) ^ BurstRuntime.GetHashCode64<ICancellableDataStream>(), entry.PendingCancelDataTargetID, migrationDataTargetIDLookup);
-            }
-
-            AddToMigrationLookup(
-                parentPath,
-                BurstRuntime.GetHashCode64(typeof(CancelRequestsDataStream)),
-                CancelRequestsDataStream.DataTargetID,
-                migrationDataTargetIDLookup);
-
-            AddToMigrationLookup(
-                parentPath,
-                BurstRuntime.GetHashCode64(typeof(CancelProgressDataStream)),
-                CancelProgressDataStream.DataTargetID,
-                migrationDataTargetIDLookup);
-
-            AddToMigrationLookup(
-                parentPath,
-                BurstRuntime.GetHashCode64(typeof(CancelCompleteDataStream)),
-                CancelCompleteDataStream.DataTargetID,
-                migrationDataTargetIDLookup);
-
-            foreach (IMigratablePersistentData entry in m_MigratableEntityPersistentDataByType.Values)
-            {
-                persistentDataSystem.AddToMigrationLookup(parentPath, entry);
-            }
-        }
-
-        private void AddToMigrationLookup(string parentPath, long typeHash, DataTargetID dataTargetID, Dictionary<string, DataTargetID> migrationDataTargetIDLookup)
-        {
-            string path = $"{parentPath}-{typeHash}";
-            Debug_EnsureNoDuplicateMigrationData(path, migrationDataTargetIDLookup);
-            migrationDataTargetIDLookup.Add(path, dataTargetID);
-        }
-
-        //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-
-        [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, DataTargetID> migrationDataTargetIDLookup)
-        {
-            if (migrationDataTargetIDLookup.ContainsKey(path))
-            {
-                throw new InvalidOperationException($"Trying to add DataTargetID migration data for {this} but {path} is already in the lookup!");
-            }
-        }
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
@@ -356,9 +280,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNoDuplicates(AbstractPersistentData persistentData, Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
         {
-            if (persistentDataByUniqueID.ContainsKey(persistentData.DataTargetID))
+            if (persistentDataByUniqueID.ContainsKey(persistentData.WorldUniqueID))
             {
-                throw new InvalidOperationException($"Persistent Data {persistentData} with TaskSetOwner of {TaskSetOwner} has ID of {persistentData.DataTargetID} but it already exists in the lookup. Please set a Unique Context Identifier.");
+                throw new InvalidOperationException($"Persistent Data {persistentData} with TaskSetOwner of {TaskSetOwner} has ID of {persistentData.WorldUniqueID} but it already exists in the lookup. Please set a Unique Context Identifier.");
             }
         }
 

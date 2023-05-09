@@ -6,12 +6,10 @@ namespace Anvil.Unity.DOTS.Entities
 {
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct DataTargetID : IEquatable<DataTargetID>
+    internal readonly struct DataTargetID : IEquatable<DataTargetID>
     {
-        private static readonly DataTargetID UNSET_DATA_TARGET_ID = default; 
-        // public static implicit operator DataTargetID(int id) => new DataTargetID(id);
-        // public static implicit operator int(DataTargetID id) => id.m_Value;
-        
+        private static readonly DataTargetID UNSET_DATA_TARGET_ID = default;
+
         public static bool operator ==(DataTargetID lhs, DataTargetID rhs)
         {
             return lhs.m_Value == rhs.m_Value && lhs.m_Value == rhs.m_Value;

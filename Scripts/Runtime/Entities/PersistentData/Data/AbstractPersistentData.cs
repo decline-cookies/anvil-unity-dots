@@ -7,19 +7,23 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal abstract class AbstractPersistentData : AbstractAnvilBase
+    internal abstract class AbstractPersistentData : AbstractAnvilBase,
+                                                     IWorldUniqueID<DataTargetID>
     {
         private readonly AccessController m_AccessController;
         private readonly string m_UniqueContextIdentifier;
         private readonly IDataOwner m_DataOwner;
-        private DataTargetID m_DataTargetID;
+        private DataTargetID m_WorldUniqueID;
         
-        public DataTargetID DataTargetID
+        public DataTargetID WorldUniqueID
         {
             get
             {
-                Debug.Assert(m_DataTargetID.IsValid);
-                return m_DataTargetID;
+                if (!m_WorldUniqueID.IsValid)
+                {
+                    m_WorldUniqueID = GenerateWorldUniqueID();
+                }
+                return m_WorldUniqueID;
             }
         }
 
@@ -45,11 +49,11 @@ namespace Anvil.Unity.DOTS.Entities
             return $"{GetType().GetReadableName()}";
         }
 
-        public void GenerateWorldUniqueID()
+        private DataTargetID GenerateWorldUniqueID()
         {
             Debug.Assert(m_DataOwner == null || m_DataOwner.WorldUniqueID.IsValid);
             string idPath = $"{(m_DataOwner != null ? m_DataOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
-            m_DataTargetID = new DataTargetID(idPath.GetBurstHashCode32());
+            return new DataTargetID(idPath.GetBurstHashCode32());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

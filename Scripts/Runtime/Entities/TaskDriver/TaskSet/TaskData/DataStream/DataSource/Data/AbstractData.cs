@@ -8,33 +8,37 @@ using UnityEngine;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Too many responsibilities
-    internal abstract class AbstractData : AbstractAnvilBase
+    internal abstract class AbstractData : AbstractAnvilBase,
+                                           IWorldUniqueID<DataTargetID>
     {
         private readonly AccessController m_AccessController;
         private readonly string m_UniqueContextIdentifier;
 
-        public DataTargetID DataTargetID
+        public DataTargetID WorldUniqueID
         {
             get
             {
-                Debug.Assert(m_DataTargetID.IsValid);
-                return m_DataTargetID;
+                if (!m_WorldUniqueID.IsValid)
+                {
+                    m_WorldUniqueID = GenerateWorldUniqueID();
+                }
+                return m_WorldUniqueID;
             }
         }
         public CancelRequestBehaviour CancelRequestBehaviour { get; }
 
-        public ITaskSetOwner TaskSetOwner { get; }
+        public IDataOwner DataOwner { get; }
 
         public AbstractData PendingCancelActiveData { get; }
 
-        private DataTargetID m_DataTargetID;
+        private DataTargetID m_WorldUniqueID;
 
 
-        protected AbstractData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData, string uniqueContextIdentifier)
+        protected AbstractData(IDataOwner dataOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData, string uniqueContextIdentifier)
         {
             m_AccessController = new AccessController();
             m_UniqueContextIdentifier = uniqueContextIdentifier;
-            TaskSetOwner = taskSetOwner;
+            DataOwner = dataOwner;
             CancelRequestBehaviour = cancelRequestBehaviour;
             PendingCancelActiveData = pendingCancelActiveData;
         }
@@ -53,11 +57,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{GetType().GetReadableName()}";
         }
         
-        public void GenerateWorldUniqueID()
+        private DataTargetID GenerateWorldUniqueID()
         {
-            Debug.Assert(TaskSetOwner == null || TaskSetOwner.WorldUniqueID.IsValid);
-            string idPath = $"{(TaskSetOwner != null ? TaskSetOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
-            m_DataTargetID = new DataTargetID(idPath.GetBurstHashCode32());
+            Debug.Assert(DataOwner == null || DataOwner.WorldUniqueID.IsValid);
+            string idPath = $"{(DataOwner != null ? DataOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
+            return new DataTargetID(idPath.GetBurstHashCode32());
         }
 
         protected abstract void DisposeData();

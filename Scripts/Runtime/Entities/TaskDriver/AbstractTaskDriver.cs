@@ -66,10 +66,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get
             {
-                //Make sure we're only calling this after we've generated the ID
-                Debug.Assert(m_WorldUniqueID.IsValid);
+                //Lazy create the ID and traverse up the parent tree to lazy create theirs if not already done
+                if (!m_WorldUniqueID.IsValid)
+                {
+                    m_WorldUniqueID = GenerateWorldUniqueID();
+                }
                 return m_WorldUniqueID;
             }
+        }
+        
+        protected ITaskDriverSystem System
+        {
+            get => new ContextTaskDriverSystemWrapper(TaskDriverSystem, this);
         }
 
         AbstractTaskDriverSystem ITaskSetOwner.TaskDriverSystem
@@ -82,7 +90,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => TaskSet;
         }
 
-        DataOwnerID IDataOwner.WorldUniqueID
+        DataOwnerID IWorldUniqueID<DataOwnerID>.WorldUniqueID
         {
             get => WorldUniqueID;
         }
@@ -101,10 +109,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        protected ITaskDriverSystem System
-        {
-            get => new ContextTaskDriverSystemWrapper(TaskDriverSystem, this);
-        }
+        bool ITaskSetOwner.IsTaskDriver { get => true; }
+        bool ITaskSetOwner.IsTaskSystem { get => false; }
 
         /// <summary>
         /// Creates a new instance of a <see cref="AbstractTaskDriver"/>
@@ -147,7 +153,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             TaskDriverSystem.RegisterTaskDriver(this);
-            taskDriverManagementSystem.RegisterTaskDriver(this);
+            taskDriverManagementSystem.InitRegisterTaskDriver(this, m_UniqueContextIdentifier);
         }
 
         protected override void DisposeSelf()
@@ -215,14 +221,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected IWorldEntityPersistentData<T> GetOrCreateWorldEntityPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.InitGetOrCreateEntityPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
             return entityPersistentData;
         }
 
         protected IThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.GetOrCreateThreadPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.InitGetOrCreateThreadPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
             return threadPersistentData;
         }
 
@@ -275,29 +281,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // HARDENING
         //*************************************************************************************************************
 
-        internal void GenerateWorldUniqueID(
-            Dictionary<DataOwnerID, ITaskSetOwner> taskSetOwnersByUniqueID,
-            Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
+        private DataOwnerID GenerateWorldUniqueID()
         {
             //If we have a parent, we include their id in ours, otherwise we're top level.
             string idPath = $"{(Parent != null ? Parent.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{m_UniqueContextIdentifier}";
-            m_WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
-            taskSetOwnersByUniqueID.Add(m_WorldUniqueID, this);
-
-            TaskSet.GenerateWorldUniqueID(persistentDataByUniqueID);
-
-            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
-            {
-                subTaskDriver.GenerateWorldUniqueID(
-                    taskSetOwnersByUniqueID,
-                    persistentDataByUniqueID);
-            }
-
-            TaskDriverSystem.GenerateWorldUniqueID(
-                taskSetOwnersByUniqueID,
-                persistentDataByUniqueID);
+            return new DataOwnerID(idPath.GetBurstHashCode32());
         }
-        
+
         internal void Harden()
         {
             Debug_EnsureNotHardened();
@@ -329,40 +319,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         void ITaskSetOwner.AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
         {
             TaskSet.AddResolvableDataStreamsTo(type, dataStreams);
-        }
-
-        //*************************************************************************************************************
-        // MIGRATION
-        //*************************************************************************************************************
-
-        internal void AddToMigrationLookup(
-            string parentPath,
-            Dictionary<string, DataOwnerID> migrationDataOwnerIDLookup,
-            Dictionary<string, DataTargetID> migrationDataTargetIDLookup,
-            PersistentDataSystem persistentDataSystem)
-        {
-            //Construct the unique path for this TaskDriver. By default, out unique migration suffix is empty but if we
-            //conflict with another, then we'll need to get the user to provide one.
-            string typeName = GetType().AssemblyQualifiedName;
-            string path = $"{parentPath}{typeName}{m_UniqueContextIdentifier}-";
-            Debug_EnsureNoDuplicateMigrationData(path, migrationDataOwnerIDLookup);
-            migrationDataOwnerIDLookup.Add(path, m_WorldUniqueID);
-
-            //Get our TaskSet to populate all the possible DataTargetIDs
-            TaskSet.AddToMigrationLookup(path, migrationDataTargetIDLookup, persistentDataSystem);
-
-            //Try and do the same for our system (there can only be one), will gracefully fail if we have already done this
-            string systemPath = $"{typeName}-System";
-            if (migrationDataOwnerIDLookup.TryAdd(systemPath, TaskDriverSystem.WorldUniqueID))
-            {
-                TaskDriverSystem.TaskSet.AddToMigrationLookup(systemPath, migrationDataTargetIDLookup, persistentDataSystem);
-            }
-
-            //Then recurse downward to catch all the sub task drivers
-            foreach (AbstractTaskDriver subTaskDriver in m_SubTaskDrivers)
-            {
-                subTaskDriver.AddToMigrationLookup(path, migrationDataOwnerIDLookup, migrationDataTargetIDLookup, persistentDataSystem);
-            }
         }
 
         //*************************************************************************************************************

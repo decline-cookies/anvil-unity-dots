@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities
 {
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct DataOwnerID : IEquatable<DataOwnerID>
+    internal readonly struct DataOwnerID : IEquatable<DataOwnerID>
     {
         private static readonly DataOwnerID UNSET_DATA_OWNER_ID = default;
 

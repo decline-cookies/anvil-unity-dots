@@ -26,12 +26,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public ActiveArrayData(
-            ITaskSetOwner taskSetOwner, 
+            IDataOwner dataOwner, 
             CancelRequestBehaviour cancelRequestBehaviour, 
             AbstractData pendingCancelActiveData,
             string uniqueContextIdentifier) 
             : base(
-                taskSetOwner, 
+                dataOwner, 
                 cancelRequestBehaviour, 
                 pendingCancelActiveData, 
                 uniqueContextIdentifier)
