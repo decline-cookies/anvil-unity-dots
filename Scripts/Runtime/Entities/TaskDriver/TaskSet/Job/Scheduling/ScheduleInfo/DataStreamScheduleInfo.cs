@@ -20,7 +20,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal DataStreamActiveReader<TInstance> Reader
         {
-            get => m_JobData.GetDataStreamReader<TInstance>();
+            get
+            {
+                m_JobData.Fulfill(out DataStreamActiveReader<TInstance> stream);
+                return stream;
+            }
         }
 
         internal DataStreamScheduleInfo(

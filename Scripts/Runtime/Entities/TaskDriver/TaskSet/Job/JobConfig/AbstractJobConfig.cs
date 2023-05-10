@@ -473,22 +473,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return genericDataAccessWrapper.Data;
         }
 
-        internal ThreadPersistentData<TData> GetThreadPersistentData<TData>()
+        internal void Fulfill<TData>(out ThreadPersistentData<TData> instance)
             where TData : unmanaged, IThreadPersistentDataInstance
         {
             PersistentDataAccessWrapper<ThreadPersistentData<TData>> persistentDataAccessWrapper
                 = GetAccessWrapper<PersistentDataAccessWrapper<ThreadPersistentData<TData>>>(Usage.Default);
 
-            return persistentDataAccessWrapper.PersistentData;
+            instance = persistentDataAccessWrapper.PersistentData;
         }
 
-        internal EntityPersistentData<TData> GetEntityPersistentData<TData>()
+        internal void Fulfill<TData>(out EntityPersistentData<TData> instance)
             where TData : unmanaged, IEntityPersistentDataInstance
         {
             PersistentDataAccessWrapper<EntityPersistentData<TData>> persistentDataAccessWrapper
                 = GetAccessWrapper<PersistentDataAccessWrapper<EntityPersistentData<TData>>>(Usage.Default);
 
-            return persistentDataAccessWrapper.PersistentData;
+            instance = persistentDataAccessWrapper.PersistentData;
         }
 
         internal NativeArray<Entity> GetEntityNativeArrayFromQuery()
@@ -508,32 +508,32 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return entityQueryAccessWrapper.NativeArray;
         }
 
-        internal CDFEReader<T> GetCDFEReader<T>()
+        internal void Fulfill<T>(out CDFEReader<T> instance)
             where T : struct, IComponentData
         {
             CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Default);
-            return cdfeAccessWrapper.CreateCDFEReader();
+            instance = cdfeAccessWrapper.CreateCDFEReader();
         }
 
-        internal CDFEWriter<T> GetCDFEWriter<T>()
+        internal void Fulfill<T>(out CDFEWriter<T> instance)
             where T : struct, IComponentData
         {
             CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Default);
-            return cdfeAccessWrapper.CreateCDFEUpdater();
+            instance = cdfeAccessWrapper.CreateCDFEUpdater();
         }
 
-        internal DBFEForRead<T> GetDBFEForRead<T>()
+        internal void Fulfill<T>(out DBFEForRead<T> instance)
             where T : struct, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
-            return dynamicBufferAccessWrapper.CreateDynamicBufferReader();
+            instance = dynamicBufferAccessWrapper.CreateDynamicBufferReader();
         }
 
-        internal DBFEForExclusiveWrite<T> GetDBFEForExclusiveWrite<T>()
+        internal void Fulfill<T>(out DBFEForExclusiveWrite<T> instance)
             where T : struct, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
-            return dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
+            instance = dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
         }
 
         //*************************************************************************************************************
