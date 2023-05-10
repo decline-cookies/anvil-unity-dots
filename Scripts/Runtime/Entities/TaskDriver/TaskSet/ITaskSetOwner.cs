@@ -12,8 +12,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public List<AbstractTaskDriver> SubTaskDrivers { get; }
 
         public bool HasCancellableData { get; }
-        public bool IsTaskDriver { get; }
-        public bool IsTaskSystem { get; }
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams);
     }

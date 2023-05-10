@@ -131,8 +131,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureNotHardened();
             m_IsHardened = true;
 
-            //TODO: Generate ID's and Register with TaskDriverManagementSystem
-
             //Allow derived classes to add to the Consolidation Data if they need to.
             HardenSelf();
 

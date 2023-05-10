@@ -42,11 +42,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_WorldLookup.Clear();
             base.DisposeSelf();
         }
-
-        //*************************************************************************************************************
-        // INIT
-        //*************************************************************************************************************
-
+        
         public void Add<TSpecificData>(TSpecificData data, IDataOwner dataOwner)
             where TSpecificData : TBaseData
         {

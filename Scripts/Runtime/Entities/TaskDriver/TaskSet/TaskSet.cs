@@ -1,5 +1,6 @@
 using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,11 +13,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class TaskSet : AbstractAnvilBase
     {
         private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
-        private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
         private readonly PersistentDataSystem m_PersistentDataSystem;
+
+        private readonly Dictionary<DataTargetID, AbstractDataStream> m_DataStreamLookupByID;
+        private readonly Dictionary<Type, int> m_Debug_TypeCount;
 
         private bool m_IsHardened;
 
@@ -40,11 +43,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
 
+            //This is temporary until we refactor DataStreams and AbstractData as part of #241 
+            m_DataStreamLookupByID = new Dictionary<DataTargetID, AbstractDataStream>();
+            m_Debug_TypeCount = new Dictionary<Type, int>();
+
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
             m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
-            m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
 
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
@@ -66,7 +72,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
         {
-            if (!m_PublicDataStreamsByType.TryGetValue(type, out AbstractDataStream dataStream))
+            if (m_Debug_TypeCount.TryGetValue(type, out int count) && count > 1)
+            {
+                throw new InvalidOperationException($"Trying to get resolvable data streams for the type {type.GetReadableName()} but there are more than one. We don't support this at this time!");
+            }
+            
+            Type genericTypeArrayData = typeof(ActiveArrayData<>);
+            Type genericTypeEntityProxyWrapperType = typeof(EntityProxyInstanceWrapper<>);
+
+            Type specificEntityProxyWrapperType = genericTypeEntityProxyWrapperType.MakeGenericType(type);
+            Type specificArrayType = genericTypeArrayData.MakeGenericType(specificEntityProxyWrapperType);
+            
+            //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, specificArrayType, string.Empty);
+            
+            if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
                 return;
             }
@@ -77,8 +97,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            Type instanceType = typeof(TInstance);
-            if (!m_PublicDataStreamsByType.TryGetValue(instanceType, out AbstractDataStream dataStream))
+            //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
+            
+            if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
                 dataStream = CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
             }
@@ -89,6 +111,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             where TInstance : unmanaged, IEntityProxyInstance
         {
+            //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
+
+            
             EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
             switch (cancelRequestBehaviour)
             {
@@ -104,8 +130,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
 
-            //TODO: Need to use the local ID aspect of this since Type could be duplicated
-            m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
+            
+            m_DataStreamLookupByID.Add(targetID, dataStream);
+
+            Type instanceType = typeof(TInstance);
+            if (!m_Debug_TypeCount.TryGetValue(instanceType, out int count))
+            {
+                m_Debug_TypeCount[instanceType] = 0;
+            }
+            m_Debug_TypeCount[instanceType] = count + 1;
 
             return dataStream;
         }

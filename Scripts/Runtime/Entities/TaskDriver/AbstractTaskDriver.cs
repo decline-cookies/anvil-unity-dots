@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Entities;
-using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -95,14 +94,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        bool ITaskSetOwner.IsTaskDriver { get => true; }
-        bool ITaskSetOwner.IsTaskSystem { get => false; }
-
         /// <summary>
         /// Creates a new instance of a <see cref="AbstractTaskDriver"/>
         /// </summary>
         /// <param name="world">The <see cref="World"/> this Task Driver is a part of.</param>
-        /// <param name="parent">TODO: IMPLEMENT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</param>
+        /// <param name="parent">The parent <see cref="AbstractTaskDriver"/> if it exists</param>
         /// <param name="uniqueContextIdentifier">
         /// An optional unique identifier to identify this TaskDriver by. This is necessary when there are two or more of the
         /// same type of TaskDrivers at the same level in the hierarchy.
@@ -121,7 +117,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Parent = parent;
             Parent?.m_SubTaskDrivers.Add(this);
             WorldUniqueID = GenerateWorldUniqueID(uniqueContextIdentifier);
-            
+
             TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_PersistentDataSystem = World.GetOrCreateSystem<PersistentDataSystem>();
 
@@ -303,15 +299,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, DataOwnerID> migrationDataOwnerIDLookup)
-        {
-            if (migrationDataOwnerIDLookup.ContainsKey(path))
-            {
-                throw new InvalidOperationException($"TaskDriver {this} at path {path} already exists. There are two or more of the same task driver at the same level. They will require a unique migration suffix to be set in their constructor.");
-            }
-        }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()

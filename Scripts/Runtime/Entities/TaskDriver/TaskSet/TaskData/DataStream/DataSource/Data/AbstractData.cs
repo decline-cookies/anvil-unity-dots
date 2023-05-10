@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
 using UnityEngine;
@@ -11,6 +12,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal abstract class AbstractData : AbstractAnvilBase,
                                            IWorldUniqueID<DataTargetID>
     {
+        private static readonly Type ABSTRACT_DATA_TYPE = typeof(AbstractData);
+        
+        public static DataTargetID GenerateWorldUniqueID(IDataOwner dataOwner, Type abstractDataType, string uniqueContextIdentifier)
+        {
+            Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
+            Debug.Assert(ABSTRACT_DATA_TYPE.IsAssignableFrom(abstractDataType));
+            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{abstractDataType.AssemblyQualifiedName}{uniqueContextIdentifier}";
+            return new DataTargetID(idPath.GetBurstHashCode32());
+        }
+        
         private readonly AccessController m_AccessController;
 
         public DataTargetID WorldUniqueID { get; }
@@ -29,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             DataOwner = dataOwner;
             CancelRequestBehaviour = cancelRequestBehaviour;
             PendingCancelActiveData = pendingCancelActiveData;
-            WorldUniqueID = GenerateWorldUniqueID(uniqueContextIdentifier);
+            WorldUniqueID = GenerateWorldUniqueID(DataOwner, GetType(), uniqueContextIdentifier);
         }
 
         protected sealed override void DisposeSelf()
@@ -44,13 +55,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public override string ToString()
         {
             return $"{GetType().GetReadableName()}";
-        }
-        
-        private DataTargetID GenerateWorldUniqueID(string uniqueContextIdentifier)
-        {
-            Debug.Assert(DataOwner == null || DataOwner.WorldUniqueID.IsValid);
-            string idPath = $"{(DataOwner != null ? DataOwner.WorldUniqueID : string.Empty)}/{GetType().AssemblyQualifiedName}{uniqueContextIdentifier}";
-            return new DataTargetID(idPath.GetBurstHashCode32());
         }
 
         protected abstract void DisposeData();

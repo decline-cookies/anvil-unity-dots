@@ -73,9 +73,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => WorldUniqueID;
         }
 
-        bool ITaskSetOwner.IsTaskDriver { get => false; }
-        bool ITaskSetOwner.IsTaskSystem { get => true; }
-
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;

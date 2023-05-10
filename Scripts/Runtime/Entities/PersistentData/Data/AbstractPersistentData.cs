@@ -12,6 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
                                                      IWorldUniqueID<DataTargetID>
     {
         private static readonly Type ABSTRACT_PERSISTENT_DATA_TYPE = typeof(AbstractPersistentData);
+        
         public static DataTargetID GetWorldUniqueID(IDataOwner dataOwner, Type persistentDataType, string uniqueContextIdentifier)
         {
             Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);

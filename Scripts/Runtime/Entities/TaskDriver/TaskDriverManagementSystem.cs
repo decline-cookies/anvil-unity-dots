@@ -17,8 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                         IEntityWorldMigrationObserver,
                                                         IDataOwner
     {
-        //TODO: MOVE THIS TO SHARED-STATIC so we can access in burst and IMPLEMENT
-        private readonly Dictionary<int, string> m_TaskSetOwnerDebugMapping;
+        //TODO: #244 - Add in the ability to have Debug conversion from WorldUniqueID's to FixedStrings
 
         private readonly WorldDataOwnerLookup<DataOwnerID, ITaskSetOwner> m_TaskSetOwners;
         private readonly WorldDataOwnerLookup<DataTargetID, AbstractData> m_DataTargets;
@@ -108,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //Those are our top level TaskDrivers
             List<AbstractTaskDriver> topLevelTaskDrivers = m_TaskSetOwners
                 .Select(entry => entry.Value)
-                .Where(entry => entry.IsTaskDriver)
+                .Where(entry => entry is AbstractTaskDriver)
                 .Cast<AbstractTaskDriver>()
                 .Where(taskDriver => taskDriver.Parent == null)
                 .ToList();
