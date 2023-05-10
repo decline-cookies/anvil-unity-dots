@@ -3,7 +3,6 @@ using Anvil.CSharp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -18,7 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
         private readonly PersistentDataSystem m_PersistentDataSystem;
-        private readonly TaskDriverManagementSystem m_TaskDriverManagementSystem;
 
         private bool m_IsHardened;
 
@@ -41,8 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskSetOwner = taskSetOwner;
 
             m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
-            m_TaskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            
+
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
@@ -63,8 +60,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
-            //TODO: Figure out who has the responsibility to dispose
-            // m_PersistentDataSystem.DisposeEntityPersistentDataOwnedBy(TaskSetOwner);
 
             base.DisposeSelf();
         }
@@ -274,15 +269,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (m_IsHardened)
             {
                 throw new InvalidOperationException($"Trying to Harden {this} but {nameof(Harden)} has already been called!");
-            }
-        }
-
-        [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsureNoDuplicates(AbstractPersistentData persistentData, Dictionary<DataTargetID, AbstractPersistentData> persistentDataByUniqueID)
-        {
-            if (persistentDataByUniqueID.ContainsKey(persistentData.WorldUniqueID))
-            {
-                throw new InvalidOperationException($"Persistent Data {persistentData} with TaskSetOwner of {TaskSetOwner} has ID of {persistentData.WorldUniqueID} but it already exists in the lookup. Please set a Unique Context Identifier.");
             }
         }
 

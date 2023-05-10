@@ -50,10 +50,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         protected override void DisposeSelf()
         {
-            //TODO: Figure out who should own and dispose this
-            // PendingData.Dispose();
-            // ActiveDataLookupByDataTargetID.DisposeAllValuesAndClear();
-
+            //DataTargets are Disposed by TaskDriverManagementSystem
+            
             if (m_ConsolidationDependencies.IsCreated)
             {
                 m_ConsolidationDependencies.Dispose();
@@ -162,6 +160,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public abstract JobHandle MigrateTo(
             JobHandle dependsOn,
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             IDataSource destinationDataSource,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
 

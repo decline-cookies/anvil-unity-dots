@@ -43,6 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override JobHandle MigrateTo(
             JobHandle dependsOn,
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             IDataSource destinationDataSource,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
@@ -50,17 +51,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             int index = 0;
             foreach (AbstractData dataTarget in DataTargets)
             {
-                ActiveLookupData<EntityProxyInstanceID> activeLookupData = (ActiveLookupData<EntityProxyInstanceID>)dataTarget;
+                if (dataTarget is not ActiveLookupData<EntityProxyInstanceID> activeLookupData)
+                {
+                    continue;
+                }
 
                 m_MigrationDependencies_ScratchPad[index] = MigrateTo(
                     dependsOn,
                     activeLookupData,
+                    destinationTaskDriverManagementSystem,
                     destinationDataSource,
                     ref remapArray);
                 index++;
             }
             m_MigrationDependencies_ScratchPad[index] = base.MigrateTo(
                 dependsOn,
+                destinationTaskDriverManagementSystem,
                 destinationDataSource,
                 ref remapArray);
 
@@ -70,6 +76,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private JobHandle MigrateTo(
             JobHandle dependsOn,
             ActiveLookupData<EntityProxyInstanceID> currentLookupData,
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             IDataSource destinationDataSource,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
@@ -77,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             //If we don't have a destination or a mapping to a destination active ID...
             if (destinationDataSource is not CancelProgressDataSource
-                || TaskDriverManagementSystem.TryGetActiveLookupDataByID(
+                || !destinationTaskDriverManagementSystem.TryGetActiveLookupDataByID(
                     currentLookupData.WorldUniqueID,
                     out destinationLookupData))
             {

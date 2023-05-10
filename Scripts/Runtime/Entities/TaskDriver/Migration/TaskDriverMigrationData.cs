@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         // ReSharper disable once InconsistentNaming
         private NativeArray<JobHandle> m_MigrationDependencies_ScratchPad;
-        private Dictionary<DataTargetID, IDataSource> m_DataSources;
+        private readonly Dictionary<DataTargetID, IDataSource> m_DataSources;
         
         public TaskDriverMigrationData(List<IDataSource> dataSources) 
         {
@@ -32,6 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle MigrateTo(
             JobHandle dependsOn, 
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             TaskDriverMigrationData destinationTaskDriverMigrationData, 
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
@@ -43,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 //We may not have a corresponding destination Data Source in the destination world but we still want to process the migration so that 
                 //we remove any references in this world. If we do have the corresponding data source, we'll transfer over to the other world.
                 destinationDataSourcesByType.TryGetValue(entry.Key, out IDataSource destinationDataSource);
-                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationDataSource, ref remapArray);
+                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationTaskDriverManagementSystem, destinationDataSource, ref remapArray);
                 index++;
             }
 

@@ -25,7 +25,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //For each piece of data we want to get exclusive write access to the Progress lookup as well
             foreach (AbstractData data in DataTargets)
             {
-                ActiveLookupData<EntityProxyInstanceID> progressLookupData = ((ITaskSetOwner)data.DataOwner).TaskSet.CancelProgressDataStream.ActiveLookupData;
+                if (data.DataOwner is not ITaskSetOwner taskSetOwner)
+                {
+                    continue;
+                }
+                ActiveLookupData<EntityProxyInstanceID> progressLookupData = taskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
                 AddConsolidationData(progressLookupData, AccessType.ExclusiveWrite);
             }
 

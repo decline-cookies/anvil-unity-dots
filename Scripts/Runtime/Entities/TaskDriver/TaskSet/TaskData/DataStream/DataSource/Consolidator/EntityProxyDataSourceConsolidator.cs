@@ -27,7 +27,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 = new UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>>(dataTargets.Count, Allocator.Persistent);
             foreach (AbstractData dataTarget in dataTargets)
             {
-                ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)dataTarget;
+                if (dataTarget is not ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData)
+                {
+                    continue;
+                }
                 m_ActiveConsolidatorsByDataTargetID.Add(dataTarget.WorldUniqueID, new EntityProxyActiveConsolidator<TInstance>(activeArrayData));
             }
         }

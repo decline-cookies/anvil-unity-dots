@@ -24,7 +24,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 = new UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator>(dataTargets.Count, Allocator.Persistent);
             foreach (AbstractData dataTarget in dataTargets)
             {
-                ActiveLookupData<EntityProxyInstanceID> activeLookupData = (ActiveLookupData<EntityProxyInstanceID>)dataTarget;
+                if (dataTarget is not ActiveLookupData<EntityProxyInstanceID> activeLookupData)
+                {
+                    continue;
+                }
                 m_ActiveConsolidatorsByDataTargetID.Add(
                     activeLookupData.WorldUniqueID,
                     new CancelRequestsActiveConsolidator(activeLookupData.Lookup, (ITaskSetOwner)activeLookupData.DataOwner));

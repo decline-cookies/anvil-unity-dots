@@ -17,6 +17,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         
         public DataTargetID PendingWorldUniqueID { get; }
 
-        public JobHandle MigrateTo(JobHandle dependsOn, IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
+        public JobHandle MigrateTo(JobHandle dependsOn, TaskDriverManagementSystem destinationTaskDriverManagementSystem, IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
 }

@@ -18,6 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override JobHandle MigrateTo(
             JobHandle dependsOn,
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             IDataSource destinationDataSource,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {

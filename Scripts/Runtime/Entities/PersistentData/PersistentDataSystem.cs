@@ -16,10 +16,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         private readonly WorldDataOwnerLookup<DataTargetID, AbstractPersistentData> m_EntityPersistentData;
 
-        private bool m_IsHardened;
-
-        // ReSharper disable once InconsistentNaming
-        private NativeArray<JobHandle> m_MigrationDependencies_ScratchPad;
         private EntityWorldMigrationSystem m_EntityWorldMigrationSystem;
 
         public DataOwnerID WorldUniqueID { get; }
@@ -40,21 +36,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_EntityWorldMigrationSystem.RegisterMigrationObserver(this);
         }
 
-        protected override void OnStartRunning()
-        {
-            base.OnStartRunning();
-
-            if (m_IsHardened)
-            {
-                return;
-            }
-            Harden();
-        }
-
         protected override void OnDestroy()
         {
             m_EntityPersistentData.Dispose();
-            m_MigrationDependencies_ScratchPad.Dispose();
             s_InstanceCount--;
             if (s_InstanceCount <= 0)
             {
@@ -72,8 +56,6 @@ namespace Anvil.Unity.DOTS.Entities
         public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
-            Debug_EnsureNotHardened();
-
             DataTargetID worldUniqueID = AbstractPersistentData.GetWorldUniqueID(
                 this,
                 typeof(ThreadPersistentData<T>),
@@ -89,15 +71,12 @@ namespace Anvil.Unity.DOTS.Entities
         public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            Debug_EnsureNotHardened();
             return GetOrCreateEntityPersistentData<T>(this, uniqueContextIdentifier);
         }
 
         public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            Debug_EnsureNotHardened();
-
             DataTargetID worldUniqueID = AbstractPersistentData.GetWorldUniqueID(
                 dataOwner,
                 typeof(EntityPersistentData<T>),
@@ -113,7 +92,6 @@ namespace Anvil.Unity.DOTS.Entities
         public EntityPersistentData<T> CreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            Debug_EnsureNotHardened();
             return m_EntityPersistentData.Create(CreateEntityPersistentDataInstance<T>, dataOwner, uniqueContextIdentifier);
         }
 
@@ -130,17 +108,6 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //*************************************************************************************************************
-        // HARDENING
-        //*************************************************************************************************************
-
-        private void Harden()
-        {
-            Debug_EnsureNotHardened();
-            m_IsHardened = true;
-            m_MigrationDependencies_ScratchPad = new NativeArray<JobHandle>(m_EntityPersistentData.Count, Allocator.Persistent);
-        }
-
-        //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
 
@@ -149,6 +116,7 @@ namespace Anvil.Unity.DOTS.Entities
             PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
 
+            NativeArray<JobHandle> migrationDependencies = new NativeArray<JobHandle>(m_EntityPersistentData.Count, Allocator.Temp);
             int index = 0;
             //We only need to migrate EntityPersistentData.
             //ThreadPersistentData is global to the app and doesn't need to be migrated because no jobs or data should be in flight during migration.
@@ -161,11 +129,11 @@ namespace Anvil.Unity.DOTS.Entities
                 //Theirs might be so we as cast so it can be null
                 IMigratablePersistentData dstMigratablePersistentData = dstData as IMigratablePersistentData;
                 //Migrate
-                m_MigrationDependencies_ScratchPad[index] = srcMigratablePersistentData.MigrateTo(dependsOn, dstMigratablePersistentData, ref remapArray);
+                migrationDependencies[index] = srcMigratablePersistentData.MigrateTo(dependsOn, dstMigratablePersistentData, ref remapArray);
                 index++;
             }
 
-            return JobHandle.CombineDependencies(m_MigrationDependencies_ScratchPad);
+            return JobHandle.CombineDependencies(migrationDependencies);
         }
 
         //*************************************************************************************************************
@@ -178,15 +146,6 @@ namespace Anvil.Unity.DOTS.Entities
             if (persistentDataSystem == null)
             {
                 throw new InvalidOperationException($"Expected World {destinationWorld} to have a {nameof(PersistentDataSystem)} but it does not!");
-            }
-        }
-
-        [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsureNotHardened()
-        {
-            if (m_IsHardened)
-            {
-                throw new InvalidOperationException($"{this} is already Hardened! It was not expected to be.");
             }
         }
     }

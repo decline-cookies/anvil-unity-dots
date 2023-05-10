@@ -91,6 +91,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteDataSource.Dispose();
             m_CancelProgressDataSource.Dispose();
             
+            m_DataTargets.Dispose();
+            
             m_TaskDriverMigrationData?.Dispose();
             
 
@@ -315,6 +317,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return m_TaskDriverMigrationData.MigrateTo(
                 dependsOn, 
+                destinationTaskDriverManagementSystem,
                 destinationTaskDriverManagementSystem.m_TaskDriverMigrationData, 
                 ref remapArray);
         }
