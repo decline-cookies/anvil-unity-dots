@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -153,17 +154,68 @@ namespace Anvil.Unity.DOTS.Entities
             // don't have to implement twice.
             EntitySpawnHelper helper = AcquireEntitySpawnHelper();
             Entity entity = m_EntityManager.CreateEntity(helper.GetEntityArchetypeForDefinition<TEntitySpawnDefinition>());
-            spawnDefinition.PopulateOnEntity(
-                entity,
-                ref ecb,
-                helper);
+            spawnDefinition.PopulateOnEntity(entity, ref ecb, helper);
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
             return entity;
         }
 
-        //TODO: Implement a SpawnImmediate that takes in a NativeArray or ICollection if needed.
+        /// <summary>
+        /// Spawns multiple <see cref="Entity"/>s with the given definitions immediately.
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with.
+        /// </param>
+        public void SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
+        {
+            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+            // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
+            // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
+            // don't have to implement twice.
+            EntitySpawnHelper helper = AcquireEntitySpawnHelper();
+
+            for (int i = 0; i < spawnDefinitions.Length; i++)
+            {
+                Entity entity = m_EntityManager.CreateEntity(helper.GetEntityArchetypeForDefinition<TEntitySpawnDefinition>());
+                spawnDefinitions[i].PopulateOnEntity(entity, ref ecb, helper);
+            }
+
+            ecb.Playback(m_EntityManager);
+            ecb.Dispose();
+            ReleaseEntitySpawnHelper();
+        }
+
+        /// <summary>
+        /// Spawns multiple <see cref="Entity"/>s with the given definitions immediately and returns the entity references
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with.
+        /// </param>
+        /// <param name="entitiesAllocator">The allocator to use for the returned entities collection</param>
+        /// <returns>A collection of all the entities spawned.</returns>
+        public NativeArray<Entity> SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions, Allocator entitiesAllocator)
+        {
+            NativeArray<Entity> entities = new NativeArray<Entity>(spawnDefinitions.Length, entitiesAllocator, NativeArrayOptions.UninitializedMemory);
+            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+            // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
+            // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
+            // don't have to implement twice.
+            EntitySpawnHelper helper = AcquireEntitySpawnHelper();
+
+            for (int i = 0; i < spawnDefinitions.Length; i++)
+            {
+                Entity entity = m_EntityManager.CreateEntity(helper.GetEntityArchetypeForDefinition<TEntitySpawnDefinition>());
+                entities[i] = entity;
+                spawnDefinitions[i].PopulateOnEntity(entity, ref ecb, helper);
+            }
+
+            ecb.Playback(m_EntityManager);
+            ecb.Dispose();
+            ReleaseEntitySpawnHelper();
+
+            return entities;
+        }
 
         //*************************************************************************************************************
         // SPAWN API - PROTOTYPE
