@@ -1,14 +1,17 @@
+using Anvil.Unity.DOTS.Core;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
-    internal readonly struct DataOwnerID : IEquatable<DataOwnerID>
+    internal readonly struct DataOwnerID : IEquatable<DataOwnerID>,
+                                           IToFixedString<FixedString32Bytes>
     {
-        private static readonly DataOwnerID UNSET_DATA_OWNER_ID = default;
+        private static readonly DataOwnerID UNSET_ID = default;
 
         public static bool operator ==(DataOwnerID lhs, DataOwnerID rhs)
         {
@@ -25,11 +28,12 @@ namespace Anvil.Unity.DOTS.Entities
 
         public bool IsValid
         {
-            get => this != UNSET_DATA_OWNER_ID;
+            get => this != UNSET_ID;
         }
 
         public DataOwnerID(int value)
         {
+            Debug.Assert(value != UNSET_ID.m_Value);
             m_Value = value;
         }
         
@@ -56,7 +60,7 @@ namespace Anvil.Unity.DOTS.Entities
         [BurstCompatible]
         public FixedString32Bytes ToFixedString()
         {
-            return $"{m_Value}";
+            return $"Value: {m_Value}";
         }
     }
 }

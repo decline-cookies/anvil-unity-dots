@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return m_TaskDriverSystem.CreateDataStream<TInstance>(m_ContextTaskDriver, cancelRequestBehaviour, uniqueContextIdentifier);
         }
 
-        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier) 
+        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier = null) 
             where T : unmanaged, IEntityPersistentDataInstance
         {
             return m_TaskDriverSystem.CreateEntityPersistentData<T>(uniqueContextIdentifier);

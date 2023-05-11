@@ -34,21 +34,15 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void Add(TBaseData data)
         {
-            if (m_Lookup.ContainsKey(data.WorldUniqueID))
+            if (!m_Lookup.TryAdd(data.WorldUniqueID, data))
             {
                 throw new InvalidOperationException($"Trying to add data of type {data.GetType()} to {DataOwner} but it already exists. Please ensure a unique context identifier.");
             }
-            m_Lookup.Add(data.WorldUniqueID, data);
         }
 
         public bool TryAdd(TBaseData data)
         {
-            if (m_Lookup.ContainsKey(data.WorldUniqueID))
-            {
-                return false;
-            }
-            Add(data);
-            return true;
+            return m_Lookup.TryAdd(data.WorldUniqueID, data);
         }
 
         public TSpecificData Create<TSpecificData>(WorldDataOwnerLookup<TWorldUniqueID, TBaseData>.CreateInstanceFunction<TSpecificData> createInstanceFunction, string uniqueContextIdentifier)

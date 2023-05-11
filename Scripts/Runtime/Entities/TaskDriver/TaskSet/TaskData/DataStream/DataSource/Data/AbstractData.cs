@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
             Debug.Assert(ABSTRACT_DATA_TYPE.IsAssignableFrom(abstractDataType));
-            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{abstractDataType.AssemblyQualifiedName}{uniqueContextIdentifier}";
+            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{abstractDataType.AssemblyQualifiedName}{uniqueContextIdentifier ?? string.Empty}";
             return new DataTargetID(idPath.GetBurstHashCode32());
         }
         

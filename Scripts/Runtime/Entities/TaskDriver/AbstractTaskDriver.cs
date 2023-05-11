@@ -115,6 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             World = world;
             Parent = parent;
+            //TODO: #241 - This is gross. Needs to be reworked.
             Parent?.m_SubTaskDrivers.Add(this);
             WorldUniqueID = GenerateWorldUniqueID(uniqueContextIdentifier);
 
@@ -127,7 +128,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Type taskDriverType = GetType();
             Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
 
-            //If this isn't the first TaskDriver of this type, then the System will have been created for this World.
+            //If we've already created a TaskDriver of this type, then it's corresponding system will also have been created.
             TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
             //If not, then we will want to explicitly create it and ensure it is part of the lifecycle.
             if (TaskDriverSystem == null)
@@ -189,28 +190,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected IDriverDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier ?? string.Empty);
+            IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
             return dataStream;
         }
 
         protected IDriverEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = TaskSet.CreateEntityPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            EntityPersistentData<T> entityPersistentData = TaskSet.CreateEntityPersistentData<T>(uniqueContextIdentifier);
             return entityPersistentData;
         }
 
         protected IWorldEntityPersistentData<T> GetOrCreateWorldEntityPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            EntityPersistentData<T> entityPersistentData = m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>(uniqueContextIdentifier);
             return entityPersistentData;
         }
 
         protected IThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IThreadPersistentDataInstance
         {
-            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.GetOrCreateThreadPersistentData<T>(uniqueContextIdentifier ?? string.Empty);
+            ThreadPersistentData<T> threadPersistentData = m_PersistentDataSystem.GetOrCreateThreadPersistentData<T>(uniqueContextIdentifier);
             return threadPersistentData;
         }
 

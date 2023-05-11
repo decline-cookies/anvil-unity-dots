@@ -2,6 +2,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelProgressDataStream : AbstractDataStream
     {
+        private const string UNIQUE_CONTEXT_IDENTIFIER = "CANCEL_PROGRESS";
+        
         public override DataTargetID DataTargetID
         {
             get => ActiveLookupData.WorldUniqueID;
@@ -21,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetCancelProgressDataSource();
 
-            ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner, "CANCEL_PROGRESS");
+            ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner, UNIQUE_CONTEXT_IDENTIFIER);
         }
     }
 }

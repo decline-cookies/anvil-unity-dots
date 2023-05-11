@@ -2,6 +2,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelCompleteDataStream : EntityProxyDataStream<CancelComplete>
     {
-        public CancelCompleteDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner, "CANCEL_COMPLETE") { }
+        private const string UNIQUE_CONTEXT_IDENTIFIER = "CANCEL_COMPLETE";
+        
+        public CancelCompleteDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner, UNIQUE_CONTEXT_IDENTIFIER) { }
     }
 }

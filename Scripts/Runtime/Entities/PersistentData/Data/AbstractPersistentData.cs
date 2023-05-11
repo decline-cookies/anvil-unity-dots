@@ -13,11 +13,11 @@ namespace Anvil.Unity.DOTS.Entities
     {
         private static readonly Type ABSTRACT_PERSISTENT_DATA_TYPE = typeof(AbstractPersistentData);
         
-        public static DataTargetID GetWorldUniqueID(IDataOwner dataOwner, Type persistentDataType, string uniqueContextIdentifier)
+        public static DataTargetID GenerateWorldUniqueID(IDataOwner dataOwner, Type persistentDataType, string uniqueContextIdentifier)
         {
             Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
             Debug.Assert(ABSTRACT_PERSISTENT_DATA_TYPE.IsAssignableFrom(persistentDataType));
-            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{persistentDataType.AssemblyQualifiedName}{uniqueContextIdentifier}";
+            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{persistentDataType.AssemblyQualifiedName}{uniqueContextIdentifier ?? string.Empty}";
             return new DataTargetID(idPath.GetBurstHashCode32());
         }
         
@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected AbstractPersistentData(IDataOwner dataOwner, string uniqueContextIdentifier)
         {
-            WorldUniqueID = GetWorldUniqueID(dataOwner, GetType(), uniqueContextIdentifier);
+            WorldUniqueID = GenerateWorldUniqueID(dataOwner, GetType(), uniqueContextIdentifier);
             m_AccessController = new AccessController();
         }
 

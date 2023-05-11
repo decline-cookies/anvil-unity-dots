@@ -56,7 +56,7 @@ namespace Anvil.Unity.DOTS.Entities
         public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
-            DataTargetID worldUniqueID = AbstractPersistentData.GetWorldUniqueID(
+            DataTargetID worldUniqueID = AbstractPersistentData.GenerateWorldUniqueID(
                 this,
                 typeof(ThreadPersistentData<T>),
                 uniqueContextIdentifier);
@@ -77,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities
         public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            DataTargetID worldUniqueID = AbstractPersistentData.GetWorldUniqueID(
+            DataTargetID worldUniqueID = AbstractPersistentData.GenerateWorldUniqueID(
                 dataOwner,
                 typeof(EntityPersistentData<T>),
                 uniqueContextIdentifier);
@@ -124,9 +124,9 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 //We'll try and get the other world's corresponding EntityPersistentData, it might be null
                 destinationPersistentDataSystem.m_EntityPersistentData.TryGetData(entry.Key, out AbstractPersistentData dstData);
-                //Ours can't be do we direct cast to catch any code issues
+                //Ours can't be null, so we direct cast to catch any code issues (will throw exception)
                 IMigratablePersistentData srcMigratablePersistentData = (IMigratablePersistentData)entry.Value;
-                //Theirs might be so we as cast so it can be null
+                //Theirs might be null, so we do an "as cast" so that it can remain null
                 IMigratablePersistentData dstMigratablePersistentData = dstData as IMigratablePersistentData;
                 //Migrate
                 migrationDependencies[index] = srcMigratablePersistentData.MigrateTo(dependsOn, dstMigratablePersistentData, ref remapArray);
