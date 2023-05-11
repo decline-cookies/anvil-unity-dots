@@ -196,18 +196,20 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>A collection of all the entities spawned.</returns>
         public NativeArray<Entity> SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions, Allocator entitiesAllocator)
         {
-            NativeArray<Entity> entities = new NativeArray<Entity>(spawnDefinitions.Length, entitiesAllocator, NativeArrayOptions.UninitializedMemory);
             EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
             EntitySpawnHelper helper = AcquireEntitySpawnHelper();
 
+            NativeArray<Entity> entities = m_EntityManager.CreateEntity(
+                helper.GetEntityArchetypeForDefinition<TEntitySpawnDefinition>(),
+                spawnDefinitions.Length,
+                entitiesAllocator);
+
             for (int i = 0; i < spawnDefinitions.Length; i++)
             {
-                Entity entity = m_EntityManager.CreateEntity(helper.GetEntityArchetypeForDefinition<TEntitySpawnDefinition>());
-                entities[i] = entity;
-                spawnDefinitions[i].PopulateOnEntity(entity, ref ecb, helper);
+                spawnDefinitions[i].PopulateOnEntity(entities[i], ref ecb, helper);
             }
 
             ecb.Playback(m_EntityManager);
