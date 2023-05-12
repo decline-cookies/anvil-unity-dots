@@ -72,6 +72,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
         {
+            //TODO: This is temporary debug because we don't support more than one type of resolvable stream at the moment. #245 will fix this.
             if (m_Debug_TypeCount.TryGetValue(type, out int count) && count > 1)
             {
                 throw new InvalidOperationException($"Trying to get resolvable data streams for the type {type.GetReadableName()} but there are more than one. We don't support this at this time!");
