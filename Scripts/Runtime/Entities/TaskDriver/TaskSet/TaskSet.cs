@@ -4,10 +4,8 @@ using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine.UI;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -15,11 +13,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class TaskSet : AbstractAnvilBase
     {
         private readonly List<ICancellableDataStream> m_DataStreamsWithExplicitCancellation;
-        private readonly Dictionary<Type, AbstractDataStream> m_PublicDataStreamsByType;
-        private readonly Dictionary<Type, IMigratablePersistentData> m_MigratableEntityPersistentDataByType;
 
         private readonly List<AbstractJobConfig> m_JobConfigs;
         private readonly HashSet<Delegate> m_JobConfigSchedulingDelegates;
+        private readonly PersistentDataSystem m_PersistentDataSystem;
+
+        private readonly Dictionary<DataTargetID, AbstractDataStream> m_DataStreamLookupByID;
+        private readonly Dictionary<Type, int> m_Debug_TypeCount;
 
         private bool m_IsHardened;
 
@@ -40,12 +40,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TaskSet(ITaskSetOwner taskSetOwner)
         {
             TaskSetOwner = taskSetOwner;
+
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
+
+            //This is temporary until we refactor DataStreams and AbstractData as part of #241 
+            m_DataStreamLookupByID = new Dictionary<DataTargetID, AbstractDataStream>();
+            m_Debug_TypeCount = new Dictionary<Type, int>();
+
             m_JobConfigs = new List<AbstractJobConfig>();
             m_JobConfigSchedulingDelegates = new HashSet<Delegate>();
 
             m_DataStreamsWithExplicitCancellation = new List<ICancellableDataStream>();
-            m_PublicDataStreamsByType = new Dictionary<Type, AbstractDataStream>();
-            m_MigratableEntityPersistentDataByType = new Dictionary<Type, IMigratablePersistentData>();
 
             //TODO: #138 - Move all Cancellation aspects into one class to make it easier/nicer to work with
 
@@ -61,14 +66,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelRequestsContexts.Dispose();
             }
-            m_MigratableEntityPersistentDataByType.DisposeAllValuesAndClear();
 
             base.DisposeSelf();
         }
 
         public void AddResolvableDataStreamsTo(Type type, List<AbstractDataStream> dataStreams)
         {
-            if (!m_PublicDataStreamsByType.TryGetValue(type, out AbstractDataStream dataStream))
+            //TODO: This is temporary debug because we don't support more than one type of resolvable stream at the moment. #245 will fix this.
+            if (m_Debug_TypeCount.TryGetValue(type, out int count) && count > 1)
+            {
+                throw new InvalidOperationException($"Trying to get resolvable data streams for the type {type.GetReadableName()} but there are more than one. We don't support this at this time!");
+            }
+            
+            Type genericTypeArrayData = typeof(ActiveArrayData<>);
+            Type genericTypeEntityProxyWrapperType = typeof(EntityProxyInstanceWrapper<>);
+
+            Type specificEntityProxyWrapperType = genericTypeEntityProxyWrapperType.MakeGenericType(type);
+            Type specificArrayType = genericTypeArrayData.MakeGenericType(specificEntityProxyWrapperType);
+            
+            //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, specificArrayType, string.Empty);
+            
+            if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
                 return;
             }
@@ -76,22 +95,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             dataStreams.Add(dataStream);
         }
 
-        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour)
+        public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            Type instanceType = typeof(TInstance);
-            if (!m_PublicDataStreamsByType.TryGetValue(instanceType, out AbstractDataStream dataStream))
+            //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
+            
+            if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
-                dataStream = CreateDataStream<TInstance>(cancelRequestBehaviour);
+                dataStream = CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
             }
 
             return (EntityProxyDataStream<TInstance>)dataStream;
         }
 
-        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour)
+        public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour);
+            //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
+
+            
+            EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
             switch (cancelRequestBehaviour)
             {
                 case CancelRequestBehaviour.Delete:
@@ -106,29 +131,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
 
-            m_PublicDataStreamsByType.Add(typeof(TInstance), dataStream);
+            
+            m_DataStreamLookupByID.Add(targetID, dataStream);
+
+            Type instanceType = typeof(TInstance);
+            if (!m_Debug_TypeCount.TryGetValue(instanceType, out int count))
+            {
+                m_Debug_TypeCount[instanceType] = 0;
+            }
+            m_Debug_TypeCount[instanceType] = count + 1;
 
             return dataStream;
         }
 
-        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            Type type = typeof(T);
-            if (!m_MigratableEntityPersistentDataByType.TryGetValue(type, out IMigratablePersistentData persistentData))
-            {
-                persistentData = CreateEntityPersistentData<T>();
-            }
-
-            return (EntityPersistentData<T>)persistentData;
+            return m_PersistentDataSystem.GetOrCreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
         }
 
-        public EntityPersistentData<T> CreateEntityPersistentData<T>()
+        public EntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = new EntityPersistentData<T>();
-            m_MigratableEntityPersistentDataByType.Add(typeof(T), entityPersistentData);
-            return entityPersistentData;
+            return m_PersistentDataSystem.CreateEntityPersistentData<T>(TaskSetOwner, uniqueContextIdentifier);
         }
 
         public void AddJobConfigsTo(List<AbstractJobConfig> jobConfigs)
@@ -251,15 +276,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private void AddCancelRequestContextsTo(List<CancelRequestContext> contexts)
         {
             //Add ourself
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, CancelRequestsDataStream.ActiveID));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.WorldUniqueID, CancelRequestsDataStream.DataTargetID));
 
             //Add the System
             CancelRequestsDataStream systemCancelRequestsDataStream = TaskSetOwner.TaskDriverSystem.TaskSet.CancelRequestsDataStream;
 
             //We need to add a context for the System and the TaskDriver. When the System goes to update it's owned data, it doesn't know
             //all the different TaskDriver CancelRequests to read from. It only reads from its own CancelRequest collection.
-            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
-            contexts.Add(new CancelRequestContext(TaskSetOwner.ID, systemCancelRequestsDataStream.ActiveID));
+            contexts.Add(new CancelRequestContext(systemCancelRequestsDataStream.TaskSetOwner.WorldUniqueID, systemCancelRequestsDataStream.DataTargetID));
+            contexts.Add(new CancelRequestContext(TaskSetOwner.WorldUniqueID, systemCancelRequestsDataStream.DataTargetID));
 
             //Add all SubTask Drivers and their systems
             foreach (AbstractTaskDriver taskDriver in TaskSetOwner.SubTaskDrivers)
@@ -269,69 +294,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //*************************************************************************************************************
-        // MIGRATION
-        //*************************************************************************************************************
-
-        public void AddToMigrationLookup(
-            string parentPath,
-            Dictionary<string, uint> migrationActiveIDLookup,
-            PersistentDataSystem persistentDataSystem)
-        {
-            foreach (KeyValuePair<Type, AbstractDataStream> entry in m_PublicDataStreamsByType)
-            {
-                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.Key), entry.Value.ActiveID, migrationActiveIDLookup);
-            }
-
-            foreach (ICancellableDataStream entry in m_DataStreamsWithExplicitCancellation)
-            {
-                AddToMigrationLookup(parentPath, BurstRuntime.GetHashCode64(entry.InstanceType) ^ BurstRuntime.GetHashCode64<ICancellableDataStream>(), entry.PendingCancelActiveID, migrationActiveIDLookup);
-            }
-
-            AddToMigrationLookup(
-                parentPath,
-                BurstRuntime.GetHashCode64(typeof(CancelRequestsDataStream)),
-                CancelRequestsDataStream.ActiveID,
-                migrationActiveIDLookup);
-
-            AddToMigrationLookup(
-                parentPath,
-                BurstRuntime.GetHashCode64(typeof(CancelProgressDataStream)),
-                CancelProgressDataStream.ActiveID,
-                migrationActiveIDLookup);
-
-            AddToMigrationLookup(
-                parentPath,
-                BurstRuntime.GetHashCode64(typeof(CancelCompleteDataStream)),
-                CancelCompleteDataStream.ActiveID,
-                migrationActiveIDLookup);
-
-            foreach (IMigratablePersistentData entry in m_MigratableEntityPersistentDataByType.Values)
-            {
-                persistentDataSystem.AddToMigrationLookup(parentPath, entry);
-            }
-        }
-
-        private void AddToMigrationLookup(string parentPath, long typeHash, uint activeID, Dictionary<string, uint> migrationActiveIDLookup)
-        {
-            string path = $"{parentPath}-{typeHash}";
-            Debug_EnsureNoDuplicateMigrationData(path, migrationActiveIDLookup);
-            migrationActiveIDLookup.Add(path, activeID);
-        }
-
-        //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateMigrationData(string path, Dictionary<string, uint> migrationActiveIDLookup)
-        {
-            if (migrationActiveIDLookup.ContainsKey(path))
-            {
-                throw new InvalidOperationException($"Trying to add ActiveID migration data for {this} but {path} is already in the lookup!");
-            }
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
         {
             if (m_IsHardened)

@@ -10,23 +10,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal abstract class AbstractEntityProxyInstanceIDDataSource : AbstractDataSource<EntityProxyInstanceID>
     {
-        protected AbstractEntityProxyInstanceIDDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
-        {
-        }
+        protected AbstractEntityProxyInstanceIDDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem) { }
 
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
 
         public override JobHandle MigrateTo(
-            JobHandle dependsOn, 
-            IDataSource destinationDataSource, 
-            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray, 
-            DestinationWorldDataMap destinationWorldDataMap)
+            JobHandle dependsOn,
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
+            IDataSource destinationDataSource,
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             CancelRequestsDataSource destination = destinationDataSource as CancelRequestsDataSource;
             UnsafeTypedStream<EntityProxyInstanceID>.Writer destinationWriter = default;
-            
+
             if (destination == null)
             {
                 dependsOn = JobHandle.CombineDependencies(
@@ -42,14 +40,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                 destinationWriter = destination.PendingWriter;
             }
-            
-            
+
+
             MigrateJob migrateJob = new MigrateJob(
                 PendingData.Pending,
                 destinationWriter,
-                remapArray,
-                destinationWorldDataMap.TaskSetOwnerIDMapping,
-                destinationWorldDataMap.ActiveIDMapping);
+                remapArray);
             dependsOn = migrateJob.Schedule(dependsOn);
 
             PendingData.ReleaseAsync(dependsOn);
@@ -57,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return dependsOn;
         }
-        
+
         [BurstCompile]
         private struct MigrateJob : IJob
         {
@@ -66,22 +62,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             private UnsafeTypedStream<EntityProxyInstanceID> m_CurrentStream;
             private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_DestinationStreamWriter;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
-            [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_TaskSetOwnerIDMapping;
-            [ReadOnly] private readonly NativeParallelHashMap<uint, uint> m_ActiveIDMapping;
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
             public MigrateJob(
                 UnsafeTypedStream<EntityProxyInstanceID> currentStream,
                 UnsafeTypedStream<EntityProxyInstanceID>.Writer destinationStreamWriter,
-                NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-                NativeParallelHashMap<uint, uint> taskSetOwnerIDMapping,
-                NativeParallelHashMap<uint, uint> activeIDMapping)
+                NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             {
                 m_CurrentStream = currentStream;
                 m_DestinationStreamWriter = destinationStreamWriter;
                 m_RemapArray = remapArray;
-                m_TaskSetOwnerIDMapping = taskSetOwnerIDMapping;
-                m_ActiveIDMapping = activeIDMapping;
 
                 m_NativeThreadIndex = UNSET_ID;
             }
@@ -91,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 //TODO: Optimization - Look into adding a RemoveSwapBack like function the UnsafeTypedStream. We could then avoid
                 //this copy to the array and the clear and instead just iterate through the stream and remove the instances we don't need. 
                 //See: https://github.com/decline-cookies/anvil-unity-dots/pull/232#discussion_r1181714399
-                
+
                 //Can't modify while iterating so we collapse down to a single array and clean the underlying stream.
                 //We'll build this stream back up if anything should still remain
                 NativeArray<EntityProxyInstanceID> currentInstanceArray = m_CurrentStream.ToNativeArray(Allocator.Temp);
@@ -118,20 +108,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     }
 
                     //If we don't have a destination in the new world, then we can just let these cease to exist
-                    if (!destinationLaneWriter.IsCreated
-                        || !m_TaskSetOwnerIDMapping.TryGetValue(instanceID.TaskSetOwnerID, out uint destinationTaskSetOwnerID)
-                        || !m_ActiveIDMapping.TryGetValue(instanceID.ActiveID, out uint destinationActiveID))
+                    if (!destinationLaneWriter.IsCreated)
                     {
                         continue;
                     }
 
                     //If we do have a destination, then we will want to patch the entity references
                     instanceID.PatchEntityReferences(ref m_RemapArray);
-
-                    //Rewrite the memory for the TaskSetOwnerID and ActiveID
-                    instanceID.PatchIDs(
-                        destinationTaskSetOwnerID,
-                        destinationActiveID);
 
                     //Write to the destination stream
                     destinationLaneWriter.Write(instanceID);

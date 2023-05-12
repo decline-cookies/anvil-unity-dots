@@ -10,90 +10,41 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class TaskDriverMigrationData : AbstractAnvilBase
     {
-        private readonly Dictionary<string, uint> m_MigrationTaskSetOwnerIDLookup;
-        private readonly Dictionary<string, uint> m_MigrationActiveIDLookup;
-        
-        private readonly Dictionary<World, DestinationWorldDataMap> m_DestinationWorldDataMaps;
-        private readonly Dictionary<Type, IDataSource> m_AllDataSources;
         // ReSharper disable once InconsistentNaming
-        private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
-
-        public int TaskSetOwnerCount
+        private NativeArray<JobHandle> m_MigrationDependencies_ScratchPad;
+        private readonly Dictionary<DataTargetID, IDataSource> m_DataSources;
+        
+        public TaskDriverMigrationData(List<IDataSource> dataSources) 
         {
-            get => m_MigrationTaskSetOwnerIDLookup.Count;
-        }
-
-        public int ActiveIDCount
-        {
-            get => m_MigrationActiveIDLookup.Count;
-        }
-
-        public TaskDriverMigrationData() 
-        {
-            m_MigrationTaskSetOwnerIDLookup = new Dictionary<string, uint>();
-            m_MigrationActiveIDLookup = new Dictionary<string, uint>();
-            m_DestinationWorldDataMaps = new Dictionary<World, DestinationWorldDataMap>();
-            m_AllDataSources = new Dictionary<Type, IDataSource>();
-            m_MigrationDependencies_ScratchPad = new NativeList<JobHandle>(32, Allocator.Persistent);
+            m_MigrationDependencies_ScratchPad = new NativeArray<JobHandle>(dataSources.Count, Allocator.Persistent);
+            m_DataSources = new Dictionary<DataTargetID, IDataSource>();
+            foreach (IDataSource dataSource in dataSources)
+            {
+                m_DataSources.Add(dataSource.PendingWorldUniqueID, dataSource);
+            }
         }
 
         protected override void DisposeSelf()
         {
-            m_DestinationWorldDataMaps.DisposeAllValuesAndClear();
             m_MigrationDependencies_ScratchPad.Dispose();
             base.DisposeSelf();
         }
 
-        public void AddDataSource<T>(T dataSource)
-            where T : class, IDataSource
+        public JobHandle MigrateTo(
+            JobHandle dependsOn, 
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
+            TaskDriverMigrationData destinationTaskDriverMigrationData, 
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            Type type = dataSource.GetType();
-            m_AllDataSources.Add(type, dataSource);
-            m_MigrationDependencies_ScratchPad.ResizeUninitialized(m_AllDataSources.Count);
-        }
-        
-        public void PopulateMigrationLookup(World world, List<AbstractTaskDriver> topLevelTaskDrivers)
-        {
-            //Generate a World ID
-            foreach (AbstractTaskDriver topLevelTaskDriver in topLevelTaskDrivers)
-            {
-                topLevelTaskDriver.AddToMigrationLookup(
-                    string.Empty, 
-                    m_MigrationTaskSetOwnerIDLookup, 
-                    m_MigrationActiveIDLookup,
-                    world.GetOrCreateSystem<PersistentDataSystem>());
-            }
-        }
-
-        private DestinationWorldDataMap GetOrCreateDestinationWorldDataMapFor(World destinationWorld, TaskDriverMigrationData destinationMigrationData)
-        {
-            //TODO: Optimization: Might be able to jobify if we switch to fixed strings and UnsafeWorlds?
-            if (!m_DestinationWorldDataMaps.TryGetValue(destinationWorld, out DestinationWorldDataMap destinationWorldDataMap))
-            {
-                destinationWorldDataMap = new DestinationWorldDataMap(m_MigrationTaskSetOwnerIDLookup,
-                    destinationMigrationData.m_MigrationTaskSetOwnerIDLookup,
-                    m_MigrationActiveIDLookup,
-                    destinationMigrationData.m_MigrationActiveIDLookup);
-                
-                m_DestinationWorldDataMaps.Add(destinationWorld, destinationWorldDataMap);
-            }
-            return destinationWorldDataMap;
-        }
-
-        public JobHandle MigrateTo(JobHandle dependsOn, World destinationWorld, TaskDriverMigrationData destinationTaskDriverMigrationData, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
-        {
-            //Lazy create a World to World mapping lookup for ActiveIDs and TaskSetOwnerIDs
-            DestinationWorldDataMap destinationWorldDataMap = GetOrCreateDestinationWorldDataMapFor(destinationWorld, destinationTaskDriverMigrationData);
-
-            Dictionary<Type, IDataSource> destinationDataSourcesByType = destinationTaskDriverMigrationData.m_AllDataSources;
+            Dictionary<DataTargetID, IDataSource> destinationDataSourcesByType = destinationTaskDriverMigrationData.m_DataSources;
 
             int index = 0;
-            foreach (KeyValuePair<Type, IDataSource> entry in m_AllDataSources)
+            foreach (KeyValuePair<DataTargetID, IDataSource> entry in m_DataSources)
             {
                 //We may not have a corresponding destination Data Source in the destination world but we still want to process the migration so that 
                 //we remove any references in this world. If we do have the corresponding data source, we'll transfer over to the other world.
                 destinationDataSourcesByType.TryGetValue(entry.Key, out IDataSource destinationDataSource);
-                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationDataSource, ref remapArray, destinationWorldDataMap);
+                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationTaskDriverManagementSystem, destinationDataSource, ref remapArray);
                 index++;
             }
 

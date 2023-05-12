@@ -23,14 +23,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
 
-        public override uint ActiveID
+        public override DataTargetID DataTargetID
         {
-            get => m_ActiveArrayData.ID;
+            get => m_ActiveArrayData.WorldUniqueID;
         }
 
-        public uint PendingCancelActiveID
+        public override IDataSource DataSource
         {
-            get => m_PendingCancelActiveArrayData.ID;
+            get => m_DataSource;
+        }
+
+        public DataTargetID PendingCancelDataTargetID
+        {
+            get => m_PendingCancelActiveArrayData.WorldUniqueID;
         }
 
         public Type InstanceType { get; }
@@ -39,13 +44,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
         public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }
 
-        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour)
+        public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
-            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour);
+            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
 
             if (m_ActiveArrayData.PendingCancelActiveData != null)
             {
@@ -76,11 +81,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //TODO: #137 - Gross!!! This is a special case only for CancelComplete
-        protected EntityProxyDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
+        protected EntityProxyDataStream(ITaskSetOwner taskSetOwner, string uniqueContextIdentifier) : base(taskSetOwner)
         {
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetCancelCompleteDataSource() as EntityProxyDataSource<TInstance>;
-            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, CancelRequestBehaviour.Ignore);
+            m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, CancelRequestBehaviour.Ignore, uniqueContextIdentifier);
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
 
             //TODO: #136 - Not good to expose these just for the CancelComplete case.
@@ -153,7 +158,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataStreamPendingWriter<TInstance> CreateDataStreamPendingWriter()
         {
-            return new DataStreamPendingWriter<TInstance>(m_DataSource.PendingWriter, TaskSetOwner.ID, m_ActiveArrayData.ID);
+            return new DataStreamPendingWriter<TInstance>(m_DataSource.PendingWriter, TaskSetOwner.WorldUniqueID, m_ActiveArrayData.WorldUniqueID);
         }
 
         public DataStreamActiveReader<TInstance> CreateDataStreamActiveReader()

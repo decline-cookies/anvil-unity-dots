@@ -1,5 +1,5 @@
-using Anvil.CSharp.Collections;
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
@@ -25,25 +25,33 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public unsafe void* PendingWriterPointer { get; }
 
         public PendingData<T> PendingData { get; }
-        protected Dictionary<uint, AbstractData> ActiveDataLookupByID { get; }
+        protected HashSet<AbstractData> DataTargets { get; }
 
         protected TaskDriverManagementSystem TaskDriverManagementSystem { get; }
+
+        public DataTargetID PendingWorldUniqueID
+        {
+            get => PendingData.WorldUniqueID;
+        }
 
         protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
         {
             TaskDriverManagementSystem = taskDriverManagementSystem;
-            PendingData = new PendingData<T>(TaskDriverManagementSystem.GetNextID());
+            PendingData = taskDriverManagementSystem.CreatePendingData<T>(GetType().AssemblyQualifiedName);
             PendingWriter = PendingData.PendingWriter;
             PendingWriterPointer = PendingData.PendingWriterPointer;
-            ActiveDataLookupByID = new Dictionary<uint, AbstractData>();
             m_ConsolidationData = new List<DataAccessWrapper>();
+
+            DataTargets = new HashSet<AbstractData>
+            {
+                PendingData
+            };
         }
 
         protected override void DisposeSelf()
         {
-            PendingData.Dispose();
-            ActiveDataLookupByID.DisposeAllValuesAndClear();
-
+            //DataTargets are Disposed by TaskDriverManagementSystem
+            
             if (m_ConsolidationDependencies.IsCreated)
             {
                 m_ConsolidationDependencies.Dispose();
@@ -52,7 +60,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             base.DisposeSelf();
         }
 
-        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour)
+        public override string ToString()
+        {
+            return $"{GetType().GetReadableName()}";
+        }
+
+        public ActiveArrayData<T> CreateActiveArrayData(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
         {
             Debug_EnsureNotHardened();
             //TODO: #136 - Kinda gross, we shouldn't know about Cancelling here.
@@ -61,20 +74,31 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ActiveArrayData<T> pendingCancelArrayData = null;
             if (cancelRequestBehaviour is CancelRequestBehaviour.Unwind)
             {
-                pendingCancelArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore, null);
+                pendingCancelArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
+                    taskSetOwner,
+                    CancelRequestBehaviour.Ignore,
+                    null,
+                    $"{uniqueContextIdentifier}PENDING-CANCEL");
+                DataTargets.Add(pendingCancelArrayData);
             }
 
-            ActiveArrayData<T> activeArrayData = new ActiveArrayData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, cancelRequestBehaviour, pendingCancelArrayData);
-            ActiveDataLookupByID.Add(activeArrayData.ID, activeArrayData);
-
+            ActiveArrayData<T> activeArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
+                taskSetOwner,
+                cancelRequestBehaviour,
+                pendingCancelArrayData,
+                uniqueContextIdentifier);
+            DataTargets.Add(activeArrayData);
             return activeArrayData;
         }
 
-        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner)
+        public ActiveLookupData<T> CreateActiveLookupData(ITaskSetOwner taskSetOwner, string uniqueContextIdentifier)
         {
             Debug_EnsureNotHardened();
-            ActiveLookupData<T> activeLookupData = new ActiveLookupData<T>(TaskDriverManagementSystem.GetNextID(), taskSetOwner, CancelRequestBehaviour.Ignore);
-            ActiveDataLookupByID.Add(activeLookupData.ID, activeLookupData);
+            ActiveLookupData<T> activeLookupData = TaskDriverManagementSystem.CreateActiveLookupData<T>(
+                taskSetOwner,
+                CancelRequestBehaviour.Ignore,
+                uniqueContextIdentifier);
+            DataTargets.Add(activeLookupData);
             return activeLookupData;
         }
 
@@ -111,17 +135,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             HardenSelf();
 
             //For each piece of active data, we want exclusive access to it when consolidating. We're going to be writing to it via one thread.
-            foreach (AbstractData data in ActiveDataLookupByID.Values)
+            //We'll also add our own Pending data. We want exclusive access because we'll be reading from it and then clearing the collection.
+            foreach (AbstractData data in DataTargets)
             {
                 AddConsolidationData(data, AccessType.ExclusiveWrite);
-                //Add any Pending Cancel Active data as well.
-                if (data.PendingCancelActiveData != null)
-                {
-                    AddConsolidationData(data.PendingCancelActiveData, AccessType.ExclusiveWrite);
-                }
             }
-            //We'll also add our own Pending data. We want exclusive access because we'll be reading from it and then clearing the collection.
-            AddConsolidationData(PendingData, AccessType.ExclusiveWrite);
 
             //One job handle for each Consolidation Data and one for the incoming dependency
             m_ConsolidationDependencies = new NativeArray<JobHandle>(m_ConsolidationData.Count + 1, Allocator.Persistent);
@@ -133,16 +151,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_ConsolidationData.Add(new DataAccessWrapper(data, accessType));
         }
-        
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
 
         public abstract JobHandle MigrateTo(
             JobHandle dependsOn,
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             IDataSource destinationDataSource,
-            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-            DestinationWorldDataMap destinationWorldDataMap);
+            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
 
         //*************************************************************************************************************
         // EXECUTION
@@ -184,7 +202,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SAFETY
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureNotHardened()
         {
             if (m_IsHardened)

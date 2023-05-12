@@ -1,16 +1,34 @@
 using Anvil.CSharp.Core;
+using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    internal abstract class AbstractPersistentData : AbstractAnvilBase
+    internal abstract class AbstractPersistentData : AbstractAnvilBase,
+                                                     IWorldUniqueID<DataTargetID>
     {
-        private readonly AccessController m_AccessController;
-
-        protected AbstractPersistentData()
+        private static readonly Type ABSTRACT_PERSISTENT_DATA_TYPE = typeof(AbstractPersistentData);
+        
+        public static DataTargetID GenerateWorldUniqueID(IDataOwner dataOwner, Type persistentDataType, string uniqueContextIdentifier)
         {
+            Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
+            Debug.Assert(ABSTRACT_PERSISTENT_DATA_TYPE.IsAssignableFrom(persistentDataType));
+            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{persistentDataType.AssemblyQualifiedName}{uniqueContextIdentifier ?? string.Empty}";
+            return new DataTargetID(idPath.GetBurstHashCode32());
+        }
+        
+        private readonly AccessController m_AccessController;
+        private DataTargetID m_WorldUniqueID;
+        
+        public DataTargetID WorldUniqueID { get; }
+
+        protected AbstractPersistentData(IDataOwner dataOwner, string uniqueContextIdentifier)
+        {
+            WorldUniqueID = GenerateWorldUniqueID(dataOwner, GetType(), uniqueContextIdentifier);
             m_AccessController = new AccessController();
         }
 
@@ -23,6 +41,11 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         protected abstract void DisposeData();
+
+        public override string ToString()
+        {
+            return $"{GetType().GetReadableName()}";
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquireAsync(AccessType accessType)

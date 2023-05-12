@@ -7,25 +7,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     [BurstCompatible]
     internal struct CancelRequestsActiveConsolidator
     {
-        private const uint UNSET_COMPLETE_ACTIVE_ID = default;
-
         private readonly bool m_HasCancellableData;
 
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_RequestLookup;
         private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
         private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer m_CompleteWriter;
-        private readonly uint m_CompleteActiveID;
+        private readonly DataTargetID m_CompleteDataTargetID;
 
         public CancelRequestsActiveConsolidator(
             UnsafeParallelHashMap<EntityProxyInstanceID, bool> requestLookup,
-            ITaskSetOwner taskSetOwner)
+            ITaskSetOwner taskSetOwner) : this()
         {
             m_RequestLookup = requestLookup;
             m_HasCancellableData = taskSetOwner.HasCancellableData;
 
             m_ProgressLookup = default;
             m_CompleteWriter = default;
-            m_CompleteActiveID = UNSET_COMPLETE_ACTIVE_ID;
 
             if (m_HasCancellableData)
             {
@@ -35,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 CancelCompleteDataStream cancelCompleteDataStream = taskSetOwner.TaskSet.CancelCompleteDataStream;
                 m_CompleteWriter = cancelCompleteDataStream.PendingWriter;
-                m_CompleteActiveID = cancelCompleteDataStream.ActiveID;
+                m_CompleteDataTargetID = cancelCompleteDataStream.DataTargetID;
             }
         }
 
@@ -63,8 +60,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 completeLaneWriter.Write(
                     new EntityProxyInstanceWrapper<CancelComplete>(
                         id.Entity,
-                        id.TaskSetOwnerID,
-                        m_CompleteActiveID,
+                        id.DataOwnerID,
+                        m_CompleteDataTargetID,
                         ref cancelComplete));
             }
         }

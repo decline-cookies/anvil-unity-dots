@@ -92,10 +92,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TData : struct;
 
 
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>()
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
             where TData : unmanaged, IThreadPersistentDataInstance;
 
-        public IJobConfig RequireThreadPersistentDataForRead<TData>()
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
             where TData : unmanaged, IThreadPersistentDataInstance;
 
         public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)

@@ -17,14 +17,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Data Stream representing when Cancel Requests are Complete on the system
         /// </summary>
         public ISystemDataStream<CancelComplete> CancelCompleteDataStream { get; }
-        
+
         /// <summary>
         /// Creates an <see cref="ISystemDataStream{TInstance}"/> for use in jobs.
         /// </summary>
         /// <param name="cancelRequestBehaviour">The type of <see cref="CancelRequestBehaviour"/> this stream should use.</param>
+        /// <param name="uniqueContextIdentifier">An optional context string to uniquely identify this data stream on the system</param>
         /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the stream.</typeparam>
         /// <returns>The <see cref="ISystemDataStream{TInstance}"/> instance</returns>
-        public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
+        public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
@@ -33,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IEntityPersistentDataInstance"/></typeparam>
         /// <returns>The <see cref="ISystemEntityPersistentData{T}"/> instance.</returns>
-        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>()
+        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance;
 
         /// <summary>

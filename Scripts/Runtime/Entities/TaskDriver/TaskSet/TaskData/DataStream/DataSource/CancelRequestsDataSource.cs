@@ -23,13 +23,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddConsolidationData(TaskDriverManagementSystem.GetCancelCompleteDataSource().PendingData, AccessType.SharedWrite);
 
             //For each piece of data we want to get exclusive write access to the Progress lookup as well
-            foreach (AbstractData data in ActiveDataLookupByID.Values)
+            foreach (AbstractData data in DataTargets)
             {
-                ActiveLookupData<EntityProxyInstanceID> progressLookupData = data.TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
+                if (data.DataOwner is not ITaskSetOwner taskSetOwner)
+                {
+                    continue;
+                }
+                ActiveLookupData<EntityProxyInstanceID> progressLookupData = taskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
                 AddConsolidationData(progressLookupData, AccessType.ExclusiveWrite);
             }
 
-            m_Consolidator = new CancelRequestsDataSourceConsolidator(PendingData, ActiveDataLookupByID);
+            m_Consolidator = new CancelRequestsDataSourceConsolidator(PendingData, DataTargets);
         }
 
         protected override JobHandle ConsolidateSelf(JobHandle dependsOn)

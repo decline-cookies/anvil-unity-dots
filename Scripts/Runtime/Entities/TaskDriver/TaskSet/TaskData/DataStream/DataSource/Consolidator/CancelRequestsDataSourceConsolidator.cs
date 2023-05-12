@@ -15,19 +15,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
 
         private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
-        private UnsafeParallelHashMap<uint, CancelRequestsActiveConsolidator> m_ActiveConsolidatorsByID;
+        private UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator> m_ActiveConsolidatorsByDataTargetID;
 
-        public CancelRequestsDataSourceConsolidator(PendingData<EntityProxyInstanceID> pendingData, Dictionary<uint, AbstractData> dataMapping)
+        public CancelRequestsDataSourceConsolidator(PendingData<EntityProxyInstanceID> pendingData, HashSet<AbstractData> dataTargets)
         {
             m_Pending = pendingData.Pending;
-            m_ActiveConsolidatorsByID
-                = new UnsafeParallelHashMap<uint, CancelRequestsActiveConsolidator>(dataMapping.Count, Allocator.Persistent);
-            foreach (KeyValuePair<uint, AbstractData> entry in dataMapping)
+            m_ActiveConsolidatorsByDataTargetID
+                = new UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator>(dataTargets.Count, Allocator.Persistent);
+            foreach (AbstractData dataTarget in dataTargets)
             {
-                ActiveLookupData<EntityProxyInstanceID> activeLookupData = (ActiveLookupData<EntityProxyInstanceID>)entry.Value;
-                m_ActiveConsolidatorsByID.Add(
-                    entry.Key,
-                    new CancelRequestsActiveConsolidator(activeLookupData.Lookup, activeLookupData.TaskSetOwner));
+                if (dataTarget is not ActiveLookupData<EntityProxyInstanceID> activeLookupData)
+                {
+                    continue;
+                }
+                m_ActiveConsolidatorsByDataTargetID.Add(
+                    activeLookupData.WorldUniqueID,
+                    new CancelRequestsActiveConsolidator(activeLookupData.Lookup, (ITaskSetOwner)activeLookupData.DataOwner));
             }
 
             m_NativeThreadIndex = UNSET_THREAD_INDEX;
@@ -35,9 +38,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public void Dispose()
         {
-            if (m_ActiveConsolidatorsByID.IsCreated)
+            if (m_ActiveConsolidatorsByDataTargetID.IsCreated)
             {
-                m_ActiveConsolidatorsByID.Dispose();
+                m_ActiveConsolidatorsByDataTargetID.Dispose();
             }
         }
 
@@ -45,15 +48,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
 
-            foreach (KeyValue<uint, CancelRequestsActiveConsolidator> entry in m_ActiveConsolidatorsByID)
+            foreach (KeyValue<DataTargetID, CancelRequestsActiveConsolidator> entry in m_ActiveConsolidatorsByDataTargetID)
             {
                 entry.Value.PrepareForConsolidation();
             }
 
             foreach (EntityProxyInstanceID entry in m_Pending)
             {
-                uint activeID = entry.ActiveID;
-                CancelRequestsActiveConsolidator activeConsolidator = m_ActiveConsolidatorsByID[activeID];
+                DataTargetID dataTargetID = entry.DataTargetID;
+                CancelRequestsActiveConsolidator activeConsolidator = m_ActiveConsolidatorsByDataTargetID[dataTargetID];
                 activeConsolidator.WriteToActive(entry, laneIndex);
             }
 

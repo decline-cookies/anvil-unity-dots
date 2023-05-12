@@ -15,8 +15,11 @@ namespace Anvil.Unity.DOTS.Entities
                                              IMigratablePersistentData
         where T : unmanaged, IEntityPersistentDataInstance
     {
-        public EntityPersistentData()
-            : base(new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent))
+        public EntityPersistentData(IDataOwner dataOwner, string uniqueContextIdentifier)
+            : base(
+                dataOwner, 
+                new UnsafeParallelHashMap<Entity, T>(ChunkUtil.MaxElementsPerChunk<Entity>(), Allocator.Persistent), 
+                uniqueContextIdentifier)
         {
             //We don't know what will be stored in here, but if there are Entity references we want to be able to patch them
             EntityWorldMigrationSystem.RegisterForEntityPatching<T>();
