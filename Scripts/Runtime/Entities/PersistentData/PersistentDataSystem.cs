@@ -1,5 +1,3 @@
-using Anvil.CSharp.Collections;
-using Anvil.CSharp.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,25 +8,25 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities
 {
     internal partial class PersistentDataSystem : AbstractDataSystem,
-                                                  IEntityWorldMigrationObserver
+                                                  IEntityWorldMigrationObserver,
+                                                  IDataOwner
     {
-        private const string WORLD_PATH = "World";
-        private static readonly Dictionary<Type, AbstractPersistentData> s_ThreadPersistentData = new Dictionary<Type, AbstractPersistentData>();
+        private static readonly WorldDataOwnerLookup<DataTargetID, AbstractPersistentData> s_ThreadPersistentData = new WorldDataOwnerLookup<DataTargetID, AbstractPersistentData>();
         private static int s_InstanceCount;
 
-        private readonly Dictionary<Type, AbstractPersistentData> m_EntityPersistentData;
+        private readonly WorldDataOwnerLookup<DataTargetID, AbstractPersistentData> m_EntityPersistentData;
 
-        private readonly Dictionary<string, IMigratablePersistentData> m_MigrationPersistentDataLookup;
-        // ReSharper disable once InconsistentNaming
-        private NativeList<JobHandle> m_MigrationDependencies_ScratchPad;
         private EntityWorldMigrationSystem m_EntityWorldMigrationSystem;
+
+        public DataOwnerID WorldUniqueID { get; }
 
         public PersistentDataSystem()
         {
             s_InstanceCount++;
-            m_EntityPersistentData = new Dictionary<Type, AbstractPersistentData>();
-            m_MigrationDependencies_ScratchPad = new NativeList<JobHandle>(8, Allocator.Persistent);
-            m_MigrationPersistentDataLookup = new Dictionary<string, IMigratablePersistentData>();
+            m_EntityPersistentData = new WorldDataOwnerLookup<DataTargetID, AbstractPersistentData>();
+
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            WorldUniqueID = new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void OnCreate()
@@ -40,44 +38,75 @@ namespace Anvil.Unity.DOTS.Entities
 
         protected override void OnDestroy()
         {
-            m_MigrationDependencies_ScratchPad.Dispose();
-            m_EntityPersistentData.DisposeAllValuesAndClear();
+            m_EntityPersistentData.Dispose();
             s_InstanceCount--;
             if (s_InstanceCount <= 0)
             {
-                s_ThreadPersistentData.DisposeAllValuesAndClear();
+                s_ThreadPersistentData.Dispose();
             }
-            
+
             m_EntityWorldMigrationSystem.UnregisterMigrationObserver(this);
             base.OnDestroy();
         }
 
-        public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>()
+        //*************************************************************************************************************
+        // INIT
+        //*************************************************************************************************************
+
+        public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
-            Type type = typeof(T);
-            if (!s_ThreadPersistentData.TryGetValue(type, out AbstractPersistentData persistentData))
-            {
-                persistentData = new ThreadPersistentData<T>();
-                s_ThreadPersistentData.Add(type, persistentData);
-            }
-            return (ThreadPersistentData<T>)persistentData;
+            DataTargetID worldUniqueID = AbstractPersistentData.GenerateWorldUniqueID(
+                this,
+                typeof(ThreadPersistentData<T>),
+                uniqueContextIdentifier);
+
+            return s_ThreadPersistentData.GetOrCreate(
+                worldUniqueID,
+                CreateThreadPersistentDataInstance<T>,
+                this,
+                uniqueContextIdentifier);
         }
-        
-        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>()
+
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            Type type = typeof(T);
-            if (!m_EntityPersistentData.TryGetValue(type, out AbstractPersistentData persistentData))
-            {
-                persistentData = new EntityPersistentData<T>();
-                m_EntityPersistentData.Add(type, persistentData);
-                AddToMigrationLookup(WORLD_PATH, (EntityPersistentData<T>)persistentData);
-            }
-
-            return (EntityPersistentData<T>)persistentData;
+            return GetOrCreateEntityPersistentData<T>(this, uniqueContextIdentifier);
         }
-        
+
+        public EntityPersistentData<T> GetOrCreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            DataTargetID worldUniqueID = AbstractPersistentData.GenerateWorldUniqueID(
+                dataOwner,
+                typeof(EntityPersistentData<T>),
+                uniqueContextIdentifier);
+
+            return m_EntityPersistentData.GetOrCreate(
+                worldUniqueID,
+                CreateEntityPersistentDataInstance<T>,
+                dataOwner,
+                uniqueContextIdentifier);
+        }
+
+        public EntityPersistentData<T> CreateEntityPersistentData<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            return m_EntityPersistentData.Create(CreateEntityPersistentDataInstance<T>, dataOwner, uniqueContextIdentifier);
+        }
+
+        private EntityPersistentData<T> CreateEntityPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+            where T : unmanaged, IEntityPersistentDataInstance
+        {
+            return new EntityPersistentData<T>(dataOwner, uniqueContextIdentifier);
+        }
+
+        private ThreadPersistentData<T> CreateThreadPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
+            where T : unmanaged, IThreadPersistentDataInstance
+        {
+            return new ThreadPersistentData<T>(dataOwner, uniqueContextIdentifier);
+        }
+
         //*************************************************************************************************************
         // MIGRATION
         //*************************************************************************************************************
@@ -87,47 +116,36 @@ namespace Anvil.Unity.DOTS.Entities
             PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
 
+            NativeArray<JobHandle> migrationDependencies = new NativeArray<JobHandle>(m_EntityPersistentData.Count, Allocator.Temp);
             int index = 0;
-            foreach (KeyValuePair<string, IMigratablePersistentData> entry in m_MigrationPersistentDataLookup)
+            //We only need to migrate EntityPersistentData.
+            //ThreadPersistentData is global to the app and doesn't need to be migrated because no jobs or data should be in flight during migration.
+            foreach (KeyValuePair<DataTargetID, AbstractPersistentData> entry in m_EntityPersistentData)
             {
-                if (!destinationPersistentDataSystem.m_MigrationPersistentDataLookup.TryGetValue(entry.Key, out IMigratablePersistentData destinationPersistentData))
-                {
-                    throw new InvalidOperationException($"Current World {World} has Entity Persistent Data of {entry.Key} but it doesn't exist in the destination world {destinationWorld}!");
-                }
-                m_MigrationDependencies_ScratchPad[index] = entry.Value.MigrateTo(dependsOn, destinationPersistentData, ref remapArray);
+                //We'll try and get the other world's corresponding EntityPersistentData, it might be null
+                destinationPersistentDataSystem.m_EntityPersistentData.TryGetData(entry.Key, out AbstractPersistentData dstData);
+                //Ours can't be null, so we direct cast to catch any code issues (will throw exception)
+                IMigratablePersistentData srcMigratablePersistentData = (IMigratablePersistentData)entry.Value;
+                //Theirs might be null, so we do an "as cast" so that it can remain null
+                IMigratablePersistentData dstMigratablePersistentData = dstData as IMigratablePersistentData;
+                //Migrate
+                migrationDependencies[index] = srcMigratablePersistentData.MigrateTo(dependsOn, dstMigratablePersistentData, ref remapArray);
                 index++;
             }
 
-            return JobHandle.CombineDependencies(m_MigrationDependencies_ScratchPad.AsArray());
-        }
-        
-        public void AddToMigrationLookup(string parentPath, IMigratablePersistentData entityPersistentData)
-        {
-            string path = $"{parentPath}-{entityPersistentData.GetType().GetReadableName()}";
-            Debug_EnsureNoDuplicateMigrationData(path);
-            m_MigrationPersistentDataLookup.Add(path, entityPersistentData);
-            m_MigrationDependencies_ScratchPad.ResizeUninitialized(m_MigrationPersistentDataLookup.Count);
+            return JobHandle.CombineDependencies(migrationDependencies);
         }
 
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureOtherWorldPersistentDataSystemExists(World destinationWorld, PersistentDataSystem persistentDataSystem)
         {
             if (persistentDataSystem == null)
             {
                 throw new InvalidOperationException($"Expected World {destinationWorld} to have a {nameof(PersistentDataSystem)} but it does not!");
-            }
-        }
-        
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureNoDuplicateMigrationData(string path)
-        {
-            if (m_MigrationPersistentDataLookup.ContainsKey(path))
-            {
-                throw new InvalidOperationException($"Trying to add Entity Persistent Data migration data for {this} but {path} is already in the lookup!");
             }
         }
     }

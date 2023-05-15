@@ -16,6 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly List<AbstractTaskDriver> m_TaskDrivers;
 
         private BulkJobScheduler<AbstractJobConfig> m_BulkJobScheduler;
+
         private bool m_IsHardened;
         private bool m_IsUpdatePhaseHardened;
         private bool m_HasCancellableData;
@@ -26,12 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public new World World { get; }
         internal TaskSet TaskSet { get; }
 
-        internal uint ID { get; }
-
-        uint ITaskSetOwner.ID
-        {
-            get => ID;
-        }
+        internal DataOwnerID WorldUniqueID { get; }
 
         internal ISystemCancelRequestDataStream CancelRequestDataStream
         {
@@ -71,18 +67,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => EMPTY_SUB_TASK_DRIVERS;
         }
+        
+        DataOwnerID IWorldUniqueID<DataOwnerID>.WorldUniqueID
+        {
+            get => WorldUniqueID;
+        }
 
         protected AbstractTaskDriverSystem(World world)
         {
             World = world;
-            TaskDriverManagementSystem taskDriverManagementSystem = World.GetExistingSystem<TaskDriverManagementSystem>();
-
-
+            WorldUniqueID = GenerateWorldUniqueID();
+            
             m_TaskDrivers = new List<AbstractTaskDriver>();
-
-            ID = taskDriverManagementSystem.GetNextID();
-
             TaskSet = new TaskSet(this);
+        }
+
+        private DataOwnerID GenerateWorldUniqueID()
+        {
+            //There can only be one of these systems per world, so we can just use our type
+            string idPath = $"{GetType().AssemblyQualifiedName}";
+            return new DataOwnerID(idPath.GetBurstHashCode32());
         }
 
         protected override void OnCreate()
@@ -105,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override string ToString()
         {
-            return $"{GetType().GetReadableName()}|{ID}";
+            return $"{GetType().GetReadableName()}|{WorldUniqueID}";
         }
 
         internal void RegisterTaskDriver(AbstractTaskDriver taskDriver)
@@ -114,18 +118,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskDrivers.Add(taskDriver);
         }
 
-        internal ISystemDataStream<TInstance> CreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete)
+        internal ISystemDataStream<TInstance> CreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour);
+            EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
             //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
             return new EntityProxyDataStream<TInstance>(taskDriver, dataStream);
         }
 
-        internal ISystemEntityPersistentData<T> CreateEntityPersistentData<T>()
+        internal ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>();
+            EntityPersistentData<T> entityPersistentData = TaskSet.GetOrCreateEntityPersistentData<T>(uniqueContextIdentifier);
             return entityPersistentData;
         }
 
@@ -189,7 +193,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 return;
             }
-
             m_IsHardened = true;
 
             //Harden our TaskSet

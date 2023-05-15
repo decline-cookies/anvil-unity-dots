@@ -33,7 +33,6 @@ namespace Anvil.Unity.DOTS.Entities
         private EntityCommandBufferSystem m_CommandBufferSystem;
         private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
 
-
         private readonly Dictionary<Type, IEntitySpawner> m_EntitySpawners;
         private readonly HashSet<IEntitySpawner> m_ActiveEntitySpawners;
         private readonly AccessControlledValue<NativeParallelHashMap<long, Entity>> m_EntityPrototypes;

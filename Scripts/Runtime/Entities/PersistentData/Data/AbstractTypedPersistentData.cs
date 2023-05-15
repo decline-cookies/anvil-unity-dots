@@ -14,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities
             get => ref UnsafeUtility.AsRef<T>(m_Data);
         }
 
-        protected AbstractTypedPersistentData(T data) : base()
+        protected AbstractTypedPersistentData(IDataOwner dataOwner, T data, string uniqueContextIdentifier) : base(dataOwner, uniqueContextIdentifier)
         {
             m_Data = UnsafeUtility.Malloc(
                 UnsafeUtility.SizeOf<T>(),

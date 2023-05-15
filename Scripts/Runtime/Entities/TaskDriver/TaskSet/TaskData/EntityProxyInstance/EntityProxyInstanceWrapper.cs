@@ -1,11 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -34,16 +32,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public readonly EntityProxyInstanceID InstanceID;
         public readonly TInstance Payload;
 
-        public EntityProxyInstanceWrapper(Entity entity, uint taskSetOwnerID, uint activeID, ref TInstance payload)
+        public EntityProxyInstanceWrapper(Entity entity, DataOwnerID dataOwnerID, DataTargetID dataTargetID, ref TInstance payload)
         {
-            InstanceID = new EntityProxyInstanceID(entity, taskSetOwnerID, activeID);
+            InstanceID = new EntityProxyInstanceID(entity, dataOwnerID, dataTargetID);
             Payload = payload;
         }
 
-        public EntityProxyInstanceWrapper(ref EntityProxyInstanceWrapper<TInstance> original, uint newActiveID)
+        public EntityProxyInstanceWrapper(ref EntityProxyInstanceWrapper<TInstance> original, DataTargetID newDataTargetID)
         {
             EntityProxyInstanceID originalInstanceID = original.InstanceID;
-            InstanceID = new EntityProxyInstanceID(originalInstanceID.Entity, originalInstanceID.TaskSetOwnerID, newActiveID);
+            InstanceID = new EntityProxyInstanceID(originalInstanceID.Entity, originalInstanceID.DataOwnerID, newDataTargetID);
             Payload = original.Payload;
         }
 

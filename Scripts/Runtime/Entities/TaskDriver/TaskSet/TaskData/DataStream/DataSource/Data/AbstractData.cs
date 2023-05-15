@@ -1,31 +1,46 @@
 using Anvil.CSharp.Core;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Jobs;
+using System;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Too many responsibilities
-    internal abstract class AbstractData : AbstractAnvilBase
+    internal abstract class AbstractData : AbstractAnvilBase,
+                                           IWorldUniqueID<DataTargetID>
     {
+        private static readonly Type ABSTRACT_DATA_TYPE = typeof(AbstractData);
+        
+        public static DataTargetID GenerateWorldUniqueID(IDataOwner dataOwner, Type abstractDataType, string uniqueContextIdentifier)
+        {
+            Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
+            Debug.Assert(ABSTRACT_DATA_TYPE.IsAssignableFrom(abstractDataType));
+            string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{abstractDataType.AssemblyQualifiedName}{uniqueContextIdentifier ?? string.Empty}";
+            return new DataTargetID(idPath.GetBurstHashCode32());
+        }
+        
         private readonly AccessController m_AccessController;
 
-        public uint ID { get; }
+        public DataTargetID WorldUniqueID { get; }
         public CancelRequestBehaviour CancelRequestBehaviour { get; }
 
-        public ITaskSetOwner TaskSetOwner { get; }
+        public IDataOwner DataOwner { get; }
 
         public AbstractData PendingCancelActiveData { get; }
 
+        private DataTargetID m_WorldUniqueID;
 
-        protected AbstractData(uint id, ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData)
+
+        protected AbstractData(IDataOwner dataOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData, string uniqueContextIdentifier)
         {
             m_AccessController = new AccessController();
-            ID = id;
-            TaskSetOwner = taskSetOwner;
+            DataOwner = dataOwner;
             CancelRequestBehaviour = cancelRequestBehaviour;
             PendingCancelActiveData = pendingCancelActiveData;
+            WorldUniqueID = GenerateWorldUniqueID(DataOwner, GetType(), uniqueContextIdentifier);
         }
 
         protected sealed override void DisposeSelf()

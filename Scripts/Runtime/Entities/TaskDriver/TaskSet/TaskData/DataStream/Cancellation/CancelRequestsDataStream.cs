@@ -8,12 +8,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                               IDriverCancelRequestDataStream,
                                               ISystemCancelRequestDataStream
     {
+        private const string UNIQUE_CONTEXT_IDENTIFIER = "CANCEL_REQUEST";
+        
         private readonly CancelRequestsDataSource m_DataSource;
         public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
 
-        public override uint ActiveID
+        public override DataTargetID DataTargetID
         {
-            get => ActiveLookupData.ID;
+            get => ActiveLookupData.WorldUniqueID;
+        }
+
+        public override IDataSource DataSource
+        {
+            get => m_DataSource;
         }
 
         public CancelRequestsDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
@@ -21,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetCancelRequestsDataSource();
 
-            ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner);
+            ActiveLookupData = m_DataSource.CreateActiveLookupData(TaskSetOwner, UNIQUE_CONTEXT_IDENTIFIER);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

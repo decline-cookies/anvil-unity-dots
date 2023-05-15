@@ -34,16 +34,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_ContextTaskDriver = contextTaskDriver;
         }
 
-        public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete) 
+        public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null) 
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            return m_TaskDriverSystem.CreateDataStream<TInstance>(m_ContextTaskDriver, cancelRequestBehaviour);
+            return m_TaskDriverSystem.CreateDataStream<TInstance>(m_ContextTaskDriver, cancelRequestBehaviour, uniqueContextIdentifier);
         }
 
-        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>() 
+        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier = null) 
             where T : unmanaged, IEntityPersistentDataInstance
         {
-            return m_TaskDriverSystem.CreateEntityPersistentData<T>();
+            return m_TaskDriverSystem.CreateEntityPersistentData<T>(uniqueContextIdentifier);
         }
 
         public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(

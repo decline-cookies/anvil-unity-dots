@@ -10,8 +10,11 @@ namespace Anvil.Unity.DOTS.Entities
                                              IThreadPersistentData<T>
         where T : unmanaged, IThreadPersistentDataInstance
     {
-        public ThreadPersistentData()
-            : base(new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent))
+        public ThreadPersistentData(IDataOwner dataOwner, string uniqueContextIdentifier)
+            : base(
+                dataOwner, 
+                new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent), 
+                uniqueContextIdentifier)
         {
             ref UnsafeArray<T> data = ref Data;
             for (int i = 0; i < data.Length; ++i)

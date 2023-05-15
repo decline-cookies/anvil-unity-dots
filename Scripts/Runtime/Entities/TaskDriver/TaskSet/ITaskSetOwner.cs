@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal interface ITaskSetOwner
+    internal interface ITaskSetOwner : IDataOwner
     {
         public TaskSet TaskSet { get; }
-        public uint ID { get; }
-        public World World { get; }
+        
         public AbstractTaskDriverSystem TaskDriverSystem { get; }
 
         public List<AbstractTaskDriver> SubTaskDrivers { get; }

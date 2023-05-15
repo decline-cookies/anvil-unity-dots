@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public static bool operator ==(ResolveTargetID lhs, ResolveTargetID rhs)
         {
-            return lhs.TypeID == rhs.TypeID && lhs.TaskSetOwnerID == rhs.TaskSetOwnerID;
+            return lhs.TypeID == rhs.TypeID && lhs.DataOwnerID == rhs.DataOwnerID;
         }
 
         public static bool operator !=(ResolveTargetID lhs, ResolveTargetID rhs)
@@ -18,12 +18,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public readonly uint TypeID;
-        public readonly uint TaskSetOwnerID;
+        public readonly DataOwnerID DataOwnerID;
 
-        public ResolveTargetID(uint typeID, uint taskSetOwnerID)
+        public ResolveTargetID(uint typeID, DataOwnerID dataOwnerID)
         {
             TypeID = typeID;
-            TaskSetOwnerID = taskSetOwnerID;
+            DataOwnerID = dataOwnerID;
         }
 
         public bool Equals(ResolveTargetID other)
@@ -38,12 +38,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override int GetHashCode()
         {
-            return HashCodeUtil.GetHashCode((int)TaskSetOwnerID, (int)TypeID);
+            return HashCodeUtil.GetHashCode(DataOwnerID.GetHashCode(), (int)TypeID);
         }
 
         public override string ToString()
         {
-            return $"TypeID: {TypeID} - TaskSetOwnerID: {TaskSetOwnerID}";
+            return $"TypeID: {TypeID} - DataOwnerID: {DataOwnerID}";
         }
 
         [BurstCompatible]

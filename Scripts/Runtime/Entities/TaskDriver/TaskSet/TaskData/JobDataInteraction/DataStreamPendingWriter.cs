@@ -17,21 +17,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private const int UNSET_LANE_INDEX = -1;
 
         [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingWriter;
-        [ReadOnly] private readonly uint m_TaskSetOwnerID;
-        [ReadOnly] private readonly uint m_ActiveID;
+        [ReadOnly] private readonly DataOwnerID m_DataOwnerID;
+        [ReadOnly] private readonly DataTargetID m_DataTargetID;
 
         private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
 
         internal DataStreamPendingWriter(
             UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
-            uint taskSetOwnerID,
-            uint activeID)
+            DataOwnerID dataOwnerID,
+            DataTargetID dataTargetID)
             : this()
         {
             m_PendingWriter = pendingWriter;
-            m_TaskSetOwnerID = taskSetOwnerID;
-            m_ActiveID = activeID;
+            m_DataOwnerID = dataOwnerID;
+            m_DataTargetID = dataTargetID;
 
             m_PendingLaneWriter = default;
             m_LaneIndex = UNSET_LANE_INDEX;
@@ -41,14 +41,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal unsafe DataStreamPendingWriter(
             void* writerPtr,
-            uint taskSetOwnerID,
-            uint activeID,
+            DataOwnerID dataOwnerID,
+            DataTargetID dataTargetID,
             int laneIndex)
             : this()
         {
             m_PendingWriter = UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
-            m_TaskSetOwnerID = taskSetOwnerID;
-            m_ActiveID = activeID;
+            m_DataOwnerID = dataOwnerID;
+            m_DataTargetID = dataTargetID;
             m_LaneIndex = laneIndex;
 
             Debug_EnsureWriterIsValid();
@@ -102,8 +102,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_PendingLaneWriter.Write(
                 new EntityProxyInstanceWrapper<TInstance>(
                     instance.Entity,
-                    m_TaskSetOwnerID,
-                    m_ActiveID,
+                    m_DataOwnerID,
+                    m_DataTargetID,
                     ref instance));
         }
 
@@ -128,8 +128,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 .Write(
                     new EntityProxyInstanceWrapper<TInstance>(
                         instance.Entity,
-                        m_TaskSetOwnerID,
-                        m_ActiveID,
+                        m_DataOwnerID,
+                        m_DataTargetID,
                         ref instance));
         }
 

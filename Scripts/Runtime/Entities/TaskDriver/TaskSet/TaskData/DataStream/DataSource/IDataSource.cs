@@ -10,14 +10,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal interface IDataSource : IAnvilDisposable
     {
         public static readonly BulkScheduleDelegate<IDataSource> CONSOLIDATE_SCHEDULE_FUNCTION = BulkSchedulingUtil.CreateSchedulingDelegate<IDataSource>(nameof(Consolidate), BindingFlags.Instance | BindingFlags.Public);
+        
         public void Harden();
 
         public JobHandle Consolidate(JobHandle dependsOn);
         
-        public JobHandle MigrateTo(
-            JobHandle dependsOn,
-            IDataSource destinationDataSource, 
-            ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray,
-            DestinationWorldDataMap destinationWorldDataMap);
+        public DataTargetID PendingWorldUniqueID { get; }
+
+        public JobHandle MigrateTo(JobHandle dependsOn, TaskDriverManagementSystem destinationTaskDriverManagementSystem, IDataSource destinationDataSource, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray);
     }
 }
