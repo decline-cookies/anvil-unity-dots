@@ -3,6 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -26,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities
             JobHandle dependsOn,
             UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
             EntitySpawnHelper entitySpawnHelper,
-            ref EntityCommandBuffer ecb)
+            ref EntityCommandBufferWithID ecb)
         {
             SpawnJob job = new SpawnJob(spawnDefinitions, ref ecb, entitySpawnHelper);
             return job.Schedule(dependsOn);
@@ -40,11 +41,11 @@ namespace Anvil.Unity.DOTS.Entities
 
             private readonly long m_Hash;
 
-            private EntityCommandBuffer m_ECB;
+            [NativeDisableContainerSafetyRestriction][NativeDisableUnsafePtrRestriction] private EntityCommandBufferWithID m_ECB;
 
             public SpawnJob(
                 UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
-                ref EntityCommandBuffer ecb,
+                ref EntityCommandBufferWithID ecb,
                 in EntitySpawnHelper entitySpawnHelper)
             {
                 m_SpawnDefinitions = spawnDefinitions;
@@ -84,19 +85,19 @@ namespace Anvil.Unity.DOTS.Entities
 
                 foreach (Entity entity in prototypesToDestroy)
                 {
-                    m_ECB.DestroyEntity(entity);
+                    m_ECB.EntityCommandBuffer.DestroyEntity(entity);
                 }
             }
 
             private void CreateEntity(TEntitySpawnDefinition spawnDefinition)
             {
-                Entity entity = m_ECB.CreateEntity(m_EntitySpawnHelper.GetEntityArchetypeForDefinition(m_Hash));
+                Entity entity = m_ECB.EntityCommandBuffer.CreateEntity(m_EntitySpawnHelper.GetEntityArchetypeForDefinition(m_Hash));
                 spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
             }
 
             private void InstantiateEntity(TEntitySpawnDefinition spawnDefinition, Entity prototype)
             {
-                Entity entity = m_ECB.Instantiate(prototype);
+                Entity entity = m_ECB.EntityCommandBuffer.Instantiate(prototype);
                 spawnDefinition.PopulateOnEntity(entity, ref m_ECB, m_EntitySpawnHelper);
             }
         }

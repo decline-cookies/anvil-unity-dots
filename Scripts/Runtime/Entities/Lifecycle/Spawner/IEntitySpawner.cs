@@ -11,6 +11,6 @@ namespace Anvil.Unity.DOTS.Entities
 
         internal JobHandle Schedule(
             JobHandle dependsOn,
-            ref EntityCommandBuffer ecb);
+            ref EntityCommandBufferWithID ecb);
     }
 }
