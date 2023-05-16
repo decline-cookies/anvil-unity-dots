@@ -1,5 +1,4 @@
 using Anvil.CSharp.Collections;
-using Anvil.CSharp.Data;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
@@ -10,10 +9,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -39,7 +36,7 @@ namespace Anvil.Unity.DOTS.Entities
         private readonly Dictionary<Type, IEntitySpawner> m_EntitySpawners;
         private readonly HashSet<IEntitySpawner> m_ActiveEntitySpawners;
         private readonly AccessControlledValue<NativeParallelHashMap<long, Entity>> m_EntityPrototypes;
-        
+
         public EntitySpawnSystem()
         {
             m_EntitySpawners = new Dictionary<Type, IEntitySpawner>();
@@ -116,10 +113,10 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 // TODO: #86 - When upgrading to Entities 1.0 we can use an unmanaged shared component which will let us
                 // TODO:       use burst for all spawners.
-                entitySpawner = new BurstEntitySpawner<TEntitySpawnDefinition>(
-                        EntityManager,
-                        m_EntityArchetypes,
-                        m_EntityPrototypes);
+                entitySpawner = new EntitySpawner<TEntitySpawnDefinition>(
+                    EntityManager,
+                    m_EntityArchetypes,
+                    m_EntityPrototypes);
                 entitySpawner.OnPendingWorkAdded += EntitySpawner_OnWriterAcquired;
                 m_EntitySpawners.Add(definitionType, entitySpawner);
             }
@@ -195,11 +192,16 @@ namespace Anvil.Unity.DOTS.Entities
 
             foreach (IEntitySpawner entitySpawner in m_ActiveEntitySpawners)
             {
+                //Temporary, as The EntitySpawner becomes a job struct, this will likely go away but for now it makes for a quick and easy safety system
+                EntityCommandBufferWithID.ClearPreviousInstanceIfExists(entitySpawner.EntityCommandBufferID);
+                
                 //Normally for each ECB created, you want to add the job handle for producer to the command buffer
                 //system. However, we know that all these handles will be combined, so we can just do one call at the
                 //end of the function. Creating here and passing into the Schedule function allows us to see the
                 //creation and AddJobHandleForProducer calls close by so we know we're adhering to the "pattern".
-                EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(m_CommandBufferSystem.CreateCommandBuffer());
+                EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
+                    entitySpawner.EntityCommandBufferID, 
+                    m_CommandBufferSystem.CreateCommandBuffer());
                 dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb);
                 index++;
             }
