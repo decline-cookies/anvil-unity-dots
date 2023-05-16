@@ -18,6 +18,16 @@ namespace Anvil.Unity.DOTS.Entities
 
         private EntityQuery m_Query;
 
+        public IReadAccessControlledValue<NativeList<Entity>> ArrivedEntities
+        {
+            get => m_ArrivedEntities;
+        }
+
+        public IReadAccessControlledValue<NativeList<Entity>> DepartedEntities
+        {
+            get => m_DepartedEntities;
+        }
+
         //TODO: Support EntityQueryDesc as well.
         public EntityLifecycleStatus(AbstractEntityLifecycleStatusSystem owningSystem, params ComponentType[] queryComponentTypes)
         {
@@ -46,11 +56,11 @@ namespace Anvil.Unity.DOTS.Entities
             m_Query = m_OwningSystem.GetEntityQuery(m_QueryComponentTypes);
             m_Query.SetOrderVersionFilter();
         }
-        
+
         //*************************************************************************************************************
         // PUBLIC API
         //*************************************************************************************************************
-        
+
         //TODO: #195 - Get rid of these and expose as IReadOnlyAccessControlledValue
         /// <inheritdoc cref="IEntityLifecycleStatus.AcquireArrivalsAsync"/>
         public JobHandle AcquireArrivalsAsync(out NativeList<Entity> arrivals)
@@ -91,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // UPDATES
         //*************************************************************************************************************
-        
+
         public JobHandle UpdateAsync(
             JobHandle dependsOn,
             ref NativeArray<Entity>.ReadOnly destroyedEntities)
