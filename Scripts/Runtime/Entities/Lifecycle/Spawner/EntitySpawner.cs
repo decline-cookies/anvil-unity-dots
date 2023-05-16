@@ -165,6 +165,7 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
+            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
             return entity;
         }
 
@@ -193,6 +194,7 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
+            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
         }
 
         /// <summary>
@@ -226,6 +228,7 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
+            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
 
             return entities;
         }
@@ -308,6 +311,7 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Dispose();
 
             ReleaseEntitySpawnHelper();
+            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
             return entity;
         }
 
