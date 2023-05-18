@@ -201,7 +201,7 @@ namespace Anvil.Unity.DOTS.Entities
                 //creation and AddJobHandleForProducer calls close by so we know we're adhering to the "pattern".
                 EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
                     entitySpawner.EntityCommandBufferID, 
-                    m_CommandBufferSystem.CreateCommandBuffer());
+                    m_CommandBufferSystem);
                 dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb);
                 index++;
             }

@@ -1,6 +1,7 @@
 using Anvil.CSharp.Data;
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using UnityEngine;
@@ -25,10 +26,20 @@ namespace Anvil.Unity.DOTS.Entities
         [NativeDisableContainerSafetyRestriction] [NativeDisableUnsafePtrRestriction]
         private EntityCommandBuffer m_EntityCommandBuffer;
 
-        public EntityCommandBufferWithID(uint id, EntityCommandBuffer entityCommandBuffer)
+        /// <summary>
+        /// Creates a new wrapper for an <see cref="EntityCommandBuffer"/> with an ID
+        /// </summary>
+        /// <param name="id">The ID to use to represent this <see cref="EntityCommandBuffer"/></param>
+        /// <param name="entityCommandBufferSystem">
+        /// An optional <see cref="EntityCommandBufferSystem"/>
+        /// If null, the underlying <see cref="EntityCommandBuffer"/> will be created directly with <see cref="Allocator.Temp"/>
+        /// for immediate use.
+        /// If not null, then the underlying <see cref="EntityCommandBuffer"/> will be created off of the system.
+        /// </param>
+        public EntityCommandBufferWithID(uint id, EntityCommandBufferSystem entityCommandBufferSystem = null)
         {
             ID = id;
-            m_EntityCommandBuffer = entityCommandBuffer;
+            m_EntityCommandBuffer = entityCommandBufferSystem?.CreateCommandBuffer() ?? new EntityCommandBuffer(Allocator.Temp);
             EntityCommandBufferWithIDManager.Register(this);
         }
 
@@ -89,6 +100,7 @@ namespace Anvil.Unity.DOTS.Entities
         public void Dispose()
         {
             m_EntityCommandBuffer.Dispose();
+            ClearPreviousInstanceIfExists(ID);
         }
 
         public Entity CreateEntity(EntityArchetype archetype)

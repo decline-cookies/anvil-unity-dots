@@ -152,9 +152,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnImmediate(TEntitySpawnDefinition spawnDefinition)
         {
-            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
-                EntityCommandBufferID,
-                new EntityCommandBuffer(Allocator.Temp));
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
 
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
@@ -165,7 +163,6 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
-            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
             return entity;
         }
 
@@ -177,9 +174,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </param>
         public void SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
         {
-            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
-                EntityCommandBufferID,
-                new EntityCommandBuffer(Allocator.Temp));
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -194,7 +189,6 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
-            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
         }
 
         /// <summary>
@@ -207,9 +201,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>A collection of all the entities spawned.</returns>
         public NativeArray<Entity> SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions, Allocator entitiesAllocator)
         {
-            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
-                EntityCommandBufferID,
-                new EntityCommandBuffer(Allocator.Temp));
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -228,7 +220,6 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Playback(m_EntityManager);
             ecb.Dispose();
             ReleaseEntitySpawnHelper();
-            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
 
             return entities;
         }
@@ -291,9 +282,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnWithPrototypeImmediate(TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
         {
-            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
-                EntityCommandBufferID,
-                new EntityCommandBuffer(Allocator.Temp));
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -311,7 +300,6 @@ namespace Anvil.Unity.DOTS.Entities
             ecb.Dispose();
 
             ReleaseEntitySpawnHelper();
-            EntityCommandBufferWithID.ClearPreviousInstanceIfExists(EntityCommandBufferID);
             return entity;
         }
 
