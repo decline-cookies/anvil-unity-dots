@@ -40,6 +40,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public Type InstanceType { get; }
 
+        public CancelRequestBehaviour CancelBehaviour
+        {
+            get => m_ActiveArrayData.CancelRequestBehaviour;
+        }
+
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
         public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }
@@ -60,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
-            
+
             InstanceType = typeof(TInstance);
         }
 
@@ -76,7 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: #136 - Not good to expose these just for the CancelComplete case.
             PendingData = systemDataStream.PendingData;
             PendingWriter = systemDataStream.PendingWriter;
-            
+
             InstanceType = typeof(TInstance);
         }
 
@@ -91,7 +96,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: #136 - Not good to expose these just for the CancelComplete case.
             PendingWriter = m_DataSource.PendingWriter;
             PendingData = m_DataSource.PendingData;
-            
+
             InstanceType = typeof(TInstance);
         }
 

@@ -10,6 +10,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where TInstance : unmanaged, IEntityProxyInstance
     {
         /// <summary>
+        /// Gets the configured <see cref="CancelRequestBehaviour"/> for the data stream.
+        /// </summary>
+        public CancelRequestBehaviour CancelBehaviour { get; }
+
+        /// <summary>
         /// Gets a <see cref="DataStreamActiveReader{TInstance}"/> for use in a job outside the Task Driver context.
         /// Requires a call to <see cref="ReleaseActiveReaderAsync"/> after scheduling the job.
         /// </summary>
