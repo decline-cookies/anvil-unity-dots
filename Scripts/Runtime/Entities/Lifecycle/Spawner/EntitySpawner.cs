@@ -1,12 +1,13 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Entities.TaskDriver;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -40,7 +41,8 @@ namespace Anvil.Unity.DOTS.Entities
 
         private EntityManager m_EntityManager;
 
-
+        public uint EntityCommandBufferID { get; }
+        
         internal EntitySpawner(
             EntityManager entityManager,
             NativeParallelHashMap<long, EntityArchetype> entityArchetypes,
@@ -53,6 +55,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_EntityManager = entityManager;
             m_EntityArchetypes = entityArchetypes;
             m_Prototypes = prototypes;
+
+            EntityCommandBufferID = EntityCommandBufferWithID.GetPersistentID();
         }
 
         protected override void DisposeSelf()
@@ -148,7 +152,8 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnImmediate(TEntitySpawnDefinition spawnDefinition)
         {
-            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
+
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -169,7 +174,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </param>
         public void SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions)
         {
-            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -196,7 +201,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>A collection of all the entities spawned.</returns>
         public NativeArray<Entity> SpawnImmediate(NativeArray<TEntitySpawnDefinition> spawnDefinitions, Allocator entitiesAllocator)
         {
-            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -277,7 +282,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnWithPrototypeImmediate(TEntitySpawnDefinition spawnDefinition, bool shouldDestroyPrototype)
         {
-            EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(EntityCommandBufferID);
             // We're using the EntityManager directly so that we have a valid Entity, but we use the ECB to set
             // the values so that we can conform to the IEntitySpawnDefinitionInterface and developers
             // don't have to implement twice.
@@ -353,7 +358,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         JobHandle IEntitySpawner.Schedule(
             JobHandle dependsOn,
-            ref EntityCommandBuffer ecb)
+            ref EntityCommandBufferWithID ecb)
         {
             dependsOn = JobHandle.CombineDependencies(
                 dependsOn,
@@ -362,38 +367,31 @@ namespace Anvil.Unity.DOTS.Entities
 
             EntitySpawnHelper entitySpawnHelper = new EntitySpawnHelper(m_EntityArchetypes, prototypes);
 
-            dependsOn = ScheduleSpawnJob(dependsOn, definitions, entitySpawnHelper, ref ecb);
+            SpawnJob job = new SpawnJob(definitions, ref ecb, entitySpawnHelper);
+            dependsOn = job.Schedule(dependsOn);
 
             m_DefinitionsToSpawn.ReleaseAsync(dependsOn);
             m_Prototypes.ReleaseAsync(dependsOn);
             return dependsOn;
         }
 
-        private protected virtual JobHandle ScheduleSpawnJob(
-            JobHandle dependsOn,
-            UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
-            EntitySpawnHelper entitySpawnHelper,
-            ref EntityCommandBuffer ecb)
-        {
-            SpawnJobNoBurst job = new SpawnJobNoBurst(spawnDefinitions, ref ecb, entitySpawnHelper);
-            return job.Schedule(dependsOn);
-        }
-
         //*************************************************************************************************************
         // JOBS
         //*************************************************************************************************************
-        private struct SpawnJobNoBurst : IJob
+        [BurstCompile]
+        private struct SpawnJob : IJob
         {
             [ReadOnly] private UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> m_SpawnDefinitions;
             [ReadOnly] private readonly EntitySpawnHelper m_EntitySpawnHelper;
 
             private readonly long m_Hash;
 
-            private EntityCommandBuffer m_ECB;
+            [NativeDisableContainerSafetyRestriction] [NativeDisableUnsafePtrRestriction]
+            private EntityCommandBufferWithID m_ECB;
 
-            public SpawnJobNoBurst(
+            public SpawnJob(
                 UnsafeTypedStream<SpawnDefinitionWrapper<TEntitySpawnDefinition>> spawnDefinitions,
-                ref EntityCommandBuffer ecb,
+                ref EntityCommandBufferWithID ecb,
                 in EntitySpawnHelper entitySpawnHelper)
             {
                 m_SpawnDefinitions = spawnDefinitions;

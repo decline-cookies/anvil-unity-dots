@@ -8,9 +8,11 @@ namespace Anvil.Unity.DOTS.Entities
     internal interface IEntitySpawner : IAnvilDisposable
     {
         internal event Action<IEntitySpawner> OnPendingWorkAdded;
+        
+        public uint EntityCommandBufferID { get; }
 
         internal JobHandle Schedule(
             JobHandle dependsOn,
-            ref EntityCommandBuffer ecb);
+            ref EntityCommandBufferWithID ecb);
     }
 }
