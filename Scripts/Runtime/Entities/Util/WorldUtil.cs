@@ -142,8 +142,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// </param>
         /// <returns>A collection of the system groups created.</returns>
         /// <remarks>
-        /// Groups must not already exist in the world. This is a limitation of our ability to detect whether a system
-        /// has already been added to the player loop.
+        /// Groups must not already exist in the Player Loop. This is a limitation of our ability to detect whether a
+        /// system has already been added to the player loop.
+        ///
+        /// This is a safer alternative to <see cref="ScriptBehaviourUpdateOrder.AppendWorldToCurrentPlayerLoop"/>.
         /// </remarks>
         public static ComponentSystemGroup[] SetupTopLevelGroupsInCurrentPlayerLoop(
             World world,
