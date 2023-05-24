@@ -39,11 +39,17 @@ namespace Anvil.Unity.DOTS.Entities
                 try
                 {
                     if (typeof(ComponentSystemBase).IsAssignableFrom(systemType))
+                    {
                         world.GetOrCreateSystem(systemType);
+                    }
                     else if (typeof(ISystem).IsAssignableFrom(systemType))
+                    {
                         world.GetOrCreateUnmanagedSystem(systemType);
+                    }
                     else
+                    {
                         throw new InvalidOperationException($"Invalid system type. Type:{systemType.GetReadableName()}");
+                    }
                 }
                 catch (Exception ex)
                 {
