@@ -1,3 +1,5 @@
+using Anvil.Unity.DOTS.Core;
+using Unity.Collections;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -6,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Represents the completion of a Cancel Request from a generic perspective where only the <see cref="Entity"/>
     /// is returned that completed it's cancellation flow.
     /// </summary>
-    public readonly struct CancelComplete : IEntityProxyInstance
+    public readonly struct CancelComplete : IEntityProxyInstance, IToFixedString<FixedString128Bytes>
     {
         public static implicit operator Entity(CancelComplete cancelComplete) => cancelComplete.Entity;
         public static implicit operator CancelComplete(Entity entity) => new CancelComplete(entity);
@@ -19,6 +21,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public CancelComplete(Entity entity)
         {
             Entity = entity;
+        }
+
+        public FixedString128Bytes ToFixedString()
+        {
+            return $"Entity:{Entity.ToFixedString()}";
         }
     }
 }
