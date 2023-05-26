@@ -204,7 +204,7 @@ namespace Anvil.Unity.DOTS.Logging
             // exactly equal to capacity but it's the best we can do.
             if (message.Length == message.Capacity)
             {
-                UnityEngine.Debug.LogError($"The next logged message is too long and will be truncated. Consider using a larger FixedString type. MessageLength:{message.Length}, MaxLength: {message.Capacity}");
+                UnityEngine.Debug.LogError($"The next logged message is too long and will be truncated. Consider using a larger FixedString type. MaxLength: {message.Capacity}");
             }
 
             if (message.Length + MessagePrefix.Length > FixedString4096Bytes.UTF8MaxLengthInBytes)
