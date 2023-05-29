@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         protected Logger Logger
         {
-            get => m_Logger ?? (m_Logger = Log.GetLogger(this)).Value;
+            get => m_Logger ?? (m_Logger = Log.GetLogger(this, $"({World.Name}) ")).Value;
             set => m_Logger = value;
         }
 
@@ -61,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            
+
             EnsureSystemIsInUpdateGroup();
         }
 
@@ -122,9 +122,9 @@ namespace Anvil.Unity.DOTS.Entities
             //default world init, so it's safe to just call to ensure we're part of the right update system.
             componentSystemGroup.AddSystemToUpdateList(this);
         }
-        
+
         //Used often for getting a query from a specific system from the outside so that the
-        //query is associated to that system's dependency. Unity already does this but for 
+        //query is associated to that system's dependency. Unity already does this but for
         //the API where you pass in an EntityQueryBuilder
         public new EntityQuery GetEntityQuery(params ComponentType[] componentTypes)
         {
