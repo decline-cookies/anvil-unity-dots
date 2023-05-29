@@ -226,7 +226,7 @@ namespace Anvil.Unity.DOTS.Jobs
             }
 
             //TODO: #129 - Remove once we have unit tests.
-            Debug.Assert(acquiredHandle.Equals(GetDependencyFor(accessType)));
+            Debug.Assert(acquiredHandle.Equals_NoBox(GetDependencyFor(accessType)));
 
             m_LastHandleAcquired = acquiredHandle;
             CaptureAccessOperationStack();
