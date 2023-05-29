@@ -1,7 +1,13 @@
+using Anvil.Unity.DOTS.Util;
+using System.Runtime.CompilerServices;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Jobs
 {
+    /// <summary>
+    /// A collection of extension methods for <see cref="JobHandle"/>.
+    /// </summary>
     public static class JobHandleExtension
     {
         /// <summary>
@@ -30,6 +36,18 @@ namespace Anvil.Unity.DOTS.Jobs
         public static bool IsDependencyOf(this JobHandle job, JobHandle candidateJob)
         {
             return JobHandle.CheckFenceIsDependencyOrDidSyncFence(job, candidateJob);
+        }
+
+        /// <summary>
+        /// Determines whether two <see cref="JobHandle"/> instances are equal without boxing.
+        /// </summary>
+        /// <param name="job1">The first <see cref="JobHandle"/> compare.</param>
+        /// <param name="job2">The second <see cref="JobHandle"/> compare.</param>
+        /// <returns>True if the <see cref="JobHandle"/>s are the same.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool Equals_NoBox(this in JobHandle job1, in JobHandle job2)
+        {
+            return UnsafeUtil.Equals_NoBox(in job1, in job2);
         }
     }
 }
