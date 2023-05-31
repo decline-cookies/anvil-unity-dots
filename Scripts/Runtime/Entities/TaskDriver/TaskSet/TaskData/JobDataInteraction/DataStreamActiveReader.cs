@@ -26,5 +26,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_Active[index].Payload;
         }
+
+        public int Length
+        {
+            get => m_Active.Length;
+        }
     }
 }
