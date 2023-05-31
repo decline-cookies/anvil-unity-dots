@@ -45,21 +45,21 @@ namespace Anvil.Unity.DOTS.Entities
     /// that will populate that Entity later on during the <see cref="EntitySpawnSystem"/>s
     /// update phase.
     /// <example>
-    /// public void PopulateOnEntity(Entity entity, ref EntityCommandBuffer ecb)
+    /// public void PopulateOnEntity(Entity entity, in EntitySpawner entitySpawner)
     /// {
-    ///     ecb.SetComponent(entity, new ActorName(m_ActorName));
-    ///     ecb.SetSharedComponent(entity, new EnvironmentMembershipTag(m_EnvironmentID));
-    ///     ecb.SetComponent(entity, new ActorGridPosition(m_InitialGridPosition));
-    ///     ecb.SetComponent(entity, new ActorGridRotation(m_InitialGridRotation));
+    ///     entitySpawner.SetComponent(entity, new ActorName(m_ActorName));
+    ///     entitySpawner.SetSharedComponent(entity, new EnvironmentMembershipTag(m_EnvironmentID));
+    ///     entitySpawner.SetComponent(entity, new ActorGridPosition(m_InitialGridPosition));
+    ///     entitySpawner.SetComponent(entity, new ActorGridRotation(m_InitialGridRotation));
     /// }
     /// </example>
     /// Similarly, inheritance and composition can be achieved by triggering the <see cref="PopulateOnEntity"/>
     /// function on child <see cref="IEntitySpawnDefinition"/>s contained within the
     /// parent <see cref="IEntitySpawnDefinition"/>
     /// <example>
-    /// public void PopulateOnEntity(Entity entity, ref EntityCommandBuffer ecb)
+    /// public void PopulateOnEntity(Entity entity, in EntitySpawner entitySpawner)
     /// {
-    ///     m_BaseActorDefinition.PopulateOnEntity(entity, ref ecb);
+    ///     m_BaseActorDefinition.PopulateOnEntity(entity, entitySpawner);
     /// }
     /// </example>
     /// </remarks>
@@ -70,16 +70,13 @@ namespace Anvil.Unity.DOTS.Entities
         /// <see cref="EntityArchetype"/>
         /// </summary>
         public ComponentType[] RequiredComponents { get; }
-
+        
         /// <summary>
         /// Called automatically when spawning to populate a newly created <see cref="Entity"/>
         /// with the data needed.
         /// </summary>
         /// <param name="entity">The newly created <see cref="Entity"/></param>
-        /// <param name="ecb">
-        /// The <see cref="EntityCommandBufferWithID"/> that will apply the data.
-        /// </param>
-        /// <param name="entitySpawnHelper">Helper to get Archetypes and Prototypes</param>
+        /// <param name="entitySpawner">The <see cref="EntitySpawner"/> helper struct</param>
         public void PopulateOnEntity(Entity entity, in EntitySpawner entitySpawner);
     }
 }

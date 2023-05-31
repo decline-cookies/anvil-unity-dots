@@ -42,7 +42,6 @@ namespace Anvil.Unity.DOTS.Entities
         private EntityCommandBufferSystem m_CommandBufferSystem;
         private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
 
-
         public EntitySpawnSystem()
         {
             m_ActiveSpawners = new HashSet<EntitySpawner>();
@@ -60,6 +59,11 @@ namespace Anvil.Unity.DOTS.Entities
 
         private int GetNextInstanceID()
         {
+            //We'd use a Pool<T> here but it doesn't work with primitives so we get around that with the Queue/largest
+            //instance id issued combo.
+            //This way we don't run out of IDs when acquiring every frame but we also don't need to force the call site
+            //to manage and store an ID.
+            
             //If we have an ID free to use in the queue, just get it
             if (m_InstanceIDQueue.Count > 0)
             {
@@ -149,7 +153,13 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // SPAWN API - IN JOB
         //*************************************************************************************************************
-
+        
+        /// <summary>
+        /// Acquires an <see cref="EntitySpawner"/> for use in a job and returns the dependency to wait on.
+        /// Must call <see cref="ReleaseAsync"/> with the dependency for the jobs that use this instance.
+        /// </summary>
+        /// <param name="value">The <see cref="EntitySpawner"/> instance</param>
+        /// <returns>The <see cref="JobHandle"/> to wait on</returns>
         public JobHandle AcquireAsync(out EntitySpawner value)
         {
             JobHandle prototypesDependency = m_EntityPrototypes.AcquireAsync(AccessType.SharedRead, out var prototypes);
@@ -157,12 +167,19 @@ namespace Anvil.Unity.DOTS.Entities
             return prototypesDependency;
         }
 
+        /// <summary>
+        /// Lets this system know of jobs that will use an acquired <see cref="EntitySpawner"/> via
+        /// <see cref="AcquireAsync"/> so that the <see cref="EntityCommandBufferSystem"/> can ensure the jobs are
+        /// complete before playing back the underlying <see cref="EntityCommandBuffer"/>
+        /// </summary>
+        /// <param name="releaseAccessDependency"></param>
         public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
             m_EntityPrototypes.ReleaseAsync(releaseAccessDependency);
             m_CommandBufferSystem.AddJobHandleForProducer(releaseAccessDependency);
         }
 
+        
         private EntitySpawner AcquireDeferred()
         {
             return AcquireSpawner(true, m_EntityPrototypes.Acquire(AccessType.SharedRead));
@@ -222,28 +239,42 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="spawnDefinition">
         /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with.
         /// </param>
-        public Entity SpawnDeferred<TDefinition>(TDefinition spawnDefinition)
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        public void SpawnDeferred<TDefinition>(TDefinition spawnDefinition)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
             EntitySpawner entitySpawner = AcquireDeferred();
-            Entity entity = entitySpawner.SpawnDeferredEntity(spawnDefinition);
+            entitySpawner.SpawnDeferredEntity(spawnDefinition);
             ReleaseDeferred(entitySpawner);
-            return entity;
         }
 
-        public NativeArray<Entity> SpawnDeferred<TDefinition>(NativeArray<TDefinition> spawnDefinitions, Allocator entitiesAllocator)
+        /// <summary>
+        /// Spawns many <see cref="Entity"/>s with the given definitions later on when the associated
+        /// <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s.
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        public void SpawnDeferred<TDefinition>(NativeArray<TDefinition> spawnDefinitions)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            NativeArray<Entity> entities = new NativeArray<Entity>(spawnDefinitions.Length, entitiesAllocator);
             EntitySpawner entitySpawner = AcquireDeferred();
             for (int i = 0; i < spawnDefinitions.Length; ++i)
             {
-                entities[i] = entitySpawner.SpawnDeferredEntity(spawnDefinitions[i]);
+                entitySpawner.SpawnDeferredEntity(spawnDefinitions[i]);
             }
             ReleaseDeferred(entitySpawner);
-            return entities;
         }
-
+        
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> immediately with the given <see cref="IEntitySpawnDefinition"/>
+        /// </summary>
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>The created <see cref="Entity"/></returns>
         public Entity SpawnImmediate<TDefinition>(TDefinition spawnDefinition)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -258,6 +289,13 @@ namespace Anvil.Unity.DOTS.Entities
             return entity;
         }
 
+        /// <summary>
+        /// Spawns many <see cref="Entity"/>s immediately with the given <see cref="IEntitySpawnDefinition"/>s.
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         public void SpawnImmediate<TDefinition>(NativeArray<TDefinition> spawnDefinitions)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -273,6 +311,19 @@ namespace Anvil.Unity.DOTS.Entities
             ReleaseImmediate(entitySpawner);
         }
 
+        /// <summary>
+        /// Spawns many <see cref="Entity"/>s immediately with the given <see cref="IEntitySpawnDefinition"/>s and
+        /// returns a <see cref="NativeArray{T}"/> of the created <see cref="Entity"/>s
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with
+        /// </param>
+        /// <param name="entitiesAllocator">
+        /// The <see cref="Allocator"/> to use for the returned <see cref="NativeArray{T}"/> of
+        /// created <see cref="Entity"/>s
+        /// </param>
+        /// <typeparam name="TDefinition"> The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>The <see cref="NativeArray{T}"/> of created <see cref="Entity"/>s</returns>
         public NativeArray<Entity> SpawnImmediate<TDefinition>(NativeArray<TDefinition> spawnDefinitions, Allocator entitiesAllocator)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
@@ -294,8 +345,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // UPDATE
         //*************************************************************************************************************
-
-
+        
         protected override void OnUpdate()
         {
             m_PendingReleaseSpawners.Clear();
