@@ -2,6 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
@@ -168,7 +169,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataStreamActiveReader<TInstance> CreateDataStreamActiveReader()
         {
-            return new DataStreamActiveReader<TInstance>(m_ActiveArrayData.DeferredJobArray);
+            bool isDeferredRequired = !m_ActiveArrayData.GetDependency(AccessType.SharedRead).IsCompleted;
+            NativeArray<EntityProxyInstanceWrapper<TInstance>> sourceArray
+                = isDeferredRequired ? m_ActiveArrayData.DeferredJobArray : m_ActiveArrayData.CurrentArray;
+            return new DataStreamActiveReader<TInstance>(sourceArray);
         }
 
         public DataStreamUpdater<TInstance> CreateDataStreamUpdater(ResolveTargetTypeLookup resolveTargetTypeLookup)

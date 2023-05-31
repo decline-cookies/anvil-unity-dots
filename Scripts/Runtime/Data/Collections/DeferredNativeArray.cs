@@ -453,6 +453,21 @@ namespace Anvil.Unity.DOTS.Data
             return array;
         }
 
+        public unsafe NativeArray<T> AsArray()
+        {
+            //This whole function taken from NativeList.AsDeferredJobArray
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+#endif
+            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, m_BufferInfo->Length, Allocator.Invalid);
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
+#endif
+
+            return array;
+        }
+
         internal unsafe void* GetBufferPointer()
         {
             return m_BufferInfo;
