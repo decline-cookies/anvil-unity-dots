@@ -1,3 +1,6 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -8,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to read</typeparam>
     [BurstCompatible]
-    public readonly struct DataStreamActiveReader<TInstance>
+    public readonly struct DataStreamActiveReader<TInstance> : IEnumerable<TInstance>
         where TInstance : unmanaged, IEntityProxyInstance
     {
         [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Active;
@@ -25,6 +28,62 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TInstance this[int index]
         {
             get => m_Active[index].Payload;
+        }
+
+        /// <summary>
+        /// Gets the length of the backing array.
+        /// </summary>
+        public int Length
+        {
+            get => m_Active.Length;
+        }
+
+        /// <inheritdoc cref="IEnumerable"/>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        /// <inheritdoc cref="IEnumerable{T}.GetEnumerator"/>
+        public IEnumerator<TInstance> GetEnumerator()
+        {
+            return new Enumerator(m_Active.GetEnumerator());
+        }
+
+        // ----- Enumerator ----- //
+        internal struct Enumerator : IEnumerator<TInstance>, IEnumerator, IDisposable
+        {
+            private NativeArray<EntityProxyInstanceWrapper<TInstance>>.Enumerator m_InnerEnumerator;
+
+            public Enumerator(NativeArray<EntityProxyInstanceWrapper<TInstance>>.Enumerator innerEnumerator)
+            {
+                m_InnerEnumerator = innerEnumerator;
+            }
+
+            public bool MoveNext()
+            {
+                return m_InnerEnumerator.MoveNext();
+            }
+
+            public void Reset()
+            {
+                m_InnerEnumerator.Reset();
+            }
+
+            object IEnumerator.Current
+            {
+                get => m_InnerEnumerator.Current.Payload;
+            }
+
+            public void Dispose()
+            {
+                m_InnerEnumerator.Dispose();
+            }
+
+            public TInstance Current
+            {
+                get => m_InnerEnumerator.Current.Payload;
+            }
         }
     }
 }
