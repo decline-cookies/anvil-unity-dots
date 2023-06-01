@@ -31,12 +31,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             World = m_JobConfig.TaskSetOwner.World;
         }
 
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
         public void Fulfill(out CancelRequestsWriter instance)
         {
             CancelRequestsDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestsDataStream();
             instance = cancelRequestDataStream.CreateCancelRequestsWriter();
         }
 
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
         public void Fulfill<TInstance>(out DataStreamPendingWriter<TInstance> instance)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -44,6 +50,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             instance = dataStream.CreateDataStreamPendingWriter();
         }
 
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
         public void Fulfill<TInstance>(out DataStreamActiveReader<TInstance> instance)
             where TInstance : unmanaged, IEntityProxyInstance
         {
@@ -90,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<TData>(out ThreadPersistentDataAccessor<TData> instance)
             where TData : unmanaged, IThreadPersistentDataInstance
@@ -100,7 +109,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<TData>(out EntityPersistentDataReader<TData> instance)
             where TData : unmanaged, IEntityPersistentDataInstance
@@ -110,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<TData>(out EntityPersistentDataWriter<TData> instance)
             where TData : unmanaged, IEntityPersistentDataInstance
@@ -149,7 +158,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out CDFEReader<T> instance)
             where T : struct, IComponentData
@@ -158,7 +167,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out CDFEWriter<T> instance)
             where T : struct, IComponentData
@@ -167,7 +176,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out DBFEForRead<T> instance)
             where T : struct, IBufferElementData
@@ -176,7 +185,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Fulfills assigns an instance of the provided type for the job.
+        /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out DBFEForExclusiveWrite<T> instance)
             where T : struct, IBufferElementData
