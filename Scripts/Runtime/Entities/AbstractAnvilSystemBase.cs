@@ -130,5 +130,13 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return base.GetEntityQuery(componentTypes);
         }
+
+        //Used often for getting a query from a specific system from the outside so that the
+        //query is associated to that system's dependency. Unity already does this but for
+        //the API where you pass in an EntityQueryBuilder
+        public new EntityQuery GetEntityQuery(params EntityQueryDesc[] queryDesc)
+        {
+            return base.GetEntityQuery(queryDesc);
+        }
     }
 }
