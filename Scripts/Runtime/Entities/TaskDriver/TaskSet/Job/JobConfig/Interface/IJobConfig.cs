@@ -194,6 +194,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : struct, IBufferElementData;
 
         /// <summary>
+        /// Specifies a <see cref="EntityCommandBuffer"/> to be populated.
+        /// </summary>
+        /// <param name="ecbSystem">
+        /// The <see cref="EntityCommandBufferSystem"/> to create the <see cref="EntityCommandBuffer"/> from.
+        /// </param>
+        /// <returns>A reference to itself to continue chaining configuration methods.</returns>
+        IJobConfig RequireECB(EntityCommandBufferSystem ecbSystem);
+
+        /// <summary>
         /// Specifies a delegate to call to add additional requirements.
         /// This allows requirements to be defined by a static method on the job rather than at the configuration call
         /// site.

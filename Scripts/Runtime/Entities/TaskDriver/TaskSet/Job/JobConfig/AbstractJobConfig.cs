@@ -317,6 +317,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - EntityCommandBuffer
+        //*************************************************************************************************************
+        public IJobConfig RequireECB(EntityCommandBufferSystem ecbSystem)
+        {
+            AddAccessWrapper(new ECBAccessWrapper(ecbSystem, Usage.Default));
+
+            return this;
+        }
+
+        //*************************************************************************************************************
         // HARDEN
         //*************************************************************************************************************
 
@@ -534,6 +544,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
             instance = dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
+        }
+
+        internal void Fulfill(out EntityCommandBuffer instance)
+        {
+            ECBAccessWrapper ecbAccessWrapper = GetAccessWrapper<ECBAccessWrapper>(Usage.Default);
+            instance = ecbAccessWrapper.CommandBuffer;
+        }
+
+        internal void Fulfill(out EntityCommandBuffer.ParallelWriter instance)
+        {
+            ECBAccessWrapper ecbAccessWrapper = GetAccessWrapper<ECBAccessWrapper>(Usage.Default);
+            instance = ecbAccessWrapper.CommandBuffer.AsParallelWriter();
         }
 
         //*************************************************************************************************************

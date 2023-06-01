@@ -192,5 +192,25 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_JobConfig.Fulfill(out instance);
         }
+
+        //*************************************************************************************************************
+        // ENTITY COMMAND BUFFER
+        //*************************************************************************************************************
+
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
+        public void Fulfill(out EntityCommandBuffer instance)
+        {
+            m_JobConfig.Fulfill(out instance);
+        }
+
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
+        public void Fulfill(out EntityCommandBuffer.ParallelWriter instance)
+        {
+            m_JobConfig.Fulfill(out instance);
+        }
     }
 }
