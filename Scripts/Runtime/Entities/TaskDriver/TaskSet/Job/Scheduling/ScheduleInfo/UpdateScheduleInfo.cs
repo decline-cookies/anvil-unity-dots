@@ -11,6 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly UpdateJobData<TInstance> m_JobData;
+        private readonly EntityProxyDataStream<TInstance> m_DataStream;
         private readonly JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> m_ScheduleJobFunction;
 
         /// <summary>
@@ -32,13 +33,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;
+            m_DataStream = dataStream;
 
-            DeferredNativeArrayScheduleInfo = dataStream.ScheduleInfo;
+            DeferredNativeArrayScheduleInfo = m_DataStream.ScheduleInfo;
         }
 
         internal override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
+        }
+        
+        internal override bool ShouldSchedule()
+        {
+            //If we've been written to, we need to schedule
+            return m_DataStream.IsDataInvalidated;
         }
     }
 }

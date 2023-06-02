@@ -168,6 +168,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle Consolidate(JobHandle dependsOn)
         {
+            //If no one wrote to us, we can skip consolidation
+            if (!PendingData.IsDataInvalidated)
+            {
+                return dependsOn;
+            }
+            
             dependsOn = AcquireAsync(dependsOn);
             dependsOn = ConsolidateSelf(dependsOn);
             ReleaseAsync(dependsOn);

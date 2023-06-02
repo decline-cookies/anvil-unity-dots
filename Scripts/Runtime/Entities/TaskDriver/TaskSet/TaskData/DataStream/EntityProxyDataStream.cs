@@ -45,6 +45,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_ActiveArrayData.CancelRequestBehaviour;
         }
 
+        public bool IsDataInvalidated
+        {
+            get => m_ActiveArrayData.IsDataInvalidated;
+        }
+
+        public bool IsPendingCancelDataInvalidated
+        {
+            get => m_PendingCancelActiveArrayData.IsDataInvalidated;
+        }
+
+
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
         public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }

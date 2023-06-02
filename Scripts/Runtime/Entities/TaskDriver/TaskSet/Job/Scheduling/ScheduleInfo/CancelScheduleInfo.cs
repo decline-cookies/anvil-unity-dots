@@ -11,7 +11,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly CancelJobData<TInstance> m_JobData;
+        private readonly EntityProxyDataStream<TInstance> m_PendingCancelDataStream;
         private readonly JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> m_ScheduleJobFunction;
+        
 
 
         /// <summary>
@@ -33,13 +35,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;
+            m_PendingCancelDataStream = pendingCancelDataStream;
 
-            DeferredNativeArrayScheduleInfo = pendingCancelDataStream.PendingCancelScheduleInfo;
+            DeferredNativeArrayScheduleInfo = m_PendingCancelDataStream.PendingCancelScheduleInfo;
         }
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
+        }
+
+        internal override bool ShouldSchedule()
+        {
+            //If we've been written to, we need to schedule
+            return m_PendingCancelDataStream.IsPendingCancelDataInvalidated;
         }
     }
 }

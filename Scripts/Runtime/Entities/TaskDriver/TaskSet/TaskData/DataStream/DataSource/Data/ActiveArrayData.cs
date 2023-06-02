@@ -25,6 +25,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Active;
         }
 
+        public sealed override bool IsDataInvalidated
+        {
+            get => base.IsDataInvalidated && m_Active.Length > 0;
+        }
+
         public ActiveArrayData(
             IDataOwner dataOwner, 
             CancelRequestBehaviour cancelRequestBehaviour, 
