@@ -64,6 +64,9 @@ namespace Anvil.Unity.DOTS.Entities
             //This way we don't run out of IDs when acquiring every frame but we also don't need to force the call site
             //to manage and store an ID.
             
+            //TODO: https://github.com/decline-cookies/anvil-csharp-core/issues/147
+            //      Change to a Pool<int> instead.
+            
             //If we have an ID free to use in the queue, just get it
             if (m_InstanceIDQueue.Count > 0)
             {
