@@ -6,12 +6,14 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Data
 {
+    //TODO: Once we have CSharp's ability for generic math: https://learn.microsoft.com/en-ca/dotnet/csharp/whats-new/csharp-11#generic-math-support,
+    //      we could have this implement a IIDProvider<T> instead.
     /// <summary>
     /// An <see cref="IDProvider"/> that is compatible with Burst and will get the next ID atomically so it is
     /// safe to use in threaded context.
     /// </summary>
     [BurstCompatible]
-    public readonly unsafe struct IDProviderAtomicBurstable
+    public readonly unsafe struct BurstableAtomicIDProvider
     {
         public const uint DEFAULT_SUPPLY_WARNING_THRESHOLD = uint.MaxValue - 1_000_000;
         
@@ -21,9 +23,10 @@ namespace Anvil.Unity.DOTS.Data
         public readonly uint SupplyWarningThreshold;
         
         [NativeDisableUnsafePtrRestriction] private readonly uint* m_IDPointer;
-
+        
+        //TODO: #265 - Build System to check if we've gone over the SupplyWarningThreshold
         /// <summary>
-        /// Creates a new instance of <see cref="IDProviderAtomicBurstable"/>.
+        /// Creates a new instance of <see cref="BurstableAtomicIDProvider"/>.
         /// </summary>
         /// <remarks>
         /// NOTE: Because this is a struct, it could be created by using the default constructor which will fail.
@@ -36,7 +39,7 @@ namespace Anvil.Unity.DOTS.Data
         /// poll this struct periodically and call <see cref="HasIDExceededSupplyWarningThreshold"/>.
         /// </remarks>
         /// <param name="supplyWarningThreshold">The threshold to signify the ID supply is near exhaustion</param>
-        public IDProviderAtomicBurstable(uint supplyWarningThreshold)
+        public BurstableAtomicIDProvider(uint supplyWarningThreshold)
         {
             m_IDPointer = (uint*)UnsafeUtility.Malloc(
                 UnsafeUtility.SizeOf<uint>(),
