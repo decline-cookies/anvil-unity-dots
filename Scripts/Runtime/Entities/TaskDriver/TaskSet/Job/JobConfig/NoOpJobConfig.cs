@@ -116,6 +116,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        public IJobConfig RequireECB(EntityCommandBufferSystem ecbSystem)
+        {
+            return this;
+        }
+
         public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
             where T : AbstractTaskDriver
         {
