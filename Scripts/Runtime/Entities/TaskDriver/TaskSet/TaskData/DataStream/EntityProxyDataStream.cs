@@ -2,6 +2,7 @@ using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
@@ -168,7 +169,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataStreamActiveReader<TInstance> CreateDataStreamActiveReader()
         {
-            return new DataStreamActiveReader<TInstance>(m_ActiveArrayData.DeferredJobArray);
+            // A deferred array is only required if we're still waiting on the data to be readable.
+            // If our read job handle is ready now then the data is too and we should read from the current array.
+            // Using the deferred array would produce invalid results because the deferred array gets resolved when the
+            // data is written and in this case the writing is complete.
+            bool isDeferredRequired = !m_ActiveArrayData.GetDependency(AccessType.SharedRead).IsCompleted;
+            NativeArray<EntityProxyInstanceWrapper<TInstance>> sourceArray
+                = isDeferredRequired ? m_ActiveArrayData.DeferredJobArray : m_ActiveArrayData.CurrentArray;
+            return new DataStreamActiveReader<TInstance>(sourceArray);
         }
 
         public DataStreamUpdater<TInstance> CreateDataStreamUpdater(ResolveTargetTypeLookup resolveTargetTypeLookup)

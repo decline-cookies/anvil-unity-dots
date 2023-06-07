@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                            IWorldUniqueID<DataTargetID>
     {
         private static readonly Type ABSTRACT_DATA_TYPE = typeof(AbstractData);
-        
+
         public static DataTargetID GenerateWorldUniqueID(IDataOwner dataOwner, Type abstractDataType, string uniqueContextIdentifier)
         {
             Debug.Assert(dataOwner == null || dataOwner.WorldUniqueID.IsValid);
@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             string idPath = $"{(dataOwner != null ? dataOwner.WorldUniqueID : string.Empty)}/{abstractDataType.AssemblyQualifiedName}{uniqueContextIdentifier ?? string.Empty}";
             return new DataTargetID(idPath.GetBurstHashCode32());
         }
-        
+
         private readonly AccessController m_AccessController;
 
         public DataTargetID WorldUniqueID { get; }
@@ -81,6 +81,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public void Release()
         {
             m_AccessController.Release();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public JobHandle GetDependency(AccessType accessType)
+        {
+            return m_AccessController.GetDependencyFor(accessType);
         }
     }
 }
