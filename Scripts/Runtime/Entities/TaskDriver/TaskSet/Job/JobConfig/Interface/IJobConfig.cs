@@ -160,6 +160,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to cancel.</param>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver);
+        
+       
+        /// <summary>
+        /// Requires an <see cref="EntitySpawner"/> from a given <see cref="EntitySpawnSystem"/>
+        /// </summary>
+        /// <param name="entitySpawnSystem">The <see cref="EntitySpawnSystem"/> to acquire from.</param>
+        /// <returns>A reference to itself to continue chaining configuration methods</returns>
+        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem);
 
         /// <summary>
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.

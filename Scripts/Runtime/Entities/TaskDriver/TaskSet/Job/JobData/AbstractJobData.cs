@@ -60,6 +60,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             instance = dataStream.CreateDataStreamActiveReader();
         }
 
+        
+        //*************************************************************************************************************
+        // ENTITY SPAWNER
+        //*************************************************************************************************************
+        
+        public void Fulfill(out EntitySpawner entitySpawner)
+        {
+            entitySpawner = m_JobConfig.GetEntitySpawner();
+        }
 
         //*************************************************************************************************************
         // NATIVE ARRAY

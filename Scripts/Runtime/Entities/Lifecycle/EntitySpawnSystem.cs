@@ -1,4 +1,4 @@
-using Anvil.CSharp.Collections;
+using Anvil.CSharp.Data;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
@@ -11,6 +11,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -30,22 +31,50 @@ namespace Anvil.Unity.DOTS.Entities
     [UseCommandBufferSystem(typeof(EndSimulationEntityCommandBufferSystem))]
     public partial class EntitySpawnSystem : AbstractAnvilSystemBase
     {
+        private readonly AccessControlledValue<NativeParallelHashMap<long, Entity>> m_EntityPrototypes;
+        private readonly HashSet<EntitySpawner> m_ActiveSpawners;
+        private readonly List<EntitySpawner> m_PendingReleaseSpawners;
+        private readonly uint m_SystemID;
+
+        private readonly Queue<int> m_InstanceIDQueue;
+        private int m_LargestInstanceIDIssued;
+
         private EntityCommandBufferSystem m_CommandBufferSystem;
         private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
 
-        private readonly Dictionary<Type, IEntitySpawner> m_EntitySpawners;
-        private readonly HashSet<IEntitySpawner> m_ActiveEntitySpawners;
-        private readonly AccessControlledValue<NativeParallelHashMap<long, Entity>> m_EntityPrototypes;
-
         public EntitySpawnSystem()
         {
-            m_EntitySpawners = new Dictionary<Type, IEntitySpawner>();
-            m_ActiveEntitySpawners = new HashSet<IEntitySpawner>();
+            m_ActiveSpawners = new HashSet<EntitySpawner>();
+            m_PendingReleaseSpawners = new List<EntitySpawner>();
+            m_InstanceIDQueue = new Queue<int>();
+            m_LargestInstanceIDIssued = -1;
+
             m_EntityArchetypes = new NativeParallelHashMap<long, EntityArchetype>(ChunkUtil.MaxElementsPerChunk<EntityArchetype>(), Allocator.Persistent);
             m_EntityPrototypes = new AccessControlledValue<NativeParallelHashMap<long, Entity>>(
                 new NativeParallelHashMap<long, Entity>(
                     ChunkUtil.MaxElementsPerChunk<Entity>(),
                     Allocator.Persistent));
+            m_SystemID = s_EntitySpawnSystemIDProvider.GetNextID();
+        }
+
+        private int GetNextInstanceID()
+        {
+            //We'd use a Pool<T> here but it doesn't work with primitives so we get around that with the Queue/largest
+            //instance id issued combo.
+            //This way we don't run out of IDs when acquiring every frame but we also don't need to force the call site
+            //to manage and store an ID.
+            
+            //TODO: https://github.com/decline-cookies/anvil-csharp-core/issues/147
+            //      Change to a Pool<int> instead.
+            
+            //If we have an ID free to use in the queue, just get it
+            if (m_InstanceIDQueue.Count > 0)
+            {
+                return m_InstanceIDQueue.Dequeue();
+            }
+            //If we don't, then increment our pool of IDs and return that instead.
+            m_LargestInstanceIDIssued++;
+            return m_LargestInstanceIDIssued;
         }
 
         protected override void OnCreate()
@@ -57,15 +86,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(commandBufferSystemType);
 
             CreateArchetypeLookup();
-
-            //Default to being off, a call to a SpawnDeferred function will enable it
-            Enabled = false;
         }
 
         protected override void OnDestroy()
         {
-            m_ActiveEntitySpawners.Clear();
-            m_EntitySpawners.DisposeAllValuesAndClear();
             m_EntityArchetypes.Dispose();
             m_EntityPrototypes.Dispose();
             base.OnDestroy();
@@ -95,47 +119,6 @@ namespace Anvil.Unity.DOTS.Entities
                 entityArchetype = EntityManager.CreateArchetype(entitySpawnDefinition.RequiredComponents);
                 m_EntityArchetypes.Add(entityArchetypeHash, entityArchetype);
             }
-        }
-
-        private void EntitySpawner_OnWriterAcquired(IEntitySpawner entitySpawner)
-        {
-            //By using this, we're writing immediately, but will need to execute later on when the system runs
-            Enabled = true;
-            m_ActiveEntitySpawners.Add(entitySpawner);
-        }
-
-        private EntitySpawner<TEntitySpawnDefinition> GetOrCreateEntitySpawner<TEntitySpawnDefinition>()
-            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
-        {
-            Type definitionType = typeof(TEntitySpawnDefinition);
-            // ReSharper disable once InvertIf
-            if (!m_EntitySpawners.TryGetValue(definitionType, out IEntitySpawner entitySpawner))
-            {
-                // TODO: #86 - When upgrading to Entities 1.0 we can use an unmanaged shared component which will let us
-                // TODO:       use burst for all spawners.
-                entitySpawner = new EntitySpawner<TEntitySpawnDefinition>(
-                    EntityManager,
-                    m_EntityArchetypes,
-                    m_EntityPrototypes);
-                entitySpawner.OnPendingWorkAdded += EntitySpawner_OnWriterAcquired;
-                m_EntitySpawners.Add(definitionType, entitySpawner);
-            }
-
-            return (EntitySpawner<TEntitySpawnDefinition>)entitySpawner;
-        }
-
-        /// <summary>
-        /// Returns an <see cref="EntitySpawner{TEntitySpawnDefinition}"/> to enable acquiring a writer to spawn
-        /// <see cref="IEntitySpawnDefinition"/>s during the system's update phase while in a job.
-        /// </summary>
-        /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
-        /// <returns>
-        /// An <see cref="EntitySpawner{TEntitySpawnDefinition}"/> to acquire a writer against.
-        /// </returns>
-        public EntitySpawner<TEntitySpawnDefinition> GetSpawner<TEntitySpawnDefinition>()
-            where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
-        {
-            return GetOrCreateEntitySpawner<TEntitySpawnDefinition>();
         }
 
         //*************************************************************************************************************
@@ -171,44 +154,219 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         //*************************************************************************************************************
-        // UPDATE
+        // SPAWN API - IN JOB
         //*************************************************************************************************************
-
-        protected override void OnUpdate()
+        
+        /// <summary>
+        /// Acquires an <see cref="EntitySpawner"/> for use in a job and returns the dependency to wait on.
+        /// Must call <see cref="ReleaseAsync"/> with the dependency for the jobs that use this instance.
+        /// </summary>
+        /// <param name="value">The <see cref="EntitySpawner"/> instance</param>
+        /// <returns>The <see cref="JobHandle"/> to wait on</returns>
+        public JobHandle AcquireAsync(out EntitySpawner value)
         {
-            Dependency = ScheduleActiveEntitySpawners(Dependency);
-
-            //Ensure we're turned back off
-            m_ActiveEntitySpawners.Clear();
-            Enabled = false;
+            JobHandle prototypesDependency = m_EntityPrototypes.AcquireAsync(AccessType.SharedRead, out var prototypes);
+            value = AcquireSpawner(true, prototypes);
+            return prototypesDependency;
         }
 
-        private JobHandle ScheduleActiveEntitySpawners(JobHandle dependsOn)
+        /// <summary>
+        /// Lets this system know of jobs that will use an acquired <see cref="EntitySpawner"/> via
+        /// <see cref="AcquireAsync"/> so that the <see cref="EntityCommandBufferSystem"/> can ensure the jobs are
+        /// complete before playing back the underlying <see cref="EntityCommandBuffer"/>
+        /// </summary>
+        /// <param name="releaseAccessDependency"></param>
+        public void ReleaseAsync(JobHandle releaseAccessDependency)
         {
-            NativeArray<JobHandle> dependencies = new NativeArray<JobHandle>(m_ActiveEntitySpawners.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            m_EntityPrototypes.ReleaseAsync(releaseAccessDependency);
+            m_CommandBufferSystem.AddJobHandleForProducer(releaseAccessDependency);
+        }
 
-            //All the active spawners that need to go this frame are given a chance to go ahead and run their spawn jobs
-            int index = 0;
+        
+        private EntitySpawner AcquireDeferred()
+        {
+            return AcquireSpawner(true, m_EntityPrototypes.Acquire(AccessType.SharedRead));
+        }
 
-            foreach (IEntitySpawner entitySpawner in m_ActiveEntitySpawners)
+        private void ReleaseDeferred(in EntitySpawner entitySpawner)
+        {
+            m_EntityPrototypes.Release();
+            ReleaseSpawner(entitySpawner);
+        }
+
+        private EntitySpawner AcquireImmediate()
+        {
+            return AcquireSpawner(false, m_EntityPrototypes.Acquire(AccessType.SharedRead));
+        }
+
+        private void ReleaseImmediate(in EntitySpawner entitySpawner)
+        {
+            m_EntityPrototypes.Release();
+            entitySpawner.Playback(EntityManager);
+            entitySpawner.DisposeECB();
+            ReleaseSpawner(entitySpawner);
+        }
+
+        private EntitySpawner AcquireSpawner(bool isDeferred, NativeParallelHashMap<long, Entity> prototypeLookup)
+        {
+            EntityCommandBuffer entityCommandBuffer = isDeferred ? m_CommandBufferSystem.CreateCommandBuffer() : new EntityCommandBuffer(Allocator.TempJob);
+
+            EntitySpawner.SpawnerID spawnerID = new EntitySpawner.SpawnerID(m_SystemID, GetNextInstanceID());
+            EntitySpawner entitySpawner = new EntitySpawner(
+                spawnerID,
+                entityCommandBuffer,
+                m_EntityArchetypes,
+                prototypeLookup);
+
+            m_ActiveSpawners.Add(entitySpawner);
+            s_AllSpawners.Add(entitySpawner.ID, entitySpawner);
+
+            return entitySpawner;
+        }
+
+        private void ReleaseSpawner(in EntitySpawner entitySpawner)
+        {
+            m_InstanceIDQueue.Enqueue(entitySpawner.ID.InstanceID);
+            m_ActiveSpawners.Remove(entitySpawner);
+            s_AllSpawners.Remove(entitySpawner.ID);
+        }
+
+        //*************************************************************************************************************
+        // SPAWN API - REGULAR
+        //*************************************************************************************************************
+
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> with the given definition later on when the associated
+        /// <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with.
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        public void SpawnDeferred<TDefinition>(TDefinition spawnDefinition)
+            where TDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawner entitySpawner = AcquireDeferred();
+            entitySpawner.SpawnDeferredEntity(spawnDefinition);
+            ReleaseDeferred(entitySpawner);
+        }
+
+        /// <summary>
+        /// Spawns many <see cref="Entity"/>s with the given definitions later on when the associated
+        /// <see cref="EntityCommandBufferSystem"/> runs.
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s.
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        public void SpawnDeferred<TDefinition>(NativeArray<TDefinition> spawnDefinitions)
+            where TDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawner entitySpawner = AcquireDeferred();
+            for (int i = 0; i < spawnDefinitions.Length; ++i)
             {
-                //Temporary, as The EntitySpawner becomes a job struct, this will likely go away but for now it makes for a quick and easy safety system
-                EntityCommandBufferWithID.ClearPreviousInstanceIfExists(entitySpawner.EntityCommandBufferID);
-                
-                //Normally for each ECB created, you want to add the job handle for producer to the command buffer
-                //system. However, we know that all these handles will be combined, so we can just do one call at the
-                //end of the function. Creating here and passing into the Schedule function allows us to see the
-                //creation and AddJobHandleForProducer calls close by so we know we're adhering to the "pattern".
-                EntityCommandBufferWithID ecb = new EntityCommandBufferWithID(
-                    entitySpawner.EntityCommandBufferID, 
-                    m_CommandBufferSystem);
-                dependencies[index] = entitySpawner.Schedule(dependsOn, ref ecb);
-                index++;
+                entitySpawner.SpawnDeferredEntity(spawnDefinitions[i]);
+            }
+            ReleaseDeferred(entitySpawner);
+        }
+        
+        /// <summary>
+        /// Spawns an <see cref="Entity"/> immediately with the given <see cref="IEntitySpawnDefinition"/>
+        /// </summary>
+        /// <param name="spawnDefinition">
+        /// The <see cref="IEntitySpawnDefinition"/> to populate the created <see cref="Entity"/> with
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>The created <see cref="Entity"/></returns>
+        public Entity SpawnImmediate<TDefinition>(TDefinition spawnDefinition)
+            where TDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawner entitySpawner = AcquireImmediate();
+
+            EntityArchetype entityArchetype = entitySpawner.GetEntityArchetypeForDefinition<TDefinition>();
+            Entity entity = EntityManager.CreateEntity(entityArchetype);
+            spawnDefinition.PopulateOnEntity(entity, entitySpawner);
+
+            ReleaseImmediate(entitySpawner);
+
+            return entity;
+        }
+
+        /// <summary>
+        /// Spawns many <see cref="Entity"/>s immediately with the given <see cref="IEntitySpawnDefinition"/>s.
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with
+        /// </param>
+        /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        public void SpawnImmediate<TDefinition>(NativeArray<TDefinition> spawnDefinitions)
+            where TDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawner entitySpawner = AcquireImmediate();
+
+            EntityArchetype entityArchetype = entitySpawner.GetEntityArchetypeForDefinition<TDefinition>();
+            NativeArray<Entity> entities = EntityManager.CreateEntity(entityArchetype, spawnDefinitions.Length, Allocator.Temp);
+            for (int i = 0; i < spawnDefinitions.Length; i++)
+            {
+                spawnDefinitions[i].PopulateOnEntity(entities[i], entitySpawner);
             }
 
-            dependsOn = JobHandle.CombineDependencies(dependencies);
-            m_CommandBufferSystem.AddJobHandleForProducer(dependsOn);
-            return dependsOn;
+            ReleaseImmediate(entitySpawner);
+        }
+
+        /// <summary>
+        /// Spawns many <see cref="Entity"/>s immediately with the given <see cref="IEntitySpawnDefinition"/>s and
+        /// returns a <see cref="NativeArray{T}"/> of the created <see cref="Entity"/>s
+        /// </summary>
+        /// <param name="spawnDefinitions">
+        /// The <see cref="IEntitySpawnDefinition"/>s to populate the created <see cref="Entity"/>s with
+        /// </param>
+        /// <param name="entitiesAllocator">
+        /// The <see cref="Allocator"/> to use for the returned <see cref="NativeArray{T}"/> of
+        /// created <see cref="Entity"/>s
+        /// </param>
+        /// <typeparam name="TDefinition"> The type of <see cref="IEntitySpawnDefinition"/></typeparam>
+        /// <returns>The <see cref="NativeArray{T}"/> of created <see cref="Entity"/>s</returns>
+        public NativeArray<Entity> SpawnImmediate<TDefinition>(NativeArray<TDefinition> spawnDefinitions, Allocator entitiesAllocator)
+            where TDefinition : unmanaged, IEntitySpawnDefinition
+        {
+            EntitySpawner entitySpawner = AcquireImmediate();
+
+            EntityArchetype entityArchetype = entitySpawner.GetEntityArchetypeForDefinition<TDefinition>();
+            NativeArray<Entity> entities = EntityManager.CreateEntity(entityArchetype, spawnDefinitions.Length, entitiesAllocator);
+
+            for (int i = 0; i < spawnDefinitions.Length; i++)
+            {
+                spawnDefinitions[i].PopulateOnEntity(entities[i], entitySpawner);
+            }
+
+            ReleaseImmediate(entitySpawner);
+
+            return entities;
+        }
+
+        //*************************************************************************************************************
+        // UPDATE
+        //*************************************************************************************************************
+        
+        protected override void OnUpdate()
+        {
+            m_PendingReleaseSpawners.Clear();
+            foreach (EntitySpawner entitySpawner in m_ActiveSpawners)
+            {
+                //If we're created, then we should check if we were played back.
+                //If we weren't played back yet, we wait.
+                //If we were played back or we're not created, then we should cleanup.
+                if (!(entitySpawner.IsECBCreated && entitySpawner.DidECBPlayback()))
+                {
+                    continue;
+                }
+                m_PendingReleaseSpawners.Add(entitySpawner);
+            }
+            foreach (EntitySpawner entitySpawner in m_PendingReleaseSpawners)
+            {
+                ReleaseSpawner(entitySpawner);
+            }
         }
 
         //*************************************************************************************************************
@@ -231,6 +389,31 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Trying to register {type.GetReadableName()} but it already is!");
             }
+        }
+
+
+        //*************************************************************************************************************
+        // STATIC REGISTRATION
+        //*************************************************************************************************************
+
+        private static readonly Dictionary<EntitySpawner.SpawnerID, EntitySpawner> s_AllSpawners = new Dictionary<EntitySpawner.SpawnerID, EntitySpawner>();
+        private static IDProvider s_EntitySpawnSystemIDProvider;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Init()
+        {
+            s_EntitySpawnSystemIDProvider?.Dispose();
+            s_EntitySpawnSystemIDProvider = new IDProvider();
+            s_AllSpawners.Clear();
+        }
+
+        public static EntitySpawner GetEntitySpawnerByID(EntitySpawner.SpawnerID spawnerID)
+        {
+            if (!s_AllSpawners.TryGetValue(spawnerID, out EntitySpawner entitySpawner))
+            {
+                throw new InvalidOperationException($"Tried to get {nameof(EntitySpawner)} by ID of {spawnerID} but it wasn't in the lookup!");
+            }
+            return entitySpawner;
         }
     }
 }

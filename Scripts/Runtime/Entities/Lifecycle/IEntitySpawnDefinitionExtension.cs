@@ -11,28 +11,26 @@ namespace Anvil.Unity.DOTS.Entities
         /// Create and populate an entity based on a <see cref="IEntitySpawnDefinition"/>.
         /// </summary>
         /// <param name="definition">The definition to create and populate an instance from.</param>
-        /// <param name="ecb">The <see cref="EntityCommandBufferWithID"/> to write to.</param>
-        /// <param name="entitySpawnHelper">The <see cref="EntitySpawnHelper"/></param>
+        /// <param name="entitySpawner">The <see cref="EntitySpawner"/> helper struct</param>
         /// <typeparam name="TDefinition">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
-        public static void CreateAndPopulate<TDefinition>(ref this TDefinition definition, ref EntityCommandBufferWithID ecb, in EntitySpawnHelper entitySpawnHelper)
+        public static void CreateAndPopulate<TDefinition>(ref this TDefinition definition, in EntitySpawner entitySpawner)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            Entity entity = ecb.CreateEntity(entitySpawnHelper.GetEntityArchetypeForDefinition<TDefinition>());
-            definition.PopulateOnEntity(entity, ref ecb, entitySpawnHelper);
+            Entity entity = entitySpawner.SpawnDeferredEntity(definition);
+            definition.PopulateOnEntity(entity, entitySpawner);
         }
 
         /// <summary>
         /// Create and populate an entity based on a <see cref="IEntitySpawnDefinition"/> using a prototype <see cref="Entity"/>
         /// </summary>
         /// <param name="definition">The definition to create and populate an instance from.</param>
-        /// <param name="ecb">The <see cref="EntityCommandBufferWithID"/> to write to.</param>
-        /// <param name="entitySpawnHelper">The <see cref="EntitySpawnHelper"/></param>
+        /// <param name="entitySpawner">The <see cref="EntitySpawner"/> helper struct</param>
         /// <typeparam name="TDefinition">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
-        public static void CreateAndPopulateWithPrototype<TDefinition>(ref this TDefinition definition, ref EntityCommandBufferWithID ecb, in EntitySpawnHelper entitySpawnHelper)
+        public static void CreateAndPopulateWithPrototype<TDefinition>(ref this TDefinition definition, in EntitySpawner entitySpawner)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            Entity entity = ecb.Instantiate(entitySpawnHelper.GetPrototypeEntityForDefinition<TDefinition>());
-            definition.PopulateOnEntity(entity, ref ecb, entitySpawnHelper);
+            Entity entity = entitySpawner.SpawnDeferredEntityWithPrototype(definition);
+            definition.PopulateOnEntity(entity, entitySpawner);
         }
     }
 }
