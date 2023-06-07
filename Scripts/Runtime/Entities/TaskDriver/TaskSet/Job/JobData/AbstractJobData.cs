@@ -67,12 +67,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         
         public void Fulfill(out EntitySpawner entitySpawner)
         {
-            entitySpawner = GetEntitySpawner();
-        }
-
-        public EntitySpawner GetEntitySpawner()
-        {
-            return m_JobConfig.GetEntitySpawner();
+            entitySpawner = m_JobConfig.GetEntitySpawner();
         }
 
         //*************************************************************************************************************
