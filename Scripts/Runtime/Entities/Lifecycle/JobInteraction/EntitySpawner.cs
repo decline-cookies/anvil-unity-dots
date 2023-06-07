@@ -39,10 +39,21 @@ namespace Anvil.Unity.DOTS.Entities
         
         
         [NativeDisableContainerSafetyRestriction] private readonly EntityCommandBuffer m_ECB;
+        //TODO: #86 - Once we upgrade to Entities 1.0 we won't have to hide the ECB or ECB.ParallelWriter inside here
+        //      and we can expose it or make two separate Spawner structs. One for parallel and one for single.        
         [NativeDisableContainerSafetyRestriction] private readonly EntityCommandBuffer.ParallelWriter m_ECBWriter;
         [ReadOnly] private readonly NativeParallelHashMap<long, EntityArchetype> m_ArchetypeLookup;
         [ReadOnly] private readonly NativeParallelHashMap<long, Entity> m_PrototypeLookup;
         
+        
+        /// <summary>
+        /// Returns whether the underlying <see cref="EntityCommandBuffer"/> is created or not.
+        /// </summary>
+        /// <returns>true if it is, false if not</returns>
+        public bool IsECBCreated
+        {
+            get => m_ECB.IsCreated;
+        }
         
         internal EntitySpawner(
             SpawnerID id,
@@ -62,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// Returns whether the underlying <see cref="EntityCommandBuffer"/> has been played back yet or not.
         /// </summary>
         /// <returns>true if it has, false if not.</returns>
-        public bool DidPlayback()
+        public bool DidECBPlayback()
         {
             return m_ECB.DidPlayback();
         }

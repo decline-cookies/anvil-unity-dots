@@ -173,6 +173,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
             return this;
         }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ENTITY SPAWNER
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfig.RequireEntitySpawner"/>
+        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem)
+        {
+            AddAccessWrapper(new EntitySpawnSystemWrapper(entitySpawnSystem, AccessType.SharedWrite, Usage.Default));
+            return this;
+        }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
@@ -314,6 +325,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : AbstractTaskDriver
         {
             return configureRequirements(taskDriver, this);
+        }
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - EntityCommandBuffer
+        //*************************************************************************************************************
+        public IJobConfig RequireECB(EntityCommandBufferSystem ecbSystem)
+        {
+            AddAccessWrapper(new ECBAccessWrapper(ecbSystem, Usage.Default));
+
+            return this;
         }
 
         //*************************************************************************************************************
@@ -479,6 +500,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return genericDataAccessWrapper.Data;
         }
 
+        internal EntitySpawner GetEntitySpawner()
+        {
+            EntitySpawnSystemWrapper entitySpawnSystemWrapper
+                = GetAccessWrapper<EntitySpawnSystemWrapper>(Usage.Default);
+
+            return entitySpawnSystemWrapper.EntitySpawner;
+        }
+
         internal void Fulfill<TData>(out ThreadPersistentData<TData> instance)
             where TData : unmanaged, IThreadPersistentDataInstance
         {
@@ -540,6 +569,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
             instance = dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();
+        }
+
+        internal void Fulfill(out EntityCommandBuffer instance)
+        {
+            ECBAccessWrapper ecbAccessWrapper = GetAccessWrapper<ECBAccessWrapper>(Usage.Default);
+            instance = ecbAccessWrapper.CommandBuffer;
+        }
+
+        internal void Fulfill(out EntityCommandBuffer.ParallelWriter instance)
+        {
+            ECBAccessWrapper ecbAccessWrapper = GetAccessWrapper<ECBAccessWrapper>(Usage.Default);
+            instance = ecbAccessWrapper.CommandBuffer.AsParallelWriter();
         }
 
         //*************************************************************************************************************

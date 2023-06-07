@@ -64,6 +64,9 @@ namespace Anvil.Unity.DOTS.Entities
             //This way we don't run out of IDs when acquiring every frame but we also don't need to force the call site
             //to manage and store an ID.
             
+            //TODO: https://github.com/decline-cookies/anvil-csharp-core/issues/147
+            //      Change to a Pool<int> instead.
+            
             //If we have an ID free to use in the queue, just get it
             if (m_InstanceIDQueue.Count > 0)
             {
@@ -351,7 +354,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_PendingReleaseSpawners.Clear();
             foreach (EntitySpawner entitySpawner in m_ActiveSpawners)
             {
-                if (!entitySpawner.DidPlayback())
+                //If we're created, then we should check if we were played back.
+                //If we weren't played back yet, we wait.
+                //If we were played back or we're not created, then we should cleanup.
+                if (!(entitySpawner.IsECBCreated && entitySpawner.DidECBPlayback()))
                 {
                     continue;
                 }

@@ -25,20 +25,25 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Active;
         }
 
+        public NativeArray<T> CurrentArray
+        {
+            get => m_Active.AsArray();
+        }
+
         public sealed override bool IsDataInvalidated
         {
             get => base.IsDataInvalidated && m_Active.Length > 0;
         }
 
         public ActiveArrayData(
-            IDataOwner dataOwner, 
-            CancelRequestBehaviour cancelRequestBehaviour, 
+            IDataOwner dataOwner,
+            CancelRequestBehaviour cancelRequestBehaviour,
             AbstractData pendingCancelActiveData,
-            string uniqueContextIdentifier) 
+            string uniqueContextIdentifier)
             : base(
-                dataOwner, 
-                cancelRequestBehaviour, 
-                pendingCancelActiveData, 
+                dataOwner,
+                cancelRequestBehaviour,
+                pendingCancelActiveData,
                 uniqueContextIdentifier)
         {
             m_Active = new DeferredNativeArray<T>(Allocator.Persistent);

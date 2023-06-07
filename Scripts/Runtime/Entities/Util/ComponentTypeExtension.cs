@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -27,6 +29,23 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             return readOnlyTypes;
+        }
+
+        /// <summary>
+        /// Converts an <see cref="IEnumerable{ComponentType}"/> to be readonly.
+        /// </summary>
+        /// <remarks>
+        /// A component collection created using typeof(ComponentType) will default all created <see cref="ComponentType"/>
+        /// to be readwrite. When generating a query from that array, the query access will be expensive since
+        /// Unity will think that all the components will be written to. This is useful for making a query
+        /// that uses all of those components but in a readonly context to limit blocking.
+        /// </remarks>
+        /// <param name="componentTypes">The array of <see cref="ComponentType"/> to convert.</param>
+        /// <returns>An <see cref="IEnumerable{ComponentType}"/> that are all readonly.</returns>
+        public static IEnumerable<ComponentType> ToReadOnly(this IEnumerable<ComponentType> componentTypes)
+        {
+            return componentTypes
+                .Select(type => ComponentType.ReadOnly(type.TypeIndex));
         }
     }
 }
