@@ -173,6 +173,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
             return this;
         }
+        
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ENTITY SPAWNER
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfig.RequireEntitySpawner"/>
+        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem)
+        {
+            AddAccessWrapper(new EntitySpawnSystemWrapper(entitySpawnSystem, AccessType.SharedWrite, Usage.Default));
+            return this;
+        }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - GENERIC DATA
@@ -471,6 +482,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 = GetAccessWrapper<GenericExclusiveWriteDataAccessWrapper<TData>>(Usage.Default);
 
             return genericDataAccessWrapper.Data;
+        }
+
+        internal EntitySpawner GetEntitySpawner()
+        {
+            EntitySpawnSystemWrapper entitySpawnSystemWrapper
+                = GetAccessWrapper<EntitySpawnSystemWrapper>(Usage.Default);
+
+            return entitySpawnSystemWrapper.EntitySpawner;
         }
 
         internal void Fulfill<TData>(out ThreadPersistentData<TData> instance)

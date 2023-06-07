@@ -354,7 +354,10 @@ namespace Anvil.Unity.DOTS.Entities
             m_PendingReleaseSpawners.Clear();
             foreach (EntitySpawner entitySpawner in m_ActiveSpawners)
             {
-                if (!entitySpawner.DidPlayback())
+                //If we're created, then we should check if we were played back.
+                //If we weren't played back yet, we wait.
+                //If we were played back or we're not created, then we should cleanup.
+                if (!(entitySpawner.IsECBCreated && entitySpawner.DidECBPlayback()))
                 {
                     continue;
                 }
