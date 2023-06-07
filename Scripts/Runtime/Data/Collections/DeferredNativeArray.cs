@@ -459,7 +459,7 @@ namespace Anvil.Unity.DOTS.Data
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
 #endif
-            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, m_BufferInfo->Length, Allocator.Invalid);
+            NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(m_BufferInfo->Buffer, m_BufferInfo->Length, m_BufferInfo->DeferredAllocator);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
