@@ -240,6 +240,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
+        /// Configures an <see cref="ITaskCancelJobForDefer{TInstance}"/> job to be run. This will operate
+        /// on data in a stream that has been requested to cancel with <see cref="CancelRequestBehaviour.Unwind"/>. It
+        /// provides the opportunity for the job to do the unwinding for however long that takes and to eventually
+        /// resolve to notify of a <see cref="CancelComplete"/>.
+        /// </summary>
+        /// <param name="dataStream">The <see cref="IDriverDataStream{TInstance}"/> to schedule the job on.</param>
+        /// <param name="scheduleJobFunction">The callback function to perform the scheduling</param>
+        /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for scheduling</param>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the stream</typeparam>
+        /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
+        public IJobConfig ConfigureJobToCancel<TInstance>(
+            IDriverDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
+            where TInstance : unmanaged, IEntityProxyInstance
+        {
+            return TaskSet.ConfigureJobToCancel(
+                (EntityProxyDataStream<TInstance>)dataStream,
+                scheduleJobFunction,
+                batchStrategy);
+        }
+
+        /// <summary>
         /// Configures a Job that is triggered by <see cref="Entity"/> or <see cref="IComponentData"/> being
         /// present in the passed in <see cref="EntityQuery"/>
         /// </summary>
