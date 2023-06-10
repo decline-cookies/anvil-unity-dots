@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private bool m_HasCancellableData;
 
         /// <summary>
-        /// Reference to the associated <see cref="World"/>
+        /// Reference to the associated <see cref="World"/>.
         /// </summary>
         public World World { get; }
 
@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal TaskSet TaskSet { get; }
 
         /// <summary>
-        /// Data Stream representing requests to Cancel an <see cref="Entity"/>
+        /// Data Stream representing requests to Cancel an <see cref="Entity"/>.
         /// </summary>
         public IDriverCancelRequestDataStream CancelRequestDataStream
         {
@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Data Stream representing when Cancel Requests are Complete
+        /// Data Stream representing when Cancel Requests are Complete.
         /// </summary>
         public IDriverDataStream<CancelComplete> CancelCompleteDataStream
         {
@@ -95,7 +95,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
-        /// Creates a new instance of a <see cref="AbstractTaskDriver"/>
+        /// Creates a new instance of a <see cref="AbstractTaskDriver"/>.
         /// </summary>
         /// <param name="world">The <see cref="World"/> this Task Driver is a part of.</param>
         /// <param name="parent">The parent <see cref="AbstractTaskDriver"/> if it exists</param>
@@ -106,7 +106,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// ShootTaskDriver
         ///  - TimerTaskDriver (for time between shots)
         ///  - TimerTaskDriver (for reloading)
-        /// 
+        ///
         /// Both TimerTaskDriver's would conflict as being siblings of the ShootTaskDriver so they would need a unique
         /// context identifier to distinguish them for ensuring migration happens properly between worlds and data
         /// goes to the correct location.
@@ -220,7 +220,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         /// <summary>
-        /// Configures a Job that is triggered by instances being present in the passed in <see cref="IDriverDataStream{TInstance}"/>
+        /// Configures a Job that is triggered by instances being present in the passed in <see cref="IDriverDataStream{TInstance}"/>.
         /// </summary>
         /// <param name="dataStream">The <see cref="IDriverDataStream{TInstance}"/> to trigger the job off of.</param>
         /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
@@ -264,7 +264,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <summary>
         /// Configures a Job that is triggered by <see cref="Entity"/> or <see cref="IComponentData"/> being
-        /// present in the passed in <see cref="EntityQuery"/>
+        /// present in the passed in <see cref="EntityQuery"/>.
         /// </summary>
         /// <param name="entityQuery">The <see cref="EntityQuery"/> to trigger the job off of.</param>
         /// <param name="scheduleJobFunction">The scheduling function to call to schedule the job.</param>
