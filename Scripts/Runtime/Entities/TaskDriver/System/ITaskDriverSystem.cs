@@ -4,17 +4,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
     /// Represents a <see cref="AbstractTaskDriverSystem"/> through the context of the calling
-    /// <see cref="AbstractTaskDriver"/>. 
+    /// <see cref="AbstractTaskDriver"/>.
     /// </summary>
     public interface ITaskDriverSystem
     {
         /// <summary>
-        /// Data Stream representing requests to Cancel an <see cref="Entity"/> on the system
+        /// Data Stream representing requests to Cancel an <see cref="Entity"/> on the system.
         /// </summary>
         public ISystemCancelRequestDataStream CancelRequestDataStream { get; }
-        
+
         /// <summary>
-        /// Data Stream representing when Cancel Requests are Complete on the system
+        /// Data Stream representing when Cancel Requests are Complete on the system.
         /// </summary>
         public ISystemDataStream<CancelComplete> CancelCompleteDataStream { get; }
 
@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Configures an <see cref="ITaskCancelJobForDefer{TInstance}"/> job to be run on the system. This will operate
         /// on data in a stream that has been requested to cancel with <see cref="CancelRequestBehaviour.Unwind"/>. It
         /// provides the opportunity for the job to do the unwinding for however long that takes and to eventually
-        /// resolve into a new data type and inherently notify of a <see cref="CancelComplete"/>
+        /// resolve into a new data type and inherently notify of a <see cref="CancelComplete"/>.
         /// </summary>
         /// <param name="dataStream">The <see cref="ISystemDataStream{TInstance}"/> to schedule the job on.</param>
         /// <param name="scheduleJobFunction">The callback function to perform the scheduling</param>
@@ -76,7 +76,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TInstance : unmanaged, IEntityProxyInstance;
 
         /// <summary>
-        /// Gets or Creates an <see cref="EntityQuery"/> tied to this system. 
+        /// Gets or Creates an <see cref="EntityQuery"/> tied to this system.
         /// </summary>
         /// <param name="componentTypes">The <see cref="ComponentType"/>s to construct the query.</param>
         /// <returns>The <see cref="EntityQuery"/> instance</returns>
