@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public abstract int Length { get; }
         public NativeArray<T> Results { get; protected set; }
-        protected EntityQuery EntityQuery { get; }
+        internal EntityQuery EntityQuery { get; }
 
         protected AbstractEntityQueryNativeArray(EntityQuery entityQuery)
         {

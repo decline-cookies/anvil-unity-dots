@@ -38,5 +38,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_Array = m_JobData.GetGenericDataForReading<NativeArray<T>>();
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
+
+        internal override bool ShouldSchedule()
+        {
+            //If we have elements, we should schedule, otherwise, nope
+            return m_Array.Length > 0;
+        }
     }
 }

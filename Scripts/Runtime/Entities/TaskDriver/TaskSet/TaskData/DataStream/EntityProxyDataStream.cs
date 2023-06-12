@@ -100,6 +100,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             InstanceType = typeof(TInstance);
         }
+        
+        public bool IsActiveDataInvalidated(JobHandle lastJobHandle)
+        {
+            return m_ActiveArrayData.IsDataInvalidated(lastJobHandle);
+        }
+
+        public bool IsPendingCancelActiveDataInvalidated(JobHandle lastJobHandle)
+        {
+            return m_PendingCancelActiveArrayData.IsDataInvalidated(lastJobHandle);
+        }
+        
+        public JobHandle GetActiveDependencyFor(AccessType accessType)
+        {
+            return m_ActiveArrayData.GetDependencyFor(accessType);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquirePendingAsync(AccessType accessType)
@@ -173,7 +188,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // If our read job handle is ready now then the data is too and we should read from the current array.
             // Using the deferred array would produce invalid results because the deferred array gets resolved when the
             // data is written and in this case the writing is complete.
-            bool isDeferredRequired = !m_ActiveArrayData.GetDependency(AccessType.SharedRead).IsCompleted;
+            bool isDeferredRequired = !m_ActiveArrayData.GetDependencyFor(AccessType.SharedRead).IsCompleted;
             NativeArray<EntityProxyInstanceWrapper<TInstance>> sourceArray
                 = isDeferredRequired ? m_ActiveArrayData.DeferredJobArray : m_ActiveArrayData.CurrentArray;
             return new DataStreamActiveReader<TInstance>(sourceArray);

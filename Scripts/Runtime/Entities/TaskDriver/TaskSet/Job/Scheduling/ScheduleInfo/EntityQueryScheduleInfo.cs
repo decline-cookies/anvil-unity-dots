@@ -36,5 +36,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
+        
+        internal override bool ShouldSchedule()
+        {
+            //If the query won't match anything, no need to schedule. SystemState.ShouldRunSystem does this
+            return !m_EntityQueryNativeArray.EntityQuery.IsEmptyIgnoreFilter;
+        }
     }
 }

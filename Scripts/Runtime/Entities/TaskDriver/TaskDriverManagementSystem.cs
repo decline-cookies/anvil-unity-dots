@@ -301,6 +301,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
             // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain
             dependsOn = m_CancelCompleteDataSource.Consolidate(dependsOn);
+            
+            //Forcing a sync here so we can determine if we actually wrote anything. See AbstractData.IsDataInvalidated
+            dependsOn.Complete();
 
             Dependency = dependsOn;
         }

@@ -396,6 +396,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Debug_EnsureIsHardened();
 
+            //If our scheduling data hasn't been modified, there's no reason to run the job
+            if (!m_ScheduleInfo.ShouldSchedule())
+            {
+                return dependsOn;
+            }
+
             int index = 0;
             for (; index < m_SchedulingAccessWrappers.Count; ++index)
             {

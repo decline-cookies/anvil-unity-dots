@@ -36,5 +36,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal abstract JobHandle CallScheduleFunction(JobHandle dependsOn);
+
+        internal abstract bool ShouldSchedule();
     }
 }
