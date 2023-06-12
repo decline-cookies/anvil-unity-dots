@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -13,7 +14,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly UpdateJobData<TInstance> m_JobData;
         private readonly EntityProxyDataStream<TInstance> m_DataStream;
         private readonly JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> m_ScheduleJobFunction;
-
+        private JobHandle m_LastReadHandle;
+        
         /// <summary>
         /// The scheduling information for the <see cref="DeferredNativeArray{T}"/> used in this type of job.
         /// </summary>
@@ -40,13 +42,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
+            m_LastReadHandle = m_DataStream.GetActiveDependencyFor(AccessType.SharedRead);
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
         
         internal override bool ShouldSchedule()
         {
             //If we've been written to, we need to schedule
-            return m_DataStream.IsDataInvalidated;
+            return m_DataStream.IsActiveDataInvalidated(m_LastReadHandle);
         }
     }
 }

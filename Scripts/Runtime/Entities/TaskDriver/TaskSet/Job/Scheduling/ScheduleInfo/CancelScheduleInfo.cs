@@ -1,4 +1,5 @@
 using Anvil.Unity.DOTS.Data;
+using Anvil.Unity.DOTS.Jobs;
 using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -13,7 +14,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly CancelJobData<TInstance> m_JobData;
         private readonly EntityProxyDataStream<TInstance> m_PendingCancelDataStream;
         private readonly JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> m_ScheduleJobFunction;
-        
+        private JobHandle m_LastReadHandle;
 
 
         /// <summary>
@@ -42,13 +43,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
+            m_LastReadHandle = m_PendingCancelDataStream.GetActiveDependencyFor(AccessType.SharedRead);
             return m_ScheduleJobFunction(dependsOn, m_JobData, this);
         }
 
         internal override bool ShouldSchedule()
         {
             //If we've been written to, we need to schedule
-            return m_PendingCancelDataStream.IsPendingCancelDataInvalidated;
+            return m_PendingCancelDataStream.IsActiveDataInvalidated(m_LastReadHandle);
         }
     }
 }

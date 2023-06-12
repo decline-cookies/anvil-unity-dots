@@ -1,6 +1,7 @@
 using Anvil.Unity.DOTS.Data;
 using System;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -30,11 +31,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_Active.AsArray();
         }
 
-        public sealed override bool IsDataInvalidated
-        {
-            get => base.IsDataInvalidated && m_Active.Length > 0;
-        }
-
         public ActiveArrayData(
             IDataOwner dataOwner,
             CancelRequestBehaviour cancelRequestBehaviour,
@@ -55,6 +51,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected sealed override void DisposeData()
         {
             m_Active.Dispose();
+        }
+
+        public sealed override bool IsDataInvalidated(JobHandle lastJobHandle)
+        {
+            return base.IsDataInvalidated(lastJobHandle) && m_Active.Length > 0;
         }
     }
 }

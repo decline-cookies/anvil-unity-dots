@@ -23,7 +23,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         private readonly AccessController m_AccessController;
-        private JobHandle m_LastSharedReadAccessJobHandle;
 
         public DataTargetID WorldUniqueID { get; }
         public CancelRequestBehaviour CancelRequestBehaviour { get; }
@@ -34,17 +33,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private DataTargetID m_WorldUniqueID;
 
-        /// <summary>
-        /// Whether the underlying data has potentially been updated by something getting write access to it.
-        /// </summary>
-        public virtual bool IsDataInvalidated
-        {
-            //If the current Read dependency has changed from what we last stored, then someone has written here
-            get => m_AccessController
-                .GetDependencyFor(AccessType.SharedRead)
-                .Equals_NoBox(m_LastSharedReadAccessJobHandle);
-        }
-        
         protected AbstractData(IDataOwner dataOwner, CancelRequestBehaviour cancelRequestBehaviour, AbstractData pendingCancelActiveData, string uniqueContextIdentifier)
         {
             m_AccessController = new AccessController();
@@ -69,18 +57,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         protected abstract void DisposeData();
+
+        /// <summary>
+        /// Whether the underlying data has potentially been updated by something getting write access to it.
+        /// </summary>
+        /// <param name="lastJobHandle">
+        /// A job handle to check against
+        /// </param>
+        public virtual bool IsDataInvalidated(JobHandle lastJobHandle)
+        {
+            //If the current Read dependency has changed from what we last stored, then someone has written here
+            return m_AccessController
+                .GetDependencyFor(AccessType.SharedRead)
+                .Equals_NoBox(lastJobHandle);
+        }
         
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JobHandle AcquireAsync(AccessType accessType)
         {
-            JobHandle dependsOn = m_AccessController.AcquireAsync(accessType);
-            //Store the dependency for the last time we read from this data
-            if (accessType == AccessType.SharedRead)
-            {
-                m_LastSharedReadAccessJobHandle = dependsOn;
-            }
-            return dependsOn;
+            return m_AccessController.AcquireAsync(accessType);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -102,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JobHandle GetDependency(AccessType accessType)
+        public JobHandle GetDependencyFor(AccessType accessType)
         {
             return m_AccessController.GetDependencyFor(accessType);
         }

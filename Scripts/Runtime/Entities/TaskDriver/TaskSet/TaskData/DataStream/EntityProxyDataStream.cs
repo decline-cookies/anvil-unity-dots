@@ -46,17 +46,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_ActiveArrayData.CancelRequestBehaviour;
         }
 
-        public bool IsDataInvalidated
-        {
-            get => m_ActiveArrayData.IsDataInvalidated;
-        }
-
-        public bool IsPendingCancelDataInvalidated
-        {
-            get => m_PendingCancelActiveArrayData.IsDataInvalidated;
-        }
-
-
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
         public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
         public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }
@@ -110,6 +99,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             PendingData = m_DataSource.PendingData;
 
             InstanceType = typeof(TInstance);
+        }
+        
+        public bool IsActiveDataInvalidated(JobHandle lastJobHandle)
+        {
+            return m_ActiveArrayData.IsDataInvalidated(lastJobHandle);
+        }
+
+        public bool IsPendingCancelActiveDataInvalidated(JobHandle lastJobHandle)
+        {
+            return m_PendingCancelActiveArrayData.IsDataInvalidated(lastJobHandle);
+        }
+        
+        public JobHandle GetActiveDependencyFor(AccessType accessType)
+        {
+            return m_ActiveArrayData.GetDependencyFor(accessType);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -184,7 +188,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // If our read job handle is ready now then the data is too and we should read from the current array.
             // Using the deferred array would produce invalid results because the deferred array gets resolved when the
             // data is written and in this case the writing is complete.
-            bool isDeferredRequired = !m_ActiveArrayData.GetDependency(AccessType.SharedRead).IsCompleted;
+            bool isDeferredRequired = !m_ActiveArrayData.GetDependencyFor(AccessType.SharedRead).IsCompleted;
             NativeArray<EntityProxyInstanceWrapper<TInstance>> sourceArray
                 = isDeferredRequired ? m_ActiveArrayData.DeferredJobArray : m_ActiveArrayData.CurrentArray;
             return new DataStreamActiveReader<TInstance>(sourceArray);

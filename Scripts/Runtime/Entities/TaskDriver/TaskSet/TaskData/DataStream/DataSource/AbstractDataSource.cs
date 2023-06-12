@@ -17,6 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : unmanaged, IEquatable<T>
     {
         private bool m_IsHardened;
+        private JobHandle m_LastReadHandle;
 
         private NativeArray<JobHandle> m_ConsolidationDependencies;
         private readonly List<DataAccessWrapper> m_ConsolidationData;
@@ -169,10 +170,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public JobHandle Consolidate(JobHandle dependsOn)
         {
             //If no one wrote to us, we can skip consolidation
-            if (!PendingData.IsDataInvalidated)
+            if (!PendingData.IsDataInvalidated(m_LastReadHandle))
             {
                 return dependsOn;
             }
+            m_LastReadHandle = PendingData.GetDependencyFor(AccessType.SharedRead);
             
             dependsOn = AcquireAsync(dependsOn);
             dependsOn = ConsolidateSelf(dependsOn);

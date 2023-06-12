@@ -24,6 +24,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly DataTargetID m_CancelCompleteDataTargetID;
 
         private NativeArray<JobHandle> m_Dependencies;
+        private JobHandle m_LastReadHandle;
+        private JobHandle m_LastParentReadHandle;
 
 
         public CancelProgressFlowNode(ITaskSetOwner taskSetOwner, CancelProgressFlowNode parent)
@@ -58,21 +60,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
         {
-            if (!m_ProgressLookupData.IsDataInvalidated && m_ParentProgressLookupData is
-            {
-                IsDataInvalidated: false
-            })
+            bool hasOurDataChanged = m_ProgressLookupData.IsDataInvalidated(m_LastReadHandle);
+            bool hasOurParentDataChanged = m_ParentProgressLookupData?.IsDataInvalidated(m_LastParentReadHandle) ?? false;
+            
+            //If nothing changed, we don't need to schedule
+            if (!hasOurDataChanged && !hasOurParentDataChanged)
             {
                 return dependsOn;
             }
+
+            m_LastReadHandle = m_ProgressLookupData.GetDependencyFor(AccessType.SharedRead);
+            m_LastParentReadHandle = m_ParentProgressLookupData?.GetDependencyFor(AccessType.SharedRead) ?? default;
             
+
             //TODO: #136 - Potentially have the Acquire grant access to the data within
             m_Dependencies[0] = dependsOn;
             m_Dependencies[1] = m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite);
             m_Dependencies[2] = m_CancelCompleteData.AcquireAsync(AccessType.SharedWrite);
-            m_Dependencies[3] = (m_Parent != null)
-                ? m_ParentProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite)
-                : default;
+            m_Dependencies[3] = m_ParentProgressLookupData?.AcquireAsync(AccessType.ExclusiveWrite) ?? default;
 
             dependsOn = JobHandle.CombineDependencies(m_Dependencies);
 
@@ -81,16 +86,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 m_CancelCompleteData.PendingWriter,
                 m_CancelCompleteDataTargetID,
                 m_ProgressLookupData.DataOwner.WorldUniqueID,
-                m_Parent != null ? m_ParentProgressLookupData.Lookup : default);
+                m_ParentProgressLookupData?.Lookup ?? default);
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
             m_ProgressLookupData.ReleaseAsync(dependsOn);
             m_CancelCompleteData.ReleaseAsync(dependsOn);
-            if (m_Parent != null)
-            {
-                m_ParentProgressLookupData.ReleaseAsync(dependsOn);
-            }
+            m_ParentProgressLookupData?.ReleaseAsync(dependsOn);
 
             return dependsOn;
         }
