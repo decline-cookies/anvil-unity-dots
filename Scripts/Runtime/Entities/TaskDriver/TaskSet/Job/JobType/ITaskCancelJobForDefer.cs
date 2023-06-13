@@ -26,8 +26,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// The <see cref="DataStreamCancellationUpdater{TInstance}"/> can be used to continue working on cancelling
         /// for this same instance next frame or resolve to cancel completed state.
         /// </summary>
-        /// <param name="pendingCancelInstance">The <see cref="IEntityProxyInstance"/> to cancel.</param>
+        /// <param name="cancelInstance">The <see cref="IEntityProxyInstance"/> to cancel.</param>
         /// <param name="cancellationUpdater">A helper struct to continue or resolve</param>
-        void Execute(TInstance pendingCancelInstance, ref DataStreamCancellationUpdater<TInstance> cancellationUpdater);
+        void Execute(TInstance cancelInstance, ref DataStreamCancellationUpdater<TInstance> cancellationUpdater);
     }
 }

@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
 
-            //This is temporary until we refactor DataStreams and AbstractData as part of #241 
+            //This is temporary until we refactor DataStreams and AbstractData as part of #241
             m_DataStreamLookupByID = new Dictionary<DataTargetID, AbstractDataStream>();
             m_Debug_TypeCount = new Dictionary<Type, int>();
 
@@ -77,16 +77,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 throw new InvalidOperationException($"Trying to get resolvable data streams for the type {type.GetReadableName()} but there are more than one. We don't support this at this time!");
             }
-            
+
             Type genericTypeArrayData = typeof(ActiveArrayData<>);
             Type genericTypeEntityProxyWrapperType = typeof(EntityProxyInstanceWrapper<>);
 
             Type specificEntityProxyWrapperType = genericTypeEntityProxyWrapperType.MakeGenericType(type);
             Type specificArrayType = genericTypeArrayData.MakeGenericType(specificEntityProxyWrapperType);
-            
+
             //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
             DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, specificArrayType, string.Empty);
-            
+
             if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
                 return;
@@ -100,7 +100,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
             DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
-            
+
             if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
                 dataStream = CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
@@ -115,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
             DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
 
-            
+
             EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
             switch (cancelRequestBehaviour)
             {
@@ -131,7 +131,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     throw new ArgumentOutOfRangeException(nameof(cancelRequestBehaviour), cancelRequestBehaviour, null);
             }
 
-            
+
             m_DataStreamLookupByID.Add(targetID, dataStream);
 
             Type instanceType = typeof(TInstance);
@@ -181,7 +181,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(
-            IAbstractDataStream<TInstance> pendingCancelDataStream,
+            IAbstractDataStream<TInstance> activeCancelDataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityProxyInstance
@@ -191,7 +191,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelJobConfig<TInstance> cancelJobConfig
                 = JobConfigFactory.CreateCancelJobConfig(
                     TaskSetOwner,
-                    (EntityProxyDataStream<TInstance>)pendingCancelDataStream,
+                    (EntityProxyDataStream<TInstance>)activeCancelDataStream,
                     scheduleJobFunction,
                     batchStrategy);
             m_JobConfigs.Add(cancelJobConfig);

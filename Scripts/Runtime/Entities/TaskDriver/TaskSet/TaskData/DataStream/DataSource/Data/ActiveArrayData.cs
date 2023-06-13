@@ -34,12 +34,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public ActiveArrayData(
             IDataOwner dataOwner,
             CancelRequestBehaviour cancelRequestBehaviour,
-            AbstractData pendingCancelActiveData,
+            AbstractData activeCancelData,
             string uniqueContextIdentifier)
             : base(
                 dataOwner,
                 cancelRequestBehaviour,
-                pendingCancelActiveData,
+                activeCancelData,
                 uniqueContextIdentifier)
         {
             m_Active = new DeferredNativeArray<T>(Allocator.Persistent);
@@ -53,9 +53,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_Active.Dispose();
         }
 
-        public sealed override bool IsDataInvalidated(JobHandle lastJobHandle)
+        public sealed override bool IsDataInvalidated(uint lastVersion)
         {
-            return base.IsDataInvalidated(lastJobHandle) && m_Active.Length > 0;
+
+            return base.IsDataInvalidated(lastVersion) && m_Active.Length > 0;
         }
     }
 }

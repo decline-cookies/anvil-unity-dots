@@ -1,11 +1,14 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -19,13 +22,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly ITaskSetOwner m_TaskSetOwner;
         private readonly CancelProgressFlowNode m_Parent;
         private readonly ActiveLookupData<EntityProxyInstanceID> m_ProgressLookupData;
-        private readonly ActiveLookupData<EntityProxyInstanceID> m_ParentProgressLookupData;
         private readonly PendingData<EntityProxyInstanceWrapper<CancelComplete>> m_CancelCompleteData;
         private readonly DataTargetID m_CancelCompleteDataTargetID;
 
+        private OwnerSharedDataVersion m_LastProcessedDataVersion;
         private NativeArray<JobHandle> m_Dependencies;
-        private JobHandle m_LastReadHandle;
-        private JobHandle m_LastParentReadHandle;
 
 
         public CancelProgressFlowNode(ITaskSetOwner taskSetOwner, CancelProgressFlowNode parent)
@@ -37,17 +38,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteData = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.PendingData;
             m_CancelCompleteDataTargetID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID;
 
-
+            m_LastProcessedDataVersion = new OwnerSharedDataVersion(m_TaskSetOwner);
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
-
-            if (m_Parent != null)
-            {
-                m_ParentProgressLookupData = m_Parent.m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
-            }
         }
 
         protected override void DisposeSelf()
         {
+            m_LastProcessedDataVersion.Dispose();
             m_Dependencies.Dispose();
 
             base.DisposeSelf();
@@ -58,26 +55,27 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.DataTargetID} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.WorldUniqueID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID}";
         }
 
+        private bool IsProgressLookupDataInvalidated()
+        {
+            return m_ProgressLookupData.IsDataInvalidated(m_LastProcessedDataVersion.ProgressLookupDataVersion);
+        }
+
         private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
         {
-            bool hasOurDataChanged = m_ProgressLookupData.IsDataInvalidated(m_LastReadHandle);
-            bool hasOurParentDataChanged = m_ParentProgressLookupData?.IsDataInvalidated(m_LastParentReadHandle) ?? false;
-            
+            bool hasOurDataChanged = IsProgressLookupDataInvalidated();
+            bool hasParentDataChanged = m_Parent?.IsProgressLookupDataInvalidated() ?? false;
+
             //If nothing changed, we don't need to schedule
-            if (!hasOurDataChanged && !hasOurParentDataChanged)
+            if (!hasOurDataChanged && !hasParentDataChanged)
             {
                 return dependsOn;
             }
-
-            m_LastReadHandle = m_ProgressLookupData.GetDependencyFor(AccessType.SharedRead);
-            m_LastParentReadHandle = m_ParentProgressLookupData?.GetDependencyFor(AccessType.SharedRead) ?? default;
-            
 
             //TODO: #136 - Potentially have the Acquire grant access to the data within
             m_Dependencies[0] = dependsOn;
             m_Dependencies[1] = m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite);
             m_Dependencies[2] = m_CancelCompleteData.AcquireAsync(AccessType.SharedWrite);
-            m_Dependencies[3] = m_ParentProgressLookupData?.AcquireAsync(AccessType.ExclusiveWrite) ?? default;
+            m_Dependencies[3] = m_Parent?.m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite) ?? default;
 
             dependsOn = JobHandle.CombineDependencies(m_Dependencies);
 
@@ -86,13 +84,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 m_CancelCompleteData.PendingWriter,
                 m_CancelCompleteDataTargetID,
                 m_ProgressLookupData.DataOwner.WorldUniqueID,
-                m_ParentProgressLookupData?.Lookup ?? default);
+                m_Parent?.m_ProgressLookupData.Lookup ?? default);
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
             m_ProgressLookupData.ReleaseAsync(dependsOn);
             m_CancelCompleteData.ReleaseAsync(dependsOn);
-            m_ParentProgressLookupData?.ReleaseAsync(dependsOn);
+            m_Parent?.m_ProgressLookupData.ReleaseAsync(dependsOn);
+
+            m_LastProcessedDataVersion.ProgressLookupDataVersion = m_ProgressLookupData.Version;
 
             return dependsOn;
         }
@@ -154,7 +154,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 //to accidentally mark things complete in different task drivers.
                 foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ParentProgressLookup)
                 {
-                    ref bool isParentProcessing = ref entry.Value;
                     EntityProxyInstanceID id = new EntityProxyInstanceID(entry.Key, m_DataOwnerID);
 
                     bool willComplete = CheckIfWillComplete(m_ProgressLookup[id], ref id);
@@ -165,7 +164,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                         //Our parent might have other children to wait on which will hold the parent open OR
                         //our parent might have nothing, in which case we don't want to hold open for an unnecessary
                         //extra frame.
-                        isParentProcessing = true;
+                        // entry.Value == isParentProcessing
+                        entry.Value = true;
                     }
                 }
             }
@@ -209,6 +209,90 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                             ref cancelComplete));
 
                     return true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A wrapper that provides access to data version(s) shared between <see cref="ITaskSetOwner"/> instances.
+        /// This allows multiple <see cref="CancelProgressFlowNode"/>s that point to the same <see cref="ITaskSetOwner"/>
+        /// instance to track whether data for a given version has been processed.
+        ///
+        /// Call <see cref="Dispose()"/> on the instance when it is no longer required to release shared version
+        /// references.
+        /// </summary>
+        /// <remarks>
+        /// Example:
+        /// Multiple <see cref="CancelProgressFlowNode"/>s point to each <see cref="TaskDriverSystem{TTaskDriverType}"/>
+        /// instance.
+        /// </remarks>
+        private struct OwnerSharedDataVersion : IDisposable
+        {
+            private VersionRefWrapper m_Ref;
+
+            public uint ProgressLookupDataVersion
+            {
+                get => m_Ref.ProgressLookupDataVersion;
+                set => m_Ref.ProgressLookupDataVersion = value;
+            }
+
+
+            public OwnerSharedDataVersion(ITaskSetOwner owner)
+            {
+                m_Ref = VersionRefWrapper.Acquire(owner);
+            }
+
+            public void Dispose()
+            {
+                m_Ref.Release();
+                m_Ref = null;
+            }
+
+
+            private class VersionRefWrapper
+            {
+                private static Dictionary<ITaskSetOwner, VersionRefWrapper> s_ExistingInstanceLookup;
+
+                [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+                private static void Init()
+                {
+                    s_ExistingInstanceLookup = new Dictionary<ITaskSetOwner, VersionRefWrapper>();
+                }
+
+                public static VersionRefWrapper Acquire(ITaskSetOwner owner)
+                {
+                    if (!s_ExistingInstanceLookup.TryGetValue(owner, out VersionRefWrapper instanceVersion))
+                    {
+                        instanceVersion = new VersionRefWrapper(owner);
+                        s_ExistingInstanceLookup.Add(owner, instanceVersion);
+                    }
+
+                    Debug.Assert(instanceVersion.m_RefCount < byte.MaxValue);
+                    instanceVersion.m_RefCount++;
+
+                    return instanceVersion;
+                }
+
+                public uint ProgressLookupDataVersion;
+                private readonly ITaskSetOwner m_Owner;
+                private byte m_RefCount;
+
+
+                private VersionRefWrapper(ITaskSetOwner owner)
+                {
+                    m_Owner = owner;
+                    ProgressLookupDataVersion = 0;
+                    m_RefCount = 0;
+                }
+
+                public void Release()
+                {
+                    Debug.Assert(s_ExistingInstanceLookup.ContainsKey(m_Owner));
+                    m_RefCount--;
+                    if (m_RefCount <= 0)
+                    {
+                        s_ExistingInstanceLookup.Remove(m_Owner);
+                    }
                 }
             }
         }

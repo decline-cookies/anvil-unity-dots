@@ -12,9 +12,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where TInstance : unmanaged, IEntityProxyInstance
     {
         private readonly CancelJobData<TInstance> m_JobData;
-        private readonly EntityProxyDataStream<TInstance> m_PendingCancelDataStream;
+        private readonly EntityProxyDataStream<TInstance> m_DataStream;
         private readonly JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> m_ScheduleJobFunction;
-        private JobHandle m_LastReadHandle;
+        private uint m_LastActiveCancelDataStreamVersion;
 
 
         /// <summary>
@@ -29,28 +29,30 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal CancelScheduleInfo(
             CancelJobData<TInstance> jobData,
-            EntityProxyDataStream<TInstance> pendingCancelDataStream,
+            EntityProxyDataStream<TInstance> dataStream,
             BatchStrategy batchStrategy,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction)
             : base(scheduleJobFunction.Method, batchStrategy, EntityProxyDataStream<TInstance>.MAX_ELEMENTS_PER_CHUNK)
         {
             m_JobData = jobData;
             m_ScheduleJobFunction = scheduleJobFunction;
-            m_PendingCancelDataStream = pendingCancelDataStream;
+            m_DataStream = dataStream;
 
-            DeferredNativeArrayScheduleInfo = m_PendingCancelDataStream.PendingCancelScheduleInfo;
+            DeferredNativeArrayScheduleInfo = m_DataStream.ActiveCancelScheduleInfo;
         }
 
         internal sealed override JobHandle CallScheduleFunction(JobHandle dependsOn)
         {
-            m_LastReadHandle = m_PendingCancelDataStream.GetActiveDependencyFor(AccessType.SharedRead);
-            return m_ScheduleJobFunction(dependsOn, m_JobData, this);
+            dependsOn = m_ScheduleJobFunction(dependsOn, m_JobData, this);
+            m_LastActiveCancelDataStreamVersion = m_DataStream.ActiveCancelDataVersion;
+
+            return dependsOn;
         }
 
         internal override bool ShouldSchedule()
         {
             //If we've been written to, we need to schedule
-            return m_PendingCancelDataStream.IsActiveDataInvalidated(m_LastReadHandle);
+            return m_DataStream.IsActiveCancelDataInvalidated(m_LastActiveCancelDataStreamVersion);
         }
     }
 }

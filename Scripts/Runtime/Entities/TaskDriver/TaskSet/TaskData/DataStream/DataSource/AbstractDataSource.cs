@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : unmanaged, IEquatable<T>
     {
         private bool m_IsHardened;
-        private JobHandle m_LastReadHandle;
+        private uint m_LastPendingDataVersion;
 
         private NativeArray<JobHandle> m_ConsolidationDependencies;
         private readonly List<DataAccessWrapper> m_ConsolidationData;
@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void DisposeSelf()
         {
             //DataTargets are Disposed by TaskDriverManagementSystem
-            
+
             if (m_ConsolidationDependencies.IsCreated)
             {
                 m_ConsolidationDependencies.Dispose();
@@ -72,21 +72,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             //TODO: #136 - Kinda gross, we shouldn't know about Cancelling here.
 
             //If we need to have an explicit unwinding to cancel, we need to create a second hidden piece of data to serve as the trigger
-            ActiveArrayData<T> pendingCancelArrayData = null;
+            ActiveArrayData<T> activeCancelArrayData = null;
             if (cancelRequestBehaviour is CancelRequestBehaviour.Unwind)
             {
-                pendingCancelArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
+                activeCancelArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
                     taskSetOwner,
                     CancelRequestBehaviour.Ignore,
                     null,
                     $"{uniqueContextIdentifier}PENDING-CANCEL");
-                DataTargets.Add(pendingCancelArrayData);
+                DataTargets.Add(activeCancelArrayData);
             }
 
             ActiveArrayData<T> activeArrayData = TaskDriverManagementSystem.CreateActiveArrayData<T>(
                 taskSetOwner,
                 cancelRequestBehaviour,
-                pendingCancelArrayData,
+                activeCancelArrayData,
                 uniqueContextIdentifier);
             DataTargets.Add(activeArrayData);
             return activeArrayData;
@@ -170,15 +170,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public JobHandle Consolidate(JobHandle dependsOn)
         {
             //If no one wrote to us, we can skip consolidation
-            if (!PendingData.IsDataInvalidated(m_LastReadHandle))
+            if (!PendingData.IsDataInvalidated(m_LastPendingDataVersion))
             {
                 return dependsOn;
             }
-            m_LastReadHandle = PendingData.GetDependencyFor(AccessType.SharedRead);
-            
+
             dependsOn = AcquireAsync(dependsOn);
             dependsOn = ConsolidateSelf(dependsOn);
             ReleaseAsync(dependsOn);
+
+            m_LastPendingDataVersion = PendingData.Version;
+
             return dependsOn;
         }
 
