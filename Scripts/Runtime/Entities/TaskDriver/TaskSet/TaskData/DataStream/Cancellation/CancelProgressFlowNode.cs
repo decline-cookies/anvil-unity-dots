@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private readonly PendingData<EntityProxyInstanceWrapper<CancelComplete>> m_CancelCompleteData;
         private readonly DataTargetID m_CancelCompleteDataTargetID;
 
-        private OwnerSharedDataVersion m_LastProcessedDataVersion;
+        private readonly OwnerSharedDataVersion m_LastProcessedDataVersion;
         private NativeArray<JobHandle> m_Dependencies;
 
 
@@ -226,7 +226,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Multiple <see cref="CancelProgressFlowNode"/>s point to each <see cref="TaskDriverSystem{TTaskDriverType}"/>
         /// instance.
         /// </remarks>
-        private struct OwnerSharedDataVersion : IDisposable
+        private sealed class OwnerSharedDataVersion : IDisposable
         {
             private VersionRefWrapper m_Ref;
 
@@ -244,12 +244,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             public void Dispose()
             {
-                m_Ref.Release();
+                Debug.Assert(m_Ref != null);
+                m_Ref?.Release();
                 m_Ref = null;
             }
 
 
-            private class VersionRefWrapper
+            private sealed class VersionRefWrapper
             {
                 private static Dictionary<ITaskSetOwner, VersionRefWrapper> s_ExistingInstanceLookup;
 
