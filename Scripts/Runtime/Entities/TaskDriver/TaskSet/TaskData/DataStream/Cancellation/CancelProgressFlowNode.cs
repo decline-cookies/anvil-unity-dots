@@ -16,16 +16,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public static readonly BulkScheduleDelegate<CancelProgressFlowNode> CHECK_PROGRESS_SCHEDULE_FUNCTION
             = BulkSchedulingUtil.CreateSchedulingDelegate<CancelProgressFlowNode>(
-                nameof(ScheduleCheckCancelProgressJob),
+                nameof(ScheduleCheckProgressJob),
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly ITaskSetOwner m_TaskSetOwner;
         private readonly CancelProgressFlowNode m_Parent;
+        private readonly ActiveLookupData<EntityProxyInstanceID> m_RequestLookupData;
         private readonly ActiveLookupData<EntityProxyInstanceID> m_ProgressLookupData;
         private readonly PendingData<EntityProxyInstanceWrapper<CancelComplete>> m_CancelCompleteData;
         private readonly DataTargetID m_CancelCompleteDataTargetID;
 
-        private readonly OwnerSharedDataVersion m_LastProcessedDataVersion;
+        private readonly OwnerSharedCheckProgressState m_LastCheckProgressState;
         private NativeArray<JobHandle> m_Dependencies;
 
 
@@ -34,17 +35,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskSetOwner = taskSetOwner;
             m_Parent = parent;
 
+            m_RequestLookupData = m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData;
             m_ProgressLookupData = m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
             m_CancelCompleteData = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.PendingData;
             m_CancelCompleteDataTargetID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID;
 
-            m_LastProcessedDataVersion = new OwnerSharedDataVersion(m_TaskSetOwner);
+            m_LastCheckProgressState = new OwnerSharedCheckProgressState(m_TaskSetOwner);
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
         }
 
         protected override void DisposeSelf()
         {
-            m_LastProcessedDataVersion.Dispose();
+            m_LastCheckProgressState.Dispose();
             m_Dependencies.Dispose();
 
             base.DisposeSelf();
@@ -57,19 +59,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private bool IsProgressLookupDataInvalidated()
         {
-            return m_ProgressLookupData.IsDataInvalidated(m_LastProcessedDataVersion.ProgressLookupDataVersion);
+            return m_ProgressLookupData.IsDataInvalidated(m_LastCheckProgressState.ProgressLookupDataVersion);
         }
 
-        private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
+        private JobHandle ScheduleCheckProgressJob(JobHandle dependsOn)
         {
             bool hasOurDataChanged = IsProgressLookupDataInvalidated();
             bool hasParentDataChanged = m_Parent?.IsProgressLookupDataInvalidated() ?? false;
 
-            //If nothing changed, we don't need to schedule
-            if (!hasOurDataChanged && !hasParentDataChanged)
+            //If nothing changed, and no follow up is required we don't need to schedule
+            if (!hasOurDataChanged && !hasParentDataChanged && !m_LastCheckProgressState.IsFollowUpCheckRequired)
             {
                 return dependsOn;
             }
+
+            // If a new request has come in make sure a follow up check is scheduled for next frame.
+            // Most of the time our progress data will get invalidated by the cancel unwind job of the Task Driver but
+            // this mitigates two edge cases and prevents the tree of Task Drivers from soft locking:
+            //   - There is no data in the cancel stream and the unwind job doesn't get scheduled. Since it isn't
+            //     scheduled the data doesn't get invalidated to trigger this work.
+            //   - The developer developer hasn't configured a job to unwind tasks canceled from a stream configured to
+            //     unwind.
+            m_LastCheckProgressState.IsFollowUpCheckRequired =
+                m_RequestLookupData.IsDataInvalidated(m_LastCheckProgressState.RequestLookupDataVersion);
 
             //TODO: #136 - Potentially have the Acquire grant access to the data within
             m_Dependencies[0] = dependsOn;
@@ -92,7 +104,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelCompleteData.ReleaseAsync(dependsOn);
             m_Parent?.m_ProgressLookupData.ReleaseAsync(dependsOn);
 
-            m_LastProcessedDataVersion.ProgressLookupDataVersion = m_ProgressLookupData.Version;
+            m_LastCheckProgressState.RequestLookupDataVersion = m_RequestLookupData.Version;
+            m_LastCheckProgressState.ProgressLookupDataVersion = m_ProgressLookupData.Version;
 
             return dependsOn;
         }
@@ -226,9 +239,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Multiple <see cref="CancelProgressFlowNode"/>s point to each <see cref="TaskDriverSystem{TTaskDriverType}"/>
         /// instance.
         /// </remarks>
-        private sealed class OwnerSharedDataVersion : IDisposable
+        private sealed class OwnerSharedCheckProgressState : IDisposable
         {
-            private VersionRefWrapper m_Ref;
+            private StateRefWrapper m_Ref;
 
             public uint ProgressLookupDataVersion
             {
@@ -236,10 +249,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 set => m_Ref.ProgressLookupDataVersion = value;
             }
 
-
-            public OwnerSharedDataVersion(ITaskSetOwner owner)
+            public uint RequestLookupDataVersion
             {
-                m_Ref = VersionRefWrapper.Acquire(owner);
+                get => m_Ref.RequestDataVersion;
+                set => m_Ref.RequestDataVersion = value;
+            }
+
+            /// <see cref="StateRefWrapper.IsFollowUpCheckRequired"/>>
+            public bool IsFollowUpCheckRequired
+            {
+                get => m_Ref.IsFollowUpCheckRequired;
+                set => m_Ref.IsFollowUpCheckRequired = value;
+            }
+
+            public OwnerSharedCheckProgressState(ITaskSetOwner owner)
+            {
+                m_Ref = StateRefWrapper.Acquire(owner);
             }
 
             public void Dispose()
@@ -250,21 +275,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
 
-            private sealed class VersionRefWrapper
+            private sealed class StateRefWrapper
             {
-                private static Dictionary<ITaskSetOwner, VersionRefWrapper> s_ExistingInstanceLookup;
+                private static Dictionary<ITaskSetOwner, StateRefWrapper> s_ExistingInstanceLookup;
 
                 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
                 private static void Init()
                 {
-                    s_ExistingInstanceLookup = new Dictionary<ITaskSetOwner, VersionRefWrapper>();
+                    s_ExistingInstanceLookup = new Dictionary<ITaskSetOwner, StateRefWrapper>();
                 }
 
-                public static VersionRefWrapper Acquire(ITaskSetOwner owner)
+                public static StateRefWrapper Acquire(ITaskSetOwner owner)
                 {
-                    if (!s_ExistingInstanceLookup.TryGetValue(owner, out VersionRefWrapper instanceVersion))
+                    if (!s_ExistingInstanceLookup.TryGetValue(owner, out StateRefWrapper instanceVersion))
                     {
-                        instanceVersion = new VersionRefWrapper(owner);
+                        instanceVersion = new StateRefWrapper(owner);
                         s_ExistingInstanceLookup.Add(owner, instanceVersion);
                     }
 
@@ -275,11 +300,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 }
 
                 public uint ProgressLookupDataVersion;
+                public uint RequestDataVersion;
+
+                /// <summary>
+                /// If true, indicates that a follow up check is required on the next pass.
+                /// Regardless of the state of data invalidation.
+                /// </summary>
+                public bool IsFollowUpCheckRequired;
+
                 private readonly ITaskSetOwner m_Owner;
                 private byte m_RefCount;
 
 
-                private VersionRefWrapper(ITaskSetOwner owner)
+                private StateRefWrapper(ITaskSetOwner owner)
                 {
                     m_Owner = owner;
                     ProgressLookupDataVersion = 0;
