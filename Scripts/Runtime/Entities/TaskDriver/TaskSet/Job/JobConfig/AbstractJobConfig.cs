@@ -173,7 +173,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
             return this;
         }
-        
+
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ENTITY SPAWNER
         //*************************************************************************************************************
@@ -464,13 +464,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return dataStreamAccessWrapper.DataStream;
         }
 
-        internal EntityProxyDataStream<TInstance> GetPendingCancelDataStream<TInstance>()
+        internal EntityProxyDataStream<TInstance> GetActiveCancelDataStream<TInstance>()
             where TInstance : unmanaged, IEntityProxyInstance
         {
-            DataStreamPendingCancelActiveAccessWrapper<TInstance> dataStreamPendingCancelActiveAccessWrapper
-                = GetAccessWrapper<DataStreamPendingCancelActiveAccessWrapper<TInstance>>(Usage.Cancelling);
+            DataStreamActiveCancelAccessWrapper<TInstance> dataStreamActiveCancelAccessWrapper
+                = GetAccessWrapper<DataStreamActiveCancelAccessWrapper<TInstance>>(Usage.Cancelling);
 
-            return dataStreamPendingCancelActiveAccessWrapper.DataStream;
+            return dataStreamActiveCancelAccessWrapper.DataStream;
         }
 
         internal TData GetGenericDataForReading<TData>()

@@ -1,11 +1,14 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -13,19 +16,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         public static readonly BulkScheduleDelegate<CancelProgressFlowNode> CHECK_PROGRESS_SCHEDULE_FUNCTION
             = BulkSchedulingUtil.CreateSchedulingDelegate<CancelProgressFlowNode>(
-                nameof(ScheduleCheckCancelProgressJob),
+                nameof(ScheduleCheckProgressJob),
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
         private readonly ITaskSetOwner m_TaskSetOwner;
         private readonly CancelProgressFlowNode m_Parent;
+        private readonly ActiveLookupData<EntityProxyInstanceID> m_RequestLookupData;
         private readonly ActiveLookupData<EntityProxyInstanceID> m_ProgressLookupData;
-        private readonly ActiveLookupData<EntityProxyInstanceID> m_ParentProgressLookupData;
         private readonly PendingData<EntityProxyInstanceWrapper<CancelComplete>> m_CancelCompleteData;
         private readonly DataTargetID m_CancelCompleteDataTargetID;
 
+        private readonly OwnerSharedCheckProgressState m_LastCheckProgressState;
         private NativeArray<JobHandle> m_Dependencies;
-        private JobHandle m_LastReadHandle;
-        private JobHandle m_LastParentReadHandle;
 
 
         public CancelProgressFlowNode(ITaskSetOwner taskSetOwner, CancelProgressFlowNode parent)
@@ -33,21 +35,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_TaskSetOwner = taskSetOwner;
             m_Parent = parent;
 
+            m_RequestLookupData = m_TaskSetOwner.TaskSet.CancelRequestsDataStream.ActiveLookupData;
             m_ProgressLookupData = m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
             m_CancelCompleteData = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.PendingData;
             m_CancelCompleteDataTargetID = m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID;
 
-
+            m_LastCheckProgressState = new OwnerSharedCheckProgressState(m_TaskSetOwner);
             m_Dependencies = new NativeArray<JobHandle>(4, Allocator.Persistent);
-
-            if (m_Parent != null)
-            {
-                m_ParentProgressLookupData = m_Parent.m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
-            }
         }
 
         protected override void DisposeSelf()
         {
+            m_LastCheckProgressState.Dispose();
             m_Dependencies.Dispose();
 
             base.DisposeSelf();
@@ -58,26 +57,37 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{m_TaskSetOwner} - With CancelRequestData of {m_TaskSetOwner.TaskSet.CancelRequestsDataStream.DataTargetID} and CancelProgressData of {m_TaskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData.WorldUniqueID} and CancelCompleteData of {m_TaskSetOwner.TaskSet.CancelCompleteDataStream.DataTargetID}";
         }
 
-        private JobHandle ScheduleCheckCancelProgressJob(JobHandle dependsOn)
+        private bool IsProgressLookupDataInvalidated()
         {
-            bool hasOurDataChanged = m_ProgressLookupData.IsDataInvalidated(m_LastReadHandle);
-            bool hasOurParentDataChanged = m_ParentProgressLookupData?.IsDataInvalidated(m_LastParentReadHandle) ?? false;
-            
-            //If nothing changed, we don't need to schedule
-            if (!hasOurDataChanged && !hasOurParentDataChanged)
+            return m_ProgressLookupData.IsDataInvalidated(m_LastCheckProgressState.ProgressLookupDataVersion);
+        }
+
+        private JobHandle ScheduleCheckProgressJob(JobHandle dependsOn)
+        {
+            bool hasOurDataChanged = IsProgressLookupDataInvalidated();
+            bool hasParentDataChanged = m_Parent?.IsProgressLookupDataInvalidated() ?? false;
+
+            //If nothing changed, and no follow up is required we don't need to schedule
+            if (!hasOurDataChanged && !hasParentDataChanged && !m_LastCheckProgressState.IsFollowUpCheckRequired)
             {
                 return dependsOn;
             }
 
-            m_LastReadHandle = m_ProgressLookupData.GetDependencyFor(AccessType.SharedRead);
-            m_LastParentReadHandle = m_ParentProgressLookupData?.GetDependencyFor(AccessType.SharedRead) ?? default;
-            
+            // If a new request has come in make sure a follow up check is scheduled for next frame.
+            // Most of the time our progress data will get invalidated by the cancel unwind job of the Task Driver but
+            // this mitigates two edge cases and prevents the tree of Task Drivers from soft locking:
+            //   - There is no data in the cancel stream and the unwind job doesn't get scheduled. Since it isn't
+            //     scheduled the data doesn't get invalidated to trigger this work.
+            //   - The developer developer hasn't configured a job to unwind tasks canceled from a stream configured to
+            //     unwind.
+            m_LastCheckProgressState.IsFollowUpCheckRequired =
+                m_RequestLookupData.IsDataInvalidated(m_LastCheckProgressState.RequestLookupDataVersion);
 
             //TODO: #136 - Potentially have the Acquire grant access to the data within
             m_Dependencies[0] = dependsOn;
             m_Dependencies[1] = m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite);
             m_Dependencies[2] = m_CancelCompleteData.AcquireAsync(AccessType.SharedWrite);
-            m_Dependencies[3] = m_ParentProgressLookupData?.AcquireAsync(AccessType.ExclusiveWrite) ?? default;
+            m_Dependencies[3] = m_Parent?.m_ProgressLookupData.AcquireAsync(AccessType.ExclusiveWrite) ?? default;
 
             dependsOn = JobHandle.CombineDependencies(m_Dependencies);
 
@@ -86,13 +96,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 m_CancelCompleteData.PendingWriter,
                 m_CancelCompleteDataTargetID,
                 m_ProgressLookupData.DataOwner.WorldUniqueID,
-                m_ParentProgressLookupData?.Lookup ?? default);
+                m_Parent?.m_ProgressLookupData.Lookup ?? default);
 
             dependsOn = checkCancelProgressJob.Schedule(dependsOn);
 
             m_ProgressLookupData.ReleaseAsync(dependsOn);
             m_CancelCompleteData.ReleaseAsync(dependsOn);
-            m_ParentProgressLookupData?.ReleaseAsync(dependsOn);
+            m_Parent?.m_ProgressLookupData.ReleaseAsync(dependsOn);
+
+            m_LastCheckProgressState.RequestLookupDataVersion = m_RequestLookupData.Version;
+            m_LastCheckProgressState.ProgressLookupDataVersion = m_ProgressLookupData.Version;
 
             return dependsOn;
         }
@@ -154,7 +167,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 //to accidentally mark things complete in different task drivers.
                 foreach (KeyValue<EntityProxyInstanceID, bool> entry in m_ParentProgressLookup)
                 {
-                    ref bool isParentProcessing = ref entry.Value;
                     EntityProxyInstanceID id = new EntityProxyInstanceID(entry.Key, m_DataOwnerID);
 
                     bool willComplete = CheckIfWillComplete(m_ProgressLookup[id], ref id);
@@ -165,7 +177,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                         //Our parent might have other children to wait on which will hold the parent open OR
                         //our parent might have nothing, in which case we don't want to hold open for an unnecessary
                         //extra frame.
-                        isParentProcessing = true;
+                        // entry.Value == isParentProcessing
+                        entry.Value = true;
                     }
                 }
             }
@@ -209,6 +222,111 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                             ref cancelComplete));
 
                     return true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A wrapper that provides access to data version(s) shared between <see cref="ITaskSetOwner"/> instances.
+        /// This allows multiple <see cref="CancelProgressFlowNode"/>s that point to the same <see cref="ITaskSetOwner"/>
+        /// instance to track whether data for a given version has been processed.
+        ///
+        /// Call <see cref="Dispose()"/> on the instance when it is no longer required to release shared version
+        /// references.
+        /// </summary>
+        /// <remarks>
+        /// Example:
+        /// Multiple <see cref="CancelProgressFlowNode"/>s point to each <see cref="TaskDriverSystem{TTaskDriverType}"/>
+        /// instance.
+        /// </remarks>
+        private sealed class OwnerSharedCheckProgressState : IDisposable
+        {
+            private StateRefWrapper m_Ref;
+
+            public uint ProgressLookupDataVersion
+            {
+                get => m_Ref.ProgressLookupDataVersion;
+                set => m_Ref.ProgressLookupDataVersion = value;
+            }
+
+            public uint RequestLookupDataVersion
+            {
+                get => m_Ref.RequestDataVersion;
+                set => m_Ref.RequestDataVersion = value;
+            }
+
+            /// <see cref="StateRefWrapper.IsFollowUpCheckRequired"/>>
+            public bool IsFollowUpCheckRequired
+            {
+                get => m_Ref.IsFollowUpCheckRequired;
+                set => m_Ref.IsFollowUpCheckRequired = value;
+            }
+
+            public OwnerSharedCheckProgressState(ITaskSetOwner owner)
+            {
+                m_Ref = StateRefWrapper.Acquire(owner);
+            }
+
+            public void Dispose()
+            {
+                Debug.Assert(m_Ref != null);
+                m_Ref?.Release();
+                m_Ref = null;
+            }
+
+
+            private sealed class StateRefWrapper
+            {
+                private static Dictionary<ITaskSetOwner, StateRefWrapper> s_ExistingInstanceLookup;
+
+                [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+                private static void Init()
+                {
+                    s_ExistingInstanceLookup = new Dictionary<ITaskSetOwner, StateRefWrapper>();
+                }
+
+                public static StateRefWrapper Acquire(ITaskSetOwner owner)
+                {
+                    if (!s_ExistingInstanceLookup.TryGetValue(owner, out StateRefWrapper instanceVersion))
+                    {
+                        instanceVersion = new StateRefWrapper(owner);
+                        s_ExistingInstanceLookup.Add(owner, instanceVersion);
+                    }
+
+                    Debug.Assert(instanceVersion.m_RefCount < byte.MaxValue);
+                    instanceVersion.m_RefCount++;
+
+                    return instanceVersion;
+                }
+
+                public uint ProgressLookupDataVersion;
+                public uint RequestDataVersion;
+
+                /// <summary>
+                /// If true, indicates that a follow up check is required on the next pass.
+                /// Regardless of the state of data invalidation.
+                /// </summary>
+                public bool IsFollowUpCheckRequired;
+
+                private readonly ITaskSetOwner m_Owner;
+                private byte m_RefCount;
+
+
+                private StateRefWrapper(ITaskSetOwner owner)
+                {
+                    m_Owner = owner;
+                    ProgressLookupDataVersion = 0;
+                    m_RefCount = 0;
+                }
+
+                public void Release()
+                {
+                    Debug.Assert(s_ExistingInstanceLookup.ContainsKey(m_Owner));
+                    m_RefCount--;
+                    if (m_RefCount <= 0)
+                    {
+                        s_ExistingInstanceLookup.Remove(m_Owner);
+                    }
                 }
             }
         }

@@ -10,7 +10,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal abstract class AbstractEntityProxyInstanceIDDataSource : AbstractDataSource<EntityProxyInstanceID>
     {
-        protected AbstractEntityProxyInstanceIDDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem) { }
+        protected AbstractEntityProxyInstanceIDDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
+            : base(taskDriverManagementSystem) { }
 
         //*************************************************************************************************************
         // MIGRATION

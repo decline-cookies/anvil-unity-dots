@@ -13,9 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
 
-        public EntityProxyDataSource(
-            TaskDriverManagementSystem taskDriverManagementSystem) 
-            : base(taskDriverManagementSystem)
+        public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
         {
             EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
             EntityProxyInstanceWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
@@ -127,7 +125,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                     EntityProxyInstanceWrapper<TInstance> instance = currentInstanceArray[i];
                     EntityProxyInstanceID instanceID = instance.InstanceID;
 
-                    //If we don't exist in the new world then we stayed in this world and we need to rewrite ourselves 
+                    //If we don't exist in the new world then we stayed in this world and we need to rewrite ourselves
                     //to our own stream
                     if (!instanceID.Entity.TryGetRemappedEntity(ref m_RemapArray, out Entity remappedEntity))
                     {

@@ -5,10 +5,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class CancelJobConfig<TInstance> : AbstractResolvableJobConfig
         where TInstance : unmanaged, IEntityProxyInstance
     {
-        public CancelJobConfig(ITaskSetOwner taskSetOwner, EntityProxyDataStream<TInstance> pendingCancelDataStream)
+        public CancelJobConfig(ITaskSetOwner taskSetOwner, EntityProxyDataStream<TInstance> activeCancelDataStream)
             : base(taskSetOwner)
         {
-            RequireDataStreamForCancelling(pendingCancelDataStream);
+            RequireDataStreamForCancelling(activeCancelDataStream);
             RequireCancelProgressLookup(taskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData);
         }
 
@@ -21,18 +21,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             AddAccessWrapper(new CancelProgressLookupAccessWrapper(cancelProgressLookupData, AccessType.ExclusiveWrite, Usage.Cancelling));
         }
 
-        private void RequireDataStreamForCancelling(EntityProxyDataStream<TInstance> pendingCancelDataStream)
+        private void RequireDataStreamForCancelling(EntityProxyDataStream<TInstance> activeCancelDataStream)
         {
             //When cancelling, we need to read from the pending cancel Active and write to the Pending for that type
             AddAccessWrapper(
-                new DataStreamPendingCancelActiveAccessWrapper<TInstance>(
-                    pendingCancelDataStream,
+                new DataStreamActiveCancelAccessWrapper<TInstance>(
+                    activeCancelDataStream,
                     AccessType.SharedRead,
                     Usage.Cancelling));
 
             AddAccessWrapper(
                 new DataStreamPendingAccessWrapper<TInstance>(
-                    pendingCancelDataStream,
+                    activeCancelDataStream,
                     AccessType.SharedWrite,
                     Usage.Cancelling));
         }

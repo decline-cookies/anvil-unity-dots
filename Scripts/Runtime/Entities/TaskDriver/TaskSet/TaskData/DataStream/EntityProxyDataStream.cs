@@ -19,10 +19,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
         private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
-        private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_PendingCancelActiveArrayData;
+        private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveCancelArrayData;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
-        public DeferredNativeArrayScheduleInfo PendingCancelScheduleInfo { get; }
+        public DeferredNativeArrayScheduleInfo ActiveCancelScheduleInfo { get; }
 
         public override DataTargetID DataTargetID
         {
@@ -34,9 +34,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_DataSource;
         }
 
-        public DataTargetID PendingCancelDataTargetID
+        public DataTargetID CancelDataTargetID
         {
-            get => m_PendingCancelActiveArrayData.WorldUniqueID;
+            get => m_ActiveCancelArrayData.WorldUniqueID;
         }
 
         public Type InstanceType { get; }
@@ -44,6 +44,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public CancelRequestBehaviour CancelBehaviour
         {
             get => m_ActiveArrayData.CancelRequestBehaviour;
+        }
+
+        public uint ActiveDataVersion
+        {
+            get => m_ActiveArrayData.Version;
+        }
+
+        public uint ActiveCancelDataVersion
+        {
+            get => m_ActiveCancelArrayData.Version;
         }
 
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
@@ -58,11 +68,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
 
-            if (m_ActiveArrayData.PendingCancelActiveData != null)
+            if (m_ActiveArrayData.ActiveCancelData != null)
             {
-                m_PendingCancelActiveArrayData
-                    = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)m_ActiveArrayData.PendingCancelActiveData;
-                PendingCancelScheduleInfo = m_PendingCancelActiveArrayData.ScheduleInfo;
+                m_ActiveCancelArrayData
+                    = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)m_ActiveArrayData.ActiveCancelData;
+                ActiveCancelScheduleInfo = m_ActiveCancelArrayData.ScheduleInfo;
             }
 
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;
@@ -76,8 +86,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_DataSource = systemDataStream.m_DataSource;
             m_ActiveArrayData = systemDataStream.m_ActiveArrayData;
             ScheduleInfo = systemDataStream.ScheduleInfo;
-            PendingCancelScheduleInfo = systemDataStream.PendingCancelScheduleInfo;
-            m_PendingCancelActiveArrayData = systemDataStream.m_PendingCancelActiveArrayData;
+            ActiveCancelScheduleInfo = systemDataStream.ActiveCancelScheduleInfo;
+            m_ActiveCancelArrayData = systemDataStream.m_ActiveCancelArrayData;
 
             //TODO: #136 - Not good to expose these just for the CancelComplete case.
             PendingData = systemDataStream.PendingData;
@@ -100,20 +110,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             InstanceType = typeof(TInstance);
         }
-        
-        public bool IsActiveDataInvalidated(JobHandle lastJobHandle)
+
+        public bool IsActiveDataInvalidated(uint lastVersion)
         {
-            return m_ActiveArrayData.IsDataInvalidated(lastJobHandle);
+            return m_ActiveArrayData.IsDataInvalidated(lastVersion);
         }
 
-        public bool IsPendingCancelActiveDataInvalidated(JobHandle lastJobHandle)
+        public bool IsActiveCancelDataInvalidated(uint lastVersion)
         {
-            return m_PendingCancelActiveArrayData.IsDataInvalidated(lastJobHandle);
-        }
-        
-        public JobHandle GetActiveDependencyFor(AccessType accessType)
-        {
-            return m_ActiveArrayData.GetDependencyFor(accessType);
+            return m_ActiveCancelArrayData.IsDataInvalidated(lastVersion);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,15 +170,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JobHandle AcquirePendingCancelActiveAsync(AccessType accessType)
+        public JobHandle AcquireActiveCancelAsync(AccessType accessType)
         {
-            return m_ActiveArrayData.PendingCancelActiveData.AcquireAsync(accessType);
+            return m_ActiveArrayData.ActiveCancelData.AcquireAsync(accessType);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReleasePendingCancelActiveAsync(JobHandle dependsOn)
+        public void ReleaseActiveCancelAsync(JobHandle dependsOn)
         {
-            m_ActiveArrayData.PendingCancelActiveData.ReleaseAsync(dependsOn);
+            m_ActiveArrayData.ActiveCancelData.ReleaseAsync(dependsOn);
         }
 
 
@@ -208,7 +213,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             return new DataStreamCancellationUpdater<TInstance>(
                 m_DataSource.PendingWriter,
-                m_PendingCancelActiveArrayData.DeferredJobArray,
+                m_ActiveCancelArrayData.DeferredJobArray,
                 resolveTargetTypeLookup,
                 cancelProgressLookup);
         }

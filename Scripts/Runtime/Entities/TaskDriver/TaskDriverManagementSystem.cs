@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public TaskDriverManagementSystem()
         {
             WorldUniqueID = GenerateWorldUniqueID();
-            
+
             m_TaskSetOwners = new WorldDataOwnerLookup<DataOwnerID, ITaskSetOwner>();
             m_DataTargets = new WorldDataOwnerLookup<DataTargetID, AbstractData>();
 
@@ -89,11 +89,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelRequestsDataSource.Dispose();
             m_CancelCompleteDataSource.Dispose();
             m_CancelProgressDataSource.Dispose();
-            
+
             m_DataTargets.Dispose();
-            
+
             m_TaskDriverMigrationData?.Dispose();
-            
+
 
             base.OnDestroy();
         }
@@ -198,7 +198,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public ActiveArrayData<T> CreateActiveArrayData<T>(
             IDataOwner dataOwner,
             CancelRequestBehaviour cancelRequestBehaviour,
-            AbstractData pendingCancelData,
+            AbstractData activeCancelData,
             string uniqueContextIdentifier)
             where T : unmanaged, IEquatable<T>
         {
@@ -207,7 +207,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 (createDataOwner, createUniqueContextIdentifier) => new ActiveArrayData<T>(
                     createDataOwner,
                     cancelRequestBehaviour,
-                    pendingCancelData,
+                    activeCancelData,
                     createUniqueContextIdentifier),
                 dataOwner,
                 uniqueContextIdentifier);
@@ -301,7 +301,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // The Cancel Jobs will run later on in the frame and may have written that cancellation was completed to
             // the CancelCompletes. We'll consolidate those so cancels can propagate up the chain
             dependsOn = m_CancelCompleteDataSource.Consolidate(dependsOn);
-            
+
             //Forcing a sync here so we can determine if we actually wrote anything. See AbstractData.IsDataInvalidated
             dependsOn.Complete();
 
@@ -318,9 +318,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
 
             return m_TaskDriverMigrationData.MigrateTo(
-                dependsOn, 
+                dependsOn,
                 destinationTaskDriverManagementSystem,
-                destinationTaskDriverManagementSystem.m_TaskDriverMigrationData, 
+                destinationTaskDriverManagementSystem.m_TaskDriverMigrationData,
                 ref remapArray);
         }
 
