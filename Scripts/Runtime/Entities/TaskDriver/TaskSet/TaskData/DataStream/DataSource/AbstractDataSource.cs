@@ -17,8 +17,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         where T : unmanaged, IEquatable<T>
     {
         private bool m_IsHardened;
-        private uint m_LastPendingDataVersion;
 
+        private uint m_Consolidation_LastPendingDataVersion;
+        private bool m_Consolidation_IsFollowUpRequired;
         private NativeArray<JobHandle> m_ConsolidationDependencies;
         private readonly List<DataAccessWrapper> m_ConsolidationData;
 
@@ -38,6 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected unsafe AbstractDataSource(TaskDriverManagementSystem taskDriverManagementSystem)
         {
             TaskDriverManagementSystem = taskDriverManagementSystem;
+
             PendingData = taskDriverManagementSystem.CreatePendingData<T>(GetType().AssemblyQualifiedName);
             PendingWriter = PendingData.PendingWriter;
             PendingWriterPointer = PendingData.PendingWriterPointer;
@@ -169,17 +171,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public JobHandle Consolidate(JobHandle dependsOn)
         {
-            //If no one wrote to us, we can skip consolidation
-            if (!PendingData.IsDataInvalidated(m_LastPendingDataVersion))
+            bool hasPendingDataChanged = PendingData.IsDataInvalidated(m_Consolidation_LastPendingDataVersion);
+            if (!hasPendingDataChanged && !m_Consolidation_IsFollowUpRequired)
             {
                 return dependsOn;
             }
+
+            // One additional consolidation pass is required after the data has stopped changing so that the active
+            // lookup is cleared. Without this followup mechanism data in the data source will contain already processed
+            // data when the PendingData version doesn't change.
+            // This is important for jobs that read from data sources in addition to the one they were scheduled on.
+            m_Consolidation_IsFollowUpRequired = hasPendingDataChanged;
 
             dependsOn = AcquireAsync(dependsOn);
             dependsOn = ConsolidateSelf(dependsOn);
             ReleaseAsync(dependsOn);
 
-            m_LastPendingDataVersion = PendingData.Version;
+            m_Consolidation_LastPendingDataVersion = PendingData.Version;
 
             return dependsOn;
         }
