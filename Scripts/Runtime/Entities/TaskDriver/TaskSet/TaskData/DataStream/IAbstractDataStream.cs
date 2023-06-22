@@ -79,5 +79,29 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// The first is a parallel writable collection to be able to write pending instances to.
     /// The second is a narrow array collection for reading.
     /// </summary>
-    public interface IAbstractDataStream { }
+    public interface IAbstractDataStream
+    {
+        /// <summary>
+        /// The version of the data. This value is incremented each time write access is granted to the data allowing
+        /// consumers to check whether the data may have changed since the last time the consumer read it.
+        /// </summary>
+        /// <remarks>
+        /// Store this value at the time of read access and on next potential read use <see cref="IsActiveDataInvalidated"/>
+        /// to check whether the data has potentially changed. This is the safest option as it accounts for other potential
+        /// conditions in the data.
+        ///
+        /// If comparing version numbers directly make sure to always use an equality check. The version number can
+        /// theoretically wrap and overflow so it's possible for the current value to be less than the previous value.
+        /// </remarks>
+        public uint ActiveDataVersion { get; }
+        
+        /// <summary>
+        /// Whether the underlying data has potentially been updated by something getting write access to it.
+        /// </summary>
+        /// <param name="lastVersion">
+        /// A write version at the last read.
+        /// </param>
+        /// <returns>true if the data has potentially been updated, false if not</returns>
+        public bool IsActiveDataInvalidated(uint lastVersion);
+    }
 }

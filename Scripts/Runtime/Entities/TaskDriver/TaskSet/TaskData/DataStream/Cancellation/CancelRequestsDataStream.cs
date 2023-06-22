@@ -22,6 +22,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_DataSource;
         }
+        
+        public uint ActiveDataVersion
+        {
+            get => ActiveLookupData.Version;
+        }
 
         public CancelRequestsDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {
@@ -81,6 +86,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public void ReleaseCancelRequestsWriter()
         {
             ReleasePending();
+        }
+        
+        public bool IsActiveDataInvalidated(uint lastVersion)
+        {
+            return ActiveLookupData.IsDataInvalidated(lastVersion);
         }
     }
 }
