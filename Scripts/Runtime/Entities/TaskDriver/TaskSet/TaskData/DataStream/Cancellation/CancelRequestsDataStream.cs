@@ -23,6 +23,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get => m_DataSource;
         }
         
+        /// <inheritdoc cref="IAbstractDataStream.ActiveDataVersion"/>
         public uint ActiveDataVersion
         {
             get => ActiveLookupData.Version;
@@ -88,6 +89,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ReleasePending();
         }
         
+        /// <inheritdoc cref="IAbstractDataStream.IsActiveDataInvalidated"/>
         public bool IsActiveDataInvalidated(uint lastVersion)
         {
             return ActiveLookupData.IsDataInvalidated(lastVersion);
