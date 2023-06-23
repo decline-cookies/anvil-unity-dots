@@ -31,18 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public AbstractData ActiveCancelData { get; }
 
-        /// <summary>
-        /// The version of the data. This value is incremented each time write access is granted to the data allowing
-        /// consumers to check whether the data may have changed since the last time the consumer read it.
-        /// </summary>
-        /// <remarks>
-        /// Store this value at the time of read access and on next potential read use <see cref="IsDataInvalidated"/>
-        /// to check whether the data has potentially changed. This is the safest option as it accounts for other potential
-        /// conditions in the data.
-        ///
-        /// If comparing version numbers directly make sure to always use an equality check. The version number can
-        /// theoretically wrap and overflow so it's possible for the current value to be less than the previous value.
-        /// </remarks>
+        /// <inheritdoc cref="IAbstractDataStream.ActiveDataVersion"/>
         public uint Version { get; private set; }
 
         private DataTargetID m_WorldUniqueID;
@@ -73,12 +62,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         protected abstract void DisposeData();
 
-        /// <summary>
-        /// Whether the underlying data has potentially been updated by something getting write access to it.
-        /// </summary>
-        /// <param name="lastVersion">
-        /// A write version at the last read.
-        /// </param>
+        /// <inheritdoc cref="IAbstractDataStream.IsActiveDataInvalidated"/>
         public virtual bool IsDataInvalidated(uint lastVersion)
         {
             // If the current data version has changed from what we last stored, then someone has written here
