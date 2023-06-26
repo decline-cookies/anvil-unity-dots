@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelJobConfig<TInstance> : AbstractResolvableJobConfig
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         public CancelJobConfig(ITaskSetOwner taskSetOwner, EntityProxyDataStream<TInstance> activeCancelDataStream)
             : base(taskSetOwner)
@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // CONFIGURATION - REQUIRED DATA - DATA STREAM
         //*************************************************************************************************************
 
-        private void RequireCancelProgressLookup(ActiveLookupData<EntityProxyInstanceID> cancelProgressLookupData)
+        private void RequireCancelProgressLookup(ActiveLookupData<EntityKeyedTaskID> cancelProgressLookupData)
         {
             AddAccessWrapper(new CancelProgressLookupAccessWrapper(cancelProgressLookupData, AccessType.ExclusiveWrite, Usage.Cancelling));
         }

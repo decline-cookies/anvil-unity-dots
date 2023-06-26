@@ -6,12 +6,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CancelProgressLookupAccessWrapper : AbstractAccessWrapper
     {
-        private readonly ActiveLookupData<EntityProxyInstanceID> m_CancelProgressLookupData;
+        private readonly ActiveLookupData<EntityKeyedTaskID> m_CancelProgressLookupData;
 
-        public UnsafeParallelHashMap<EntityProxyInstanceID, bool> ProgressLookup { get; }
+        public UnsafeParallelHashMap<EntityKeyedTaskID, bool> ProgressLookup { get; }
 
 
-        public CancelProgressLookupAccessWrapper(ActiveLookupData<EntityProxyInstanceID> cancelProgressLookupData, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public CancelProgressLookupAccessWrapper(ActiveLookupData<EntityKeyedTaskID> cancelProgressLookupData, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
         {
             m_CancelProgressLookupData = cancelProgressLookupData;
             ProgressLookup = m_CancelProgressLookupData.Lookup;

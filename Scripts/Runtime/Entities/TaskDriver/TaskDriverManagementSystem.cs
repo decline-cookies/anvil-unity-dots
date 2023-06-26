@@ -50,8 +50,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_CancelProgressFlows = new List<CancelProgressFlow>();
             m_UnityEntityDataAccessControllers = new Dictionary<Type, AccessController>();
 
-            EntityProxyInstanceID.Debug_EnsureOffsetsAreCorrect();
-            EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceID>();
+            EntityKeyedTaskID.Debug_EnsureOffsetsAreCorrect();
+            EntityWorldMigrationSystem.RegisterForEntityPatching<EntityKeyedTaskID>();
         }
 
         private DataOwnerID GenerateWorldUniqueID()
@@ -170,7 +170,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public EntityProxyDataSource<TInstance> GetOrCreateEntityProxyDataSource<TInstance>()
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureNotHardened();
             Type type = typeof(TInstance);

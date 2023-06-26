@@ -12,13 +12,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
     [BurstCompatible]
     internal struct EntityProxyDataSourceConsolidator<TInstance> : IDisposable
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
-        private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_Pending;
+        private UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>> m_Pending;
         private UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>> m_ActiveConsolidatorsByDataTargetID;
 
         public EntityProxyDataSourceConsolidator(
-            PendingData<EntityProxyInstanceWrapper<TInstance>> pendingData,
+            PendingData<EntityKeyedTaskWrapper<TInstance>> pendingData,
             HashSet<AbstractData> dataTargets)
         {
             m_Pending = pendingData.Pending;
@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 = new UnsafeParallelHashMap<DataTargetID, EntityProxyActiveConsolidator<TInstance>>(dataTargets.Count, Allocator.Persistent);
             foreach (AbstractData dataTarget in dataTargets)
             {
-                if (dataTarget is not ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData)
+                if (dataTarget is not ActiveArrayData<EntityKeyedTaskWrapper<TInstance>> activeArrayData)
                 {
                     continue;
                 }
@@ -50,7 +50,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 entry.Value.PrepareForConsolidation();
             }
 
-            foreach (EntityProxyInstanceWrapper<TInstance> entry in m_Pending)
+            foreach (EntityKeyedTaskWrapper<TInstance> entry in m_Pending)
             {
                 DataTargetID dataTargetID = entry.InstanceID.DataTargetID;
                 EntityProxyActiveConsolidator<TInstance> entityProxyActiveConsolidator = m_ActiveConsolidatorsByDataTargetID[dataTargetID];

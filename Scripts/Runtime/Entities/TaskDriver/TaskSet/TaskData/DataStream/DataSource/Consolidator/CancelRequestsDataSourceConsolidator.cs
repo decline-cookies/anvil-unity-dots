@@ -14,17 +14,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         [NativeSetThreadIndex] [ReadOnly] private readonly int m_NativeThreadIndex;
 
-        private UnsafeTypedStream<EntityProxyInstanceID> m_Pending;
+        private UnsafeTypedStream<EntityKeyedTaskID> m_Pending;
         private UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator> m_ActiveConsolidatorsByDataTargetID;
 
-        public CancelRequestsDataSourceConsolidator(PendingData<EntityProxyInstanceID> pendingData, HashSet<AbstractData> dataTargets)
+        public CancelRequestsDataSourceConsolidator(PendingData<EntityKeyedTaskID> pendingData, HashSet<AbstractData> dataTargets)
         {
             m_Pending = pendingData.Pending;
             m_ActiveConsolidatorsByDataTargetID
                 = new UnsafeParallelHashMap<DataTargetID, CancelRequestsActiveConsolidator>(dataTargets.Count, Allocator.Persistent);
             foreach (AbstractData dataTarget in dataTargets)
             {
-                if (dataTarget is not ActiveLookupData<EntityProxyInstanceID> activeLookupData)
+                if (dataTarget is not ActiveLookupData<EntityKeyedTaskID> activeLookupData)
                 {
                     continue;
                 }
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 entry.Value.PrepareForConsolidation();
             }
 
-            foreach (EntityProxyInstanceID entry in m_Pending)
+            foreach (EntityKeyedTaskID entry in m_Pending)
             {
                 DataTargetID dataTargetID = entry.DataTargetID;
                 CancelRequestsActiveConsolidator activeConsolidator = m_ActiveConsolidatorsByDataTargetID[dataTargetID];

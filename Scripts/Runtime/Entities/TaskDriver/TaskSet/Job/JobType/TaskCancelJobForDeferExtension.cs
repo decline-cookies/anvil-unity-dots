@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelScheduleInfo<TInstance> scheduleInfo,
             JobHandle dependsOn = default)
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return InternalSchedule(
                 jobData,
@@ -33,7 +33,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             CancelScheduleInfo<TInstance> scheduleInfo,
             JobHandle dependsOn = default)
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return InternalSchedule(
                 jobData,
@@ -50,7 +50,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ScheduleMode scheduleMode,
             int batchSize)
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
@@ -98,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal struct WrapperJobStruct<TJob, TInstance>
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
 
@@ -119,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         private struct WrapperJobProducer<TJob, TInstance>
             where TJob : struct, ITaskCancelJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             // ReSharper disable once StaticMemberInGenericType
             internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(

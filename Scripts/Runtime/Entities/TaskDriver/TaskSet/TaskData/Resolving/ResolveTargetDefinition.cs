@@ -5,7 +5,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     internal class ResolveTargetDefinition
     {
         public static unsafe ResolveTargetDefinition Create<TInstance>(void* pendingWriterPointer)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             uint typeID = ResolveTargetUtil.RegisterResolveTarget<TInstance>();
             return new ResolveTargetDefinition(typeof(TInstance), typeID, (long)pendingWriterPointer);

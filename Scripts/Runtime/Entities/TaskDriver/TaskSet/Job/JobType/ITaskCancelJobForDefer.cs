@@ -9,10 +9,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// and you are using a <see cref="DeferredNativeArray{T}"/>
     /// This is specific to a context where the data is being cancelled.
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
     [JobProducerType(typeof(TaskCancelJobForDeferExtension.WrapperJobStruct<,>))]
     public interface ITaskCancelJobForDefer<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// The <see cref="DataStreamCancellationUpdater{TInstance}"/> can be used to continue working on cancelling
         /// for this same instance next frame or resolve to cancel completed state.
         /// </summary>
-        /// <param name="cancelInstance">The <see cref="IEntityProxyInstance"/> to cancel.</param>
+        /// <param name="cancelInstance">The <see cref="IEntityKeyedTask"/> to cancel.</param>
         /// <param name="cancellationUpdater">A helper struct to continue or resolve</param>
         void Execute(TInstance cancelInstance, ref DataStreamCancellationUpdater<TInstance> cancellationUpdater);
     }

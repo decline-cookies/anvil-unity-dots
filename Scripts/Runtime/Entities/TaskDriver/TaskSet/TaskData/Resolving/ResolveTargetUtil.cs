@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [BurstCompatible]
         // ReSharper disable once ClassNeverInstantiated.Local
         private class ResolveTargetID<TResolveTargetType>
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             // ReSharper disable once StaticMemberInGenericType
             public static readonly SharedStatic<uint> ID
@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public static uint RegisterResolveTarget<TResolveTargetType>()
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             uint id = ResolveTargetID<TResolveTargetType>.ID.Data;
             if (id != IDProvider.UNSET_ID)
@@ -61,7 +61,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         [BurstCompatible]
         public static uint GetResolveTargetID<TResolveTargetType>()
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             uint id = ResolveTargetID<TResolveTargetType>.ID.Data;
             Debug_EnsureIsRegistered<TResolveTargetType>(id);
@@ -75,7 +75,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void Debug_EnsureIsRegistered<TResolveTargetType>(uint id)
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             if (id == IDProvider.UNSET_ID)
             {

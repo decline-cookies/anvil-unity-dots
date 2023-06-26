@@ -15,14 +15,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceID>.Writer m_PendingWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<EntityKeyedTaskID>.Writer m_PendingWriter;
         [ReadOnly] private readonly NativeArray<CancelRequestContext> m_CancelRequestContexts;
 
-        private UnsafeTypedStream<EntityProxyInstanceID>.LaneWriter m_PendingLaneWriter;
+        private UnsafeTypedStream<EntityKeyedTaskID>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
 
         internal CancelRequestsWriter(
-            UnsafeTypedStream<EntityProxyInstanceID>.Writer pendingWriter,
+            UnsafeTypedStream<EntityKeyedTaskID>.Writer pendingWriter,
             NativeArray<CancelRequestContext> cancelRequestContexts)
             : this()
         {
@@ -77,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
                 m_PendingLaneWriter.Write(
-                    new EntityProxyInstanceID(
+                    new EntityKeyedTaskID(
                         entity,
                         cancelRequestContext.DataOwnerID,
                         cancelRequestContext.DataTargetID));
@@ -103,7 +103,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             foreach (CancelRequestContext cancelRequestContext in m_CancelRequestContexts)
             {
                 m_PendingWriter.AsLaneWriter(laneIndex)
-                    .Write(new EntityProxyInstanceID(entity, cancelRequestContext.DataOwnerID, cancelRequestContext.DataTargetID));
+                    .Write(new EntityKeyedTaskID(entity, cancelRequestContext.DataOwnerID, cancelRequestContext.DataTargetID));
             }
         }
 

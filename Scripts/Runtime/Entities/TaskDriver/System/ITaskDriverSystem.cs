@@ -23,10 +23,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <param name="cancelRequestBehaviour">The type of <see cref="CancelRequestBehaviour"/> this stream should use.</param>
         /// <param name="uniqueContextIdentifier">An optional context string to uniquely identify this data stream on the system</param>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the stream.</typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> in the stream.</typeparam>
         /// <returns>The <see cref="ISystemDataStream{TInstance}"/> instance</returns>
         public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
-            where TInstance : unmanaged, IEntityProxyInstance;
+            where TInstance : unmanaged, IEntityKeyedTask;
 
         /// <summary>
         /// Creates an <see cref="ISystemEntityPersistentData{T}"/> instance that is bound to the lifecycle of the
@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="dataStream">The <see cref="ISystemDataStream{TInstance}"/> to schedule the job on.</param>
         /// <param name="scheduleJobFunction">The callback function to perform the scheduling</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for scheduling</param>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the stream</typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> in the stream</typeparam>
         /// <returns>
         /// A reference to the <see cref="IResolvableJobConfigRequirements"/> instance passed in to continue chaining
         /// configuration methods.
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance;
+            where TInstance : unmanaged, IEntityKeyedTask;
 
         /// <summary>
         /// Configures an <see cref="ITaskCancelJobForDefer{TInstance}"/> job to be run on the system. This will operate
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="dataStream">The <see cref="ISystemDataStream{TInstance}"/> to schedule the job on.</param>
         /// <param name="scheduleJobFunction">The callback function to perform the scheduling</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for scheduling</param>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the stream</typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> in the stream</typeparam>
         /// <returns>
         /// A reference to the <see cref="IResolvableJobConfigRequirements"/> instance passed in to continue chaining
         /// configuration methods.
@@ -73,7 +73,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance;
+            where TInstance : unmanaged, IEntityKeyedTask;
 
         /// <summary>
         /// Gets or Creates an <see cref="EntityQuery"/> tied to this system.

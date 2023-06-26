@@ -9,14 +9,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Represents a read only reference to a <see cref="IAbstractDataStream{TInstance}"/>
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
-    /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to read</typeparam>
+    /// <typeparam name="TInstance">They type of <see cref="IEntityKeyedTask"/> to read</typeparam>
     [BurstCompatible]
     public readonly struct DataStreamActiveReader<TInstance> : IEnumerable<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
-        [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Active;
+        [ReadOnly] private readonly NativeArray<EntityKeyedTaskWrapper<TInstance>> m_Active;
 
-        internal DataStreamActiveReader(NativeArray<EntityProxyInstanceWrapper<TInstance>> active)
+        internal DataStreamActiveReader(NativeArray<EntityKeyedTaskWrapper<TInstance>> active)
         {
             m_Active = active;
         }
@@ -53,9 +53,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // ----- Enumerator ----- //
         internal struct Enumerator : IEnumerator<TInstance>, IEnumerator, IDisposable
         {
-            private NativeArray<EntityProxyInstanceWrapper<TInstance>>.Enumerator m_InnerEnumerator;
+            private NativeArray<EntityKeyedTaskWrapper<TInstance>>.Enumerator m_InnerEnumerator;
 
-            public Enumerator(NativeArray<EntityProxyInstanceWrapper<TInstance>>.Enumerator innerEnumerator)
+            public Enumerator(NativeArray<EntityKeyedTaskWrapper<TInstance>>.Enumerator innerEnumerator)
             {
                 m_InnerEnumerator = innerEnumerator;
             }

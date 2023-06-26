@@ -1,7 +1,7 @@
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class DataStreamJobConfig<TInstance> : AbstractJobConfig
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         public DataStreamJobConfig(ITaskSetOwner taskSetOwner, EntityProxyDataStream<TInstance> dataStream)
             : base(taskSetOwner)

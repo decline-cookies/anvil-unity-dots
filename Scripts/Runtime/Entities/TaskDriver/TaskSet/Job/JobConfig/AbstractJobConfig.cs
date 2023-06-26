@@ -151,7 +151,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <inheritdoc cref="IJobConfig.RequireDataStreamForWrite{TInstance}"/>
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureDataStreamContextWillBePreserved(dataStream);
             AddAccessWrapper(new DataStreamPendingAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedWrite, Usage.Default));
@@ -160,7 +160,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <inheritdoc cref="IJobConfig.RequireDataStreamForRead{TInstance}"/>
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureDataStreamContextWillBePreserved(dataStream);
             AddAccessWrapper(new DataStreamActiveAccessWrapper<TInstance>((EntityProxyDataStream<TInstance>)dataStream, AccessType.SharedRead, Usage.Default));
@@ -430,7 +430,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return (TWrapper)m_AccessWrappers[id];
         }
 
-        internal UnsafeParallelHashMap<EntityProxyInstanceID, bool> GetCancelProgressLookup()
+        internal UnsafeParallelHashMap<EntityKeyedTaskID, bool> GetCancelProgressLookup()
         {
             CancelProgressLookupAccessWrapper cancelProgressLookupAccessWrapper
                 = GetAccessWrapper<CancelProgressLookupAccessWrapper>(Usage.Cancelling);
@@ -447,7 +447,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal EntityProxyDataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             DataStreamPendingAccessWrapper<TInstance> dataStreamAccessWrapper
                 = GetAccessWrapper<DataStreamPendingAccessWrapper<TInstance>>(usage);
@@ -456,7 +456,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal EntityProxyDataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             DataStreamActiveAccessWrapper<TInstance> dataStreamAccessWrapper
                 = GetAccessWrapper<DataStreamActiveAccessWrapper<TInstance>>(usage);
@@ -465,7 +465,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal EntityProxyDataStream<TInstance> GetActiveCancelDataStream<TInstance>()
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             DataStreamActiveCancelAccessWrapper<TInstance> dataStreamActiveCancelAccessWrapper
                 = GetAccessWrapper<DataStreamActiveCancelAccessWrapper<TInstance>>(Usage.Cancelling);
@@ -692,7 +692,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureDataStreamContextWillBePreserved<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             if (TaskSetOwner.TaskDriverSystem == TaskSetOwner && dataStream is IDriverDataStream<TInstance>)
             {

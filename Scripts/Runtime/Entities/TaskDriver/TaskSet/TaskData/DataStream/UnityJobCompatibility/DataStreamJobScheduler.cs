@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TInstance">The data inside the data stream.</typeparam>
     public class DataStreamJobScheduler<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         /// <summary>
         /// A scheduling delegate to perform custom scheduling of the job that will the use the data stream

@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private const string UNIQUE_CONTEXT_IDENTIFIER = "CANCEL_REQUEST";
         
         private readonly CancelRequestsDataSource m_DataSource;
-        public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
+        public ActiveLookupData<EntityKeyedTaskID> ActiveLookupData { get; }
 
         public override DataTargetID DataTargetID
         {

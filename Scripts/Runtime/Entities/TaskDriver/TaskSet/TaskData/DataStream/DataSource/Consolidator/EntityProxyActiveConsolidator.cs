@@ -8,26 +8,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     [BurstCompatible]
     internal unsafe struct EntityProxyActiveConsolidator<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
-        private static readonly int ELEMENT_SIZE = sizeof(EntityProxyInstanceWrapper<TInstance>);
+        private static readonly int ELEMENT_SIZE = sizeof(EntityKeyedTaskWrapper<TInstance>);
 
 
-        private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CancelRequestsLookup;
+        private UnsafeParallelHashMap<EntityKeyedTaskID, bool> m_CancelRequestsLookup;
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ActiveBufferPointer;
         [NativeDisableUnsafePtrRestriction] private readonly void* m_ActiveCancelBufferPointer;
         private readonly DataTargetID m_ActiveCancelDataTargetID;
         private readonly CancelRequestBehaviour m_CancelRequestBehaviour;
 
 
-        public EntityProxyActiveConsolidator(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeArrayData) : this()
+        public EntityProxyActiveConsolidator(ActiveArrayData<EntityKeyedTaskWrapper<TInstance>> activeArrayData) : this()
         {
             m_ActiveBufferPointer = activeArrayData.Active.GetBufferPointer();
             Debug_EnsurePointerNotNull(m_ActiveBufferPointer);
 
             if (activeArrayData.ActiveCancelData != null)
             {
-                ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> activeCancelData = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)activeArrayData.ActiveCancelData;
+                ActiveArrayData<EntityKeyedTaskWrapper<TInstance>> activeCancelData = (ActiveArrayData<EntityKeyedTaskWrapper<TInstance>>)activeArrayData.ActiveCancelData;
                 m_ActiveCancelBufferPointer = activeCancelData.Active.GetBufferPointer();
                 Debug_EnsurePointerNotNull(m_ActiveCancelBufferPointer);
 
@@ -40,17 +40,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public void PrepareForConsolidation()
         {
-            DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
+            DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Clear();
 
             if (m_ActiveCancelBufferPointer != null)
             {
-                deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveCancelBufferPointer);
+                deferredNativeArray = DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveCancelBufferPointer);
                 deferredNativeArray.Clear();
             }
         }
 
-        public void WriteToActive(EntityProxyInstanceWrapper<TInstance> instance)
+        public void WriteToActive(EntityKeyedTaskWrapper<TInstance> instance)
         {
             switch (m_CancelRequestBehaviour)
             {
@@ -71,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
         }
 
-        private void WriteToActiveWithDefaultCancel(ref EntityProxyInstanceWrapper<TInstance> instance)
+        private void WriteToActiveWithDefaultCancel(ref EntityKeyedTaskWrapper<TInstance> instance)
         {
             //If it exists in the lookup, don't write it to the native array, let it poof out of existence
             if (m_CancelRequestsLookup.ContainsKey(instance.InstanceID))
@@ -82,21 +82,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             WriteInstanceToActive(ref instance);
         }
 
-        private void WriteToActiveWithExplicitCancel(ref EntityProxyInstanceWrapper<TInstance> instance)
+        private void WriteToActiveWithExplicitCancel(ref EntityKeyedTaskWrapper<TInstance> instance)
         {
             if (m_CancelRequestsLookup.ContainsKey(instance.InstanceID))
             {
-                DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveCancelBufferPointer);
-                deferredNativeArray.Add(new EntityProxyInstanceWrapper<TInstance>(ref instance, m_ActiveCancelDataTargetID));
+                DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveCancelBufferPointer);
+                deferredNativeArray.Add(new EntityKeyedTaskWrapper<TInstance>(ref instance, m_ActiveCancelDataTargetID));
                 return;
             }
             //Otherwise it wasn't cancelled so write it
             WriteInstanceToActive(ref instance);
         }
 
-        private void WriteInstanceToActive(ref EntityProxyInstanceWrapper<TInstance> instance)
+        private void WriteInstanceToActive(ref EntityKeyedTaskWrapper<TInstance> instance)
         {
-            DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityProxyInstanceWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
+            DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>> deferredNativeArray = DeferredNativeArray<EntityKeyedTaskWrapper<TInstance>>.ReinterpretFromPointer(m_ActiveBufferPointer);
             deferredNativeArray.Add(instance);
         }
 

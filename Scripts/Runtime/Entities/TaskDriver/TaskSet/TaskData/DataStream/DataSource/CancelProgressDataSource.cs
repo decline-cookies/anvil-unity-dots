@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             int index = 0;
             foreach (AbstractData dataTarget in DataTargets)
             {
-                if (dataTarget is not ActiveLookupData<EntityProxyInstanceID> activeLookupData)
+                if (dataTarget is not ActiveLookupData<EntityKeyedTaskID> activeLookupData)
                 {
                     continue;
                 }
@@ -75,12 +75,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private JobHandle MigrateTo(
             JobHandle dependsOn,
-            ActiveLookupData<EntityProxyInstanceID> currentLookupData,
+            ActiveLookupData<EntityKeyedTaskID> currentLookupData,
             TaskDriverManagementSystem destinationTaskDriverManagementSystem,
             IDataSource destinationDataSource,
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            ActiveLookupData<EntityProxyInstanceID> destinationLookupData = null;
+            ActiveLookupData<EntityKeyedTaskID> destinationLookupData = null;
 
             //If we don't have a destination or a mapping to a destination active ID...
             if (destinationDataSource is not CancelProgressDataSource
@@ -117,13 +117,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [BurstCompile]
         private struct MigrateJob : IJob
         {
-            private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CurrentLookup;
-            private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_DestinationLookup;
+            private UnsafeParallelHashMap<EntityKeyedTaskID, bool> m_CurrentLookup;
+            private UnsafeParallelHashMap<EntityKeyedTaskID, bool> m_DestinationLookup;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
 
             public MigrateJob(
-                UnsafeParallelHashMap<EntityProxyInstanceID, bool> currentLookup,
-                UnsafeParallelHashMap<EntityProxyInstanceID, bool> destinationLookup,
+                UnsafeParallelHashMap<EntityKeyedTaskID, bool> currentLookup,
+                UnsafeParallelHashMap<EntityKeyedTaskID, bool> destinationLookup,
                 ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             {
                 m_CurrentLookup = currentLookup;
@@ -134,11 +134,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             public void Execute()
             {
                 //Can't remove while iterating so we collapse to an array first of our current keys/values
-                NativeKeyValueArrays<EntityProxyInstanceID, bool> currentEntries = m_CurrentLookup.GetKeyValueArrays(Allocator.Temp);
+                NativeKeyValueArrays<EntityKeyedTaskID, bool> currentEntries = m_CurrentLookup.GetKeyValueArrays(Allocator.Temp);
 
                 for (int i = 0; i < currentEntries.Length; ++i)
                 {
-                    EntityProxyInstanceID currentID = currentEntries.Keys[i];
+                    EntityKeyedTaskID currentID = currentEntries.Keys[i];
                     //If we don't exist in the new world, we can just skip, we stayed in this world
                     if (!currentID.Entity.TryGetRemappedEntity(ref m_RemapArray, out Entity remappedEntity))
                     {

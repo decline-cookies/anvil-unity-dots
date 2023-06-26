@@ -10,26 +10,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <summary>
     /// Job-Safe struct to allow for cancelling an instance of data
     /// </summary>
-    /// <typeparam name="TInstance">The <see cref="IEntityProxyInstance"/> to cancel</typeparam>
+    /// <typeparam name="TInstance">The <see cref="IEntityKeyedTask"/> to cancel</typeparam>
     [BurstCompatible]
-    public struct DataStreamCancellationUpdater<TInstance> where TInstance : unmanaged, IEntityProxyInstance
+    public struct DataStreamCancellationUpdater<TInstance> where TInstance : unmanaged, IEntityKeyedTask
     {
         private const int UNSET_LANE_INDEX = -1;
-        [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingWriter;
-        [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Active;
+        [ReadOnly] private readonly UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer m_PendingWriter;
+        [ReadOnly] private readonly NativeArray<EntityKeyedTaskWrapper<TInstance>> m_Active;
         [ReadOnly] private ResolveTargetTypeLookup m_ResolveTargetTypeLookup;
 
-        private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_CancelProgressLookup;
-        private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
+        private UnsafeParallelHashMap<EntityKeyedTaskID, bool> m_CancelProgressLookup;
+        private UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
         private DataOwnerID m_CurrentDataOwnerID;
         private DataTargetID m_CurrentDataTargetID;
 
         internal DataStreamCancellationUpdater(
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
-            NativeArray<EntityProxyInstanceWrapper<TInstance>> active,
+            UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer pendingWriter,
+            NativeArray<EntityKeyedTaskWrapper<TInstance>> active,
             ResolveTargetTypeLookup resolveTargetTypeLookup,
-            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup) : this()
+            UnsafeParallelHashMap<EntityKeyedTaskID, bool> cancelProgressLookup) : this()
         {
             m_PendingWriter = pendingWriter;
             m_Active = active;
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Signals that this instance should be processed to cancel again next frame.
         /// </summary>
-        /// <param name="instance">The <see cref="IEntityProxyInstance"/></param>
+        /// <param name="instance">The <see cref="IEntityKeyedTask"/></param>
         public void Continue(TInstance instance)
         {
             Continue(ref instance);
@@ -75,15 +75,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureCanContinue(ref instance);
             m_PendingLaneWriter.Write(
-                new EntityProxyInstanceWrapper<TInstance>(
-                    instance.Entity,
+                new EntityKeyedTaskWrapper<TInstance>(
+                    instance.Key,
                     m_CurrentDataOwnerID,
                     m_CurrentDataTargetID,
                     ref instance));
 
 
             //Hold open the progress so we can keep processing
-            EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Entity, m_CurrentDataOwnerID, m_CurrentDataTargetID);
+            EntityKeyedTaskID id = new EntityKeyedTaskID(instance.Key, m_CurrentDataOwnerID, m_CurrentDataTargetID);
             Debug_EnsureIDIsPresent(id);
             m_CancelProgressLookup[id] = true;
         }
@@ -94,7 +94,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal void Resolve<TResolveTargetType>(ref TResolveTargetType resolvedInstance)
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureCanResolve();
             //TODO: #69 - Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
@@ -110,7 +110,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get
             {
                 Debug_EnsureCanUpdate();
-                EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Active[index];
+                EntityKeyedTaskWrapper<TInstance> instanceWrapper = m_Active[index];
                 m_CurrentDataOwnerID = instanceWrapper.InstanceID.DataOwnerID;
                 m_CurrentDataTargetID = instanceWrapper.InstanceID.DataTargetID;
                 return instanceWrapper.Payload;
@@ -141,7 +141,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void Debug_EnsureIDIsPresent(EntityProxyInstanceID id)
+        private void Debug_EnsureIDIsPresent(EntityKeyedTaskID id)
         {
             if (!m_CancelProgressLookup.ContainsKey(id))
             {
@@ -161,7 +161,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             if (m_State == UpdaterState.Modifying)
             {
-                throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(EntityProxyInstanceExtension.ContinueOn)} or {nameof(EntityProxyInstanceExtension.Resolve)} gets called before the next iteration.");
+                throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(EntityKeyedTaskExtension.ContinueOn)} or {nameof(EntityKeyedTaskExtension.Resolve)} gets called before the next iteration.");
             }
 
             m_State = UpdaterState.Modifying;

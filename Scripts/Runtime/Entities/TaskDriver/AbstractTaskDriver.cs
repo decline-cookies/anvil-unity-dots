@@ -188,7 +188,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         protected IDriverDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             IDriverDataStream<TInstance> dataStream = TaskSet.CreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
             return dataStream;
@@ -231,7 +231,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             IDriverDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return TaskSet.ConfigureJobTriggeredBy(
                 (EntityProxyDataStream<TInstance>)dataStream,
@@ -248,13 +248,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="dataStream">The <see cref="IDriverDataStream{TInstance}"/> to schedule the job on.</param>
         /// <param name="scheduleJobFunction">The callback function to perform the scheduling</param>
         /// <param name="batchStrategy">The <see cref="BatchStrategy"/> to use for scheduling</param>
-        /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> in the stream</typeparam>
+        /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> in the stream</typeparam>
         /// <returns>A <see cref="IJobConfig"/> to allow for chaining more configuration options.</returns>
         public IJobConfig ConfigureJobToCancel<TInstance>(
             IDriverDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return TaskSet.ConfigureJobToCancel(
                 (EntityProxyDataStream<TInstance>)dataStream,

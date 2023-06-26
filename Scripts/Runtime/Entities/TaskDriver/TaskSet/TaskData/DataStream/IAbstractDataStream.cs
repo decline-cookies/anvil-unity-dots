@@ -3,11 +3,11 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     /// <summary>
-    /// An <see cref="IAbstractDataStream"/> typed to a specific <see cref="IEntityProxyInstance"/>
+    /// An <see cref="IAbstractDataStream"/> typed to a specific <see cref="IEntityKeyedTask"/>
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/></typeparam>
     public interface IAbstractDataStream<TInstance> : IAbstractDataStream
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         /// <summary>
         /// Gets the configured <see cref="CancelRequestBehaviour"/> for the data stream.

@@ -10,21 +10,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Represents a write only reference to a <see cref="IAbstractDataStream{TInstance}"/>
     /// To be used in jobs that only allows for writing of this data.
     /// </summary>
-    /// <typeparam name="TInstance">They type of <see cref="IEntityProxyInstance"/> to write</typeparam>
+    /// <typeparam name="TInstance">They type of <see cref="IEntityKeyedTask"/> to write</typeparam>
     [BurstCompatible]
-    public struct DataStreamPendingWriter<TInstance> where TInstance : unmanaged, IEntityProxyInstance
+    public struct DataStreamPendingWriter<TInstance> where TInstance : unmanaged, IEntityKeyedTask
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingWriter;
+        [ReadOnly] private readonly UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer m_PendingWriter;
         [ReadOnly] private readonly DataOwnerID m_DataOwnerID;
         [ReadOnly] private readonly DataTargetID m_DataTargetID;
 
-        private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
+        private UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
 
         internal DataStreamPendingWriter(
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
+            UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer pendingWriter,
             DataOwnerID dataOwnerID,
             DataTargetID dataTargetID)
             : this()
@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             int laneIndex)
             : this()
         {
-            m_PendingWriter = UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
+            m_PendingWriter = UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer.ReinterpretFromPointer(writerPtr);
             m_DataOwnerID = dataOwnerID;
             m_DataTargetID = dataTargetID;
             m_LaneIndex = laneIndex;
@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// underlying pending collection to be added the next time the data is
         /// consolidated.
         /// </summary>
-        /// <param name="instance">The <see cref="IEntityProxyInstance"/></param>
+        /// <param name="instance">The <see cref="IEntityKeyedTask"/></param>
         public void Add(TInstance instance)
         {
             Add(ref instance);
@@ -100,8 +100,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureCanAdd();
             m_PendingLaneWriter.Write(
-                new EntityProxyInstanceWrapper<TInstance>(
-                    instance.Entity,
+                new EntityKeyedTaskWrapper<TInstance>(
+                    instance.Key,
                     m_DataOwnerID,
                     m_DataTargetID,
                     ref instance));
@@ -111,7 +111,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Adds the instance to the <see cref="IAbstractDataStream{TInstance}"/>'s
         /// underlying pending collection to be added the next time the data is consolidated.
         /// </summary>
-        /// <param name="instance">The <see cref="IEntityProxyInstance"/></param>
+        /// <param name="instance">The <see cref="IEntityKeyedTask"/></param>
         /// <param name="laneIndex">
         /// The collection index to use based on the thread this writer is being
         /// used on. <see cref="ParallelAccessUtil"/> to get the correct index.
@@ -126,8 +126,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             m_PendingWriter.AsLaneWriter(laneIndex)
                 .Write(
-                    new EntityProxyInstanceWrapper<TInstance>(
-                        instance.Entity,
+                    new EntityKeyedTaskWrapper<TInstance>(
+                        instance.Key,
                         m_DataOwnerID,
                         m_DataTargetID,
                         ref instance));
