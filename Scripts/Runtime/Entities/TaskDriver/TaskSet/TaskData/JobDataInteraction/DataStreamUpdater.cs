@@ -9,25 +9,25 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <summary>
     /// Job-Safe struct to allow for updating an instance of data
     /// </summary>
-    /// <typeparam name="TInstance">The <see cref="IEntityProxyInstance"/> to update.</typeparam>
+    /// <typeparam name="TInstance">The <see cref="IEntityKeyedTask"/> to update.</typeparam>
     [BurstCompatible]
-    public struct DataStreamUpdater<TInstance> where TInstance : unmanaged, IEntityProxyInstance
+    public struct DataStreamUpdater<TInstance> where TInstance : unmanaged, IEntityKeyedTask
     {
         private const int UNSET_LANE_INDEX = -1;
 
-        [ReadOnly] private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_PendingWriter;
-        [ReadOnly] private readonly NativeArray<EntityProxyInstanceWrapper<TInstance>> m_Active;
+        [ReadOnly] private readonly UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer m_PendingWriter;
+        [ReadOnly] private readonly NativeArray<EntityKeyedTaskWrapper<TInstance>> m_Active;
         [ReadOnly] private ResolveTargetTypeLookup m_ResolveTargetTypeLookup;
 
 
-        private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
+        private UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.LaneWriter m_PendingLaneWriter;
         private int m_LaneIndex;
         private DataOwnerID m_CurrentDataOwnerID;
         private DataTargetID m_CurrentDataTargetID;
 
         internal DataStreamUpdater(
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer pendingWriter,
-            NativeArray<EntityProxyInstanceWrapper<TInstance>> active,
+            UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer pendingWriter,
+            NativeArray<EntityKeyedTaskWrapper<TInstance>> active,
             ResolveTargetTypeLookup resolveTargetTypeLookup)
             : this()
         {
@@ -64,7 +64,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Signals that this instance should be processed to update again next frame.
         /// </summary>
-        /// <param name="instance">The <see cref="IEntityProxyInstance"/></param>
+        /// <param name="instance">The <see cref="IEntityKeyedTask"/></param>
         public void Continue(TInstance instance)
         {
             Continue(ref instance);
@@ -75,7 +75,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             Debug_EnsureCanContinue(ref instance);
             m_PendingLaneWriter.Write(
-                new EntityProxyInstanceWrapper<TInstance>(
+                new EntityKeyedTaskWrapper<TInstance>(
                     instance.Key,
                     m_CurrentDataOwnerID,
                     m_CurrentDataTargetID,
@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal void Resolve<TResolveTargetType>(ref TResolveTargetType resolvedInstance)
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureCanResolve();
             //TODO: #69 - Profile this and see if it makes sense to not bother creating a DataStreamWriter and instead
@@ -104,7 +104,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             get
             {
                 Debug_EnsureCanUpdate();
-                EntityProxyInstanceWrapper<TInstance> instanceWrapper = m_Active[index];
+                EntityKeyedTaskWrapper<TInstance> instanceWrapper = m_Active[index];
                 m_CurrentDataOwnerID = instanceWrapper.InstanceID.DataOwnerID;
                 m_CurrentDataTargetID = instanceWrapper.InstanceID.DataTargetID;
                 return instanceWrapper.Payload;
@@ -147,7 +147,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             if (m_State == UpdaterState.Modifying)
             {
-                throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(EntityProxyInstanceExtension.ContinueOn)} or {nameof(EntityProxyInstanceExtension.Resolve)} gets called before the next iteration.");
+                throw new InvalidOperationException($"Trying to get an element but the previous element wasn't handled. Please ensure that {nameof(EntityKeyedTaskExtension.ContinueOn)} or {nameof(EntityKeyedTaskExtension.Resolve)} gets called before the next iteration.");
             }
 
             m_State = UpdaterState.Modifying;

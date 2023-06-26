@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// the data. Instead, this data proxies the Entity and allows for it to be used in the Task system while
     /// maintaining the link to the original <see cref="Key"/>
     /// </remarks>
-    public interface IEntityProxyInstance
+    public interface IEntityKeyedTask
     {
         /// <summary>
         /// The Entity this data is keyed on

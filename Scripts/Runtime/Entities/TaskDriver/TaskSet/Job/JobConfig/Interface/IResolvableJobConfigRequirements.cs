@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="TResolveTargetType">The type of data to be able to resolve to.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
-            where TResolveTargetType : unmanaged, IEntityProxyInstance;
+            where TResolveTargetType : unmanaged, IEntityKeyedTask;
 
         /// <summary>
         /// Specifies a delegate to call to add additional requirements.

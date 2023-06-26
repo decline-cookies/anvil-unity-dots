@@ -119,7 +119,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal ISystemDataStream<TInstance> CreateDataStream<TInstance>(AbstractTaskDriver taskDriver, CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             EntityProxyDataStream<TInstance> dataStream = TaskSet.GetOrCreateDataStream<TInstance>(cancelRequestBehaviour, uniqueContextIdentifier);
             //Create a proxy DataStream that references the same data owned by the system but gives it the TaskDriver context
@@ -148,7 +148,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             //If we've already configured our system level jobs, we don't want to create duplicates so we return
             //the NO-OP config so that the API is preserved but it does nothing.
@@ -167,7 +167,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ISystemDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             //If we've already configured our system level jobs, we don't want to create duplicates so we return
             //the NO-OP config so that the API is preserved but it does nothing.

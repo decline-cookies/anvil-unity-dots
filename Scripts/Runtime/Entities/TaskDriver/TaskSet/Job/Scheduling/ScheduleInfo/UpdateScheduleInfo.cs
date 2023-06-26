@@ -7,9 +7,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <summary>
     /// Specific scheduling information for a <see cref="UpdateJobConfig{TInstance}"/>
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
     public class UpdateScheduleInfo<TInstance> : AbstractScheduleInfo
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         private readonly UpdateJobData<TInstance> m_JobData;
         private readonly EntityProxyDataStream<TInstance> m_DataStream;

@@ -6,7 +6,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: Can we simplify this a lot and get rid of a bunch of special Access Wrapper types?
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043593841
     internal class DataStreamActiveAccessWrapper<T> : AbstractDataStreamAccessWrapper<T>
-        where T : unmanaged, IEntityProxyInstance
+        where T : unmanaged, IEntityKeyedTask
     {
         public DataStreamActiveAccessWrapper(
             EntityProxyDataStream<T> dataStream,

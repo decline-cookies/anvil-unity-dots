@@ -13,13 +13,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                                       IDriverDataStream<TInstance>,
                                                       ISystemDataStream<TInstance>,
                                                       ICancellableDataStream
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
-        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityProxyInstanceWrapper<TInstance>>();
+        public static readonly int MAX_ELEMENTS_PER_CHUNK = ChunkUtil.MaxElementsPerChunk<EntityKeyedTaskWrapper<TInstance>>();
 
         private readonly EntityProxyDataSource<TInstance> m_DataSource;
-        private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveArrayData;
-        private readonly ActiveArrayData<EntityProxyInstanceWrapper<TInstance>> m_ActiveCancelArrayData;
+        private readonly ActiveArrayData<EntityKeyedTaskWrapper<TInstance>> m_ActiveArrayData;
+        private readonly ActiveArrayData<EntityKeyedTaskWrapper<TInstance>> m_ActiveCancelArrayData;
 
         public DeferredNativeArrayScheduleInfo ScheduleInfo { get; }
         public DeferredNativeArrayScheduleInfo ActiveCancelScheduleInfo { get; }
@@ -57,8 +57,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //TODO: #136 - Not good to expose these just for the CancelComplete case.
-        public UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer PendingWriter { get; }
-        public PendingData<EntityProxyInstanceWrapper<TInstance>> PendingData { get; }
+        public UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer PendingWriter { get; }
+        public PendingData<EntityKeyedTaskWrapper<TInstance>> PendingData { get; }
 
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             : base(taskSetOwner)
@@ -71,7 +71,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             if (m_ActiveArrayData.ActiveCancelData != null)
             {
                 m_ActiveCancelArrayData
-                    = (ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>)m_ActiveArrayData.ActiveCancelData;
+                    = (ActiveArrayData<EntityKeyedTaskWrapper<TInstance>>)m_ActiveArrayData.ActiveCancelData;
                 ActiveCancelScheduleInfo = m_ActiveCancelArrayData.ScheduleInfo;
             }
 
@@ -194,7 +194,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // Using the deferred array would produce invalid results because the deferred array gets resolved when the
             // data is written and in this case the writing is complete.
             bool isDeferredRequired = !m_ActiveArrayData.GetDependencyFor(AccessType.SharedRead).IsCompleted;
-            NativeArray<EntityProxyInstanceWrapper<TInstance>> sourceArray
+            NativeArray<EntityKeyedTaskWrapper<TInstance>> sourceArray
                 = isDeferredRequired ? m_ActiveArrayData.DeferredJobArray : m_ActiveArrayData.CurrentArray;
             return new DataStreamActiveReader<TInstance>(sourceArray);
         }
@@ -209,7 +209,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public DataStreamCancellationUpdater<TInstance> CreateDataStreamCancellationUpdater(
             ResolveTargetTypeLookup resolveTargetTypeLookup,
-            UnsafeParallelHashMap<EntityProxyInstanceID, bool> cancelProgressLookup)
+            UnsafeParallelHashMap<EntityKeyedTaskID, bool> cancelProgressLookup)
         {
             return new DataStreamCancellationUpdater<TInstance>(
                 m_DataSource.PendingWriter,

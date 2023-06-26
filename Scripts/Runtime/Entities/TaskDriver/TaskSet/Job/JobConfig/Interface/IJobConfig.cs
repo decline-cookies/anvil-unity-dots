@@ -49,22 +49,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <param name="dataStream">The <see cref="IAbstractDataStream{TInstance}"/> to write to.</param>
         /// <typeparam name="TInstance">
-        /// The type of <see cref="IEntityProxyInstance"/> data in the <see cref="IAbstractDataStream{TInstance}"/>.
+        /// The type of <see cref="IEntityKeyedTask"/> data in the <see cref="IAbstractDataStream{TInstance}"/>.
         /// </typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance;
+            where TInstance : unmanaged, IEntityKeyedTask;
 
         /// <summary>
         /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be read from in a shared-read context.
         /// </summary>
         /// <param name="dataStream">The <see cref="IAbstractDataStream{TInstance}"/> to read from.</param>
         /// <typeparam name="TInstance">
-        /// The type of <see cref="IEntityProxyInstance"/> data in the <see cref="IAbstractDataStream{TInstance}"/>.
+        /// The type of <see cref="IEntityKeyedTask"/> data in the <see cref="IAbstractDataStream{TInstance}"/>.
         /// </typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance;
+            where TInstance : unmanaged, IEntityKeyedTask;
 
         /// <summary>
         /// Specifies a generic struct to be read from in a shared-read context.

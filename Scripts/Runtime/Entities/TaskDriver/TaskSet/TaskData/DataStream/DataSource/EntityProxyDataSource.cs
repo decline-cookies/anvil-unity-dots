@@ -8,15 +8,15 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class EntityProxyDataSource<TInstance> : AbstractDataSource<EntityProxyInstanceWrapper<TInstance>>
-        where TInstance : unmanaged, IEntityProxyInstance
+    internal class EntityProxyDataSource<TInstance> : AbstractDataSource<EntityKeyedTaskWrapper<TInstance>>
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         private EntityProxyDataSourceConsolidator<TInstance> m_Consolidator;
 
         public EntityProxyDataSource(TaskDriverManagementSystem taskDriverManagementSystem) : base(taskDriverManagementSystem)
         {
-            EntityWorldMigrationSystem.RegisterForEntityPatching<EntityProxyInstanceWrapper<TInstance>>();
-            EntityProxyInstanceWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
+            EntityWorldMigrationSystem.RegisterForEntityPatching<EntityKeyedTaskWrapper<TInstance>>();
+            EntityKeyedTaskWrapper<TInstance>.Debug_EnsureOffsetsAreCorrect();
         }
 
         protected override void DisposeSelf()
@@ -53,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
             EntityProxyDataSource<TInstance> destination = destinationDataSource as EntityProxyDataSource<TInstance>;
-            UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationWriter = default;
+            UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer destinationWriter = default;
 
             if (destination == null)
             {
@@ -88,14 +88,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             private const int UNSET_ID = -1;
 
-            private UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> m_CurrentStream;
-            private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer m_DestinationStreamWriter;
+            private UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>> m_CurrentStream;
+            private readonly UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer m_DestinationStreamWriter;
             [ReadOnly] private NativeArray<EntityRemapUtility.EntityRemapInfo> m_RemapArray;
             [NativeSetThreadIndex] private readonly int m_NativeThreadIndex;
 
             public MigrateJob(
-                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>> currentStream,
-                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.Writer destinationStreamWriter,
+                UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>> currentStream,
+                UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.Writer destinationStreamWriter,
                 ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             {
                 m_CurrentStream = currentStream;
@@ -109,21 +109,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 //Can't modify while iterating so we collapse down to a single array and clean the underlying stream.
                 //We'll build this stream back up if anything should still remain
-                NativeArray<EntityProxyInstanceWrapper<TInstance>> currentInstanceArray = m_CurrentStream.ToNativeArray(Allocator.Temp);
+                NativeArray<EntityKeyedTaskWrapper<TInstance>> currentInstanceArray = m_CurrentStream.ToNativeArray(Allocator.Temp);
                 m_CurrentStream.Clear();
 
                 int laneIndex = ParallelAccessUtil.CollectionIndexForThread(m_NativeThreadIndex);
 
-                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter currentLaneWriter = m_CurrentStream.AsLaneWriter(laneIndex);
-                UnsafeTypedStream<EntityProxyInstanceWrapper<TInstance>>.LaneWriter destinationLaneWriter =
+                UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.LaneWriter currentLaneWriter = m_CurrentStream.AsLaneWriter(laneIndex);
+                UnsafeTypedStream<EntityKeyedTaskWrapper<TInstance>>.LaneWriter destinationLaneWriter =
                     m_DestinationStreamWriter.IsCreated
                         ? m_DestinationStreamWriter.AsLaneWriter(laneIndex)
                         : default;
 
                 for (int i = 0; i < currentInstanceArray.Length; ++i)
                 {
-                    EntityProxyInstanceWrapper<TInstance> instance = currentInstanceArray[i];
-                    EntityProxyInstanceID instanceID = instance.InstanceID;
+                    EntityKeyedTaskWrapper<TInstance> instance = currentInstanceArray[i];
+                    EntityKeyedTaskID instanceID = instance.InstanceID;
 
                     //If we don't exist in the new world then we stayed in this world and we need to rewrite ourselves
                     //to our own stream

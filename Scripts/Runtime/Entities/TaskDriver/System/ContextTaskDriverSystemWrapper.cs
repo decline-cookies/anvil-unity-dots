@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null) 
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return m_TaskDriverSystem.CreateDataStream<TInstance>(m_ContextTaskDriver, cancelRequestBehaviour, uniqueContextIdentifier);
         }
@@ -50,7 +50,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ISystemDataStream<TInstance> dataStream, 
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction, 
             BatchStrategy batchStrategy) 
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return m_TaskDriverSystem.ConfigureJobToUpdate(dataStream, scheduleJobFunction, batchStrategy);
         }
@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             ISystemDataStream<TInstance> dataStream, 
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction, 
             BatchStrategy batchStrategy) 
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return m_TaskDriverSystem.ConfigureJobToCancel(dataStream, scheduleJobFunction, batchStrategy);
         }

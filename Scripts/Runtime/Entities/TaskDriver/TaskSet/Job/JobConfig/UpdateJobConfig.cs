@@ -3,7 +3,7 @@ using Anvil.Unity.DOTS.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class UpdateJobConfig<TInstance> : AbstractResolvableJobConfig
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         public UpdateJobConfig(ITaskSetOwner taskSetOwner, EntityProxyDataStream<TInstance> dataStream)
             : base(taskSetOwner)

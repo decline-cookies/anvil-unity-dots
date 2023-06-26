@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <inheritdoc cref="IResolvableJobConfigRequirements.RequireResolveTarget{TResolveTargetType}"/>
         public unsafe IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             TaskDriverManagementSystem taskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
             EntityProxyDataSource<TResolveTargetType> dataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TResolveTargetType>();
@@ -77,7 +77,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         private void CreateAndAddDataStreamPendingAccessWrapperForResolving<TInstance>(AbstractDataStream dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             AddAccessWrapper(
                 new DataStreamPendingAccessWrapper<TInstance>(

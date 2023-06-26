@@ -4,7 +4,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class DataStreamPendingAccessWrapper<T> : AbstractDataStreamAccessWrapper<T>, IDataStreamPendingAccessWrapper
-        where T : unmanaged, IEntityProxyInstance
+        where T : unmanaged, IEntityKeyedTask
     {
         public DataStreamPendingAccessWrapper(EntityProxyDataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage)
             : base(dataStream, accessType, usage) { }

@@ -9,13 +9,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private readonly bool m_HasCancellableData;
 
-        private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_RequestLookup;
-        private UnsafeParallelHashMap<EntityProxyInstanceID, bool> m_ProgressLookup;
-        private readonly UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.Writer m_CompleteWriter;
+        private UnsafeParallelHashMap<EntityKeyedTaskID, bool> m_RequestLookup;
+        private UnsafeParallelHashMap<EntityKeyedTaskID, bool> m_ProgressLookup;
+        private readonly UnsafeTypedStream<EntityKeyedTaskWrapper<CancelComplete>>.Writer m_CompleteWriter;
         private readonly DataTargetID m_CompleteDataTargetID;
 
         public CancelRequestsActiveConsolidator(
-            UnsafeParallelHashMap<EntityProxyInstanceID, bool> requestLookup,
+            UnsafeParallelHashMap<EntityKeyedTaskID, bool> requestLookup,
             ITaskSetOwner taskSetOwner) : this()
         {
             m_RequestLookup = requestLookup;
@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_RequestLookup.Clear();
         }
 
-        public void WriteToActive(EntityProxyInstanceID id, int laneIndex)
+        public void WriteToActive(EntityKeyedTaskID id, int laneIndex)
         {
             m_RequestLookup.TryAdd(id, true);
 
@@ -53,12 +53,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
             else
             {
-                UnsafeTypedStream<EntityProxyInstanceWrapper<CancelComplete>>.LaneWriter completeLaneWriter
+                UnsafeTypedStream<EntityKeyedTaskWrapper<CancelComplete>>.LaneWriter completeLaneWriter
                     = m_CompleteWriter.AsLaneWriter(laneIndex);
                 //Write ourselves to the Complete.
                 CancelComplete cancelComplete = new CancelComplete(id.Entity);
                 completeLaneWriter.Write(
-                    new EntityProxyInstanceWrapper<CancelComplete>(
+                    new EntityKeyedTaskWrapper<CancelComplete>(
                         id.Entity,
                         id.DataOwnerID,
                         m_CompleteDataTargetID,

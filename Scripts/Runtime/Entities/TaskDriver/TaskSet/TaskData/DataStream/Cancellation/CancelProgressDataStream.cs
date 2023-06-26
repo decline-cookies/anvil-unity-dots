@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         private readonly CancelProgressDataSource m_DataSource;
 
-        public ActiveLookupData<EntityProxyInstanceID> ActiveLookupData { get; }
+        public ActiveLookupData<EntityKeyedTaskID> ActiveLookupData { get; }
 
         public CancelProgressDataStream(ITaskSetOwner taskSetOwner) : base(taskSetOwner)
         {

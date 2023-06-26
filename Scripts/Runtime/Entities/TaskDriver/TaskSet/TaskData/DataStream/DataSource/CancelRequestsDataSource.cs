@@ -29,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 {
                     continue;
                 }
-                ActiveLookupData<EntityProxyInstanceID> progressLookupData = taskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
+                ActiveLookupData<EntityKeyedTaskID> progressLookupData = taskSetOwner.TaskSet.CancelProgressDataStream.ActiveLookupData;
                 AddConsolidationData(progressLookupData, AccessType.ExclusiveWrite);
             }
 

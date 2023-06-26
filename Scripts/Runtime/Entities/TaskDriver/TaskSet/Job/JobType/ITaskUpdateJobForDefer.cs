@@ -9,10 +9,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// and you are using a <see cref="DeferredNativeArray{T}"/>
     /// This is specific to a context where the data is being updated.
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
     [JobProducerType(typeof(TaskUpdateJobForDeferExtension.WrapperJobStruct<,>))]
     public interface ITaskUpdateJobForDefer<TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -26,7 +26,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// The <see cref="DataStreamUpdater{TInstance}"/> can be used to continue working on updating
         /// for this same instance next frame or resolve to a completed state.
         /// </summary>
-        /// <param name="instance">The <see cref="IEntityProxyInstance"/> to update.</param>
+        /// <param name="instance">The <see cref="IEntityKeyedTask"/> to update.</param>
         /// <param name="updater">A helper struct to continue or resolve</param>
         void Execute(TInstance instance, ref DataStreamUpdater<TInstance> updater);
     }

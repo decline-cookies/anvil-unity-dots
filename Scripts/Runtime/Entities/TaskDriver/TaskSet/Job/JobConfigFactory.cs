@@ -17,7 +17,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityProxyDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             UpdateJobConfig<TInstance> jobConfig = new UpdateJobConfig<TInstance>(taskSetOwner, dataStream);
 
@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityProxyDataStream<TInstance> activeCancelDataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             CancelJobConfig<TInstance> jobConfig = new CancelJobConfig<TInstance>(taskSetOwner, activeCancelDataStream);
 
@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityProxyDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             DataStreamJobConfig<TInstance> jobConfig = new DataStreamJobConfig<TInstance>(taskSetOwner, dataStream);
 

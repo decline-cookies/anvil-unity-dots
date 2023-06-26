@@ -3,9 +3,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <summary>
     /// Updating specific <see cref="AbstractJobData"/> for use when updating instances of data in a data stream.
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/></typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/></typeparam>
     public class UpdateJobData<TInstance> : AbstractJobData
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         private readonly UpdateJobConfig<TInstance> m_UpdateJobConfig;
 

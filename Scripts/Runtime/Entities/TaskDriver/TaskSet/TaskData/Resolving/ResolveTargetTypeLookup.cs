@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public unsafe void Resolve<TResolveTargetType>(DataOwnerID dataOwnerID, int laneIndex, ref TResolveTargetType resolvedInstance)
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             uint typeID = ResolveTargetUtil.GetResolveTargetID<TResolveTargetType>();
             ResolveTargetID targetID = new ResolveTargetID(typeID, dataOwnerID);

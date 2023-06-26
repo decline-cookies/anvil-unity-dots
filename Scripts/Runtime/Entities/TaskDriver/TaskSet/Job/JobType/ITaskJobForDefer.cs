@@ -9,10 +9,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// and you are using a <see cref="DeferredNativeArray{T}"/>
     /// This is specific to a context where the data is being read.
     /// </summary>
-    /// <typeparam name="TInstance">The type of <see cref="IEntityProxyInstance"/> data</typeparam>
+    /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
     [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<,>))]
     public interface ITaskJobForDefer<in TInstance>
-        where TInstance : unmanaged, IEntityProxyInstance
+        where TInstance : unmanaged, IEntityKeyedTask
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -24,7 +24,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// This method is called for each instance that is being read, allowing for the work to
         /// occur.
         /// </summary>
-        /// <param name="instance">The <see cref="IEntityProxyInstance"/> to read.</param>
+        /// <param name="instance">The <see cref="IEntityKeyedTask"/> to read.</param>
         void Execute(TInstance instance);
     }
 }

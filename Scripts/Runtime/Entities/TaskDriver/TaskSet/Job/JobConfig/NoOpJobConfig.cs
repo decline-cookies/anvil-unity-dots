@@ -17,13 +17,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public IJobConfig RequireDataStreamForWrite<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return this;
         }
 
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             return this;
         }
@@ -82,7 +82,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
-            where TResolveTargetType : unmanaged, IEntityProxyInstance
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
             return this;
         }

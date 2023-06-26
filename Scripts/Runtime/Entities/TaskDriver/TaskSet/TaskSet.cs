@@ -79,7 +79,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             }
 
             Type genericTypeArrayData = typeof(ActiveArrayData<>);
-            Type genericTypeEntityProxyWrapperType = typeof(EntityProxyInstanceWrapper<>);
+            Type genericTypeEntityProxyWrapperType = typeof(EntityKeyedTaskWrapper<>);
 
             Type specificEntityProxyWrapperType = genericTypeEntityProxyWrapperType.MakeGenericType(type);
             Type specificArrayType = genericTypeArrayData.MakeGenericType(specificEntityProxyWrapperType);
@@ -96,10 +96,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public EntityProxyDataStream<TInstance> GetOrCreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
-            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityKeyedTaskWrapper<TInstance>>), uniqueContextIdentifier);
 
             if (!m_DataStreamLookupByID.TryGetValue(targetID, out AbstractDataStream dataStream))
             {
@@ -110,10 +110,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public EntityProxyDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             //This is temporary and works on magic constant typing based on the data inside to get the same ID. #241 should fix this.
-            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityProxyInstanceWrapper<TInstance>>), uniqueContextIdentifier);
+            DataTargetID targetID = AbstractData.GenerateWorldUniqueID(TaskSetOwner, typeof(ActiveArrayData<EntityKeyedTaskWrapper<TInstance>>), uniqueContextIdentifier);
 
 
             EntityProxyDataStream<TInstance> dataStream = new EntityProxyDataStream<TInstance>(TaskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
@@ -165,7 +165,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             IAbstractDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
@@ -184,7 +184,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             IAbstractDataStream<TInstance> activeCancelDataStream,
             JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 
@@ -203,7 +203,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             IAbstractDataStream<TInstance> dataStream,
             JobConfigScheduleDelegates.ScheduleDataStreamJobDelegate<TInstance> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 

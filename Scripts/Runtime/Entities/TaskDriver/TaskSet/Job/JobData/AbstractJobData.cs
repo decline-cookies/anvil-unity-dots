@@ -44,7 +44,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<TInstance>(out DataStreamPendingWriter<TInstance> instance)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Default);
             instance = dataStream.CreateDataStreamPendingWriter();
@@ -54,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<TInstance>(out DataStreamActiveReader<TInstance> instance)
-            where TInstance : unmanaged, IEntityProxyInstance
+            where TInstance : unmanaged, IEntityKeyedTask
         {
             EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetActiveDataStream<TInstance>(AbstractJobConfig.Usage.Default);
             instance = dataStream.CreateDataStreamActiveReader();
