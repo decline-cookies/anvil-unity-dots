@@ -76,14 +76,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureCanContinue(ref instance);
             m_PendingLaneWriter.Write(
                 new EntityProxyInstanceWrapper<TInstance>(
-                    instance.Entity,
+                    instance.Key,
                     m_CurrentDataOwnerID,
                     m_CurrentDataTargetID,
                     ref instance));
 
 
             //Hold open the progress so we can keep processing
-            EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Entity, m_CurrentDataOwnerID, m_CurrentDataTargetID);
+            EntityProxyInstanceID id = new EntityProxyInstanceID(instance.Key, m_CurrentDataOwnerID, m_CurrentDataTargetID);
             Debug_EnsureIDIsPresent(id);
             m_CancelProgressLookup[id] = true;
         }

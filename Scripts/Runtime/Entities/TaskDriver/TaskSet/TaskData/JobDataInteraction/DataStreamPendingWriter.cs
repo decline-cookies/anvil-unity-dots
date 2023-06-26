@@ -101,7 +101,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureCanAdd();
             m_PendingLaneWriter.Write(
                 new EntityProxyInstanceWrapper<TInstance>(
-                    instance.Entity,
+                    instance.Key,
                     m_DataOwnerID,
                     m_DataTargetID,
                     ref instance));
@@ -127,7 +127,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_PendingWriter.AsLaneWriter(laneIndex)
                 .Write(
                     new EntityProxyInstanceWrapper<TInstance>(
-                        instance.Entity,
+                        instance.Key,
                         m_DataOwnerID,
                         m_DataTargetID,
                         ref instance));
