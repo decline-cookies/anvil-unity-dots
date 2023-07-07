@@ -10,6 +10,12 @@ namespace Anvil.Unity.DOTS.Util
     /// </summary>
     public static class EnumExtension
     {
+        public static int ToBurstInt<TEnum>(this TEnum value)
+            where TEnum : unmanaged, Enum
+        {
+            return (int)value.ToBurstValue();
+        }
+
         /// <summary>
         /// Converts an enum to a value that burst will actually print out.
         /// Without this method enums print out their fully qualified type name in burst compiled code.

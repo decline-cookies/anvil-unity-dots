@@ -26,10 +26,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="definition">The definition to create and populate an instance from.</param>
         /// <param name="entitySpawner">The <see cref="EntitySpawner"/> helper struct</param>
         /// <typeparam name="TDefinition">The type of the definition that implements <see cref="IEntitySpawnDefinition"/>.</typeparam>
-        public static void CreateAndPopulateWithPrototype<TDefinition>(ref this TDefinition definition, in EntitySpawner entitySpawner)
+        public static void CreateAndPopulateWithPrototype<TDefinition>(ref this TDefinition definition, in EntitySpawner entitySpawner, int context)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            Entity entity = entitySpawner.SpawnDeferredEntityWithPrototype(definition);
+            Entity entity = entitySpawner.SpawnDeferredEntityWithPrototype(definition, context);
             definition.PopulateOnEntity(entity, entitySpawner);
         }
     }
