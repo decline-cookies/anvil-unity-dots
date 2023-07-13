@@ -112,7 +112,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// This Entity is invalid but will be patched when the corresponding <see cref="EntityCommandBufferSystem"/>
         /// executes. Any references to this entity must be used/stored via commands run on this instance.
         /// </returns>
-        public Entity SpawnDeferredEntityWithPrototype<TDefinition>(TDefinition definition, int variant = default)
+        public Entity SpawnDeferredEntityWithPrototype<TDefinition>(TDefinition definition, PrototypeVariant variant = default)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
             Entity prototype = GetPrototypeEntityForDefinition<TDefinition>(variant);
@@ -235,10 +235,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         /// <returns>The <see cref="Entity"/> prototype</returns>
-        internal Entity GetPrototypeEntityForDefinition<TDefinition>(int variant)
+        internal Entity GetPrototypeEntityForDefinition<TDefinition>(PrototypeVariant variant)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TDefinition>(), variant);
+            int hash = variant.GetVariantHashForDefinition<TDefinition>();
             return GetPrototypeEntityForDefinition(hash);
         }
 
