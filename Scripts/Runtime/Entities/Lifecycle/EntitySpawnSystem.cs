@@ -126,16 +126,16 @@ namespace Anvil.Unity.DOTS.Entities
         // PROTOTYPE REGISTRATION
         //*************************************************************************************************************
 
-        public void RegisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(Entity prototype, int context)
+        public void RegisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(Entity prototype, int variant = default)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
-            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TEntitySpawnDefinition>(), context);
+            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TEntitySpawnDefinition>(), variant);
             DEBUG_EnsurePrototypeIsNotRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
             handle.Value.Add(hash, prototype);
         }
 
-        public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy, int context)
+        public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy, int variant = default)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             //If we're tearing down and this system was destroyed before whoever was trying to unregister, we
@@ -146,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
-            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TEntitySpawnDefinition>(), context);
+            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TEntitySpawnDefinition>(), variant);
             DEBUG_EnsurePrototypeIsRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
             if (handle.Value.Remove(hash, out Entity prototype) && shouldDestroy)
             {

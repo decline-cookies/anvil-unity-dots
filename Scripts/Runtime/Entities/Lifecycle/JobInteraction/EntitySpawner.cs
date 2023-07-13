@@ -98,23 +98,24 @@ namespace Anvil.Unity.DOTS.Entities
             definition.PopulateOnEntity(entity, this);
             return entity;
         }
-        
+
         /// <summary>
         /// Spawns an <see cref="Entity"/> based on the passed in <see cref="IEntitySpawnDefinition"/> and uses
         /// a prototype which was registered with <see cref="EntitySpawnSystem.RegisterEntityPrototypeForDefinition"/>.
         /// This will be actually spawned with the corresponding <see cref="EntityCommandBufferSystem"/> executes.
         /// </summary>
         /// <param name="definition">The <see cref="IEntitySpawnDefinition"/> to use</param>
+        /// <param name="variant">An optional key for a variant prototype associated with this definition</param>
         /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         /// <returns>
         /// A deferred <see cref="Entity"/>.
         /// This Entity is invalid but will be patched when the corresponding <see cref="EntityCommandBufferSystem"/>
         /// executes. Any references to this entity must be used/stored via commands run on this instance.
         /// </returns>
-        public Entity SpawnDeferredEntityWithPrototype<TDefinition>(TDefinition definition, int context)
+        public Entity SpawnDeferredEntityWithPrototype<TDefinition>(TDefinition definition, int variant = default)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            Entity prototype = GetPrototypeEntityForDefinition<TDefinition>(context);
+            Entity prototype = GetPrototypeEntityForDefinition<TDefinition>(variant);
             Entity entity = m_ECBWriter.Instantiate(ID.InstanceID, prototype);
             definition.PopulateOnEntity(entity, this);
             return entity;
@@ -234,10 +235,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         /// <returns>The <see cref="Entity"/> prototype</returns>
-        internal Entity GetPrototypeEntityForDefinition<TDefinition>(int context)
+        internal Entity GetPrototypeEntityForDefinition<TDefinition>(int variant)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TDefinition>(), context);
+            int hash = HashCodeUtil.GetHashCode(BurstRuntime.GetHashCode32<TDefinition>(), variant);
             return GetPrototypeEntityForDefinition(hash);
         }
 
