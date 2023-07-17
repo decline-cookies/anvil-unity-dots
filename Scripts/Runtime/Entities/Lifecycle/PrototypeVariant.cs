@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// Creates a new instance with a specific variant ID
         /// </summary>
         /// <param name="variantID">The variant ID to use</param>
-        public PrototypeVariant(int variantID)
+        private PrototypeVariant(int variantID)
         {
             Debug.Assert(variantID != UNSET_VALUE);
             VariantID = variantID;
