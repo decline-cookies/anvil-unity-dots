@@ -2,6 +2,7 @@ using Anvil.CSharp.Data;
 using Anvil.CSharp.Logging;
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using Anvil.Unity.DOTS.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
     [UseCommandBufferSystem(typeof(EndSimulationEntityCommandBufferSystem))]
     public partial class EntitySpawnSystem : AbstractAnvilSystemBase
     {
-        private readonly AccessControlledValue<NativeParallelHashMap<long, Entity>> m_EntityPrototypes;
+        private readonly AccessControlledValue<NativeParallelHashMap<int, Entity>> m_EntityPrototypes;
         private readonly HashSet<EntitySpawner> m_ActiveSpawners;
         private readonly List<EntitySpawner> m_PendingReleaseSpawners;
         private readonly uint m_SystemID;
@@ -40,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities
         private int m_LargestInstanceIDIssued;
 
         private EntityCommandBufferSystem m_CommandBufferSystem;
-        private NativeParallelHashMap<long, EntityArchetype> m_EntityArchetypes;
+        private NativeParallelHashMap<int, EntityArchetype> m_EntityArchetypes;
 
         public EntitySpawnSystem()
         {
@@ -49,9 +50,9 @@ namespace Anvil.Unity.DOTS.Entities
             m_InstanceIDQueue = new Queue<int>();
             m_LargestInstanceIDIssued = -1;
 
-            m_EntityArchetypes = new NativeParallelHashMap<long, EntityArchetype>(ChunkUtil.MaxElementsPerChunk<EntityArchetype>(), Allocator.Persistent);
-            m_EntityPrototypes = new AccessControlledValue<NativeParallelHashMap<long, Entity>>(
-                new NativeParallelHashMap<long, Entity>(
+            m_EntityArchetypes = new NativeParallelHashMap<int, EntityArchetype>(ChunkUtil.MaxElementsPerChunk<EntityArchetype>(), Allocator.Persistent);
+            m_EntityPrototypes = new AccessControlledValue<NativeParallelHashMap<int, Entity>>(
+                new NativeParallelHashMap<int, Entity>(
                     ChunkUtil.MaxElementsPerChunk<Entity>(),
                     Allocator.Persistent));
             m_SystemID = s_EntitySpawnSystemIDProvider.GetNextID();
@@ -99,7 +100,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             foreach ((Type definitionType, IEntitySpawnDefinition entitySpawnDefinition) in EntitySpawnSystemReflectionHelper.SPAWN_DEFINITION_TYPES)
             {
-                long entityArchetypeHash = BurstRuntime.GetHashCode64(definitionType);
+                int entityArchetypeHash = BurstRuntime.GetHashCode32(definitionType);
                 if (m_EntityArchetypes.TryGetValue(entityArchetypeHash, out EntityArchetype entityArchetype))
                 {
                     continue;
@@ -125,16 +126,16 @@ namespace Anvil.Unity.DOTS.Entities
         // PROTOTYPE REGISTRATION
         //*************************************************************************************************************
 
-        public void RegisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(Entity prototype)
+        public void RegisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(Entity prototype, PrototypeVariant variant = default)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
-            long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
+            int hash = variant.GetVariantHashForDefinition<TEntitySpawnDefinition>();
             DEBUG_EnsurePrototypeIsNotRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
             handle.Value.Add(hash, prototype);
         }
 
-        public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy)
+        public void UnregisterEntityPrototypeForDefinition<TEntitySpawnDefinition>(bool shouldDestroy, PrototypeVariant variant = default)
             where TEntitySpawnDefinition : unmanaged, IEntitySpawnDefinition
         {
             //If we're tearing down and this system was destroyed before whoever was trying to unregister, we
@@ -145,7 +146,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
 
             using var handle = m_EntityPrototypes.AcquireWithHandle(AccessType.ExclusiveWrite);
-            long hash = BurstRuntime.GetHashCode64<TEntitySpawnDefinition>();
+            int hash = variant.GetVariantHashForDefinition<TEntitySpawnDefinition>();
             DEBUG_EnsurePrototypeIsRegistered(typeof(TEntitySpawnDefinition), hash, handle.Value);
             if (handle.Value.Remove(hash, out Entity prototype) && shouldDestroy)
             {
@@ -207,7 +208,7 @@ namespace Anvil.Unity.DOTS.Entities
             ReleaseSpawner(entitySpawner);
         }
 
-        private EntitySpawner AcquireSpawner(bool isDeferred, NativeParallelHashMap<long, Entity> prototypeLookup)
+        private EntitySpawner AcquireSpawner(bool isDeferred, NativeParallelHashMap<int, Entity> prototypeLookup)
         {
             EntityCommandBuffer entityCommandBuffer = isDeferred ? m_CommandBufferSystem.CreateCommandBuffer() : new EntityCommandBuffer(Allocator.TempJob);
 
@@ -374,7 +375,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void DEBUG_EnsurePrototypeIsRegistered(Type type, long hash, NativeParallelHashMap<long, Entity> prototypes)
+        private void DEBUG_EnsurePrototypeIsRegistered(Type type, int hash, NativeParallelHashMap<int, Entity> prototypes)
         {
             if (!prototypes.ContainsKey(hash))
             {
@@ -383,7 +384,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void DEBUG_EnsurePrototypeIsNotRegistered(Type type, long hash, NativeParallelHashMap<long, Entity> prototypes)
+        private void DEBUG_EnsurePrototypeIsNotRegistered(Type type, int hash, NativeParallelHashMap<int, Entity> prototypes)
         {
             if (prototypes.ContainsKey(hash))
             {

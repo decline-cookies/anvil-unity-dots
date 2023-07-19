@@ -42,8 +42,8 @@ namespace Anvil.Unity.DOTS.Entities
         //TODO: #86 - Once we upgrade to Entities 1.0 we won't have to hide the ECB or ECB.ParallelWriter inside here
         //      and we can expose it or make two separate Spawner structs. One for parallel and one for single.        
         [NativeDisableContainerSafetyRestriction] private readonly EntityCommandBuffer.ParallelWriter m_ECBWriter;
-        [ReadOnly] private readonly NativeParallelHashMap<long, EntityArchetype> m_ArchetypeLookup;
-        [ReadOnly] private readonly NativeParallelHashMap<long, Entity> m_PrototypeLookup;
+        [ReadOnly] private readonly NativeParallelHashMap<int, EntityArchetype> m_ArchetypeLookup;
+        [ReadOnly] private readonly NativeParallelHashMap<int, Entity> m_PrototypeLookup;
         
         
         /// <summary>
@@ -58,8 +58,8 @@ namespace Anvil.Unity.DOTS.Entities
         internal EntitySpawner(
             SpawnerID id,
             EntityCommandBuffer ecb,
-            NativeParallelHashMap<long, EntityArchetype> archetypeLookup,
-            NativeParallelHashMap<long, Entity> prototypeLookup)
+            NativeParallelHashMap<int, EntityArchetype> archetypeLookup,
+            NativeParallelHashMap<int, Entity> prototypeLookup)
         {
             ID = id;
             m_ECB = ecb;
@@ -98,23 +98,24 @@ namespace Anvil.Unity.DOTS.Entities
             definition.PopulateOnEntity(entity, this);
             return entity;
         }
-        
+
         /// <summary>
         /// Spawns an <see cref="Entity"/> based on the passed in <see cref="IEntitySpawnDefinition"/> and uses
         /// a prototype which was registered with <see cref="EntitySpawnSystem.RegisterEntityPrototypeForDefinition"/>.
         /// This will be actually spawned with the corresponding <see cref="EntityCommandBufferSystem"/> executes.
         /// </summary>
         /// <param name="definition">The <see cref="IEntitySpawnDefinition"/> to use</param>
+        /// <param name="variant">An optional key for a variant prototype associated with this definition</param>
         /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         /// <returns>
         /// A deferred <see cref="Entity"/>.
         /// This Entity is invalid but will be patched when the corresponding <see cref="EntityCommandBufferSystem"/>
         /// executes. Any references to this entity must be used/stored via commands run on this instance.
         /// </returns>
-        public Entity SpawnDeferredEntityWithPrototype<TDefinition>(TDefinition definition)
+        public Entity SpawnDeferredEntityWithPrototype<TDefinition>(TDefinition definition, PrototypeVariant variant = default)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            Entity prototype = GetPrototypeEntityForDefinition<TDefinition>();
+            Entity prototype = GetPrototypeEntityForDefinition<TDefinition>(variant);
             Entity entity = m_ECBWriter.Instantiate(ID.InstanceID, prototype);
             definition.PopulateOnEntity(entity, this);
             return entity;
@@ -213,17 +214,17 @@ namespace Anvil.Unity.DOTS.Entities
         internal EntityArchetype GetEntityArchetypeForDefinition<TDefinition>()
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            long hash = BurstRuntime.GetHashCode64<TDefinition>();
+            int hash = BurstRuntime.GetHashCode32<TDefinition>();
             return GetEntityArchetypeForDefinition(hash);
         }
 
         /// <summary>
         /// Gets the <see cref="EntityArchetype"/> for a given <see cref="IEntitySpawnDefinition"/>
-        /// based on the hash derived from <see cref="BurstRuntime.GetHashCode64"/>
+        /// based on the hash derived from <see cref="BurstRuntime.GetHashCode32"/>
         /// </summary>
         /// <param name="hash">The hash to lookup</param>
         /// <returns>The <see cref="EntityArchetype"/></returns>
-        internal EntityArchetype GetEntityArchetypeForDefinition(long hash)
+        internal EntityArchetype GetEntityArchetypeForDefinition(int hash)
         {
             Debug_EnsureArchetypeIsRegistered(hash);
             return m_ArchetypeLookup[hash];
@@ -234,20 +235,20 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <typeparam name="TDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
         /// <returns>The <see cref="Entity"/> prototype</returns>
-        internal Entity GetPrototypeEntityForDefinition<TDefinition>()
+        internal Entity GetPrototypeEntityForDefinition<TDefinition>(PrototypeVariant variant)
             where TDefinition : unmanaged, IEntitySpawnDefinition
         {
-            long hash = BurstRuntime.GetHashCode64<TDefinition>();
+            int hash = variant.GetVariantHashForDefinition<TDefinition>();
             return GetPrototypeEntityForDefinition(hash);
         }
 
         /// <summary>
         /// Gets the <see cref="Entity"/> prototype for a given <see cref="IEntitySpawnDefinition"/>
-        /// based on the hash derived from <see cref="BurstRuntime.GetHashCode64"/>
+        /// based on the hash derived from <see cref="BurstRuntime.GetHashCode32"/>
         /// </summary>
         /// <param name="hash">The hash to lookup</param>
         /// <returns>The <see cref="Entity"/> prototype</returns>
-        internal Entity GetPrototypeEntityForDefinition(long hash)
+        internal Entity GetPrototypeEntityForDefinition(int hash)
         {
             Debug_EnsurePrototypeIsRegistered(hash);
             return m_PrototypeLookup[hash];
@@ -277,7 +278,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsureArchetypeIsRegistered(long hash)
+        private void Debug_EnsureArchetypeIsRegistered(int hash)
         {
             if (!m_ArchetypeLookup.ContainsKey(hash))
             {
@@ -286,7 +287,7 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
-        private void Debug_EnsurePrototypeIsRegistered(long hash)
+        private void Debug_EnsurePrototypeIsRegistered(int hash)
         {
             if (!m_PrototypeLookup.ContainsKey(hash))
             {
