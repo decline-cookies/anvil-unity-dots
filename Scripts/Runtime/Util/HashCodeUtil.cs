@@ -4,7 +4,7 @@ using Unity.Burst;
 namespace Anvil.Unity.DOTS.Util
 {
     /// <summary>
-    /// Helper class for generating hash codes that is Burst compatible.
+    /// Helper class for generating a hash code that is Burst compatible.
     /// </summary>
     [BurstCompile]
     public static class HashCodeUtil
