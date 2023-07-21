@@ -3,7 +3,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class DataStreamPendingAccessWrapper<T> : AbstractDataStreamAccessWrapper<T>, IDataStreamPendingAccessWrapper
+    internal class DataStreamPendingAccessWrapper<T> : AbstractDataStreamPendingAccessWrapper<EntityProxyDataStream<T>>, IDataStreamPendingAccessWrapper
         where T : unmanaged, IEntityKeyedTask
     {
         public DataStreamPendingAccessWrapper(EntityProxyDataStream<T> dataStream, AccessType accessType, AbstractJobConfig.Usage usage)
@@ -11,12 +11,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         public override JobHandle AcquireAsync()
         {
-            return DataStream.AcquirePendingAsync(AccessType);
+            return m_DefaultStream.AcquirePendingAsync(AccessType);
         }
 
         public override void ReleaseAsync(JobHandle dependsOn)
         {
-            DataStream.ReleasePendingAsync(dependsOn);
+            m_DefaultStream.ReleasePendingAsync(dependsOn);
         }
     }
 }

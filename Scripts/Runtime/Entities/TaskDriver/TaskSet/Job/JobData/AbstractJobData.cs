@@ -43,10 +43,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
-        public void Fulfill<TInstance>(out DataStreamPendingWriter<TInstance> instance)
+        public void Fulfill<TInstance>(out DataStreamPendingWriter<TInstance> instance, IAbstractDataStream<TInstance> explicitSource = null)
             where TInstance : unmanaged, IEntityKeyedTask
         {
-            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Default);
+            EntityProxyDataStream<TInstance> dataStream = m_JobConfig.GetPendingDataStream(AbstractJobConfig.Usage.Default, explicitSource);
             instance = dataStream.CreateDataStreamPendingWriter();
         }
 

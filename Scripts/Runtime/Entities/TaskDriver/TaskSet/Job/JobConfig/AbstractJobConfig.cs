@@ -448,13 +448,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return cancelRequestsPendingAccessWrapper.GetInstance(explicitSource);
         }
 
-        internal EntityProxyDataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)
+        internal EntityProxyDataStream<TInstance> GetPendingDataStream<TInstance>(
+            Usage usage,
+            IAbstractDataStream<TInstance> explicitSource = null)
             where TInstance : unmanaged, IEntityKeyedTask
         {
             DataStreamPendingAccessWrapper<TInstance> dataStreamAccessWrapper
                 = GetAccessWrapper<DataStreamPendingAccessWrapper<TInstance>>(usage);
 
-            return dataStreamAccessWrapper.DataStream;
+            return dataStreamAccessWrapper.GetInstance(explicitSource);
         }
 
         internal EntityProxyDataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
@@ -619,7 +621,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureWrapperUsage(AbstractAccessWrapper wrapper)
         {
-            if (wrapper.Debug_WrapperType != typeof(AbstractDataStreamAccessWrapper<>))
+            if (wrapper.Debug_WrapperType != typeof(AbstractDataStreamActiveAccessWrapper<>))
             {
                 return;
             }
