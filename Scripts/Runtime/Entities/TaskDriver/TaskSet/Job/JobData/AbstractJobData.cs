@@ -34,9 +34,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
-        public void Fulfill(out CancelRequestsWriter instance)
+        public void Fulfill(out CancelRequestsWriter instance, IAbstractCancelRequestDataStream explicitSource = null)
         {
-            CancelRequestsDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestsDataStream();
+            CancelRequestsDataStream cancelRequestDataStream = m_JobConfig.GetCancelRequestsDataStream(explicitSource);
             instance = cancelRequestDataStream.CreateCancelRequestsWriter();
         }
 
@@ -60,11 +60,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             instance = dataStream.CreateDataStreamActiveReader();
         }
 
-        
+
         //*************************************************************************************************************
         // ENTITY SPAWNER
         //*************************************************************************************************************
-        
+
         public void Fulfill(out EntitySpawner entitySpawner)
         {
             entitySpawner = m_JobConfig.GetEntitySpawner();

@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                                               ISystemCancelRequestDataStream
     {
         private const string UNIQUE_CONTEXT_IDENTIFIER = "CANCEL_REQUEST";
-        
+
         private readonly CancelRequestsDataSource m_DataSource;
         public ActiveLookupData<EntityKeyedTaskID> ActiveLookupData { get; }
 
@@ -22,7 +22,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             get => m_DataSource;
         }
-        
+
         /// <inheritdoc cref="IAbstractDataStream.ActiveDataVersion"/>
         public uint ActiveDataVersion
         {
@@ -88,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             ReleasePending();
         }
-        
+
         /// <inheritdoc cref="IAbstractDataStream.IsActiveDataInvalidated"/>
         public bool IsActiveDataInvalidated(uint lastVersion)
         {
