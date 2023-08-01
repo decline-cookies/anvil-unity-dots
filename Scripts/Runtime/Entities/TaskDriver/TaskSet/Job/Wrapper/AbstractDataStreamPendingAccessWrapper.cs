@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         private HashSet<T> m_DEBUG_RequiredStreams;
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
-        public void DEBUG_TrackRequiredStream(T stream)
+        private void DEBUG_TrackRequiredStream(T stream)
         {
             m_DEBUG_RequiredStreams ??= new HashSet<T>(1);
             m_DEBUG_RequiredStreams.Add(stream);

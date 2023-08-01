@@ -27,7 +27,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <summary>
         /// Merge the state from another wrapper instance of the same type
         /// </summary>
-        /// <param name="other"></param>
+        /// <param name="other">The wrapper instance to read state from.</param>
         public virtual void MergeStateFrom(AbstractAccessWrapper other)
         {
             Debug_EnsureSameID(other);
