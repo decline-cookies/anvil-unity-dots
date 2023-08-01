@@ -11,7 +11,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public UnsafeParallelHashMap<EntityKeyedTaskID, bool> ProgressLookup { get; }
 
 
-        public CancelProgressLookupAccessWrapper(ActiveLookupData<EntityKeyedTaskID> cancelProgressLookupData, AccessType accessType, AbstractJobConfig.Usage usage) : base(accessType, usage)
+        public CancelProgressLookupAccessWrapper(
+            ActiveLookupData<EntityKeyedTaskID> cancelProgressLookupData,
+            AccessType accessType,
+            AbstractJobConfig.Usage usage)
+            : base(accessType, usage)
         {
             m_CancelProgressLookupData = cancelProgressLookupData;
             ProgressLookup = m_CancelProgressLookupData.Lookup;

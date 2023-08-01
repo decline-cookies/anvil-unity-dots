@@ -3,7 +3,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class DataStreamActiveCancelAccessWrapper<T> : AbstractDataStreamAccessWrapper<T>,
+    internal class DataStreamActiveCancelAccessWrapper<T> : AbstractDataStreamActiveAccessWrapper<T>,
                                                             IDataStreamPendingAccessWrapper
         where T : unmanaged, IEntityKeyedTask
     {

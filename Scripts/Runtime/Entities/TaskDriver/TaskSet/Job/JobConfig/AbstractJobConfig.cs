@@ -124,12 +124,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             // If the existing access wrapper facilitates the needs of the new one then just keep the existing one.
             if (existingAccessWrapper.AccessType.IsCompatibleWith(accessWrapper.AccessType))
             {
+                existingAccessWrapper.MergeStateFrom(accessWrapper);
                 accessWrapper.Dispose();
             }
             // If the new access wrapper facilitates the needs of the existing one then dispose the existing wrapper and
             // use the new access wrapper.
             else if (accessWrapper.AccessType.IsCompatibleWith(existingAccessWrapper.AccessType))
             {
+                accessWrapper.MergeStateFrom(existingAccessWrapper);
                 existingAccessWrapper.Dispose();
                 m_AccessWrappers[accessWrapper.ID] = accessWrapper;
             }
@@ -438,21 +440,23 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return cancelProgressLookupAccessWrapper.ProgressLookup;
         }
 
-        internal CancelRequestsDataStream GetCancelRequestsDataStream()
+        internal CancelRequestsDataStream GetCancelRequestsDataStream(IAbstractCancelRequestDataStream explicitSource = null)
         {
             CancelRequestsPendingAccessWrapper cancelRequestsPendingAccessWrapper
                 = GetAccessWrapper<CancelRequestsPendingAccessWrapper>(Usage.RequestCancel);
 
-            return cancelRequestsPendingAccessWrapper.CancelRequestsDataStream;
+            return cancelRequestsPendingAccessWrapper.GetInstance(explicitSource);
         }
 
-        internal EntityProxyDataStream<TInstance> GetPendingDataStream<TInstance>(Usage usage)
+        internal EntityProxyDataStream<TInstance> GetPendingDataStream<TInstance>(
+            Usage usage,
+            IAbstractDataStream<TInstance> explicitSource = null)
             where TInstance : unmanaged, IEntityKeyedTask
         {
             DataStreamPendingAccessWrapper<TInstance> dataStreamAccessWrapper
                 = GetAccessWrapper<DataStreamPendingAccessWrapper<TInstance>>(usage);
 
-            return dataStreamAccessWrapper.DataStream;
+            return dataStreamAccessWrapper.GetInstance(explicitSource);
         }
 
         internal EntityProxyDataStream<TInstance> GetActiveDataStream<TInstance>(Usage usage)
@@ -617,7 +621,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private void Debug_EnsureWrapperUsage(AbstractAccessWrapper wrapper)
         {
-            if (wrapper.Debug_WrapperType != typeof(AbstractDataStreamAccessWrapper<>))
+            if (wrapper.Debug_WrapperType != typeof(AbstractDataStreamActiveAccessWrapper<>))
             {
                 return;
             }
