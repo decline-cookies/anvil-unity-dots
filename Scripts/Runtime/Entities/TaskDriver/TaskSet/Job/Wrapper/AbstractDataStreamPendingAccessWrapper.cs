@@ -39,7 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // SAFETY
         //*************************************************************************************************************
 
-        // #if ANVIL_DEBUG_SAFETY
+        // Used only with #if ANVIL_DEBUG_SAFETY
         private HashSet<T> m_DEBUG_RequiredStreams;
 
         [Conditional("ANVIL_DEBUG_SAFETY")]
