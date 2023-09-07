@@ -148,7 +148,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - DATA STREAM
+        // CONFIGURATION - REQUIRED DATA - Data Stream
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfig.RequireDataStreamForWrite{TInstance}"/>
@@ -169,26 +169,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        /// <inheritdoc cref="IJobConfig.RequestCancelFor"/>
-        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
-        {
-            AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
-            return this;
-        }
 
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - ENTITY SPAWNER
-        //*************************************************************************************************************
-
-        /// <inheritdoc cref="IJobConfig.RequireEntitySpawner"/>
-        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem)
-        {
-            AddAccessWrapper(new EntitySpawnSystemWrapper(entitySpawnSystem, AccessType.SharedWrite, Usage.Default));
-            return this;
-        }
-
-        //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - GENERIC DATA
+        // CONFIGURATION - REQUIRED DATA - Generic Data
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfig.RequireGenericDataForRead{TData}"/>
@@ -215,8 +198,62 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - ENTITY QUERY
+        // CONFIGURATION - REQUIRED DATA - Persistent Data
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForRead{TData}"/>
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
+            where TData : unmanaged, IThreadPersistentDataInstance
+        {
+            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>((ThreadPersistentData<TData>)threadPersistentData, AccessType.SharedRead, Usage.Default));
+
+            return this;
+        }
+
+        /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForWrite{TData}"/>
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
+            where TData : unmanaged, IThreadPersistentDataInstance
+        {
+            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>((ThreadPersistentData<TData>)threadPersistentData, AccessType.SharedWrite, Usage.Default));
+
+            return this;
+        }
+
+        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForRead{TData}"/>
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
+            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
+
+            return this;
+        }
+
+        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForSharedWrite{TData}"/>
+        public IJobConfig RequireEntityPersistentDataForSharedWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
+            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
+
+            return this;
+        }
+
+        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForExclusiveWrite{TData}"/>
+        public IJobConfig RequireEntityPersistentDataForExclusiveWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
+        {
+            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
+            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.ExclusiveWrite, Usage.Default));
+
+            return this;
+        }
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - EntityQuery
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfig.RequireEntityNativeArrayFromQueryForRead"/>
@@ -245,6 +282,31 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - Cancel
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfig.RequestCancelFor"/>
+        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
+        {
+            AddAccessWrapper(new CancelRequestsPendingAccessWrapper(taskDriver.TaskSet.CancelRequestsDataStream, AccessType.SharedWrite, Usage.RequestCancel));
+            return this;
+        }
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ENTITY SPAWNER
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfig.RequireEntitySpawner"/>
+        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem)
+        {
+            AddAccessWrapper(new EntitySpawnSystemWrapper(entitySpawnSystem, AccessType.SharedWrite, Usage.Default));
+            return this;
+        }
+
+
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
         //*************************************************************************************************************
@@ -257,12 +319,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        /// <inheritdoc cref="IJobConfig.RequireCDFEForWrite{T}"/>
-        public IJobConfig RequireCDFEForWrite<T>() where T : struct, IComponentData
+        /// <inheritdoc cref="IJobConfig.RequireCDFEForSystemSharedWrite{T}"/>
+        public IJobConfig RequireCDFEForSystemSharedWrite<T>() where T : struct, IComponentData
         {
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
         }
+
+        /// <inheritdoc cref="IJobConfig.RequireCDFEForExclusiveWrite{T}"/>
+        public IJobConfig RequireCDFEForExclusiveWrite<T>() where T : struct, IComponentData
+        {
+            AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
+            return this;
+        }
+
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - DynamicBuffer
@@ -276,6 +346,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+        /// <inheritdoc cref="IJobConfig.RequireDBFEForSystemSharedWrite{T}"/>
+        public IJobConfig RequireDBFEForSystemSharedWrite<T>() where T : struct, IBufferElementData
+        {
+            AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
+            return this;
+        }
+
         /// <inheritdoc cref="IJobConfig.RequireDBFEForExclusiveWrite{T}"/>
         public IJobConfig RequireDBFEForExclusiveWrite<T>() where T : struct, IBufferElementData
         {
@@ -283,51 +360,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-
-        /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForWrite{TData}"/>
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
-            where TData : unmanaged, IThreadPersistentDataInstance
-        {
-            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>((ThreadPersistentData<TData>)threadPersistentData, AccessType.SharedWrite, Usage.Default));
-
-            return this;
-        }
-
-        /// <inheritdoc cref="IJobConfig.RequireThreadPersistentDataForRead{TData}"/>
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
-            where TData : unmanaged, IThreadPersistentDataInstance
-        {
-            AddAccessWrapper(new PersistentDataAccessWrapper<ThreadPersistentData<TData>>((ThreadPersistentData<TData>)threadPersistentData, AccessType.SharedRead, Usage.Default));
-
-            return this;
-        }
-
-        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForWrite{TData}"/>
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
-            where TData : unmanaged, IEntityPersistentDataInstance
-        {
-            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
-            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedWrite, Usage.Default));
-
-            return this;
-        }
-
-        /// <inheritdoc cref="IJobConfig.RequireEntityPersistentDataForRead{TData}"/>
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
-            where TData : unmanaged, IEntityPersistentDataInstance
-        {
-            EntityPersistentData<TData> data = (EntityPersistentData<TData>)entityPersistentData;
-            AddAccessWrapper(new PersistentDataAccessWrapper<EntityPersistentData<TData>>(data, AccessType.SharedRead, Usage.Default));
-
-            return this;
-        }
-
-        /// <inheritdoc cref="IJobConfig.AddRequirementsFrom{T}"/>
-        public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
-            where T : AbstractTaskDriver
-        {
-            return configureRequirements(taskDriver, this);
-        }
 
         //*************************************************************************************************************
         // CONFIGURATION - REQUIRED DATA - EntityCommandBuffer
@@ -338,6 +370,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             return this;
         }
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - External Requirements
+        //*************************************************************************************************************
+
+        /// <inheritdoc cref="IJobConfig.AddRequirementsFrom{T}"/>
+        public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
+            where T : AbstractTaskDriver
+        {
+            return configureRequirements(taskDriver, this);
+        }
+
 
         //*************************************************************************************************************
         // HARDEN
