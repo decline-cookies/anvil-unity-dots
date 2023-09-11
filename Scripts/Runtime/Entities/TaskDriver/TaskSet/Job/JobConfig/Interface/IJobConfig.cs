@@ -44,6 +44,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RunOnce();
 
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - Data Stream
+        //*************************************************************************************************************
+
         /// <summary>
         /// Specifies a <see cref="IAbstractDataStream{TInstance}"/> to be written to in a shared-write context.
         /// </summary>
@@ -65,6 +70,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireDataStreamForRead<TInstance>(IAbstractDataStream<TInstance> dataStream)
             where TInstance : unmanaged, IEntityKeyedTask;
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - Generic Data
+        //*************************************************************************************************************
 
         /// <summary>
         /// Specifies a generic struct to be read from in a shared-read context.
@@ -93,19 +103,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public IJobConfig RequireGenericDataForSharedWrite<TData>(ISharedWriteAccessControlledValue<TData> data)
             where TData : struct;
 
-
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
-            where TData : unmanaged, IThreadPersistentDataInstance;
-
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
-            where TData : unmanaged, IThreadPersistentDataInstance;
-
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
-            where TData : unmanaged, IEntityPersistentDataInstance;
-
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
-            where TData : unmanaged, IEntityPersistentDataInstance;
-
         /// <summary>
         /// Specifies a generic struct to be written to in an exclusive-write context.
         /// The entire struct will be written to by only one thread at a time.
@@ -119,6 +116,31 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireGenericDataForExclusiveWrite<TData>(IExclusiveWriteAccessControlledValue<TData> data)
             where TData : struct;
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - Persistent Data
+        //*************************************************************************************************************
+
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
+            where TData : unmanaged, IThreadPersistentDataInstance;
+
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
+            where TData : unmanaged, IThreadPersistentDataInstance;
+
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance;
+
+        public IJobConfig RequireEntityPersistentDataForSharedWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance;
+
+        public IJobConfig RequireEntityPersistentDataForExclusiveWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance;
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - EntityQuery
+        //*************************************************************************************************************
 
         /// <summary>
         /// Specifies an <see cref="EntityQuery"/> to be transformed into a <see cref="NativeArray{Entity}"/> and read
@@ -154,20 +176,34 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : struct, IComponentData;
 
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - Cancel
+        //*************************************************************************************************************
+
         /// <summary>
         /// Requests cancellation for specific <see cref="Entity"/> in a given <see cref="AbstractTaskDriver"/>.
         /// </summary>
         /// <param name="taskDriver">The <see cref="AbstractTaskDriver"/> to cancel.</param>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver);
-        
-       
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ENTITY SPAWNER
+        //*************************************************************************************************************
+
         /// <summary>
         /// Requires an <see cref="EntitySpawner"/> from a given <see cref="EntitySpawnSystem"/>
         /// </summary>
         /// <param name="entitySpawnSystem">The <see cref="EntitySpawnSystem"/> to acquire from.</param>
         /// <returns>A reference to itself to continue chaining configuration methods</returns>
         public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem);
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
+        //*************************************************************************************************************
 
         /// <summary>
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.
@@ -178,12 +214,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : struct, IComponentData;
 
         /// <summary>
-        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in a shared-write context.
+        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in a system scoped shared-write context.
+        /// This means that write access is shared between all Task Driver instances of the same type in the same <see cref="World"/>.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
-        public IJobConfig RequireCDFEForWrite<T>()
+        public IJobConfig RequireCDFEForSystemSharedWrite<T>()
             where T : struct, IComponentData;
+
+        /// <summary>
+        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in an exclusive write context.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
+        /// <returns>A reference to itself to continue chaining configuration methods.</returns>
+        public IJobConfig RequireCDFEForExclusiveWrite<T>()
+            where T : struct, IComponentData;
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - DynamicBuffer
+        //*************************************************************************************************************
 
         /// <summary>
         /// Specifies a <see cref="BufferFromEntity{T}"/> to be read from in a shared-read context.
@@ -194,12 +244,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : struct, IBufferElementData;
 
         /// <summary>
+        /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in a system scoped shared-write context.
+        /// This means that write access is shared between all Task Driver instances of the same type in the same <see cref="World"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
+        /// <returns>A reference to itself to continue chaining configuration methods.</returns>
+        public IJobConfig RequireDBFEForSystemSharedWrite<T>()
+            where T : struct, IBufferElementData;
+
+        /// <summary>
         /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in an exclusive-write context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
             where T : struct, IBufferElementData;
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - EntityCommandBuffer
+        //*************************************************************************************************************
 
         /// <summary>
         /// Specifies a <see cref="EntityCommandBuffer"/> to be populated.
@@ -209,6 +273,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </param>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         IJobConfig RequireECB(EntityCommandBufferSystem ecbSystem);
+
+
+        //*************************************************************************************************************
+        // CONFIGURATION - REQUIRED DATA - External Requirements
+        //*************************************************************************************************************
 
         /// <summary>
         /// Specifies a delegate to call to add additional requirements.

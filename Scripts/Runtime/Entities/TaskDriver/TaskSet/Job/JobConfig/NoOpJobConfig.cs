@@ -46,6 +46,46 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+
+        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
+            where TResolveTargetType : unmanaged, IEntityKeyedTask
+        {
+            return this;
+        }
+
+
+        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
+            where TData : unmanaged, IThreadPersistentDataInstance
+        {
+            return this;
+        }
+
+        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
+            where TData : unmanaged, IThreadPersistentDataInstance
+        {
+            return this;
+        }
+
+
+        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
+        {
+            return this;
+        }
+
+        public IJobConfig RequireEntityPersistentDataForSharedWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
+        {
+            return this;
+        }
+
+        public IJobConfig RequireEntityPersistentDataForExclusiveWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
+            where TData : unmanaged, IEntityPersistentDataInstance
+        {
+            return this;
+        }
+
+
         public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
             return this;
@@ -57,19 +97,45 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
+
+        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
+        {
+            return this;
+        }
+
+
+        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem)
+        {
+            return this;
+        }
+
+
         public IJobConfig RequireCDFEForRead<T>()
             where T : struct, IComponentData
         {
             return this;
         }
 
-        public IJobConfig RequireCDFEForWrite<T>()
+        public IJobConfig RequireCDFEForSystemSharedWrite<T>()
             where T : struct, IComponentData
         {
             return this;
         }
 
+        public IJobConfig RequireCDFEForExclusiveWrite<T>()
+            where T : struct, IComponentData
+        {
+            return this;
+        }
+
+
         public IJobConfig RequireDBFEForRead<T>()
+            where T : struct, IBufferElementData
+        {
+            return this;
+        }
+
+        public IJobConfig RequireDBFEForSystemSharedWrite<T>()
             where T : struct, IBufferElementData
         {
             return this;
@@ -81,50 +147,12 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return this;
         }
 
-        public IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
-            where TResolveTargetType : unmanaged, IEntityKeyedTask
-        {
-            return this;
-        }
-
-        public IJobConfig RequestCancelFor(AbstractTaskDriver taskDriver)
-        {
-            return this;
-        }
-
-        public IJobConfig RequireThreadPersistentDataForWrite<TData>(IThreadPersistentData<TData> threadPersistentData)
-            where TData : unmanaged, IThreadPersistentDataInstance
-        {
-            return this;
-        }
-
-        public IJobConfig RequireThreadPersistentDataForRead<TData>(IThreadPersistentData<TData> threadPersistentData)
-            where TData : unmanaged, IThreadPersistentDataInstance
-        {
-            return this;
-        }
-
-        public IJobConfig RequireEntityPersistentDataForWrite<TData>(IEntityPersistentData<TData> entityPersistentData)
-            where TData : unmanaged, IEntityPersistentDataInstance
-        {
-            return this;
-        }
-
-        public IJobConfig RequireEntityPersistentDataForRead<TData>(IReadOnlyEntityPersistentData<TData> entityPersistentData)
-            where TData : unmanaged, IEntityPersistentDataInstance
-        {
-            return this;
-        }
 
         public IJobConfig RequireECB(EntityCommandBufferSystem ecbSystem)
         {
             return this;
         }
 
-        public IJobConfig RequireEntitySpawner(EntitySpawnSystem entitySpawnSystem)
-        {
-            return this;
-        }
 
         public IJobConfig AddRequirementsFrom<T>(T taskDriver, IJobConfig.ConfigureJobRequirementsDelegate<T> configureRequirements)
             where T : AbstractTaskDriver
