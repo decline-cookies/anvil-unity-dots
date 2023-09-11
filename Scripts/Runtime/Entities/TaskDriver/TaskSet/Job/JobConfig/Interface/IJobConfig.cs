@@ -245,7 +245,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <summary>
         /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in a system scoped shared-write context.
-        /// This means that write access is shared between all Task Driver instances of the same type in the same &lt;see cref="World"/&gt;.
+        /// This means that write access is shared between all Task Driver instances of the same type in the same <see cref="World"/>.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
