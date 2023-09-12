@@ -3,20 +3,19 @@ using Anvil.Unity.DOTS.Util;
 using System;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Entities;
 using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
     /// A typed wrapper for an <see cref="int"/> to denote a variant for a <see cref="IEntitySpawnDefinition"/>'s a
-    /// associated prototype. 
+    /// associated prototype.
     /// </summary>
     public readonly struct PrototypeVariant : IEquatable<PrototypeVariant>,
                                               IToFixedString<FixedString32Bytes>
     {
         public static readonly int UNSET_VALUE = default;
-        
+
         /// <summary>
         /// Converts an enum's underlying value into a <see cref="PrototypeVariant"/> instance.
         /// </summary>
@@ -46,7 +45,7 @@ namespace Anvil.Unity.DOTS.Entities
             // an uninitialized PrototypeVariant may conflict with a valid ID.
             Debug.Assert(new PrototypeVariant().VariantID == UNSET_VALUE);
         }
-        
+
         /// <summary>
         /// The backing int ID the prototype is associated with
         /// </summary>
@@ -69,9 +68,9 @@ namespace Anvil.Unity.DOTS.Entities
             Debug.Assert(variantID != UNSET_VALUE);
             VariantID = variantID;
         }
-        
+
         /// <summary>
-        /// Helper function to calculate a unique has for a
+        /// Helper function to calculate a unique hash for a
         /// <see cref="IEntitySpawnDefinition"/>/<see cref="PrototypeVariant"/> pair.
         /// </summary>
         /// <typeparam name="TEntitySpawnDefinition">The type of <see cref="IEntitySpawnDefinition"/></typeparam>
