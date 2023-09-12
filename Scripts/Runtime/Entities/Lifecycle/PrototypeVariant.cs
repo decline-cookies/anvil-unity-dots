@@ -13,7 +13,6 @@ namespace Anvil.Unity.DOTS.Entities
     /// associated prototype. 
     /// </summary>
     public readonly struct PrototypeVariant : IEquatable<PrototypeVariant>,
-                                              IComponentData,
                                               IToFixedString<FixedString32Bytes>
     {
         public static readonly int UNSET_VALUE = default;
