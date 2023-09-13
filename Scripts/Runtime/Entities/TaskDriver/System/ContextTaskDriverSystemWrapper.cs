@@ -34,31 +34,31 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_ContextTaskDriver = contextTaskDriver;
         }
 
-        public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null) 
+        public ISystemDataStream<TInstance> CreateDataStream<TInstance>(CancelRequestBehaviour cancelRequestBehaviour = CancelRequestBehaviour.Delete, string uniqueContextIdentifier = null)
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return m_TaskDriverSystem.CreateDataStream<TInstance>(m_ContextTaskDriver, cancelRequestBehaviour, uniqueContextIdentifier);
         }
 
-        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier = null) 
+        public ISystemEntityPersistentData<T> CreateEntityPersistentData<T>(string uniqueContextIdentifier = null)
             where T : unmanaged, IEntityPersistentDataInstance
         {
             return m_TaskDriverSystem.CreateEntityPersistentData<T>(uniqueContextIdentifier);
         }
 
         public IResolvableJobConfigRequirements ConfigureJobToUpdate<TInstance>(
-            ISystemDataStream<TInstance> dataStream, 
-            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction, 
-            BatchStrategy batchStrategy) 
+            ISystemDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleUpdateJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return m_TaskDriverSystem.ConfigureJobToUpdate(dataStream, scheduleJobFunction, batchStrategy);
         }
 
         public IResolvableJobConfigRequirements ConfigureJobToCancel<TInstance>(
-            ISystemDataStream<TInstance> dataStream, 
-            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction, 
-            BatchStrategy batchStrategy) 
+            ISystemDataStream<TInstance> dataStream,
+            JobConfigScheduleDelegates.ScheduleCancelJobDelegate<TInstance> scheduleJobFunction,
+            BatchStrategy batchStrategy)
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return m_TaskDriverSystem.ConfigureJobToCancel(dataStream, scheduleJobFunction, batchStrategy);
@@ -67,6 +67,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public EntityQuery GetEntityQuery(params ComponentType[] componentTypes)
         {
             return m_TaskDriverSystem.GetEntityQuery(componentTypes);
+        }
+
+        public EntityQuery GetEntityQuery(EntityQueryDesc queryDesc)
+        {
+            return m_TaskDriverSystem.GetEntityQuery(queryDesc);
         }
 
         public override string ToString()
