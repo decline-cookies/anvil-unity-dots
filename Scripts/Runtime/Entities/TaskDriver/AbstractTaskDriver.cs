@@ -60,7 +60,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         internal DataOwnerID WorldUniqueID { get; }
 
-        protected ITaskDriverSystem System
+        /// <summary>
+        /// Reference to the associated <see cref="TaskDriverSystem"/>.
+        /// Generally used to create <see cref="EntityQuery"/> instances.
+        /// </summary>
+        public ITaskDriverSystem System
         {
             get => new ContextTaskDriverSystemWrapper(TaskDriverSystem, this);
         }
