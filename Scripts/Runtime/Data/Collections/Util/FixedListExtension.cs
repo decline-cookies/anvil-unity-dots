@@ -103,6 +103,101 @@ namespace Anvil.Unity.DOTS.Data
             return UnsafeUtilityExtensions.AsRef(list).Contains(value);
         }
 
+        /// <inheritdoc cref="FixedList32BytesExtensions.Remove{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList32BytesExtensions.Remove{T,U}"/> that is compatible with Enums.
+        /// </remarks>
+        public static bool Remove<TEnum, TUnderlying>(this ref FixedList32Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAt(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList64BytesExtensions.Remove{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList64BytesExtensions.Remove{T,U}"/> that is compatible with Enums.
+        /// </remarks>
+        public static bool Remove<TEnum, TUnderlying>(this ref FixedList64Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAt(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList128BytesExtensions.Remove{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList128BytesExtensions.Remove{T,U}"/> that is compatible with Enums.
+        /// </remarks>
+        public static bool Remove<TEnum, TUnderlying>(this ref FixedList128Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAt(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList512BytesExtensions.Remove{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList512BytesExtensions.Remove{T,U}"/> that is compatible with Enums.
+        /// </remarks>
+        public static bool Remove<TEnum, TUnderlying>(this ref FixedList512Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAt(index);
+
+            return true;
+        }
+
+        /// <inheritdoc cref="FixedList4096BytesExtensions.Remove{T,U}"/>
+        /// <remarks>
+        /// A version of <see cref="FixedList4096BytesExtensions.Remove{T,U}"/> that is compatible with Enums.
+        /// </remarks>
+        public static bool Remove<TEnum, TUnderlying>(this ref FixedList4096Bytes<TEnum> list, TUnderlying value)
+            where TEnum : unmanaged, Enum
+            where TUnderlying : unmanaged, IEquatable<TUnderlying>
+        {
+            int index = list.IndexOf(value);
+            if (index == -1)
+            {
+                return false;
+            }
+
+            list.RemoveAt(index);
+
+            return true;
+        }
+
         /// <inheritdoc cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/>
         /// <remarks>
         /// A version of <see cref="FixedList32BytesExtensions.RemoveSwapBack{T,U}"/> that is compatible with Enums.
