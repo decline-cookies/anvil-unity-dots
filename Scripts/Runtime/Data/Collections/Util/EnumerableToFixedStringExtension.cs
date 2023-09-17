@@ -27,12 +27,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this UnsafeParallelHashSet<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this UnsafeParallelHashSet<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>, IEquatable<TElement>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            UnsafeParallelHashSet<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            UnsafeParallelHashSet<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<UnsafeParallelHashSet<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -49,12 +50,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeParallelHashSet<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this NativeParallelHashSet<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>, IEquatable<TElement>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            NativeParallelHashSet<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            NativeParallelHashSet<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<NativeParallelHashSet<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -71,12 +73,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this UnsafeList<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this UnsafeList<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            UnsafeList<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            UnsafeList<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<UnsafeList<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -93,12 +96,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeList<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this NativeList<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            NativeArray<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            NativeArray<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<NativeArray<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -115,12 +119,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this UnsafeArray<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this UnsafeArray<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            UnsafeArray<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            UnsafeArray<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<UnsafeArray<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -137,12 +142,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeArray<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this NativeArray<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            NativeArray<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            NativeArray<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<NativeArray<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -159,12 +165,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this NativeArray<TElement>.ReadOnly collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this NativeArray<TElement>.ReadOnly collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            NativeArray<TElement>.ReadOnly.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            NativeArray<TElement>.ReadOnly.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<NativeArray<TElement>.ReadOnly.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -181,12 +188,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList32Bytes<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this FixedList32Bytes<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            FixedList32Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            FixedList32Bytes<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<FixedList32Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -203,12 +211,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList64Bytes<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this FixedList64Bytes<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            FixedList64Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            FixedList64Bytes<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<FixedList64Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -225,12 +234,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList128Bytes<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this FixedList128Bytes<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            FixedList128Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            FixedList128Bytes<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<FixedList128Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -247,12 +257,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList512Bytes<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this FixedList512Bytes<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            FixedList512Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            FixedList512Bytes<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<FixedList512Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
@@ -269,12 +280,13 @@ namespace Anvil.Unity.DOTS.Data
         /// </typeparam>
         /// <returns>The generated string instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(ref this FixedList4096Bytes<TElement> collection)
+        public static TOutputString ToFixedString<TElement, TElementString, TOutputString>(in this FixedList4096Bytes<TElement> collection)
             where TElement : unmanaged, IToFixedString<TElementString>
             where TElementString : struct, INativeList<byte>, IUTF8Bytes
             where TOutputString : struct, INativeList<byte>, IUTF8Bytes
         {
-            FixedList4096Bytes<TElement>.Enumerator enumerator = collection.GetEnumerator();
+            ref var collectionAsRef = ref UnsafeUtilityExtensions.AsRef(in collection);
+            FixedList4096Bytes<TElement>.Enumerator enumerator = collectionAsRef.GetEnumerator();
             return enumerator.ToFixedString<FixedList4096Bytes<TElement>.Enumerator, TElement, TElementString, TOutputString>();
         }
 
