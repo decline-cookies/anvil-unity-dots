@@ -81,5 +81,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <param name="componentTypes">The <see cref="ComponentType"/>s to construct the query.</param>
         /// <returns>The <see cref="EntityQuery"/> instance</returns>
         public EntityQuery GetEntityQuery(params ComponentType[] componentTypes);
+
+        public EntityQuery GetEntityQuery(EntityQueryDesc queryDesc);
     }
 }
