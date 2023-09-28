@@ -3,6 +3,7 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    // TODO: #283 - Devise a different name to better reflect the intended use and nature of this data type
     /// <summary>
     /// An <see cref="IAbstractPersistentData"/> that is owned by the overall application and
     /// used to provide a unique instance of the data that persists for a thread index.
@@ -19,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="accessor">The <see cref="ThreadPersistentDataAccessor{T}"/></param>
         /// <returns>A <see cref="JobHandle"/> to wait on</returns>
         public JobHandle AcquireAsync(out ThreadPersistentDataAccessor<T> accessor);
-        
+
         /// <summary>
         /// Allows other jobs to use the underlying data for the <see cref="ThreadPersistentDataAccessor{T}"/>
         /// and ensures data integrity across those other usages.
@@ -34,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <returns>The <see cref="ThreadPersistentDataAccessor{TInstance}"/></returns>
         public ThreadPersistentDataAccessor<T> Acquire();
-        
+
         /// <summary>
         /// Allows other jobs or code to use to underlying data for the <see cref="ThreadPersistentDataAccessor{TInstance}"/>
         /// and ensures data integrity across those other usages.

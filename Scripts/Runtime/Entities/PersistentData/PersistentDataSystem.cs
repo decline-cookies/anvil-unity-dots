@@ -53,6 +53,7 @@ namespace Anvil.Unity.DOTS.Entities
         // INIT
         //*************************************************************************************************************
 
+        // TODO: #283 - Devise a different name to better reflect the intended use and nature of this data type
         public ThreadPersistentData<T> GetOrCreateThreadPersistentData<T>(string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
@@ -101,6 +102,7 @@ namespace Anvil.Unity.DOTS.Entities
             return new EntityPersistentData<T>(dataOwner, uniqueContextIdentifier);
         }
 
+        // TODO: #283 - Devise a different name to better reflect the intended use and nature of this data type
         private ThreadPersistentData<T> CreateThreadPersistentDataInstance<T>(IDataOwner dataOwner, string uniqueContextIdentifier)
             where T : unmanaged, IThreadPersistentDataInstance
         {
@@ -118,6 +120,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             NativeArray<JobHandle> migrationDependencies = new NativeArray<JobHandle>(m_EntityPersistentData.Count, Allocator.Temp);
             int index = 0;
+            // TODO: #283 - Devise a different name to better reflect the intended use and nature of this data type
             //We only need to migrate EntityPersistentData.
             //ThreadPersistentData is global to the app and doesn't need to be migrated because no jobs or data should be in flight during migration.
             foreach (KeyValuePair<DataTargetID, AbstractPersistentData> entry in m_EntityPersistentData)
