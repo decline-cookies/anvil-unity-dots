@@ -6,14 +6,15 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities
 {
+    // TODO: #283 - Devise a different name to better reflect the intended use and nature of this data type
     internal class ThreadPersistentData<T> : AbstractTypedPersistentData<UnsafeArray<T>>,
                                              IThreadPersistentData<T>
         where T : unmanaged, IThreadPersistentDataInstance
     {
         public ThreadPersistentData(IDataOwner dataOwner, string uniqueContextIdentifier)
             : base(
-                dataOwner, 
-                new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent), 
+                dataOwner,
+                new UnsafeArray<T>(ParallelAccessUtil.CollectionSizeForMaxThreads, Allocator.Persistent),
                 uniqueContextIdentifier)
         {
             ref UnsafeArray<T> data = ref Data;
