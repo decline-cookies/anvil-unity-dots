@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Unity.Entities;
+using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
@@ -115,7 +116,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// context identifier to distinguish them for ensuring migration happens properly between worlds and data
         /// goes to the correct location.
         /// </param>
-        protected AbstractTaskDriver(World world, AbstractTaskDriver parent = null, string uniqueContextIdentifier = null)
+        protected AbstractTaskDriver(World world, AbstractTaskDriver parent = null, string uniqueContextIdentifier = null, Type customSystemType = null)
         {
             World = world;
             Parent = parent;
@@ -129,15 +130,20 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
 
-            Type taskDriverType = GetType();
-            Type taskDriverSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
+            if (customSystemType == null)
+            {
+                Type taskDriverType = GetType();
+                customSystemType = TASK_DRIVER_SYSTEM_TYPE.MakeGenericType(taskDriverType);
+            }
+            Debug.Assert(customSystemType.IsSubclassOf(typeof(AbstractTaskDriverSystem)));
+
 
             //If we've already created a TaskDriver of this type, then it's corresponding system will also have been created.
-            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(taskDriverSystemType);
+            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(customSystemType);
             //If not, then we will want to explicitly create it and ensure it is part of the lifecycle.
             if (TaskDriverSystem == null)
             {
-                TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(taskDriverSystemType, World);
+                TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(customSystemType, World);
                 World.AddSystem(TaskDriverSystem);
                 ComponentSystemGroup systemGroup = GetSystemGroup();
                 systemGroup.AddSystemToUpdateList(TaskDriverSystem);
