@@ -117,6 +117,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </param>
         protected AbstractTaskDriver(World world, AbstractTaskDriver parent = null, string uniqueContextIdentifier = null)
         {
+            DEBUG_EnsureValidAttributes();
+
             World = world;
             Parent = parent;
             //TODO: #241 - This is gross. Needs to be reworked.
@@ -327,6 +329,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
+
+        [Conditional("DEBUG")]
+        private void DEBUG_EnsureValidAttributes()
+        {
+            Type type = GetType();
+
+            IEnumerable<string> invalidAttributeNames = type.GetCustomAttributes(true)
+                .Where(attribute => attribute is UpdateAfterAttribute or UpdateBeforeAttribute)
+                .Select(attribute => attribute.GetType().Name);
+
+            if (!invalidAttributeNames.Any())
+            {
+                return;
+            }
+
+            Logger.Error(
+                $"Unsupported Attributes. The following attributes are defined on the task driver but are not supported. (see below)"
+                + $"\n{string.Join(", ", invalidAttributeNames)}"
+                + $"\nNOTE: If the task driver must be ordered define a custom system type to place attributes on.");
+        }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void Debug_EnsureNotHardened()
