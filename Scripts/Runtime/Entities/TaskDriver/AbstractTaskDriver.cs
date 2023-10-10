@@ -116,6 +116,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// context identifier to distinguish them for ensuring migration happens properly between worlds and data
         /// goes to the correct location.
         /// </param>
+        /// <param name="customSystemType">
+        /// Explicitly set the system type that this instance should be bound to. The type must derive from
+        /// <see cref="AbstractTaskDriverSystem"/>.
+        /// This is typically used to order the task driver instance against other systems.
+        ///
+        /// (default) If a null value is provided <see cref="TaskDriverSystem{T}"/> is used.
+        /// </param>
         protected AbstractTaskDriver(World world, AbstractTaskDriver parent = null, string uniqueContextIdentifier = null, Type customSystemType = null)
         {
             World = world;
