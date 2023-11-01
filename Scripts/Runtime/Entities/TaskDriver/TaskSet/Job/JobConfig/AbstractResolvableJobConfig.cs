@@ -37,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public unsafe IResolvableJobConfigRequirements RequireResolveTarget<TResolveTargetType>()
             where TResolveTargetType : unmanaged, IEntityKeyedTask
         {
-            TaskDriverManagementSystem taskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = TaskSetOwner.World.GetOrCreateSystemManaged<TaskDriverManagementSystem>();
             EntityProxyDataSource<TResolveTargetType> dataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TResolveTargetType>();
 
             m_ResolveTargetDefinitions.Add(ResolveTargetDefinition.Create<TResolveTargetType>(dataSource.PendingWriterPointer));

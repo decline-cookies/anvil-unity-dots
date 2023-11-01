@@ -18,8 +18,8 @@ namespace Anvil.Unity.DOTS.Data
         /// <typeparam name="TValue">The value type.</typeparam>
         /// <returns>True if a key-value pair was removed.</returns>
         public static bool Remove<TKey, TValue>(this UnsafeParallelHashMap<TKey, TValue> map, TKey key, out TValue value)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             return map.TryGetValue(key, out value) && map.Remove(key);
         }

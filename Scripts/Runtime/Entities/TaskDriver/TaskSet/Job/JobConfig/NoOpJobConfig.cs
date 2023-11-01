@@ -92,7 +92,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             return this;
         }
@@ -111,38 +111,38 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
         public IJobConfig RequireCDFEForRead<T>()
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             return this;
         }
 
         public IJobConfig RequireCDFEForSystemSharedWrite<T>()
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             return this;
         }
 
         public IJobConfig RequireCDFEForExclusiveWrite<T>()
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             return this;
         }
 
 
         public IJobConfig RequireDBFEForRead<T>()
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             return this;
         }
 
         public IJobConfig RequireDBFEForSystemSharedWrite<T>()
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             return this;
         }
 
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             return this;
         }

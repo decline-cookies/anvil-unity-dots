@@ -7,7 +7,7 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct EntityKeyedTaskWrapper<TInstance> : IEquatable<EntityKeyedTaskWrapper<TInstance>>
         where TInstance : unmanaged, IEntityKeyedTask
@@ -66,7 +66,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{InstanceID.ToString()})";
         }
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public FixedString64Bytes ToFixedString()
         {
             return InstanceID.ToFixedString();

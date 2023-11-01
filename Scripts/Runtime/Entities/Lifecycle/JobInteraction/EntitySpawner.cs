@@ -12,7 +12,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// Helper struct to allow for spawning <see cref="Entity"/> and making associated structural and initialization
     /// changes while in parallel bursted jobs.
     /// </summary>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public readonly struct EntitySpawner : IEquatable<EntitySpawner>
     {
         public static bool operator ==(EntitySpawner lhs, EntitySpawner rhs)
@@ -134,7 +134,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="e">The <see cref="Entity"/> to set the component on</param>
         /// <param name="component">The <see cref="ISharedComponentData"/></param>
         /// <typeparam name="T">The type of <see cref="ISharedComponentData"/></typeparam>
-        public static void ManagedLookupAndSetSharedComponent<T>(SpawnerID spawnerID, int threadIndex, Entity e, T component) where T : struct, ISharedComponentData
+        public static void ManagedLookupAndSetSharedComponent<T>(SpawnerID spawnerID, int threadIndex, Entity e, T component) where T : unmanaged, ISharedComponentData
         {
             EntitySpawner entitySpawner = EntitySpawnSystem.GetEntitySpawnerByID(spawnerID);
             EntityCommandBuffer.ParallelWriter ecbParallelWriter = entitySpawner.m_ECBWriter;
@@ -147,13 +147,13 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
 
         /// <inheritdoc cref="EntityCommandBuffer.SetComponent{T}"/>
-        public void SetComponent<T>(Entity e, T component) where T : struct, IComponentData
+        public void SetComponent<T>(Entity e, T component) where T : unmanaged, IComponentData
         {
             m_ECBWriter.SetComponent(ID.InstanceID, e, component);
         }
 
         /// <inheritdoc cref="EntityCommandBuffer.SetBuffer{T}"/>
-        public DynamicBuffer<T> SetBuffer<T>(Entity e) where T : struct, IBufferElementData
+        public DynamicBuffer<T> SetBuffer<T>(Entity e) where T : unmanaged, IBufferElementData
         {
             return m_ECBWriter.SetBuffer<T>(ID.InstanceID, e);
         }
@@ -165,19 +165,19 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
         /// <inheritdoc cref="EntityCommandBuffer.AddComponent{T}(Entity)"/>
-        public void AddComponent<T>(Entity e) where T : struct, IComponentData
+        public void AddComponent<T>(Entity e) where T : unmanaged, IComponentData
         {
             m_ECBWriter.AddComponent<T>(ID.InstanceID, e);
         }
 
         /// <inheritdoc cref="EntityCommandBuffer.AddComponent{T}(Entity, T)"/>
-        public void AddComponent<T>(Entity e, T component) where T : struct, IComponentData
+        public void AddComponent<T>(Entity e, T component) where T : unmanaged, IComponentData
         {
             m_ECBWriter.AddComponent(ID.InstanceID, e, component);
         }
 
         /// <inheritdoc cref="EntityCommandBuffer.AddComponent(Entity, ComponentTypes)"/>
-        public void AddComponent(Entity e, ComponentTypes componentTypes)
+        public void AddComponent(Entity e, ComponentTypeSet componentTypes)
         {
             m_ECBWriter.AddComponent(ID.InstanceID, e, componentTypes);
         }

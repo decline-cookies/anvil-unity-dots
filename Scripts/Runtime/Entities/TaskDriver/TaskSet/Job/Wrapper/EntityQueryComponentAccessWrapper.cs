@@ -6,7 +6,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class EntityQueryComponentAccessWrapper<T> : AbstractAccessWrapper
-        where T : struct, IComponentData
+        where T : unmanaged, IComponentData
     {
         private readonly EntityQueryComponentNativeArray<T> m_EntityQueryNativeArray;
 

@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -18,9 +19,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="isReadOnly">true if the data will not be written to.</param>
         /// <typeparam name="T">The element type of the <see cref="DynamicBuffer{T}"/>.</typeparam>
         /// <returns>A container that provides in job access to the requested <see cref="DynamicBuffer{T}"/>.</returns>
-        public static BufferFromSingleEntity<T> GetBufferFromSingletonEntity<T>(this ComponentSystemBase system, bool isReadOnly = false) where T : struct, IBufferElementData
+        public static BufferFromSingleEntity<T> GetBufferFromSingletonEntity<T>(this ComponentSystemBase system, bool isReadOnly = false) where T : unmanaged, IBufferElementData
         {
-            return system.GetBufferFromEntity<T>(isReadOnly).ForSingleEntity(system.GetSingletonEntity<T>());
+            return system.GetBufferLookup<T>(isReadOnly).ForSingleEntity(system.GetSingletonEntity<T>());
         }
 
         /// <summary>
@@ -34,9 +35,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// If fetching many single entity containers at once, getting a <see cref="BufferFromEntity{T}"/> instance and
         /// calling <see cref="BufferFromEntityExtension.ForSingleEntity{T}"/> is more efficient.
         /// </remarks>
-        public static BufferFromSingleEntity<T> GetBufferFromSingleEntity<T>(this ComponentSystemBase system, Entity entity, bool isReadOnly = false) where T : struct, IBufferElementData
+        public static BufferFromSingleEntity<T> GetBufferFromSingleEntity<T>(this ComponentSystemBase system, Entity entity, bool isReadOnly = false) where T : unmanaged, IBufferElementData
         {
-            return system.GetBufferFromEntity<T>(isReadOnly).ForSingleEntity(entity);
+            return system.GetBufferLookup<T>(isReadOnly).ForSingleEntity(entity);
         }
 
         /// <summary>
@@ -45,9 +46,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="isReadOnly">true if the data will not be written to.</param>
         /// <typeparam name="T">The type that implements <see cref="IComponentData"/>.</typeparam>
         /// <returns>A container that provides in job access to the requested <see cref="T"/>.</returns>
-        public static ComponentDataFromSingleEntity<T> GetComponentDataFromSingletonEntity<T>(this ComponentSystemBase system, bool isReadOnly) where T : struct, IComponentData
+        public static ComponentDataFromSingleEntity<T> GetComponentDataFromSingletonEntity<T>(this ComponentSystemBase system, bool isReadOnly) where T : unmanaged, IComponentData
         {
-            return system.GetComponentDataFromEntity<T>(isReadOnly).ForSingleEntity(system.GetSingletonEntity<T>());
+            return system.GetComponentLookup<T>(isReadOnly).ForSingleEntity(system.GetSingletonEntity<T>());
         }
 
         /// <summary>
@@ -61,9 +62,9 @@ namespace Anvil.Unity.DOTS.Entities
         /// If fetching many single entity containers at once, getting a <see cref="ComponentDataFromEntity{T}"/> instance and
         /// calling <see cref="ComponentDataFromEntityExtension.ForSingleEntity{T}"/> is more efficient.
         /// </remarks>
-        public static ComponentDataFromSingleEntity<T> GetComponentDataFromSingleEntity<T>(this ComponentSystemBase system, Entity entity, bool isReadOnly) where T : struct, IComponentData
+        public static ComponentDataFromSingleEntity<T> GetComponentDataFromSingleEntity<T>(this ComponentSystemBase system, Entity entity, bool isReadOnly) where T : unmanaged, IComponentData
         {
-            return system.GetComponentDataFromEntity<T>(isReadOnly).ForSingleEntity(entity);
+            return system.GetComponentLookup<T>(isReadOnly).ForSingleEntity(entity);
         }
 
         /// <summary>
@@ -78,11 +79,11 @@ namespace Anvil.Unity.DOTS.Entities
         /// <remarks>
         /// Actual copy is performed by <see cref="CopyBufferToNativeArray{T}" />. This is just a convenience method.
         /// </remarks>
-        public static JobHandle CopyBufferToNativeArray<T>(this ComponentSystemBase system, in JobHandle dependsOn, Entity fromEntity, in NativeArray<T> outputBuffer) where T : struct, IBufferElementData
+        public static JobHandle CopyBufferToNativeArray<T>(this ComponentSystemBase system, in JobHandle dependsOn, Entity fromEntity, in NativeArray<T> outputBuffer) where T : unmanaged, IBufferElementData
         {
             CopyBufferToNativeArray<T> job = new CopyBufferToNativeArray<T>()
             {
-                InputBufferFromEntity = system.GetBufferFromEntity<T>(true).ForSingleEntity(fromEntity),
+                InputBufferFromEntity = system.GetBufferLookup<T>(true).ForSingleEntity(fromEntity),
                 OutputBuffer = outputBuffer
             };
 
@@ -106,7 +107,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             CopyBufferToDeferredNativeArray<T> job = new CopyBufferToDeferredNativeArray<T>()
             {
-                InputBufferFromEntity = system.GetBufferFromEntity<T>(true).ForSingleEntity(fromEntity),
+                InputBufferFromEntity = system.GetBufferLookup<T>(true).ForSingleEntity(fromEntity),
                 OutputBuffer = outputBuffer
             };
 
@@ -126,12 +127,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <remarks>
         /// Actual copy is performed by <see cref="CopyNativeArrayToBuffer{T}" />. This is just a convenience method.
         /// </remarks>
-        public static JobHandle CopyNativeArrayToBuffer<T>(this ComponentSystemBase system, in JobHandle dependsOn, in NativeArray<T> inputBuffer, Entity toEntity) where T : struct, IBufferElementData
+        public static JobHandle CopyNativeArrayToBuffer<T>(this ComponentSystemBase system, in JobHandle dependsOn, in NativeArray<T> inputBuffer, Entity toEntity) where T : unmanaged, IBufferElementData
         {
             CopyNativeArrayToBuffer<T> job = new CopyNativeArrayToBuffer<T>()
             {
                 InputBuffer = inputBuffer,
-                OutputBufferFromEntity = system.GetBufferFromEntity<T>(false).ForSingleEntity(toEntity)
+                OutputBufferFromEntity = system.GetBufferLookup<T>(false).ForSingleEntity(toEntity)
             };
 
             return job.Schedule(dependsOn);
@@ -143,20 +144,23 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="system">The system to find the parent of.</param>
         /// <param name="group">The parent of the system</param>
         /// <returns>True if a parent was found for the given system.</returns>
-        public static bool TryFindParentGroup(this ComponentSystem system, out ComponentSystemGroup group)
+        public static bool TryFindParentGroup(this ComponentSystemBase system, out ComponentSystemGroup group)
         {
             var worldSystems = system.World.Systems;
             foreach (ComponentSystemBase worldSystem in worldSystems)
             {
-                if (worldSystem is ComponentSystemGroup worldGroup)
+                if (worldSystem is not ComponentSystemGroup worldGroup)
                 {
-                    Debug.Assert(worldGroup.Systems is List<ComponentSystemBase>);
-                    if ((worldGroup.Systems as List<ComponentSystemBase>).Contains(system))
-                    {
-                        group = worldGroup;
-                        return true;
-                    }
+                    continue;
                 }
+                
+                NativeList<SystemHandle> worldGroupSystems = worldGroup.GetAllSystems(Allocator.Temp);
+                if (worldGroupSystems.All(systemHandle => systemHandle != system.SystemHandle))
+                {
+                    continue;
+                }
+                group = worldGroup;
+                return true;
             }
 
             group = null;

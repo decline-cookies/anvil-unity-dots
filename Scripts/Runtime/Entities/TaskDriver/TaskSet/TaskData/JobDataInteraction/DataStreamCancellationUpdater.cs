@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Job-Safe struct to allow for cancelling an instance of data
     /// </summary>
     /// <typeparam name="TInstance">The <see cref="IEntityKeyedTask"/> to cancel</typeparam>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct DataStreamCancellationUpdater<TInstance> where TInstance : unmanaged, IEntityKeyedTask
     {
         private const int UNSET_LANE_INDEX = -1;

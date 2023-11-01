@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct DataTargetID : IEquatable<DataTargetID>,
                                             IToFixedString<FixedString32Bytes>
@@ -57,7 +57,7 @@ namespace Anvil.Unity.DOTS.Entities
             return m_Value.ToString();
         }
         
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public FixedString32Bytes ToFixedString()
         {
             return $"{m_Value}";

@@ -10,9 +10,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// To be used in jobs that only allows for writing of this data.
     /// </summary>
     /// <typeparam name="TData">They type of <see cref="IEntityPersistentDataInstance"/> to write</typeparam>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct EntityPersistentDataWriter<TData>
-        where TData : struct, IEntityPersistentDataInstance
+        where TData : unmanaged, IEntityPersistentDataInstance
     {
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
         private UnsafeParallelHashMap<Entity, TData> m_Lookup;

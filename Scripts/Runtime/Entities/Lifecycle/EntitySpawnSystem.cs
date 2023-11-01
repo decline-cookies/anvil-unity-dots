@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             Type type = GetType();
             Type commandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
-            m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(commandBufferSystemType);
+            m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystemManaged(commandBufferSystemType);
 
             CreateArchetypeLookup();
         }
@@ -106,9 +106,9 @@ namespace Anvil.Unity.DOTS.Entities
                     continue;
                 }
 
-                if (definitionType.GetCustomAttribute<BurstCompatibleAttribute>() == null)
+                if (definitionType.GetCustomAttribute<GenerateTestsForBurstCompatibilityAttribute>() == null)
                 {
-                    throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should have the {nameof(BurstCompatibleAttribute)} set but it does not.");
+                    throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should have the {nameof(GenerateTestsForBurstCompatibilityAttribute)} set but it does not.");
                 }
 
                 if (definitionType.GetCustomAttribute<IsReadOnlyAttribute>() == null)

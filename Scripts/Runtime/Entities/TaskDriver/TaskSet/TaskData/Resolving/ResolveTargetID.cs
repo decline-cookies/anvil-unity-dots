@@ -4,7 +4,7 @@ using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     internal readonly struct ResolveTargetID : IEquatable<ResolveTargetID>
     {
         public static bool operator ==(ResolveTargetID lhs, ResolveTargetID rhs)
@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"TypeID: {TypeID} - DataOwnerID: {DataOwnerID}";
         }
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public FixedString64Bytes ToFixedString()
         {
             return new FixedString64Bytes(ToString());

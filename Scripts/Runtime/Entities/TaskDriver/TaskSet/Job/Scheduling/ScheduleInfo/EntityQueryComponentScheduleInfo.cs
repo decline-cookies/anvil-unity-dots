@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <typeparam name="T">The type of <see cref="IComponentData"/> data</typeparam>
     //TODO: #82 - See if this can be consolidated.
     public class EntityQueryComponentScheduleInfo<T> : AbstractScheduleInfo
-        where T : struct, IComponentData
+        where T : unmanaged, IComponentData
     {
         private readonly EntityQueryComponentJobData<T> m_JobData;
         private readonly EntityQueryComponentNativeArray<T> m_EntityQueryComponentNativeArray;

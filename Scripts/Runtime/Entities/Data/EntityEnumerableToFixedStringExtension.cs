@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this UnsafeParallelHashSet<Entity> collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<UnsafeParallelHashSet<Entity>, UnsafeParallelHashSet<EntityWrapper>>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
@@ -49,7 +49,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeParallelHashSet<Entity> collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeParallelHashSet<Entity>, NativeParallelHashSet<EntityWrapper>>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
@@ -67,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <inheritdoc cref="EnumerableToFixedStringExtension.ToFixedString{TCollection, TElement, TElementString, TOutputString}"/>
         /// </returns>
         public static TOutputString ToFixedString<TOutputString>(ref this UnsafeList<Entity> collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<UnsafeList<Entity>, UnsafeList<EntityWrapper>>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
@@ -86,7 +86,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeList<Entity> collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeList<Entity>, NativeList<EntityWrapper>>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
@@ -105,7 +105,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this UnsafeArray<Entity> collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<UnsafeArray<Entity>, UnsafeArray<EntityWrapper>>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
@@ -124,7 +124,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeArray<Entity> collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeArray<Entity>, NativeArray<EntityWrapper>>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();
@@ -143,7 +143,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TOutputString>(ref this NativeArray<Entity>.ReadOnly collection)
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return UnsafeUtility.As<NativeArray<Entity>.ReadOnly, NativeArray<EntityWrapper>.ReadOnly>(ref collection)
                 .ToFixedString<EntityWrapper, FixedString64Bytes, TOutputString>();

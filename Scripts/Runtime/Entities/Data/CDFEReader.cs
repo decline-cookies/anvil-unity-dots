@@ -8,10 +8,10 @@ namespace Anvil.Unity.DOTS.Entities
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to read</typeparam>
-    [BurstCompatible]
-    public readonly struct CDFEReader<T> where T : struct, IComponentData
+    [GenerateTestsForBurstCompatibility]
+    public readonly struct CDFEReader<T> where T : unmanaged, IComponentData
     {
-        [ReadOnly] private readonly ComponentDataFromEntity<T> m_CDFE;
+        [ReadOnly] private readonly ComponentLookup<T> m_CDFE;
 
         /// <summary>
         /// Gets the <typeparamref name="T"/> that corresponds to the passed <see cref="Entity"/>
@@ -25,7 +25,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public CDFEReader(SystemBase system)
         {
-            m_CDFE = system.GetComponentDataFromEntity<T>(true);
+            m_CDFE = system.GetComponentLookup<T>(true);
         }
 
         /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>

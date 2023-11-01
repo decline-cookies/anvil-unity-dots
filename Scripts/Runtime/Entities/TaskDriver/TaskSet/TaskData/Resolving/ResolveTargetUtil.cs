@@ -8,13 +8,13 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     internal static class ResolveTargetUtil
     {
         // ReSharper disable once ClassNeverInstantiated.Local
         private class ResolveTargetSharedStaticContext { }
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         // ReSharper disable once ClassNeverInstantiated.Local
         private class ResolveTargetID<TResolveTargetType>
             where TResolveTargetType : unmanaged, IEntityKeyedTask
@@ -59,7 +59,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return id;
         }
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public static uint GetResolveTargetID<TResolveTargetType>()
             where TResolveTargetType : unmanaged, IEntityKeyedTask
         {

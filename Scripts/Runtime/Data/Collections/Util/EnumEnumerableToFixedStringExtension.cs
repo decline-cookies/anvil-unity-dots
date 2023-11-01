@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this UnsafeList<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<UnsafeList<TElement>, UnsafeList<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -55,7 +55,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this NativeList<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<NativeList<TElement>, NativeList<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -77,7 +77,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </returns>
         public static TOutputString ToFixedString<TElement, TOutputString>(in this UnsafeArray<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<UnsafeArray<TElement>, UnsafeArray<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -99,7 +99,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </returns>
         public static TOutputString ToFixedString<TElement, TOutputString>(in this NativeArray<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<NativeArray<TElement>, NativeArray<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -121,7 +121,7 @@ namespace Anvil.Unity.DOTS.Data
         /// </returns>
         public static TOutputString ToFixedString<TElement, TOutputString>(in this NativeArray<TElement>.ReadOnly collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<NativeArray<TElement>.ReadOnly, NativeArray<EnumWrapper<TElement>>.ReadOnly>(ref collectionAsRef)
@@ -144,7 +144,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this FixedList32Bytes<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<FixedList32Bytes<TElement>, FixedList32Bytes<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -167,7 +167,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this FixedList64Bytes<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<FixedList64Bytes<TElement>, FixedList64Bytes<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -190,7 +190,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this FixedList128Bytes<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<FixedList128Bytes<TElement>, FixedList128Bytes<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -213,7 +213,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this FixedList512Bytes<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<FixedList512Bytes<TElement>, FixedList512Bytes<EnumWrapper<TElement>>>(ref collectionAsRef)
@@ -236,7 +236,7 @@ namespace Anvil.Unity.DOTS.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TOutputString ToFixedString<TElement, TOutputString>(in this FixedList4096Bytes<TElement> collection)
             where TElement : unmanaged, Enum
-            where TOutputString : struct, INativeList<byte>, IUTF8Bytes
+            where TOutputString : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var collectionAsRef = UnsafeUtilityExtensions.AsRef(in collection);
             return UnsafeUtility.As<FixedList4096Bytes<TElement>, FixedList4096Bytes<EnumWrapper<TElement>>>(ref collectionAsRef)

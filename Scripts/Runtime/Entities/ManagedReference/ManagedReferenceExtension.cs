@@ -89,7 +89,7 @@ namespace Anvil.Unity.DOTS.Entities
         public static void RequireManagedSingletonForUpdate<T>(this ComponentSystemBase system)
             where T : class, IComponentReferencable
         {
-            system.RequireSingletonForUpdate<ManagedReference<T>>();
+            system.RequireForUpdate<ManagedReference<T>>();
         }
 
         /// <summary>

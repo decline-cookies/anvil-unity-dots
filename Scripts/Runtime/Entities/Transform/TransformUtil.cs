@@ -10,6 +10,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities.Transform
@@ -23,32 +24,6 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         private static BurstableLogger<FixedString32Bytes> Logger
         {
             get => new BurstableLogger<FixedString32Bytes>(string.Empty);
-        }
-
-        /// <summary>
-        /// Adds any missing transform components to an <see cref="Entity"/> to express basic translation, rotation, and
-        /// scale. If a standard component isn't present it is added with an identity value.
-        /// </summary>
-        /// <param name="entity">The <see cref="Entity"/> to fill components on.</param>
-        /// <param name="entityManager">The <see cref="EntityManager"/> for the <see cref="Entity"/></param>
-        public static void AddMissingStandardComponents(Entity entity, EntityManager entityManager)
-        {
-            Debug.Assert(entityManager.Exists(entity));
-
-            if (!entityManager.HasComponent<Translation>(entity))
-            {
-                entityManager.AddComponentData(entity, new Translation() { Value = float3.zero });
-            }
-
-            if (!entityManager.HasComponent<Scale>(entity) && !entityManager.HasComponent<NonUniformScale>(entity))
-            {
-                entityManager.AddComponentData(entity, new Scale() { Value = 1 });
-            }
-
-            if (!entityManager.HasComponent<Rotation>(entity) && !entityManager.HasComponent<CompositeRotation>(entity))
-            {
-                entityManager.AddComponentData(entity, new Rotation() { Value = quaternion.identity });
-            }
         }
 
         /// <summary>

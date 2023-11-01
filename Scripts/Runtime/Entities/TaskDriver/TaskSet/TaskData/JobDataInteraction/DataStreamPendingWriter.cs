@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// To be used in jobs that only allows for writing of this data.
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityKeyedTask"/> to write</typeparam>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct DataStreamPendingWriter<TInstance> where TInstance : unmanaged, IEntityKeyedTask
     {
         private const int UNSET_LANE_INDEX = -1;

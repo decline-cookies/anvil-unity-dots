@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// NOTE: Use <see cref="MoveEntitiesAndMigratableDataTo"/> on this System instead of directly interfacing with
     /// <see cref="EntityManager.MoveEntitiesFrom"/>
     /// </summary>
-    public class EntityWorldMigrationSystem : AbstractDataSystem
+    public partial class EntityWorldMigrationSystem : AbstractDataSystem
     {
         private readonly HashSet<IEntityWorldMigrationObserver> m_MigrationObservers;
 

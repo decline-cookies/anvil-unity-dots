@@ -5,7 +5,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class CDFEAccessWrapper<T> : AbstractAccessWrapper
-        where T : struct, IComponentData
+        where T : unmanaged, IComponentData
     {
         private readonly SystemBase m_System;
         private readonly AccessController m_AccessController;
@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public CDFEAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
         {
             m_System = system;
-            m_AccessController = m_System.World.GetOrCreateSystem<TaskDriverManagementSystem>().GetOrCreateCDFEAccessController<T>();
+            m_AccessController = m_System.World.GetOrCreateSystemManaged<TaskDriverManagementSystem>().GetOrCreateCDFEAccessController<T>();
         }
 
         protected override void DisposeSelf()

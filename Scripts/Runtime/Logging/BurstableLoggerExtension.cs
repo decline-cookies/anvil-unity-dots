@@ -35,7 +35,7 @@ namespace Anvil.Unity.DOTS.Logging
         /// </param>
         /// <returns>A <see cref="BurstableLogger{PrefixStringType}" /> instance.</returns>
         public static BurstableLogger<TPrefixStringType> AsBurstable<TPrefixStringType>(this in Logger logger, string appendToMessagePrefix = null)
-            where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
+            where TPrefixStringType : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             return new BurstableLogger<TPrefixStringType>(logger, appendToMessagePrefix);
         }

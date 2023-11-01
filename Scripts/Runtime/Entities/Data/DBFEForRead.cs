@@ -9,14 +9,14 @@ namespace Anvil.Unity.DOTS.Entities
     /// To be used in jobs that allow for reading a specific instance in the DBFE
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IBufferElementData"/> to update.</typeparam>
-    [BurstCompatible]
-    public readonly struct DBFEForRead<T> where T : struct, IBufferElementData
+    [GenerateTestsForBurstCompatibility]
+    public readonly struct DBFEForRead<T> where T : unmanaged, IBufferElementData
     {
-        [ReadOnly] private readonly BufferFromEntity<T> m_DBFE;
+        [ReadOnly] private readonly BufferLookup<T> m_DBFE;
 
         public DBFEForRead(SystemBase system)
         {
-            m_DBFE = system.GetBufferFromEntity<T>(true);
+            m_DBFE = system.GetBufferLookup<T>(true);
         }
 
         /// <summary>

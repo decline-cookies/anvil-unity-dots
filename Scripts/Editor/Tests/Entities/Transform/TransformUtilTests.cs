@@ -49,63 +49,6 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
             return RectUtil.AreEquivalent(a, b) ? 0 : 1;
         }
 
-        // ----- AddMissingStandardComponents ---- //
-        [Test]
-        public static void AddMissingStandardComponentsTest_NoComponents()
-        {
-            Assert.That(nameof(AddMissingStandardComponentsTest_NoComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
-
-            using World world = new World(nameof(TransformUtilTests) + "World");
-            EntityManager entityManager = world.EntityManager;
-            Entity entity = entityManager.CreateEntity();
-
-            TransformUtil.AddMissingStandardComponents(entity, entityManager);
-
-            Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(float3.zero));
-            Assert.That(entityManager.GetComponentData<Rotation>(entity).Value, Is.EqualTo(quaternion.identity));
-            Assert.That(entityManager.GetComponentData<Scale>(entity).Value, Is.EqualTo(1f));
-        }
-
-        [Test]
-        public static void AddMissingStandardComponentsTest_AllComponents()
-        {
-            Assert.That(nameof(AddMissingStandardComponentsTest_AllComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
-
-            using World world = new World(nameof(TransformUtilTests) + "World");
-            EntityManager entityManager = world.EntityManager;
-            Entity entity = entityManager.CreateEntity(typeof(Translation), typeof(Rotation), typeof(Scale));
-
-            entityManager.SetComponentData(entity, new Translation() { Value = new float3(5f) });
-            entityManager.SetComponentData(entity, new Rotation() { Value = quaternion.Euler(45f, 45f, 0f) });
-            entityManager.SetComponentData(entity, new Scale() { Value = 5f });
-            TransformUtil.AddMissingStandardComponents(entity, entityManager);
-
-            Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(new float3(5f)));
-            Assert.That(entityManager.GetComponentData<Rotation>(entity).Value, Is.EqualTo(quaternion.Euler(45f, 45f, 0f)));
-            Assert.That(entityManager.GetComponentData<Scale>(entity).Value, Is.EqualTo(5f));
-        }
-
-        [Test]
-        public static void AddMissingStandardComponentsTest_AllAltComponents()
-        {
-            Assert.That(nameof(AddMissingStandardComponentsTest_AllAltComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
-
-            using World world = new World(nameof(TransformUtilTests) + "World");
-            EntityManager entityManager = world.EntityManager;
-            Entity entity = entityManager.CreateEntity(typeof(Translation), typeof(CompositeRotation), typeof(NonUniformScale));
-
-            entityManager.SetComponentData(entity, new Translation() { Value = new float3(5f) });
-            entityManager.SetComponentData(entity, new CompositeRotation() { Value = float4x4.RotateX(45f) });
-            entityManager.SetComponentData(entity, new NonUniformScale() { Value = new float3(1f, 2f, 3f) });
-            TransformUtil.AddMissingStandardComponents(entity, entityManager);
-
-            Assert.That(entityManager.GetComponentData<Translation>(entity).Value, Is.EqualTo(new float3(5f)));
-            Assert.That(entityManager.GetComponentData<CompositeRotation>(entity).Value, Is.EqualTo(float4x4.RotateX(45f)));
-            Assert.That(entityManager.GetComponentData<NonUniformScale>(entity).Value, Is.EqualTo(new float3(1f, 2f, 3f)));
-            Assert.That(entityManager.HasComponent<Rotation>(entity), Is.False);
-            Assert.That(entityManager.HasComponent<Scale>(entity), Is.False);
-        }
-
         // ----- ConvertWorldToLocalPoint ----- //
         [Test]
         public static void ConvertWorldToLocalPointTest_Identity()

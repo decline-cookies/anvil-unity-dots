@@ -9,12 +9,12 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <typeparam name="T">The element type of the buffer</typeparam>
     /// <remarks>Allows developers to define jobs with fewer parameters that clearly communicate intent.</remarks>
-    public struct BufferFromSingleEntity<T> where T : struct, IBufferElementData
+    public struct BufferFromSingleEntity<T> where T : unmanaged, IBufferElementData
     {
         //TODO: #115 - Implement a safety check to make sure there isn't another lookup/entity combination in flight.
         // Until the above is implemented leave it to consuming jobs to add the attributes.
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
-        private BufferFromEntity<T> m_Lookup;
+        private BufferLookup<T> m_Lookup;
 
         private readonly Entity m_Entity;
 
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// </summary>
         /// <param name="lookup">The <see cref="BufferFromEntity{T}" /> lookup to read the buffer reference from.</param>
         /// <param name="entity">The <see cref="Entity" /> that the <see cref="DynamicBuffer{T}" /> is on.</param>
-        public BufferFromSingleEntity(BufferFromEntity<T> lookup, Entity entity)
+        public BufferFromSingleEntity(BufferLookup<T> lookup, Entity entity)
         {
             m_Lookup = lookup;
             m_Entity = entity;

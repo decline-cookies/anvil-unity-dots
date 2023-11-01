@@ -11,7 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Represents a read/write reference to an <see cref="IThreadPersistentData{TData}"/>
     /// </summary>
     /// <typeparam name="TData">The type of <see cref="IThreadPersistentDataInstance"/> to read/write</typeparam>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public unsafe struct ThreadPersistentDataAccessor<TData> 
         where TData : unmanaged, IThreadPersistentDataInstance
     {

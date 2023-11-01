@@ -69,15 +69,13 @@ namespace Anvil.Unity.DOTS.Data
     /// <typeparam name="T">The type to contain in the <see cref="DeferredNativeArray{T}"/></typeparam>
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
-    [BurstCompatible]
     public struct DeferredNativeArray<T> : INativeDisposable
         where T : unmanaged
     {
         //*************************************************************************************************************
         // INTERNAL STRUCTS
         //*************************************************************************************************************
-
-        [BurstCompatible]
+        
         [StructLayout(LayoutKind.Sequential)]
         private unsafe struct BufferInfo
         {

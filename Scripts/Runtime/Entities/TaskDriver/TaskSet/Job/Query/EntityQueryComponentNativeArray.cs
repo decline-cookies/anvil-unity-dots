@@ -5,7 +5,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class EntityQueryComponentNativeArray<T> : AbstractEntityQueryNativeArray<T>
-        where T : struct, IComponentData
+        where T : unmanaged, IComponentData
     {
         public sealed override int Length
         {

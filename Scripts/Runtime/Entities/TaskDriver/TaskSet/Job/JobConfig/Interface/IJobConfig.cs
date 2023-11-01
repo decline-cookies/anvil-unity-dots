@@ -174,7 +174,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </remarks>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
-            where T : struct, IComponentData;
+            where T : unmanaged, IComponentData;
 
 
         //*************************************************************************************************************
@@ -211,7 +211,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireCDFEForRead<T>()
-            where T : struct, IComponentData;
+            where T : unmanaged, IComponentData;
 
         /// <summary>
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in a system scoped shared-write context.
@@ -220,7 +220,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireCDFEForSystemSharedWrite<T>()
-            where T : struct, IComponentData;
+            where T : unmanaged, IComponentData;
 
         /// <summary>
         /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in an exclusive write context.
@@ -228,7 +228,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireCDFEForExclusiveWrite<T>()
-            where T : struct, IComponentData;
+            where T : unmanaged, IComponentData;
 
 
         //*************************************************************************************************************
@@ -241,7 +241,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireDBFEForRead<T>()
-            where T : struct, IBufferElementData;
+            where T : unmanaged, IBufferElementData;
 
         /// <summary>
         /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in a system scoped shared-write context.
@@ -250,7 +250,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireDBFEForSystemSharedWrite<T>()
-            where T : struct, IBufferElementData;
+            where T : unmanaged, IBufferElementData;
 
         /// <summary>
         /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in an exclusive-write context.
@@ -258,7 +258,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
         public IJobConfig RequireDBFEForExclusiveWrite<T>()
-            where T : struct, IBufferElementData;
+            where T : unmanaged, IBufferElementData;
 
 
         //*************************************************************************************************************

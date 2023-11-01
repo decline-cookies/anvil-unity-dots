@@ -20,7 +20,6 @@ namespace Anvil.Unity.DOTS.Entities
     /// Entities that are in a "CleanUp" state can be treated as "Departures" before they are actually destroyed by
     /// Unity. This is the default behaviour.
     /// </remarks>
-    [AlwaysUpdateSystem]
     public abstract partial class AbstractEntityLifecycleStatusSystem : AbstractAnvilSystemBase
     {
         private readonly List<EntityLifecycleStatus> m_EntityLifecycleStatus;

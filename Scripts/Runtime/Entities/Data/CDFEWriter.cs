@@ -17,13 +17,13 @@ namespace Anvil.Unity.DOTS.Entities
     /// across the jobs.
     /// </remarks>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to update.</typeparam>
-    [BurstCompatible]
-    public struct CDFEWriter<T> where T : struct, IComponentData
+    [GenerateTestsForBurstCompatibility]
+    public struct CDFEWriter<T> where T : unmanaged, IComponentData
     {
         // TODO: #197 - Improve Safety. Currently unable to detect parallel writing from multiple jobs.
         // Required to allow JobPart patterns
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction]
-        private ComponentDataFromEntity<T> m_CDFE;
+        private ComponentLookup<T> m_CDFE;
 
         /// <summary>
         /// Gets/Sets the <typeparamref name="T"/> that corresponds to the passed <see cref="Entity"/>
@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         public CDFEWriter(SystemBase system)
         {
-            m_CDFE = system.GetComponentDataFromEntity<T>(false);
+            m_CDFE = system.GetComponentLookup<T>(false);
         }
 
         /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>

@@ -18,17 +18,17 @@ namespace Anvil.Unity.DOTS.Entities
     /// representing different <see cref="AbstractTaskDriver"/>s and Unity's safety system gets upset if you straddle
     /// across the jobs.
     /// </remarks>
-    [BurstCompatible]
-    public struct DBFEForExclusiveWrite<T> where T : struct, IBufferElementData
+    [GenerateTestsForBurstCompatibility]
+    public struct DBFEForExclusiveWrite<T> where T : unmanaged, IBufferElementData
     {
         // TODO: #197 - Improve Safety. Currently unable to detect parallel writing from multiple jobs.
         // Required to allow JobPart patterns
         [NativeDisableContainerSafetyRestriction] [NativeDisableParallelForRestriction] [WriteOnly]
-        private BufferFromEntity<T> m_DBFE;
+        private BufferLookup<T> m_DBFE;
 
         public DBFEForExclusiveWrite(SystemBase system)
         {
-            m_DBFE = system.GetBufferFromEntity<T>(false);
+            m_DBFE = system.GetBufferLookup<T>(false);
         }
 
         /// <summary>

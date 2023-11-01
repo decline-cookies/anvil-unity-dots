@@ -12,7 +12,6 @@ namespace Anvil.Unity.DOTS.Data
     /// An <see cref="IDProvider"/> that is compatible with Burst and will get the next ID atomically so it is
     /// safe to use in threaded context.
     /// </summary>
-    [BurstCompatible]
     public readonly unsafe struct BurstableAtomicIDProvider
     {
         public const uint DEFAULT_SUPPLY_WARNING_THRESHOLD = uint.MaxValue - 1_000_000;

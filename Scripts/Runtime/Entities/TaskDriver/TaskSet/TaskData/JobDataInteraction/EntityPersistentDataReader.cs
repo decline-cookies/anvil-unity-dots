@@ -11,9 +11,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <typeparam name="TData">They type of <see cref="IEntityPersistentDataInstance"/> to read</typeparam>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public readonly struct EntityPersistentDataReader<TData>
-        where TData : struct, IEntityPersistentDataInstance
+        where TData : unmanaged, IEntityPersistentDataInstance
     {
         [ReadOnly] private readonly UnsafeParallelHashMap<Entity, TData> m_Lookup;
 

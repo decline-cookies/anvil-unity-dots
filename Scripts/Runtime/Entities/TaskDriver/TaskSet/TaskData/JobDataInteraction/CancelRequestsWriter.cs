@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <summary>
     /// Job-Safe struct to allow for requesting the cancellation by <see cref="Entity"/>
     /// </summary>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct CancelRequestsWriter
     {
         private const int UNSET_LANE_INDEX = -1;

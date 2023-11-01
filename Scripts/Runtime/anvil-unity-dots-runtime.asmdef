@@ -7,7 +7,6 @@
         "Unity.Burst",
         "Unity.Collections",
         "Unity.Entities",
-        "Unity.Jobs",
         "Unity.Mathematics",
         "Unity.Transforms",
         "Unity.Profiling.Core"

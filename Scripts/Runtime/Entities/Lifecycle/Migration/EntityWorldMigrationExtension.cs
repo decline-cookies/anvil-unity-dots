@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="entitiesToMigrateQuery">The <see cref="EntityQuery"/> to select the Entities to migrate.</param>
         public static void MoveEntitiesAndMigratableDataTo(this EntityManager srcEntityManager, World destinationWorld, EntityQuery entitiesToMigrateQuery)
         {
-            EntityWorldMigrationSystem entityWorldMigrationSystem = srcEntityManager.World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            EntityWorldMigrationSystem entityWorldMigrationSystem = srcEntityManager.World.GetOrCreateSystemManaged<EntityWorldMigrationSystem>();
             entityWorldMigrationSystem.MoveEntitiesAndMigratableDataTo(destinationWorld, entitiesToMigrateQuery);
         }
 
@@ -46,7 +46,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// true if this entity was moved to the new world and remaps to a new entity.
         /// false if this entity did not move and stayed in this world.
         /// </returns>
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryGetRemappedEntity(
             this Entity currentEntity,
@@ -68,7 +68,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <exception cref="InvalidOperationException">
         /// Occurs if this type was not registered via <see cref="EntityWorldMigrationSystem.RegisterForEntityPatching{T}"/>
         /// </exception>
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public static unsafe void PatchEntityReferences<T>(this ref T instance, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             where T : struct
         {

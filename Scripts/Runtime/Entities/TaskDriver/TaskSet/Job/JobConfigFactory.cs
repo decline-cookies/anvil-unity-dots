@@ -98,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityQuery entityQuery,
             JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray = new EntityQueryComponentNativeArray<T>(entityQuery);
 

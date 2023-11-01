@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <see cref="DynamicBuffer{T}" /> and <see cref="NativeArray{T}" /> must have the same length.
     /// </remarks>
     [BurstCompile]
-    public struct CopyBufferToNativeArray<T> : IJob where T : struct, IBufferElementData
+    public struct CopyBufferToNativeArray<T> : IJob where T : unmanaged, IBufferElementData
     {
         /// <summary>
         /// The type handle for the <see cref="DynamicBuffer{T}" /> to copy from.

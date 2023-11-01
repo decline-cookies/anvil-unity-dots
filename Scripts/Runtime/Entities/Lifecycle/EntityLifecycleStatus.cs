@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -227,7 +228,7 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         [BurstCompile]
-        private struct UpdateArrivedJob : IJobEntityBatch
+        private struct UpdateArrivedJob : IJobChunk
         {
             [ReadOnly] private readonly EntityTypeHandle m_EntityTypeHandle;
             private NativeParallelHashSet<Entity> m_Lookup;
@@ -243,9 +244,9 @@ namespace Anvil.Unity.DOTS.Entities
                 m_ArrivedEntities = arrivedEntities;
             }
 
-            public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                NativeArray<Entity> entities = batchInChunk.GetNativeArray(m_EntityTypeHandle);
+                NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityTypeHandle);
 
                 for (int i = 0; i < entities.Length; ++i)
                 {

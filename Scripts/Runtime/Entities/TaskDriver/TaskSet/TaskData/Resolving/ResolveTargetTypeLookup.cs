@@ -6,7 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     internal struct ResolveTargetTypeLookup : IDisposable
     {
         private UnsafeParallelHashMap<ResolveTargetID, ResolveTargetWriteData> m_ResolveTargetWriteDataByID;

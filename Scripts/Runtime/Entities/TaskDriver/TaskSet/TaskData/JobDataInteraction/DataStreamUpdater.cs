@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Job-Safe struct to allow for updating an instance of data
     /// </summary>
     /// <typeparam name="TInstance">The <see cref="IEntityKeyedTask"/> to update.</typeparam>
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct DataStreamUpdater<TInstance> where TInstance : unmanaged, IEntityKeyedTask
     {
         private const int UNSET_LANE_INDEX = -1;

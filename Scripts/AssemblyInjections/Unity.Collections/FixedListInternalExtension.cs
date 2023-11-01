@@ -12,7 +12,6 @@ namespace Anvil.Unity.Collections
     /// A collection of extension methods for <see cref="FixedList32Bytes{T}"/> (and friends) that require internal
     /// access to function.
     /// </summary>
-    [BurstCompatible]
     public static unsafe class FixedListInternalExtension
     {
         /// <summary>
@@ -153,7 +152,6 @@ namespace Anvil.Unity.Collections
         /// /// <remarks>
         /// This is a copy of <see cref="FixedList32Bytes{T}.Contains{T,U}"/> that supports <see cref="Enum"/> elements
         /// </remarks>
-        [BurstCompatible(GenericTypeArguments = new[] { typeof(int), typeof(int) })]
         public static bool Contains<TEnum, TUnderlying>(this in FixedList32Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
@@ -174,7 +172,6 @@ namespace Anvil.Unity.Collections
         /// /// <remarks>
         /// This is a copy of <see cref="FixedList32Bytes{T}.Contains{T,U}"/> that supports <see cref="Enum"/> elements
         /// </remarks>
-        [BurstCompatible(GenericTypeArguments = new[] { typeof(int), typeof(int) })]
         public static bool Contains<TEnum, TUnderlying>(this in FixedList64Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
@@ -195,7 +192,6 @@ namespace Anvil.Unity.Collections
         /// /// <remarks>
         /// This is a copy of <see cref="FixedList32Bytes{T}.Contains{T,U}"/> that supports <see cref="Enum"/> elements
         /// </remarks>
-        [BurstCompatible(GenericTypeArguments = new[] { typeof(int), typeof(int) })]
         public static bool Contains<TEnum, TUnderlying>(this in FixedList128Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
@@ -216,7 +212,6 @@ namespace Anvil.Unity.Collections
         /// /// <remarks>
         /// This is a copy of <see cref="FixedList32Bytes{T}.Contains{T,U}"/> that supports <see cref="Enum"/> elements
         /// </remarks>
-        [BurstCompatible(GenericTypeArguments = new[] { typeof(int), typeof(int) })]
         public static bool Contains<TEnum, TUnderlying>(this in FixedList512Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>
@@ -237,7 +232,6 @@ namespace Anvil.Unity.Collections
         /// /// <remarks>
         /// This is a copy of <see cref="FixedList32Bytes{T}.Contains{T,U}"/> that supports <see cref="Enum"/> elements
         /// </remarks>
-        [BurstCompatible(GenericTypeArguments = new[] { typeof(int), typeof(int) })]
         public static bool Contains<TEnum, TUnderlying>(this in FixedList4096Bytes<TEnum> list, TUnderlying value)
             where TEnum : unmanaged, Enum
             where TUnderlying : unmanaged, IEquatable<TUnderlying>

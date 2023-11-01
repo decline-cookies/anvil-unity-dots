@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             IsEnabled = true;
             TaskSetOwner = taskSetOwner;
-            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystemManaged<PersistentDataSystem>();
 
             m_AccessWrappers = new Dictionary<JobConfigDataID, AbstractAccessWrapper>();
             m_SchedulingAccessWrappers = new List<AbstractAccessWrapper>();
@@ -264,7 +264,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         /// <inheritdoc cref="IJobConfig.RequireIComponentDataNativeArrayFromQueryForRead"/>
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             return RequireIComponentDataNativeArrayFromQueryForRead(new EntityQueryComponentNativeArray<T>(entityQuery));
         }
@@ -276,7 +276,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         protected IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             AddAccessWrapper(new EntityQueryComponentAccessWrapper<T>(entityQueryNativeArray, Usage.Default));
             return this;
@@ -313,21 +313,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE
         /// <inheritdoc cref="IJobConfig.RequireCDFEForRead{T}"/>
-        public IJobConfig RequireCDFEForRead<T>() where T : struct, IComponentData
+        public IJobConfig RequireCDFEForRead<T>() where T : unmanaged, IComponentData
         {
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedRead, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
         }
 
         /// <inheritdoc cref="IJobConfig.RequireCDFEForSystemSharedWrite{T}"/>
-        public IJobConfig RequireCDFEForSystemSharedWrite<T>() where T : struct, IComponentData
+        public IJobConfig RequireCDFEForSystemSharedWrite<T>() where T : unmanaged, IComponentData
         {
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.SharedWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
         }
 
         /// <inheritdoc cref="IJobConfig.RequireCDFEForExclusiveWrite{T}"/>
-        public IJobConfig RequireCDFEForExclusiveWrite<T>() where T : struct, IComponentData
+        public IJobConfig RequireCDFEForExclusiveWrite<T>() where T : unmanaged, IComponentData
         {
             AddAccessWrapper(new CDFEAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
@@ -339,7 +339,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         /// <inheritdoc cref="IJobConfig.RequireDBFEForRead{T}"/>
-        public IJobConfig RequireDBFEForRead<T>() where T : struct, IBufferElementData
+        public IJobConfig RequireDBFEForRead<T>() where T : unmanaged, IBufferElementData
         {
             AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedRead, Usage.Default, TaskSetOwner.TaskDriverSystem));
 
@@ -347,14 +347,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <inheritdoc cref="IJobConfig.RequireDBFEForSystemSharedWrite{T}"/>
-        public IJobConfig RequireDBFEForSystemSharedWrite<T>() where T : struct, IBufferElementData
+        public IJobConfig RequireDBFEForSystemSharedWrite<T>() where T : unmanaged, IBufferElementData
         {
             AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.SharedWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
         }
 
         /// <inheritdoc cref="IJobConfig.RequireDBFEForExclusiveWrite{T}"/>
-        public IJobConfig RequireDBFEForExclusiveWrite<T>() where T : struct, IBufferElementData
+        public IJobConfig RequireDBFEForExclusiveWrite<T>() where T : unmanaged, IBufferElementData
         {
             AddAccessWrapper(new DynamicBufferAccessWrapper<T>(AccessType.ExclusiveWrite, Usage.Default, TaskSetOwner.TaskDriverSystem));
             return this;
@@ -584,7 +584,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>()
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             EntityQueryComponentAccessWrapper<T> entityQueryAccessWrapper
                 = GetAccessWrapper<EntityQueryComponentAccessWrapper<T>>(Usage.Default);
@@ -593,28 +593,28 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         internal void Fulfill<T>(out CDFEReader<T> instance)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Default);
             instance = cdfeAccessWrapper.CreateCDFEReader();
         }
 
         internal void Fulfill<T>(out CDFEWriter<T> instance)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             CDFEAccessWrapper<T> cdfeAccessWrapper = GetAccessWrapper<CDFEAccessWrapper<T>>(Usage.Default);
             instance = cdfeAccessWrapper.CreateCDFEUpdater();
         }
 
         internal void Fulfill<T>(out DBFEForRead<T> instance)
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
             instance = dynamicBufferAccessWrapper.CreateDynamicBufferReader();
         }
 
         internal void Fulfill<T>(out DBFEForExclusiveWrite<T> instance)
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             DynamicBufferAccessWrapper<T> dynamicBufferAccessWrapper = GetAccessWrapper<DynamicBufferAccessWrapper<T>>(Usage.Default);
             instance = dynamicBufferAccessWrapper.CreateDynamicBufferExclusiveWriter();

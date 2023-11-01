@@ -9,7 +9,7 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Maybe have this implement IEntityKeyedTask. https://github.com/decline-cookies/anvil-unity-dots/pull/157#discussion_r1093730973
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityKeyedTaskID : IEquatable<EntityKeyedTaskID>
     {
@@ -65,7 +65,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{Entity.ToString()} - DataOwnerID: {DataOwnerID}, DataTargetID: {DataTargetID}";
         }
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public FixedString64Bytes ToFixedString()
         {
             FixedString64Bytes fs = new FixedString64Bytes();

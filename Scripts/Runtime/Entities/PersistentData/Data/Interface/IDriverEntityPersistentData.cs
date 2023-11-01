@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IEntityPersistentDataInstance"/></typeparam>
     public interface IDriverEntityPersistentData<T> : IEntityPersistentData<T>
-        where T : struct, IEntityPersistentDataInstance
+        where T : unmanaged, IEntityPersistentDataInstance
     {
     }
 }
