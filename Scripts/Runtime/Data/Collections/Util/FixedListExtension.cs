@@ -1,5 +1,6 @@
 using Anvil.Unity.Collections;
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -291,6 +292,111 @@ namespace Anvil.Unity.DOTS.Data
             list.RemoveAtSwapBack(index);
 
             return true;
+        }
+
+        /// <summary>
+        /// Create a <see cref="FixedList32Bytes{T}"/> from an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="enumerable">The enumerable to add elements from.</param>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <returns>A <see cref="FixedList32Bytes{T}"/> instance populated with the elements of <see cref="enumerable"/>.</returns>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown when the contents of <see cref="enumerable"/> don't fit in the fixed list.
+        /// </exception>
+        public static FixedList32Bytes<T> ToFixedList32<T>(this IEnumerable<T> enumerable)
+            where T : unmanaged
+        {
+            FixedList32Bytes<T> fixedList = new FixedList32Bytes<T>();
+            foreach (T element in enumerable)
+            {
+                fixedList.Add(element);
+            }
+
+            return fixedList;
+        }
+
+        /// <summary>
+        /// Create a <see cref="FixedList64Bytes{T}"/> from an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="enumerable">The enumerable to add elements from.</param>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <returns>A <see cref="FixedList64Bytes{T}"/> instance populated with the elements of <see cref="enumerable"/>.</returns>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown when the contents of <see cref="enumerable"/> don't fit in the fixed list.
+        /// </exception>
+        public static FixedList64Bytes<T> ToFixedList64<T>(this IEnumerable<T> enumerable)
+            where T : unmanaged
+        {
+            FixedList64Bytes<T> fixedList = new FixedList64Bytes<T>();
+            foreach (T element in enumerable)
+            {
+                fixedList.Add(element);
+            }
+
+            return fixedList;
+        }
+
+        /// <summary>
+        /// Create a <see cref="FixedList128Bytes{T}"/> from an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="enumerable">The enumerable to add elements from.</param>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <returns>A <see cref="FixedList128Bytes{T}"/> instance populated with the elements of <see cref="enumerable"/>.</returns>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown when the contents of <see cref="enumerable"/> don't fit in the fixed list.
+        /// </exception>
+        public static FixedList128Bytes<T> ToFixedList128<T>(this IEnumerable<T> enumerable)
+            where T : unmanaged
+        {
+            FixedList128Bytes<T> fixedList = new FixedList128Bytes<T>();
+            foreach (T element in enumerable)
+            {
+                fixedList.Add(element);
+            }
+
+            return fixedList;
+        }
+
+        /// <summary>
+        /// Create a <see cref="FixedList512Bytes{T}"/> from an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="enumerable">The enumerable to add elements from.</param>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <returns>A <see cref="FixedList512Bytes{T}"/> instance populated with the elements of <see cref="enumerable"/>.</returns>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown when the contents of <see cref="enumerable"/> don't fit in the fixed list.
+        /// </exception>
+        public static FixedList512Bytes<T> ToFixedList512<T>(this IEnumerable<T> enumerable)
+            where T : unmanaged
+        {
+            FixedList512Bytes<T> fixedList = new FixedList512Bytes<T>();
+            foreach (T element in enumerable)
+            {
+                fixedList.Add(element);
+            }
+
+            return fixedList;
+        }
+
+        /// <summary>
+        /// Create a <see cref="FixedList4096Bytes{T}"/> from an <see cref="IEnumerable{T}"/>.
+        /// </summary>
+        /// <param name="enumerable">The enumerable to add elements from.</param>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <returns>A <see cref="FixedList4096Bytes{T}"/> instance populated with the elements of <see cref="enumerable"/>.</returns>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown when the contents of <see cref="enumerable"/> don't fit in the fixed list.
+        /// </exception>
+        public static FixedList4096Bytes<T> ToFixedList4096<T>(this IEnumerable<T> enumerable)
+            where T : unmanaged
+        {
+            FixedList4096Bytes<T> fixedList = new FixedList4096Bytes<T>();
+            foreach (T element in enumerable)
+            {
+                fixedList.Add(element);
+            }
+
+            return fixedList;
         }
     }
 }
