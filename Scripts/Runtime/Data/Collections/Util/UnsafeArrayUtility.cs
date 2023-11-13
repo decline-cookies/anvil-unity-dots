@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Data
 {
@@ -46,6 +47,22 @@ namespace Anvil.Unity.DOTS.Data
                 NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(nativeArray),
                 nativeArray.Length,
                 nativeArray.GetAllocator());
+        }
+
+        public static unsafe UnsafeArray<T> AsUnsafeArray<T>(this DynamicBuffer<T> buffer, bool isReadOnly = false) where T : unmanaged
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            void* ptr = isReadOnly ? buffer.GetUnsafeReadOnlyPtr() : buffer.GetUnsafePtr();
+#else
+            // Avoid the conditional when we're not enforcing safety. The way we get the pointer doesn't matter when
+            // safety is off.
+            void* ptr = buffer.GetUnsafePtr();
+#endif
+
+            return ConvertExistingDataToUnsafeArray<T>(
+                ptr,
+                buffer.Length,
+                Allocator.None);
         }
 
         public static unsafe void* GetUnsafePtr<T>(this UnsafeArray<T> nativeArray) where T : unmanaged
