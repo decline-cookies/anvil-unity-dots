@@ -46,5 +46,14 @@ namespace Anvil.Unity.DOTS.Entities
 
         /// <inheritdoc cref="ComponentDataFromEntity{T}.TryGetComponent"/>
         public bool TryGetComponent(Entity entity, out T component) => m_CDFE.TryGetComponent(entity, out component);
+
+        /// <summary>
+        /// Create a <see cref="CDFEReader{T}"/> version of the writer.
+        /// </summary>
+        /// <returns>A <see cref="CDFEReader{T}"/> of the same type.</returns>
+        public CDFEReader<T> AsReader()
+        {
+            return new CDFEReader<T>(m_CDFE);
+        }
     }
 }

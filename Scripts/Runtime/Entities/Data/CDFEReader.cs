@@ -28,6 +28,12 @@ namespace Anvil.Unity.DOTS.Entities
             m_CDFE = system.GetComponentDataFromEntity<T>(true);
         }
 
+        internal CDFEReader(ComponentDataFromEntity<T> rawCDFE)
+        {
+            m_CDFE = rawCDFE;
+        }
+
+
         /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>
         public bool HasComponent(Entity entity) => m_CDFE.HasComponent(entity);
 
