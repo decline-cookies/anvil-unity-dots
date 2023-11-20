@@ -65,6 +65,11 @@ namespace Anvil.Unity.DOTS.Data
                 Allocator.None);
         }
 
+        public static unsafe UnsafeArray<T> AsUnsafeArray<T>(this UnsafeList<T> list) where T : unmanaged
+        {
+            return ConvertExistingDataToUnsafeArray<T>(list.Ptr, list.Length, list.Allocator.ToAllocator);
+        }
+
         public static unsafe void* GetUnsafePtr<T>(this UnsafeArray<T> nativeArray) where T : unmanaged
         {
             return nativeArray.m_Buffer;
