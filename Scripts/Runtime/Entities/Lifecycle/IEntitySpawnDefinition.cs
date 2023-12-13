@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities
@@ -15,11 +16,11 @@ namespace Anvil.Unity.DOTS.Entities
     /// <example>
     /// public static readonly ComponentType[] COMPONENTS = new ComponentType[]
     /// {
-    ///     typeof(ActorTag), 
-    ///     typeof(ActorName), 
-    ///     typeof(EnvironmentMembershipTag), 
-    ///     typeof(ActorGridPosition), 
-    ///     typeof(ActorGridRotation), 
+    ///     typeof(ActorTag),
+    ///     typeof(ActorName),
+    ///     typeof(EnvironmentMembershipTag),
+    ///     typeof(ActorGridPosition),
+    ///     typeof(ActorGridRotation),
     ///     typeof(IsSelected)
     /// };
     ///
@@ -28,7 +29,7 @@ namespace Anvil.Unity.DOTS.Entities
     ///     get => COMPONENTS;
     /// }
     /// </example>
-    /// 
+    ///
     /// Inheritance and composition can be achieved by mixing different
     /// <see cref="IEntitySpawnDefinition"/>s COMPONENTS fields in.
     /// <example>
@@ -70,7 +71,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <see cref="EntityArchetype"/>
         /// </summary>
         public ComponentType[] RequiredComponents { get; }
-        
+
+        // TODO: Store debug names of every implementor and use an extension method to get...maybe generic to all types?!
+        // public FixedString128Bytes DEBUG_Name { get; }
+
         /// <summary>
         /// Called automatically when spawning to populate a newly created <see cref="Entity"/>
         /// with the data needed.
