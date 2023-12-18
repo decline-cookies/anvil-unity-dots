@@ -7,6 +7,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.TestTools;
 using Logger = Anvil.CSharp.Logging.Logger;
 
@@ -47,6 +48,40 @@ namespace Anvil.Unity.DOTS.Tests.Entities.Transform
         private static int EquivalencyWithTolerance(Rect a, Rect b)
         {
             return RectUtil.AreEquivalent(a, b) ? 0 : 1;
+        }
+
+        // ----- AddMissingStandardComponents ---- //
+        [Test]
+        public static void AddMissingStandardComponentsTest_NoComponents()
+        {
+            Assert.That(nameof(AddMissingStandardComponentsTest_NoComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
+
+            using World world = new World(nameof(TransformUtilTests) + "World");
+            EntityManager entityManager = world.EntityManager;
+            Entity entity = entityManager.CreateEntity();
+
+            TransformUtil.AddMissingStandardComponents(entity, entityManager);
+
+            Assert.That(entityManager.GetComponentData<LocalTransform>(entity).Position, Is.EqualTo(float3.zero));
+            Assert.That(entityManager.GetComponentData<LocalTransform>(entity).Rotation, Is.EqualTo(quaternion.identity));
+            Assert.That(entityManager.GetComponentData<LocalTransform>(entity).Scale, Is.EqualTo(1f));
+        }
+
+        [Test]
+        public static void AddMissingStandardComponentsTest_AllComponents()
+        {
+            Assert.That(nameof(AddMissingStandardComponentsTest_AllComponents), Does.StartWith(nameof(TransformUtil.AddMissingStandardComponents) + "Test"));
+
+            using World world = new World(nameof(TransformUtilTests) + "World");
+            EntityManager entityManager = world.EntityManager;
+            Entity entity = entityManager.CreateEntity(typeof(LocalTransform));
+
+            entityManager.SetComponentData(entity, LocalTransform.FromPositionRotationScale(new float3(5f), quaternion.Euler(45f, 45f, 0f), 5f));
+            TransformUtil.AddMissingStandardComponents(entity, entityManager);
+
+            Assert.That(entityManager.GetComponentData<LocalTransform>(entity).Position, Is.EqualTo(new float3(5f)));
+            Assert.That(entityManager.GetComponentData<LocalTransform>(entity).Rotation, Is.EqualTo(quaternion.Euler(45f, 45f, 0f)));
+            Assert.That(entityManager.GetComponentData<LocalTransform>(entity).Scale, Is.EqualTo(5f));
         }
 
         // ----- ConvertWorldToLocalPoint ----- //

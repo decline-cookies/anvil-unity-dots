@@ -308,7 +308,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
+        // CONFIGURATION - REQUIRED DATA - ComponentLookup (CDFE)
         //*************************************************************************************************************
 
         //TODO: #86 - Revisit this section after Entities 1.0 upgrade for name changes to CDFE

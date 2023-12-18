@@ -4,11 +4,10 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// Represents a read only reference to a <see cref="ComponentDataFromEntity{T}"/>
+    /// Represents a read only reference to a <see cref="ComponentLookup{T}"/>
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/> to read</typeparam>
-    [GenerateTestsForBurstCompatibility]
     public readonly struct CDFEReader<T> where T : unmanaged, IComponentData
     {
         [ReadOnly] private readonly ComponentLookup<T> m_CDFE;
@@ -34,10 +33,10 @@ namespace Anvil.Unity.DOTS.Entities
         }
 
 
-        /// <inheritdoc cref="ComponentDataFromEntity{T}.HasComponent"/>
+        /// <inheritdoc cref="ComponentLookup{T}.HasComponent"/>
         public bool HasComponent(Entity entity) => m_CDFE.HasComponent(entity);
 
-        /// <inheritdoc cref="ComponentDataFromEntity{T}.TryGetComponent"/>
+        /// <inheritdoc cref="ComponentLookup{T}.TryGetComponent"/>
         public bool TryGetComponent(Entity entity, out T component) => m_CDFE.TryGetComponent(entity, out component);
     }
 }

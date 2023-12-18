@@ -9,7 +9,6 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     //TODO: #136 - Maybe have this implement IEntityKeyedTask. https://github.com/decline-cookies/anvil-unity-dots/pull/157#discussion_r1093730973
-    [GenerateTestsForBurstCompatibility]
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal readonly struct EntityKeyedTaskID : IEquatable<EntityKeyedTaskID>
     {
@@ -65,7 +64,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{Entity.ToString()} - DataOwnerID: {DataOwnerID}, DataTargetID: {DataTargetID}";
         }
 
-        [GenerateTestsForBurstCompatibility]
         public FixedString64Bytes ToFixedString()
         {
             FixedString64Bytes fs = new FixedString64Bytes();
@@ -77,11 +75,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             fs.Append(DataTargetID.ToFixedString());
             return fs;
         }
-        
+
         //*************************************************************************************************************
         // SAFETY
         //*************************************************************************************************************
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         public static void Debug_EnsureOffsetsAreCorrect()
         {
@@ -90,7 +88,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             {
                 throw new InvalidOperationException($"{nameof(DataOwnerID)} has changed location in the struct. The hardcoded burst compatible offset of {nameof(TASK_SET_OWNER_ID_OFFSET)} = {TASK_SET_OWNER_ID_OFFSET} needs to be changed to {actualOffset}!");
             }
-            
+
             actualOffset = UnsafeUtility.GetFieldOffset(typeof(EntityKeyedTaskID).GetField(nameof(DataTargetID)));
             if (actualOffset != DATA_TARGET_ID_OFFSET)
             {

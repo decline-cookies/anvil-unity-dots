@@ -202,11 +202,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
         //*************************************************************************************************************
-        // CONFIGURATION - REQUIRED DATA - ComponentDataFromEntity (CDFE)
+        // CONFIGURATION - REQUIRED DATA - ComponentLookup (CDFE)
         //*************************************************************************************************************
 
         /// <summary>
-        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be read from in a shared-read context.
+        /// Specifies a <see cref="ComponentLookup{T}"/> to be read from in a shared-read context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
@@ -214,7 +214,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IComponentData;
 
         /// <summary>
-        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in a system scoped shared-write context.
+        /// Specifies a <see cref="ComponentLookup{T}"/> to be written to in a system scoped shared-write context.
         /// This means that write access is shared between all Task Driver instances of the same type in the same <see cref="World"/>.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
@@ -223,7 +223,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IComponentData;
 
         /// <summary>
-        /// Specifies a <see cref="ComponentDataFromEntity{T}"/> to be written to in an exclusive write context.
+        /// Specifies a <see cref="ComponentLookup{T}"/> to be written to in an exclusive write context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the CDFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
@@ -236,7 +236,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
 
         /// <summary>
-        /// Specifies a <see cref="BufferFromEntity{T}"/> to be read from in a shared-read context.
+        /// Specifies a <see cref="BufferLookup{T}"/> to be read from in a shared-read context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>
@@ -244,7 +244,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IBufferElementData;
 
         /// <summary>
-        /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in a system scoped shared-write context.
+        /// Specifies a <see cref="BufferLookup{T}"/> to be written to in a system scoped shared-write context.
         /// This means that write access is shared between all Task Driver instances of the same type in the same <see cref="World"/>.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
@@ -253,7 +253,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where T : unmanaged, IBufferElementData;
 
         /// <summary>
-        /// Specifies a <see cref="BufferFromEntity{T}"/> to be written to in an exclusive-write context.
+        /// Specifies a <see cref="BufferLookup{T}"/> to be written to in an exclusive-write context.
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IBufferElementData"/> in the DBFE.</typeparam>
         /// <returns>A reference to itself to continue chaining configuration methods.</returns>

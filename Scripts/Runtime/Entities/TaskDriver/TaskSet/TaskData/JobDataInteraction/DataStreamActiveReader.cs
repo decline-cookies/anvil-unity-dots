@@ -10,7 +10,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityKeyedTask"/> to read</typeparam>
-    [GenerateTestsForBurstCompatibility]
     public readonly struct DataStreamActiveReader<TInstance> : IEnumerable<TInstance>
         where TInstance : unmanaged, IEntityKeyedTask
     {

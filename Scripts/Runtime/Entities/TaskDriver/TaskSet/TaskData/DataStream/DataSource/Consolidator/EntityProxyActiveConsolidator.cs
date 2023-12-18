@@ -6,7 +6,6 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [GenerateTestsForBurstCompatibility]
     internal unsafe struct EntityProxyActiveConsolidator<TInstance>
         where TInstance : unmanaged, IEntityKeyedTask
     {

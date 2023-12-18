@@ -4,12 +4,11 @@ using Unity.Entities;
 namespace Anvil.Unity.DOTS.Entities
 {
     /// <summary>
-    /// Represents a <see cref="BufferFromEntity{T}"/> that can only be read from.
+    /// Represents a <see cref="BufferLookup{T}"/> that can only be read from.
     /// Each <see cref="DynamicBuffer{T}"/> can be read in a separate thread in parallel.
     /// To be used in jobs that allow for reading a specific instance in the DBFE
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IBufferElementData"/> to update.</typeparam>
-    [GenerateTestsForBurstCompatibility]
     public readonly struct DBFEForRead<T> where T : unmanaged, IBufferElementData
     {
         [ReadOnly] private readonly BufferLookup<T> m_DBFE;
@@ -28,10 +27,10 @@ namespace Anvil.Unity.DOTS.Entities
             get => m_DBFE[entity];
         }
 
-        /// <inheritdoc cref="BufferFromEntity{T}.HasComponent"/>
-        public bool HasComponent(Entity entity) => m_DBFE.HasComponent(entity);
+        /// <inheritdoc cref="BufferLookup{T}.HasComponent"/>
+        public bool HasBuffer(Entity entity) => m_DBFE.HasBuffer(entity);
 
-        /// <inheritdoc cref="BufferFromEntity{T}.TryGetComponent"/>
+        /// <inheritdoc cref="BufferLookup{T}.TryGetBuffer"/>
         public bool TryGetBuffer(Entity entity, out DynamicBuffer<T> component) => m_DBFE.TryGetBuffer(entity, out component);
     }
 }

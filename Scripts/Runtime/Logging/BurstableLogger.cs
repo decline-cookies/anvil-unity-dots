@@ -30,7 +30,6 @@ namespace Anvil.Unity.DOTS.Logging
     /// except for the Editor console (<see cref="UnityLogHandler"/>).
     /// This is a Burst limitation.
     /// </remarks>
-    [GenerateTestsForBurstCompatibility]
     public readonly struct BurstableLogger<TPrefixStringType> where TPrefixStringType : unmanaged, INativeList<byte>, IUTF8Bytes
     {
         private const int UNSET_THREAD_INDEX = -1;

@@ -18,7 +18,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The type handle for the <see cref="DynamicBuffer{T}" /> to copy from.
         /// </summary>
-        [ReadOnly] public BufferFromSingleEntity<T> InputBufferFromEntity;
+        [ReadOnly] public BufferFromSingleEntity<T> InputBufferLookup;
 
         /// <summary>
         /// The <see cref="NativeArray{T}" to copy to.
@@ -30,7 +30,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             // Could be modified to support mismatched lengths using `NativeArray<T>.Copy()` but it's not
             // necessary for the intended use case and adds complexity. Add support if the need arises.
-            NativeArray<T> inputBuffer = InputBufferFromEntity.GetBuffer().AsNativeArray();
+            NativeArray<T> inputBuffer = InputBufferLookup.GetBuffer().AsNativeArray();
             Debug.Assert(inputBuffer.Length == OutputBuffer.Length, "Output buffer must be the same size as the singleton buffer");
             OutputBuffer.CopyFrom(inputBuffer);
         }

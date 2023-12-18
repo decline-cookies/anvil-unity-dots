@@ -11,8 +11,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Represents a read/write reference to an <see cref="IThreadPersistentData{TData}"/>
     /// </summary>
     /// <typeparam name="TData">The type of <see cref="IThreadPersistentDataInstance"/> to read/write</typeparam>
-    [GenerateTestsForBurstCompatibility]
-    public unsafe struct ThreadPersistentDataAccessor<TData> 
+    public unsafe struct ThreadPersistentDataAccessor<TData>
         where TData : unmanaged, IThreadPersistentDataInstance
     {
         private const int UNSET_LANE_INDEX = -1;
@@ -40,7 +39,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             Debug_InitializeAccessorState();
         }
-        
+
         /// <summary>
         /// Call once to initialize the state of this accessor for the thread it is running on.
         /// </summary>
@@ -50,7 +49,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Debug_EnsureInitThreadOnlyCalledOnce();
             m_LaneIndex = ParallelAccessUtil.CollectionIndexForThread(nativeThreadIndex);
         }
-        
+
         /// <summary>
         /// Call once to initialize the state of this writer for main thread usage.
         /// </summary>

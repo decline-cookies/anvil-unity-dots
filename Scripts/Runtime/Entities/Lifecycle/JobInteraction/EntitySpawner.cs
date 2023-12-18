@@ -12,7 +12,6 @@ namespace Anvil.Unity.DOTS.Entities
     /// Helper struct to allow for spawning <see cref="Entity"/> and making associated structural and initialization
     /// changes while in parallel bursted jobs.
     /// </summary>
-    [GenerateTestsForBurstCompatibility]
     public readonly struct EntitySpawner : IEquatable<EntitySpawner>
     {
         public static bool operator ==(EntitySpawner lhs, EntitySpawner rhs)
@@ -24,28 +23,28 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return !(lhs == rhs);
         }
-        
+
         private const int UNSET_THREAD_INDEX = -1;
-        
+
         /// <summary>
         /// The <see cref="SpawnerID"/> to identify this instance globally in the application
         /// </summary>
         public readonly SpawnerID ID;
-        
+
         /// <summary>
         /// The Thread Index this instance is operating on.
         /// </summary>
         [NativeSetThreadIndex] public readonly int ThreadIndex;
-        
-        
+
+
         [NativeDisableContainerSafetyRestriction] private readonly EntityCommandBuffer m_ECB;
         //TODO: #86 - Once we upgrade to Entities 1.0 we won't have to hide the ECB or ECB.ParallelWriter inside here
-        //      and we can expose it or make two separate Spawner structs. One for parallel and one for single.        
+        //      and we can expose it or make two separate Spawner structs. One for parallel and one for single.
         [NativeDisableContainerSafetyRestriction] private readonly EntityCommandBuffer.ParallelWriter m_ECBWriter;
         [ReadOnly] private readonly NativeParallelHashMap<int, EntityArchetype> m_ArchetypeLookup;
         [ReadOnly] private readonly NativeParallelHashMap<int, Entity> m_PrototypeLookup;
-        
-        
+
+
         /// <summary>
         /// Returns whether the underlying <see cref="EntityCommandBuffer"/> is created or not.
         /// </summary>
@@ -54,7 +53,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             get => m_ECB.IsCreated;
         }
-        
+
         internal EntitySpawner(
             SpawnerID id,
             EntityCommandBuffer ecb,
@@ -68,7 +67,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_PrototypeLookup = prototypeLookup;
             ThreadIndex = UNSET_THREAD_INDEX;
         }
-        
+
         /// <summary>
         /// Returns whether the underlying <see cref="EntityCommandBuffer"/> has been played back yet or not.
         /// </summary>
@@ -127,7 +126,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         //TODO: #86 - Remove once we upgrade to Entities 1.0
         /// <summary>
-        /// A special managed function that is called by a function pointer to allow for use in Burst. 
+        /// A special managed function that is called by a function pointer to allow for use in Burst.
         /// </summary>
         /// <param name="spawnerID">The <see cref="SpawnerID"/> to identify the spawner</param>
         /// <param name="threadIndex">The thread index to use</param>
@@ -253,11 +252,11 @@ namespace Anvil.Unity.DOTS.Entities
             Debug_EnsurePrototypeIsRegistered(hash);
             return m_PrototypeLookup[hash];
         }
-        
+
         //*************************************************************************************************************
         // IEQUATABLE
         //*************************************************************************************************************
-        
+
         public bool Equals(EntitySpawner other)
         {
             return this == other;
@@ -294,7 +293,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidOperationException($"Tried to get the Prototype Entity but it wasn't in the lookup! Did you call {nameof(EntitySpawnSystem.UnregisterEntityPrototypeForDefinition)}?");
             }
         }
-        
+
         //*************************************************************************************************************
         // ID
         //*************************************************************************************************************
@@ -313,17 +312,17 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 return !(lhs == rhs);
             }
-            
+
             /// <summary>
             /// The ID of the <see cref="EntitySpawnSystem"/> that owns this <see cref="EntitySpawner"/>
             /// </summary>
             public readonly uint OwningSystemID;
-            
+
             /// <summary>
             /// The ID of the <see cref="EntitySpawner"/>
             /// </summary>
             public readonly int InstanceID;
-            
+
             public SpawnerID(uint owningSystemID, int instanceID)
             {
                 OwningSystemID = owningSystemID;

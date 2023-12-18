@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// Creates a new <see cref="BufferFromSingleEntity{T}"/>.
         /// </summary>
-        /// <param name="lookup">The <see cref="BufferFromEntity{T}" /> lookup to read the buffer reference from.</param>
+        /// <param name="lookup">The <see cref="BufferLookup{T}" /> lookup to read the buffer reference from.</param>
         /// <param name="entity">The <see cref="Entity" /> that the <see cref="DynamicBuffer{T}" /> is on.</param>
         public BufferFromSingleEntity(BufferLookup<T> lookup, Entity entity)
         {
