@@ -28,7 +28,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_CDFE = system.GetComponentLookup<T>(true);
         }
 
-        internal CDFEReader(ComponentDataFromEntity<T> rawCDFE)
+        internal CDFEReader(ComponentLookup<T> rawCDFE)
         {
             m_CDFE = rawCDFE;
         }
