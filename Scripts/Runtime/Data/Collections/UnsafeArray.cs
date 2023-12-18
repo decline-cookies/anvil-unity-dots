@@ -508,7 +508,7 @@ namespace Anvil.Unity.DOTS.Data
             return unsafeArray;
         }
 
-        public unsafe ReadOnly AsReadOnly() => new ReadOnly(m_Buffer, m_Length);
+        public readonly unsafe ReadOnly AsReadOnly() => new ReadOnly(m_Buffer, m_Length);
 
         [ExcludeFromDocs]
         public struct Enumerator : IEnumerator<T>, IEnumerator, IDisposable
