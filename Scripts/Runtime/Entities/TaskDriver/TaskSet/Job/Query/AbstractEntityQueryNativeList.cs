@@ -10,14 +10,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// Consumers can then get the length of the array to be able to do things like scheduling and everyone can share
     /// the same NativeArray instead of resolving the struct EntityQuery multiple times.
     /// </summary>
-    internal abstract class AbstractEntityQueryNativeArray<T>
-        where T : struct
+    internal abstract class AbstractEntityQueryNativeList<T>
+        where T : unmanaged
     {
         public abstract int Length { get; }
-        public NativeArray<T> Results { get; protected set; }
+        public NativeList<T> Results { get; protected set; }
         internal EntityQuery EntityQuery { get; }
 
-        protected AbstractEntityQueryNativeArray(EntityQuery entityQuery)
+        protected AbstractEntityQueryNativeList(EntityQuery entityQuery)
         {
             EntityQuery = entityQuery;
         }

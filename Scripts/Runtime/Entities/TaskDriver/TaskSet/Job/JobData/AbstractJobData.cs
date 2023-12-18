@@ -145,9 +145,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets a <see cref="NativeArray{Entity}"/> to read from in a job from an <see cref="EntityQuery"/>
         /// </summary>
         /// <returns>The <see cref="NativeArray{Entity}"/></returns>
-        public NativeArray<Entity> GetEntityNativeArrayFromQuery()
+        public NativeList<Entity> GetEntityNativeListFromQuery()
         {
-            return m_JobConfig.GetEntityNativeArrayFromQuery();
+            return m_JobConfig.GetEntityNativeListFromQuery();
         }
 
         /// <summary>
@@ -155,10 +155,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the array.</typeparam>
         /// <returns>The <see cref="NativeArray{T}"/></returns>
-        public NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>()
+        public NativeList<T> GetIComponentDataNativeListFromQuery<T>()
             where T : unmanaged, IComponentData
         {
-            return m_JobConfig.GetIComponentDataNativeArrayFromQuery<T>();
+            return m_JobConfig.GetIComponentDataNativeListFromQuery<T>();
         }
 
         //*************************************************************************************************************

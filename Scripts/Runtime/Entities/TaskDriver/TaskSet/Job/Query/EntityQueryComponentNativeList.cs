@@ -4,18 +4,19 @@ using Unity.Jobs;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    internal class EntityQueryNativeArray : AbstractEntityQueryNativeArray<Entity>
+    internal class EntityQueryComponentNativeList<T> : AbstractEntityQueryNativeList<T>
+        where T : unmanaged, IComponentData
     {
         public sealed override int Length
         {
             get => Results.Length;
         }
 
-        public EntityQueryNativeArray(EntityQuery entityQuery) : base(entityQuery) { }
+        public EntityQueryComponentNativeList(EntityQuery entityQuery) : base(entityQuery) { }
 
         public sealed override JobHandle Acquire()
         {
-            Results = EntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle dependsOn);
+            Results = EntityQuery.ToComponentDataListAsync<T>(Allocator.TempJob, out JobHandle dependsOn);
             return dependsOn;
         }
 

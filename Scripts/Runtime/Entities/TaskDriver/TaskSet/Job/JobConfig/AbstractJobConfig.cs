@@ -259,26 +259,26 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// <inheritdoc cref="IJobConfig.RequireEntityNativeArrayFromQueryForRead"/>
         public IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQuery entityQuery)
         {
-            return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeArray(entityQuery));
+            return RequireEntityNativeArrayFromQueryForRead(new EntityQueryNativeList(entityQuery));
         }
 
         /// <inheritdoc cref="IJobConfig.RequireIComponentDataNativeArrayFromQueryForRead"/>
         public IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQuery entityQuery)
             where T : unmanaged, IComponentData
         {
-            return RequireIComponentDataNativeArrayFromQueryForRead(new EntityQueryComponentNativeArray<T>(entityQuery));
+            return RequireIComponentDataNativeArrayFromQueryForRead(new EntityQueryComponentNativeList<T>(entityQuery));
         }
 
-        protected IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQueryNativeArray entityQueryNativeArray)
+        protected IJobConfig RequireEntityNativeArrayFromQueryForRead(EntityQueryNativeList entityQueryNativeList)
         {
-            AddAccessWrapper(new EntityQueryAccessWrapper(entityQueryNativeArray, Usage.Default));
+            AddAccessWrapper(new EntityQueryAccessWrapper(entityQueryNativeList, Usage.Default));
             return this;
         }
 
-        protected IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeArray<T> entityQueryNativeArray)
+        protected IJobConfig RequireIComponentDataNativeArrayFromQueryForRead<T>(EntityQueryComponentNativeList<T> entityQueryNativeList)
             where T : unmanaged, IComponentData
         {
-            AddAccessWrapper(new EntityQueryComponentAccessWrapper<T>(entityQueryNativeArray, Usage.Default));
+            AddAccessWrapper(new EntityQueryComponentAccessWrapper<T>(entityQueryNativeList, Usage.Default));
             return this;
         }
 
@@ -575,21 +575,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             instance = persistentDataAccessWrapper.PersistentData;
         }
 
-        internal NativeArray<Entity> GetEntityNativeArrayFromQuery()
+        internal NativeList<Entity> GetEntityNativeListFromQuery()
         {
             EntityQueryAccessWrapper entityQueryAccessWrapper
                 = GetAccessWrapper<EntityQueryAccessWrapper>(Usage.Default);
 
-            return entityQueryAccessWrapper.NativeArray;
+            return entityQueryAccessWrapper.NativeList;
         }
 
-        internal NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>()
+        internal NativeList<T> GetIComponentDataNativeListFromQuery<T>()
             where T : unmanaged, IComponentData
         {
             EntityQueryComponentAccessWrapper<T> entityQueryAccessWrapper
                 = GetAccessWrapper<EntityQueryComponentAccessWrapper<T>>(Usage.Default);
 
-            return entityQueryAccessWrapper.NativeArray;
+            return entityQueryAccessWrapper.NativeList;
         }
 
         internal void Fulfill<T>(out CDFEReader<T> instance)

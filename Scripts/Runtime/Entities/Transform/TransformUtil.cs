@@ -27,6 +27,22 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         }
 
         /// <summary>
+        /// Adds any missing transform components to an <see cref="Entity"/> to express basic translation, rotation, and
+        /// scale. If a standard component isn't present it is added with an identity value.
+        /// </summary>
+        /// <param name="entity">The <see cref="Entity"/> to fill components on.</param>
+        /// <param name="entityManager">The <see cref="EntityManager"/> for the <see cref="Entity"/></param>
+        public static void AddMissingStandardComponents(Entity entity, EntityManager entityManager)
+        {
+            Debug.Assert(entityManager.Exists(entity));
+
+            if (!entityManager.HasComponent<LocalTransform>(entity))
+            {
+                entityManager.AddComponentData(entity,  LocalTransform.Identity);
+            }
+        }
+
+        /// <summary>
         /// Converts a world position value to the local space expressed by a matrix.
         /// </summary>
         /// <param name="localToWorld">The local to world transformation matrix. (will be inverted)</param>

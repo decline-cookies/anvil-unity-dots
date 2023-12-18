@@ -219,7 +219,7 @@ namespace Anvil.Unity.DOTS.Entities
 
                 if (shouldIncludeCleanupEntities)
                 {
-                    NativeArray<Entity> cleanupEntities = m_CleanupEntityQuery.ToEntityArrayAsync(Allocator.TempJob, out JobHandle cleanupDependsOn);
+                    NativeList<Entity> cleanupEntities = m_CleanupEntityQuery.ToEntityListAsync(Allocator.TempJob, out JobHandle cleanupDependsOn);
 
                     IncludeCleanupEntitiesJob includeCleanupEntitiesJob = new IncludeCleanupEntitiesJob(
                         m_WorldCleanupEntities,
@@ -254,13 +254,13 @@ namespace Anvil.Unity.DOTS.Entities
             private NativeParallelHashSet<Entity> m_WorldCleanupEntities;
             private NativeList<Entity> m_WorldDestroyedEntities;
             private NativeReference<int> m_CleanupFrame;
-            [ReadOnly] private readonly NativeArray<Entity> m_PendingCleanupEntities;
+            [ReadOnly] private readonly NativeList<Entity> m_PendingCleanupEntities;
             private readonly int m_CurrentFrame;
 
             public IncludeCleanupEntitiesJob(
                 NativeParallelHashSet<Entity> worldCleanupEntities,
                 NativeList<Entity> worldDestroyedEntities,
-                NativeArray<Entity> pendingCleanupEntities,
+                NativeList<Entity> pendingCleanupEntities,
                 NativeReference<int> cleanupFrame,
                 int currentFrame)
             {
@@ -283,8 +283,8 @@ namespace Anvil.Unity.DOTS.Entities
                     }
                 }
 
-                //If we're on a new frame, we want to clear the cleanup entities. 
-                //We could have multiple Lifecycle systems and we want the cleanup entities to be valid for the 
+                //If we're on a new frame, we want to clear the cleanup entities.
+                //We could have multiple Lifecycle systems and we want the cleanup entities to be valid for the
                 //entirety of the frame
                 if (m_CurrentFrame != m_CleanupFrame.Value)
                 {
@@ -299,8 +299,10 @@ namespace Anvil.Unity.DOTS.Entities
                     return;
                 }
 
+                //Ensure we have enough space
+                m_WorldDestroyedEntities.SetCapacity(m_WorldDestroyedEntities.Length + m_PendingCleanupEntities.Length);
                 //We'll add all the pending clean up entities to the destroyed list
-                m_WorldDestroyedEntities.AddRange(m_PendingCleanupEntities);
+                m_WorldDestroyedEntities.AddRangeNoResize(m_PendingCleanupEntities);
 
                 //Now we'll go through all the entities that are going to be cleaned up later in the frame.
                 m_WorldCleanupEntities.UnionWith(m_PendingCleanupEntities);

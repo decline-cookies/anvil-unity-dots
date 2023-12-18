@@ -8,6 +8,7 @@ namespace Anvil.Unity.DOTS.Data
     /// <summary>
     /// A collection of extension methods for <see cref="NativeParallelHashSet{T}"/>.
     /// </summary>
+    [BurstCompile]
     public static class NativeParallelHashSetExtension
     {
         /// <summary>
