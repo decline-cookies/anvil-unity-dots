@@ -296,7 +296,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new ArgumentNullException($"{nameof(MoveSystemFromToGroup)}: One or more of the provided system and groups do not exist. {nameof(System)}:{system}, {nameof(SrcGroup)}:{srcGroup}, {nameof(DestGroup)}:{destGroup}");
             }
 
-            Debug.Assert(srcGroup.GetAllSystems().Contains(system.SystemHandle), $"{system} is not part of the source group: {srcGroup}");
+            Debug.Assert(srcGroup.GetAllSystems().AsArray().Contains(system.SystemHandle), $"{system} is not part of the source group: {srcGroup}");
             srcGroup.RemoveSystemFromUpdateList(system);
 
             destGroup.AddSystemToUpdateList(system);
