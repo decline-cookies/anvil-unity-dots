@@ -233,7 +233,7 @@ public static class ComponentTypeDependencyExtension
         return dependencyManager
             ->GetDependency(typeIndexPtr, readerCount, typeIndexPtr, writerCount);
     }
-    
+
     private static unsafe JobHandle GetDependency<T>(ComponentDependencyManager* dependencyManager, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
@@ -263,7 +263,7 @@ public static class ComponentTypeDependencyExtension
         dependencyManager
             ->AddDependency(typeIndexPtr, readerCount, typeIndexPtr, writerCount, dependency);
     }
-    
+
     private static unsafe void AddDependency<T>(ComponentDependencyManager* dependencyManager, JobHandle dependency, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
@@ -278,7 +278,7 @@ public static class ComponentTypeDependencyExtension
         dependencyManager
             ->AddDependency(s_ReadTypeList_ScratchPad.Ptr, s_ReadTypeList_ScratchPad.Length, s_WriteTypeList_ScratchPad.Ptr, s_WriteTypeList_ScratchPad.Length, dependency);
     }
-    
+
     private static void BuildTypeLists<T>(T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
