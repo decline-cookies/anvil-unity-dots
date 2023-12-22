@@ -1,6 +1,5 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
-using System.Diagnostics.CodeAnalysis;
 using Unity.Jobs.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -11,10 +10,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being read.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<,>))]
-    [SuppressMessage("ReSharper", "TypeParameterCanBeVariant", Justification = "Strict requirements for compiler")]
-    public interface ITaskJobForDefer<TInstance>
-        where TInstance : unmanaged, IEntityKeyedTask
+    [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<>))]
+    public interface ITaskJobForDefer
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -27,6 +24,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// occur.
         /// </summary>
         /// <param name="instance">The <see cref="IEntityKeyedTask"/> to read.</param>
-        void Execute(TInstance instance);
+        void Execute(int index);
     }
 }

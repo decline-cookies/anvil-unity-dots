@@ -1,6 +1,8 @@
+using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -24,9 +26,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets the <typeparamref name="TInstance"/> at the specified index.
         /// </summary>
         /// <param name="index">The index into the backing array</param>
-        public TInstance this[int index]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref readonly TInstance ElementAtReadOnly(int index)
         {
-            get => m_Active[index].Payload;
+            return ref m_Active.ElementAtReadOnly(index).Payload;
         }
 
         /// <summary>
