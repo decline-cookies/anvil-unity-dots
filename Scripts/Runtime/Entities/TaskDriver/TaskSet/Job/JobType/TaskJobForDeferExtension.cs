@@ -1,10 +1,8 @@
-using Anvil.Unity.DOTS.Data;
 using JetBrains.Annotations;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -125,11 +123,11 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             WrapperJobProducer<TJob>.Initialize();
         }
 
-        static IntPtr GetReflectionData<TJob>()
+        private static IntPtr GetReflectionData<TJob>()
             where TJob : struct, ITaskJobForDefer
         {
             WrapperJobProducer<TJob>.Initialize();
-            IntPtr reflectionData = WrapperJobProducer<TJob>.jobReflectionData.Data;
+            IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA.Data;
             // CollectionHelper.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
@@ -138,14 +136,14 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TJob : struct, ITaskJobForDefer
         {
             // ReSharper disable once StaticMemberInGenericType
-            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<WrapperJobProducer<TJob>>();
+            internal static readonly SharedStatic<IntPtr> JOB_REFLECTION_DATA = SharedStatic<IntPtr>.GetOrCreate<WrapperJobProducer<TJob>>();
 
             [BurstDiscard]
             internal static void Initialize()
             {
-                if (jobReflectionData.Data == IntPtr.Zero)
+                if (JOB_REFLECTION_DATA.Data == IntPtr.Zero)
                 {
-                    jobReflectionData.Data = JobsUtility.CreateJobReflectionData(
+                    JOB_REFLECTION_DATA.Data = JobsUtility.CreateJobReflectionData(
                         typeof(WrapperJobStruct<TJob>),
                         typeof(TJob),
                         (ExecuteJobFunction)Execute);

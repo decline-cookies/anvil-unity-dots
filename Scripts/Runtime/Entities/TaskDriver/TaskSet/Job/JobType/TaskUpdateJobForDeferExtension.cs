@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             this TJob jobData,
             UpdateScheduleInfo<TInstance> scheduleInfo,
             JobHandle dependsOn = default)
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TJob : struct, ITaskUpdateJobForDefer
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return InternalSchedule(
@@ -31,7 +31,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             this TJob jobData,
             UpdateScheduleInfo<TInstance> scheduleInfo,
             JobHandle dependsOn = default)
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TJob : struct, ITaskUpdateJobForDefer
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return InternalSchedule(
@@ -48,15 +48,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             JobHandle dependsOn,
             ScheduleMode scheduleMode,
             int batchSize)
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
+            where TJob : struct, ITaskUpdateJobForDefer
             where TInstance : unmanaged, IEntityKeyedTask
         {
-            IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
+            IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA;
             ValidateReflectionData(reflectionData);
 
-            WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(
-                ref jobData,
-                scheduleInfo);
+            WrapperJobStruct<TJob> wrapperData = new WrapperJobStruct<TJob>(ref jobData);
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(
                 UnsafeUtility.AddressOf(ref wrapperData),
@@ -95,20 +93,17 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // WRAPPER STRUCT
         //*************************************************************************************************************
 
-        internal struct WrapperJobStruct<TJob, TInstance>
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityKeyedTask
+        internal struct WrapperJobStruct<TJob>
+            where TJob : struct, ITaskUpdateJobForDefer
         {
             private const int UNSET_NATIVE_THREAD_INDEX = -1;
 
             internal TJob JobData;
-            internal DataStreamUpdater<TInstance> Updater;
             [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
 
-            public WrapperJobStruct(ref TJob jobData, UpdateScheduleInfo<TInstance> scheduleInfo)
+            public WrapperJobStruct(ref TJob jobData)
             {
                 JobData = jobData;
-                Updater = scheduleInfo.Updater;
                 NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
             }
         }
@@ -116,19 +111,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // PRODUCER
         //*************************************************************************************************************
-        private struct WrapperJobProducer<TJob, TInstance>
-            where TJob : struct, ITaskUpdateJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityKeyedTask
+        private struct WrapperJobProducer<TJob>
+            where TJob : struct, ITaskUpdateJobForDefer
         {
             // ReSharper disable once StaticMemberInGenericType
             internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(
-                typeof(WrapperJobStruct<TJob, TInstance>),
+                typeof(WrapperJobStruct<TJob>),
                 typeof(TJob),
                 (ExecuteJobFunction)Execute);
 
 
             private delegate void ExecuteJobFunction(
-                ref WrapperJobStruct<TJob, TInstance> jobData,
+                ref WrapperJobStruct<TJob> jobData,
                 IntPtr additionalPtr,
                 IntPtr bufferRangePatchData,
                 ref JobRanges ranges,
@@ -137,16 +131,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Required by Burst.")]
             public static unsafe void Execute(
-                ref WrapperJobStruct<TJob, TInstance> wrapperData,
+                ref WrapperJobStruct<TJob> wrapperData,
                 IntPtr additionalPtr,
                 IntPtr bufferRangePatchData,
                 ref JobRanges ranges,
                 int jobIndex)
             {
                 ref TJob jobData = ref wrapperData.JobData;
-                ref DataStreamUpdater<TInstance> updater = ref wrapperData.Updater;
-
-                updater.InitForThread(wrapperData.NativeThreadIndex);
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
                 while (JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out int beginIndex, out int endIndex))
@@ -157,7 +148,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                     for (int i = beginIndex; i < endIndex; ++i)
                     {
-                        jobData.Execute(updater[i], ref updater);
+                        jobData.Execute(i);
                     }
                 }
             }

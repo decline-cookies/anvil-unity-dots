@@ -98,7 +98,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 ref resolvedInstance);
         }
 
-        internal TInstance this[int index]
+        public TInstance this[int index]
         {
             get
             {
