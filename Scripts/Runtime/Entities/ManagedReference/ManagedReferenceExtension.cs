@@ -102,7 +102,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The managed instance.</returns>
         public static T GetManagedSingleton<T>(this ComponentSystemBase system) where T : class, IComponentReferencable
         {
-            //TODO: #296 - anvil-unity-dots - This function will be obsolete post 1.0
+            //TODO: #296 - This function will be obsolete post 1.0
 #pragma warning disable CS0618 // Type or member is obsolete
             return system.GetSingleton<ManagedReference<T>>().Resolve();
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -117,7 +117,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>True if a singleton of the managed type exists.</returns>
         public static bool HasManagedSingleton<T>(this ComponentSystemBase system) where T : class, IComponentReferencable
         {
-            //TODO: #296 - anvil-unity-dots - This function will be obsolete post 1.0
+            //TODO: #296 - This function will be obsolete post 1.0
 #pragma warning disable CS0618 // Type or member is obsolete
             return system.HasSingleton<ManagedReference<T>>();
 #pragma warning restore CS0618 // Type or member is obsolete

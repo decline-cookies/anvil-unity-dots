@@ -21,7 +21,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>A container that provides in job access to the requested <see cref="DynamicBuffer{T}"/>.</returns>
         public static BufferFromSingleEntity<T> GetBufferFromSingletonEntity<T>(this ComponentSystemBase system, bool isReadOnly = false) where T : unmanaged, IBufferElementData
         {
-            //TODO: #296 - anvil-unity-dots - This function will be obsolete post 1.0
+            //TODO: #296 - This function will be obsolete post 1.0
 #pragma warning disable CS0618 // Type or member is obsolete
             return system.GetBufferLookup<T>(isReadOnly).ForSingleEntity(system.GetSingletonEntity<T>());
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -51,7 +51,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>A container that provides in job access to the requested <see cref="T"/>.</returns>
         public static ComponentLookupFromSingleEntity<T> GetComponentDataFromSingletonEntity<T>(this ComponentSystemBase system, bool isReadOnly) where T : unmanaged, IComponentData
         {
-            //TODO: #296 - anvil-unity-dots - This function will be obsolete post 1.0
+            //TODO: #296 - This function will be obsolete post 1.0
 #pragma warning disable CS0618 // Type or member is obsolete
             return system.GetComponentLookup<T>(isReadOnly).ForSingleEntity(system.GetSingletonEntity<T>());
 #pragma warning restore CS0618 // Type or member is obsolete

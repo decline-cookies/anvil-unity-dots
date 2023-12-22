@@ -10,7 +10,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 
 namespace Anvil.Unity.DOTS.Entities.Transform
@@ -38,7 +37,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
 
             if (!entityManager.HasComponent<LocalTransform>(entity))
             {
-                entityManager.AddComponentData(entity,  LocalTransform.Identity);
+                entityManager.AddComponentData(entity, LocalTransform.Identity);
             }
         }
 

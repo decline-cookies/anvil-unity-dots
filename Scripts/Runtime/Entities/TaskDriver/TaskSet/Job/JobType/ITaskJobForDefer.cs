@@ -1,5 +1,6 @@
 using Anvil.Unity.DOTS.Data;
 using Anvil.Unity.DOTS.Jobs;
+using System.Diagnostics.CodeAnalysis;
 using Unity.Jobs.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -11,7 +12,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
     [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<,>))]
-    public interface ITaskJobForDefer<in TInstance>
+    [SuppressMessage("ReSharper", "TypeParameterCanBeVariant", Justification = "Strict requirements for compiler")]
+    public interface ITaskJobForDefer<TInstance>
         where TInstance : unmanaged, IEntityKeyedTask
     {
         /// <summary>

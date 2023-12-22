@@ -7,7 +7,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 using UnityEngine.TestTools;
 using Logger = Anvil.CSharp.Logging.Logger;
 

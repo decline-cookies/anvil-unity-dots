@@ -1,6 +1,8 @@
+using JetBrains.Annotations;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -52,7 +54,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityKeyedTask
         {
-            IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
+            IntPtr reflectionData = GetReflectionData<TJob, TInstance>();
             ValidateReflectionData(reflectionData);
 
             WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(
@@ -118,16 +120,43 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //*************************************************************************************************************
         // PRODUCER
         //*************************************************************************************************************
+
+        [UsedImplicitly]
+        public static void EarlyJobInit<TJob, TInstance>()
+            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityKeyedTask
+        {
+            WrapperJobProducer<TJob, TInstance>.Initialize();
+        }
+
+        static IntPtr GetReflectionData<TJob, TInstance>()
+            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TInstance : unmanaged, IEntityKeyedTask
+        {
+            WrapperJobProducer<TJob, TInstance>.Initialize();
+            IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.jobReflectionData.Data;
+            // CollectionHelper.CheckReflectionDataCorrect<T>(reflectionData);
+            return reflectionData;
+        }
+
         private struct WrapperJobProducer<TJob, TInstance>
             where TJob : struct, ITaskJobForDefer<TInstance>
             where TInstance : unmanaged, IEntityKeyedTask
         {
             // ReSharper disable once StaticMemberInGenericType
-            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(
-                typeof(WrapperJobStruct<TJob, TInstance>),
-                typeof(TJob),
-                (ExecuteJobFunction)Execute);
+            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<WrapperJobProducer<TJob, TInstance>>();
 
+            [BurstDiscard]
+            internal static void Initialize()
+            {
+                if (jobReflectionData.Data == IntPtr.Zero)
+                {
+                    jobReflectionData.Data = JobsUtility.CreateJobReflectionData(
+                        typeof(WrapperJobStruct<TJob, TInstance>),
+                        typeof(TJob),
+                        (ExecuteJobFunction)Execute);
+                }
+            }
 
             private delegate void ExecuteJobFunction(
                 ref WrapperJobStruct<TJob, TInstance> jobData,
