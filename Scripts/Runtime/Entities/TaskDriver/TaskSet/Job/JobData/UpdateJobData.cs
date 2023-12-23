@@ -18,6 +18,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // DATA STREAMS
         //*************************************************************************************************************
 
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
+        /// <param name="updater">The <see cref="DataStreamUpdater{TInstance}"/></param>
         public void Fulfill(out DataStreamUpdater<TInstance> updater)
         {
             EntityProxyDataStream<TInstance> dataStream = m_UpdateJobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Update);

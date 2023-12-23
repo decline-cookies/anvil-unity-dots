@@ -20,6 +20,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // DATA STREAMS
         //*************************************************************************************************************
 
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
+        /// <param name="cancellationUpdater">The <see cref="DataStreamCancellationUpdater{TInstance}"/></param>
         public void Fulfill(out DataStreamCancellationUpdater<TInstance> cancellationUpdater)
         {
             EntityProxyDataStream<TInstance> activeCancelDataStream = m_CancelJobConfig.GetActiveCancelDataStream<TInstance>();

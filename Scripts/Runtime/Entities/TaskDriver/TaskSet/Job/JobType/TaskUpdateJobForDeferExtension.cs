@@ -83,19 +83,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // STATIC HELPERS
         //*************************************************************************************************************
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void ValidateReflectionData(IntPtr reflectionData)
-        {
-            if (reflectionData == IntPtr.Zero)
-            {
-                throw new InvalidOperationException("Reflection data was not set up by a call to Initialize()");
-            }
-        }
-
-        //*************************************************************************************************************
-        // PRODUCER
-        //*************************************************************************************************************
-
         [UsedImplicitly]
         public static void EarlyJobInit<TJob>()
             where TJob : unmanaged, ITaskUpdateJobForDefer
@@ -108,9 +95,21 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             WrapperJobProducer<TJob>.Initialize();
             IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA.Data;
-            // CollectionHelper.CheckReflectionDataCorrect<T>(reflectionData);
             return reflectionData;
         }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void ValidateReflectionData(IntPtr reflectionData)
+        {
+            if (reflectionData == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("Reflection data was not set up by a call to Initialize()");
+            }
+        }
+
+        //*************************************************************************************************************
+        // PRODUCER
+        //*************************************************************************************************************
 
         internal struct WrapperJobProducer<TJob>
             where TJob : unmanaged, ITaskUpdateJobForDefer
@@ -129,25 +128,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                         (ExecuteJobFunction)Execute);
                 }
             }
-
-            private delegate void ExecuteJobFunction(
-                ref WrapperJobProducer<TJob> jobData,
-                IntPtr additionalPtr,
-                IntPtr bufferRangePatchData,
-                ref JobRanges ranges,
-                int jobIndex);
-
-            private const int UNSET_NATIVE_THREAD_INDEX = -1;
-
-            private TJob m_JobData;
-            [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
-
-            public WrapperJobProducer(ref TJob jobData)
-            {
-                m_JobData = jobData;
-                NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
-            }
-
 
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Required by Burst.")]
             public static unsafe void Execute(
@@ -171,6 +151,24 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                         jobData.Execute(i);
                     }
                 }
+            }
+
+            private delegate void ExecuteJobFunction(
+                ref WrapperJobProducer<TJob> jobData,
+                IntPtr additionalPtr,
+                IntPtr bufferRangePatchData,
+                ref JobRanges ranges,
+                int jobIndex);
+
+            private const int UNSET_NATIVE_THREAD_INDEX = -1;
+
+            private TJob m_JobData;
+            [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
+
+            public WrapperJobProducer(ref TJob jobData)
+            {
+                m_JobData = jobData;
+                NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
             }
         }
     }
