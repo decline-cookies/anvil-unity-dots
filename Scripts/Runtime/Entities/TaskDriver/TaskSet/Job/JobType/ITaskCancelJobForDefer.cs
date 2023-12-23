@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being cancelled.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskCancelJobForDeferExtension.WrapperJobStruct<>))]
+    [JobProducerType(typeof(TaskCancelJobForDeferExtension.WrapperJobProducer<>))]
     public interface ITaskCancelJobForDefer
     {
         /// <summary>

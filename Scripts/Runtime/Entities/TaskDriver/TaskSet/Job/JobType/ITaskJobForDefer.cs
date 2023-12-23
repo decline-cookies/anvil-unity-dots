@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being read.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<>))]
+    [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobProducer<>))]
     public interface ITaskJobForDefer
     {
         /// <summary>

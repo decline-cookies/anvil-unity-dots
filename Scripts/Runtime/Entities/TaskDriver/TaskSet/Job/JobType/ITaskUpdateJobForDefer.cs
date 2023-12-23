@@ -10,7 +10,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being updated.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskUpdateJobForDeferExtension.WrapperJobStruct<>))]
+    [JobProducerType(typeof(TaskUpdateJobForDeferExtension.WrapperJobProducer<>))]
     public interface ITaskUpdateJobForDefer
     {
         /// <summary>
