@@ -25,6 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             get => new BurstableLogger<FixedString32Bytes>(string.Empty);
         }
 
+        //TODO: #302 - Potentially remove this. May not be necessary anymore.
         /// <summary>
         /// Adds any missing transform components to an <see cref="Entity"/> to express basic translation, rotation, and
         /// scale. If a standard component isn't present it is added with an identity value.
