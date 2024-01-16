@@ -105,7 +105,6 @@ namespace Anvil.Unity.DOTS.Entities
         private static NativeList<TypeManager.EntityOffsetInfo> s_EntityOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
         private static NativeList<TypeManager.EntityOffsetInfo> s_BlobAssetRefOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
         private static NativeList<TypeManager.EntityOffsetInfo> s_WeakAssetRefOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
-        private static NativeList<TypeManager.EntityOffsetInfo> s_UnityObjectRefOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
         private static readonly HashSet<Type> s_TypeCache = new HashSet<Type>();
 
         private static bool s_AppDomainUnloadRegistered;
@@ -150,11 +149,6 @@ namespace Anvil.Unity.DOTS.Entities
             if (s_WeakAssetRefOffsetList.IsCreated)
             {
                 s_WeakAssetRefOffsetList.Dispose();
-            }
-
-            if (s_UnityObjectRefOffsetList.IsCreated)
-            {
-                s_UnityObjectRefOffsetList.Dispose();
             }
         }
 
