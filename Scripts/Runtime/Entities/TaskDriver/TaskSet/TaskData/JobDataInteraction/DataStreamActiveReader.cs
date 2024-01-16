@@ -33,6 +33,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         /// <summary>
+        /// Gets the <typeparamref name="TInstance"/> at the specified index.
+        /// </summary>
+        /// <param name="index">The index into the backing array</param>
+        public TInstance this[int index]
+        {
+            get => m_Active[index].Payload;
+        }
+
+        /// <summary>
         /// Gets the length of the backing array.
         /// </summary>
         public int Length
