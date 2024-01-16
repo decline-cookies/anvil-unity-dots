@@ -1,10 +1,7 @@
 using Anvil.Unity.DOTS.Data;
-using System.Collections.Generic;
-using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
@@ -161,10 +158,11 @@ namespace Anvil.Unity.DOTS.Entities
                 }
 
                 NativeList<SystemHandle> worldGroupSystems = worldGroup.GetAllSystems(Allocator.Temp);
-                if (worldGroupSystems.AsArray().All(systemHandle => systemHandle != system.SystemHandle))
+                if (!worldGroupSystems.Contains(system.SystemHandle))
                 {
                     continue;
                 }
+
                 group = worldGroup;
                 return true;
             }
