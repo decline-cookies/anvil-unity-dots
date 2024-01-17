@@ -54,7 +54,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void CreateQuery()
         {
-            m_Query = m_OwningSystem.GetEntityQuery(m_QueryComponentTypes);
+            EntityQueryDesc entityQueryDesc = new EntityQueryDesc
+            {
+                All = m_QueryComponentTypes,
+                Options = EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IgnoreComponentEnabledState
+            };
+
+            m_Query = m_OwningSystem.GetEntityQuery(entityQueryDesc);
             m_Query.SetOrderVersionFilter();
         }
 
