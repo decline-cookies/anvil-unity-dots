@@ -84,6 +84,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // STATIC HELPERS
         //*************************************************************************************************************
 
+        //Called by Unity's JobsILPostProcessor to initialize the reflection data for the job.
         [UsedImplicitly]
         public static void EarlyJobInit<TJob>()
             where TJob : unmanaged, ITaskCancelJobForDefer
