@@ -1,6 +1,6 @@
-using Anvil.Unity.DOTS.Data;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
+using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
@@ -30,9 +30,14 @@ namespace Anvil.Unity.DOTS.Entities
             m_Value = value;
         }
 
-        public unsafe void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            UnsafeCollectionUtil.FloodSetBuffer(chunk.GetComponentDataPtrRW(ref m_TypeHandle), 0, chunk.Count, m_Value);
+            NativeArray<T> array = chunk.GetNativeArray(ref m_TypeHandle);
+            ChunkEntityEnumerator enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+            while (enumerator.NextEntityIndex(out int index))
+            {
+                array[index] = m_Value;
+            }
         }
     }
 }
