@@ -252,6 +252,8 @@ namespace Anvil.Unity.DOTS.Entities
 
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
+                //We're deliberately not using the chunk filter here, because we want to know about all entities that
+                //have entered the world, regardless if they are disabled or not.
                 NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityTypeHandle);
 
                 for (int i = 0; i < entities.Length; ++i)
