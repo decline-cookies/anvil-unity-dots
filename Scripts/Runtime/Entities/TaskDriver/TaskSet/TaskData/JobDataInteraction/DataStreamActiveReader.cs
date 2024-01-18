@@ -1,6 +1,8 @@
+using Anvil.Unity.DOTS.Data;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
@@ -10,7 +12,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// To be used in jobs that only allows for reading of this data.
     /// </summary>
     /// <typeparam name="TInstance">They type of <see cref="IEntityKeyedTask"/> to read</typeparam>
-    [BurstCompatible]
     public readonly struct DataStreamActiveReader<TInstance> : IEnumerable<TInstance>
         where TInstance : unmanaged, IEntityKeyedTask
     {
@@ -19,6 +20,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal DataStreamActiveReader(NativeArray<EntityKeyedTaskWrapper<TInstance>> active)
         {
             m_Active = active;
+        }
+
+        /// <summary>
+        /// Gets the <typeparamref name="TInstance"/> at the specified index.
+        /// </summary>
+        /// <param name="index">The index into the backing array</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref readonly TInstance ElementAtReadOnly(int index)
+        {
+            return ref m_Active.ElementAtReadOnly(index).Payload;
         }
 
         /// <summary>

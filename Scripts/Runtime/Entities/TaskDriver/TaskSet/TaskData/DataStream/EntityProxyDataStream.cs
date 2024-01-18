@@ -63,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public EntityProxyDataStream(ITaskSetOwner taskSetOwner, CancelRequestBehaviour cancelRequestBehaviour, string uniqueContextIdentifier)
             : base(taskSetOwner)
         {
-            TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystemManaged<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetOrCreateEntityProxyDataSource<TInstance>();
 
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, cancelRequestBehaviour, uniqueContextIdentifier);
@@ -99,7 +99,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         //TODO: #137 - Gross!!! This is a special case only for CancelComplete
         protected EntityProxyDataStream(ITaskSetOwner taskSetOwner, string uniqueContextIdentifier) : base(taskSetOwner)
         {
-            TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = taskSetOwner.World.GetOrCreateSystemManaged<TaskDriverManagementSystem>();
             m_DataSource = taskDriverManagementSystem.GetCancelCompleteDataSource() as EntityProxyDataSource<TInstance>;
             m_ActiveArrayData = m_DataSource.CreateActiveArrayData(taskSetOwner, CancelRequestBehaviour.Ignore, uniqueContextIdentifier);
             ScheduleInfo = m_ActiveArrayData.ScheduleInfo;

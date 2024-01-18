@@ -32,7 +32,7 @@ namespace Anvil.Unity.DOTS.Entities
         protected override void OnCreate()
         {
             base.OnCreate();
-            m_EntityWorldMigrationSystem = World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            m_EntityWorldMigrationSystem = World.GetOrCreateSystemManaged<EntityWorldMigrationSystem>();
             m_EntityWorldMigrationSystem.RegisterMigrationObserver(this);
         }
 
@@ -115,7 +115,7 @@ namespace Anvil.Unity.DOTS.Entities
 
         JobHandle IEntityWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystem<PersistentDataSystem>();
+            PersistentDataSystem destinationPersistentDataSystem = destinationWorld.GetOrCreateSystemManaged<PersistentDataSystem>();
             Debug_EnsureOtherWorldPersistentDataSystemExists(destinationWorld, destinationPersistentDataSystem);
 
             NativeArray<JobHandle> migrationDependencies = new NativeArray<JobHandle>(m_EntityPersistentData.Count, Allocator.Temp);

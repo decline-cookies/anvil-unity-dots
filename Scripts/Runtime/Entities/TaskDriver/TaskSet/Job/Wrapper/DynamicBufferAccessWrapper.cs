@@ -5,7 +5,7 @@ using Unity.Jobs;
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class DynamicBufferAccessWrapper<T> : AbstractAccessWrapper
-        where T : struct, IBufferElementData
+        where T : unmanaged, IBufferElementData
     {
         private readonly SystemBase m_System;
         private readonly AccessController m_AccessController;
@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         public DynamicBufferAccessWrapper(AccessType accessType, AbstractJobConfig.Usage usage, SystemBase system) : base(accessType, usage)
         {
             m_System = system;
-            m_AccessController = m_System.World.GetOrCreateSystem<TaskDriverManagementSystem>().GetOrCreateDBFEAccessController<T>();
+            m_AccessController = m_System.World.GetOrCreateSystemManaged<TaskDriverManagementSystem>().GetOrCreateDBFEAccessController<T>();
         }
 
         protected override void DisposeSelf()

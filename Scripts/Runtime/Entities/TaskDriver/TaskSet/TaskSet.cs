@@ -41,7 +41,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         {
             TaskSetOwner = taskSetOwner;
 
-            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystem<PersistentDataSystem>();
+            m_PersistentDataSystem = TaskSetOwner.World.GetOrCreateSystemManaged<PersistentDataSystem>();
 
             //This is temporary until we refactor DataStreams and AbstractData as part of #241
             m_DataStreamLookupByID = new Dictionary<DataTargetID, AbstractDataStream>();
@@ -239,7 +239,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityQuery entityQuery,
             JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             Debug_EnsureNoDuplicateJobSchedulingDelegates(scheduleJobFunction);
 

@@ -16,7 +16,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="index">The zero-based index.</param>
         /// <typeparam name="T">The data type stored in the buffer. Must be a value type.</typeparam>
         /// <returns>A readonly reference to the element.</returns>
-        public static unsafe ref readonly T ElementAtReadOnly<T>(this DynamicBuffer<T> buffer, int index) where T : struct
+        public static unsafe ref readonly T ElementAtReadOnly<T>(this DynamicBuffer<T> buffer, int index) where T : unmanaged
         {
             Debug.Assert(index >= 0 && index < buffer.Length);
             return ref UnsafeUtility.ArrayElementAsRef<T>(buffer.GetUnsafeReadOnlyPtr(), index);

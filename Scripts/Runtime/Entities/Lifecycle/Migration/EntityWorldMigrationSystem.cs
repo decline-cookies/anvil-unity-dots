@@ -20,7 +20,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// NOTE: Use <see cref="MoveEntitiesAndMigratableDataTo"/> on this System instead of directly interfacing with
     /// <see cref="EntityManager.MoveEntitiesFrom"/>
     /// </summary>
-    public class EntityWorldMigrationSystem : AbstractDataSystem
+    public partial class EntityWorldMigrationSystem : AbstractDataSystem
     {
         private readonly HashSet<IEntityWorldMigrationObserver> m_MigrationObservers;
 
@@ -105,6 +105,7 @@ namespace Anvil.Unity.DOTS.Entities
         private static NativeList<TypeManager.EntityOffsetInfo> s_EntityOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
         private static NativeList<TypeManager.EntityOffsetInfo> s_BlobAssetRefOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
         private static NativeList<TypeManager.EntityOffsetInfo> s_WeakAssetRefOffsetList = new NativeList<TypeManager.EntityOffsetInfo>(32, Allocator.Persistent);
+        private static readonly HashSet<Type> s_TypeCache = new HashSet<Type>();
 
         private static bool s_AppDomainUnloadRegistered;
 
@@ -121,6 +122,7 @@ namespace Anvil.Unity.DOTS.Entities
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_OnDomainUnload;
             s_AppDomainUnloadRegistered = true;
 
+            s_TypeCache.Clear();
             SharedTypeOffsetInfo.REF.Data = s_TypeOffsetsLookup;
             UpdateSharedStatics();
         }
@@ -178,7 +180,7 @@ namespace Anvil.Unity.DOTS.Entities
             {
                 throw new InvalidOperationException($"Type {type.GetReadableName()} must be a value type in order to register for Entity Patching.");
             }
-            
+
             ScanForCollections(string.Empty, type);
 
             long typeHash = BurstRuntime.GetHashCode64(type);
@@ -199,11 +201,12 @@ namespace Anvil.Unity.DOTS.Entities
                 out bool hasWeakAssetRefs,
                 ref s_EntityOffsetList,
                 ref s_BlobAssetRefOffsetList,
-                ref s_WeakAssetRefOffsetList);
+                ref s_WeakAssetRefOffsetList,
+                s_TypeCache);
 
 
             //Unity gives us back Blob Asset Refs and Weak Asset Refs as well but for now we're ignoring them.
-            //When the time comes to use those and do remapping with them, we'll need to add that info here along 
+            //When the time comes to use those and do remapping with them, we'll need to add that info here along
             //with the utils to actually do the remapping
             s_TypeOffsetsLookup.Add(
                 typeHash,
@@ -215,7 +218,7 @@ namespace Anvil.Unity.DOTS.Entities
             //our shared statics
             UpdateSharedStatics();
         }
-        
+
         //TODO: #233 - This likely won't be a safety function when fully implemented as we'll need to store the type offsets for patching
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private static void ScanForCollections(string parentPathString, Type type)

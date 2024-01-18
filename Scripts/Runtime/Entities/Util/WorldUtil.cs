@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
-    internal class EndInitializationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
+    internal partial class EndInitializationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
 
     /// <summary>
     /// A system group to house a <see cref="World"/>s <see cref="EndSimulationEntityCommandBufferSystem"/>.
@@ -23,7 +23,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// </summary>
     /// <remarks>Kept outside <see cref="WorldUtil"/> so their names read better in the editor.</remarks>
     [DisableAutoCreation]
-    internal class EndSimulationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
+    internal partial class EndSimulationCommandBufferSystemGroup_Anvil : ComponentSystemGroup { }
 
     /// <summary>
     /// A <see cref="PlayerLoop"/> phase inserted immediately after <see cref="Update"/>.
@@ -160,10 +160,10 @@ namespace Anvil.Unity.DOTS.Entities
                 (Type playerLoopSystemType, Type systemGroupType) = topLevelGroupTypes[i];
                 Debug.Assert(systemGroupType.IsSubclassOf(typeof(ComponentSystemGroup)));
 
-                ComponentSystemGroup group = world.GetExistingSystem(systemGroupType) as ComponentSystemGroup;
+                ComponentSystemGroup group = world.GetExistingSystemManaged(systemGroupType) as ComponentSystemGroup;
                 if (group == null)
                 {
-                    group = world.CreateSystem(systemGroupType) as ComponentSystemGroup;
+                    group = world.CreateSystemManaged(systemGroupType) as ComponentSystemGroup;
                     ScriptBehaviourUpdateOrder.AppendSystemToPlayerLoop(group, ref playerLoop, playerLoopSystemType);
                 }
                 else
@@ -286,9 +286,9 @@ namespace Anvil.Unity.DOTS.Entities
         {
             Debug.Assert(typeof(SrcGroup) != typeof(DestGroup), "Source and destination groups should not be the same.");
 
-            ComponentSystemBase system = world.GetExistingSystem<System>();
-            ComponentSystemGroup srcGroup = world.GetExistingSystem<SrcGroup>();
-            ComponentSystemGroup destGroup = world.GetExistingSystem<DestGroup>();
+            ComponentSystemBase system = world.GetExistingSystemManaged<System>();
+            ComponentSystemGroup srcGroup = world.GetExistingSystemManaged<SrcGroup>();
+            ComponentSystemGroup destGroup = world.GetExistingSystemManaged<DestGroup>();
 
             // Skip if there are missing elements
             if (system == null || srcGroup == null || destGroup == null)
@@ -296,7 +296,7 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new ArgumentNullException($"{nameof(MoveSystemFromToGroup)}: One or more of the provided system and groups do not exist. {nameof(System)}:{system}, {nameof(SrcGroup)}:{srcGroup}, {nameof(DestGroup)}:{destGroup}");
             }
 
-            Debug.Assert(srcGroup.Systems.Contains(system), $"{system} is not part of the source group: {srcGroup}");
+            Debug.Assert(srcGroup.GetAllSystems().AsArray().Contains(system.SystemHandle), $"{system} is not part of the source group: {srcGroup}");
             srcGroup.RemoveSystemFromUpdateList(system);
 
             destGroup.AddSystemToUpdateList(system);

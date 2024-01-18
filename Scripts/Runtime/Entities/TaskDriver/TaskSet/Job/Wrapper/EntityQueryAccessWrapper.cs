@@ -7,27 +7,27 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
     internal class EntityQueryAccessWrapper : AbstractAccessWrapper
     {
-        private readonly EntityQueryNativeArray m_EntityQueryNativeArray;
+        private readonly EntityQueryNativeList m_EntityQueryNativeList;
 
-        public NativeArray<Entity> NativeArray
+        public NativeList<Entity> NativeList
         {
-            get => m_EntityQueryNativeArray.Results;
+            get => m_EntityQueryNativeList.Results;
         }
 
 
-        public EntityQueryAccessWrapper(EntityQueryNativeArray entityQueryNativeArray, AbstractJobConfig.Usage usage) : base(AccessType.SharedRead, usage)
+        public EntityQueryAccessWrapper(EntityQueryNativeList entityQueryNativeList, AbstractJobConfig.Usage usage) : base(AccessType.SharedRead, usage)
         {
-            m_EntityQueryNativeArray = entityQueryNativeArray;
+            m_EntityQueryNativeList = entityQueryNativeList;
         }
 
         public sealed override JobHandle AcquireAsync()
         {
-            return m_EntityQueryNativeArray.Acquire();
+            return m_EntityQueryNativeList.Acquire();
         }
 
         public sealed override void ReleaseAsync(JobHandle dependsOn)
         {
-            m_EntityQueryNativeArray.Release(dependsOn);
+            m_EntityQueryNativeList.Release(dependsOn);
         }
     }
 }

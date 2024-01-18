@@ -19,8 +19,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TValue">The value type.</typeparam>
         /// <returns>The <see cref="Allocator"/>.</returns>
         public static Allocator GetAllocator<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             return map.m_HashMapData.GetAllocator();
         }
@@ -34,8 +34,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
         public static void GetKeyArray<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeArray<TKey> result)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             map.m_HashMapData.GetKeyArray(result);
         }
@@ -49,8 +49,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
         public static void GetValueArray<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeArray<TValue> result)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             map.m_HashMapData.GetValueArray(result);
         }
@@ -64,8 +64,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TKey">The key type</typeparam>
         /// <typeparam name="TValue">The value type</typeparam>
         public static void GetKeyValueArrays<TKey, TValue>(this NativeParallelHashMap<TKey, TValue> map, NativeKeyValueArrays<TKey, TValue> result)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             map.m_HashMapData.GetKeyValueArrays(result);
         }

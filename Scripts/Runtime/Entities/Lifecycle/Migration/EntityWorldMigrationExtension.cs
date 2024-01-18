@@ -21,14 +21,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// This will then handle notifying all <see cref="IEntityWorldMigrationObserver"/>s to have the chance to respond with
         /// custom migration work.
         /// NOTE: Use this instead of <see cref="EntityManager.MoveEntitiesFrom"/> in order for migration callbacks
-        /// to occur in non IComponentData 
+        /// to occur in non IComponentData
         /// </summary>
         /// <param name="srcEntityManager">The source <see cref="World"/>'s Entity Manager</param>
         /// <param name="destinationWorld">The <see cref="World"/> to move Entities to.</param>
         /// <param name="entitiesToMigrateQuery">The <see cref="EntityQuery"/> to select the Entities to migrate.</param>
         public static void MoveEntitiesAndMigratableDataTo(this EntityManager srcEntityManager, World destinationWorld, EntityQuery entitiesToMigrateQuery)
         {
-            EntityWorldMigrationSystem entityWorldMigrationSystem = srcEntityManager.World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            EntityWorldMigrationSystem entityWorldMigrationSystem = srcEntityManager.World.GetOrCreateSystemManaged<EntityWorldMigrationSystem>();
             entityWorldMigrationSystem.MoveEntitiesAndMigratableDataTo(destinationWorld, entitiesToMigrateQuery);
         }
 
@@ -46,7 +46,6 @@ namespace Anvil.Unity.DOTS.Entities
         /// true if this entity was moved to the new world and remaps to a new entity.
         /// false if this entity did not move and stayed in this world.
         /// </returns>
-        [BurstCompatible]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryGetRemappedEntity(
             this Entity currentEntity,
@@ -68,7 +67,6 @@ namespace Anvil.Unity.DOTS.Entities
         /// <exception cref="InvalidOperationException">
         /// Occurs if this type was not registered via <see cref="EntityWorldMigrationSystem.RegisterForEntityPatching{T}"/>
         /// </exception>
-        [BurstCompatible]
         public static unsafe void PatchEntityReferences<T>(this ref T instance, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
             where T : struct
         {

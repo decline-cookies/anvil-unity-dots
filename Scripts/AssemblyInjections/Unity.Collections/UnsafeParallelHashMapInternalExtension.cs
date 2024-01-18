@@ -20,8 +20,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TValue">The value type.</typeparam>
         /// <returns>The <see cref="Allocator"/>.</returns>
         public static Allocator GetAllocator<TKey, TValue>(this UnsafeParallelHashMap<TKey, TValue> map)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             return map.m_AllocatorLabel.ToAllocator;
         }
@@ -35,8 +35,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
         public static unsafe void GetKeyArray<TKey, TValue>(this UnsafeParallelHashMap<TKey, TValue> map, NativeArray<TKey> result)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             UnsafeParallelHashMapData.GetKeyArray(map.m_Buffer, result);
         }
@@ -50,8 +50,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TKey">The key type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
         public static unsafe void GetValueArray<TKey, TValue>(this UnsafeParallelHashMap<TKey, TValue> map, NativeArray<TValue> result)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             UnsafeParallelHashMapData.GetValueArray(map.m_Buffer, result);
         }
@@ -65,8 +65,8 @@ namespace Anvil.Unity.Collections
         /// <typeparam name="TKey">The key type</typeparam>
         /// <typeparam name="TValue">The value type</typeparam>
         public static unsafe void GetKeyValueArrays<TKey, TValue>(this UnsafeParallelHashMap<TKey, TValue> map, NativeKeyValueArrays<TKey, TValue> result)
-            where TKey : struct, IEquatable<TKey>
-            where TValue : struct
+            where TKey : unmanaged, IEquatable<TKey>
+            where TValue : unmanaged
         {
             UnsafeParallelHashMapData.GetKeyValueArrays(map.m_Buffer, result);
         }

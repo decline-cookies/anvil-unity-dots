@@ -1,6 +1,8 @@
+using JetBrains.Annotations;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -17,7 +19,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             this TJob jobData,
             DataStreamScheduleInfo<TInstance> scheduleInfo,
             JobHandle dependsOn = default)
-            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TJob : unmanaged, ITaskJobForDefer
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return InternalSchedule(
@@ -32,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             this TJob jobData,
             DataStreamScheduleInfo<TInstance> scheduleInfo,
             JobHandle dependsOn = default)
-            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TJob : unmanaged, ITaskJobForDefer
             where TInstance : unmanaged, IEntityKeyedTask
         {
             return InternalSchedule(
@@ -49,15 +51,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             JobHandle dependsOn,
             ScheduleMode scheduleMode,
             int batchSize)
-            where TJob : struct, ITaskJobForDefer<TInstance>
+            where TJob : unmanaged, ITaskJobForDefer
             where TInstance : unmanaged, IEntityKeyedTask
         {
-            IntPtr reflectionData = WrapperJobProducer<TJob, TInstance>.JOB_REFLECTION_DATA;
-            ValidateReflectionData(reflectionData);
+            WrapperJobProducer<TJob> wrapperData = new WrapperJobProducer<TJob>(ref jobData);
 
-            WrapperJobStruct<TJob, TInstance> wrapperData = new WrapperJobStruct<TJob, TInstance>(
-                ref jobData,
-                scheduleInfo);
+            IntPtr reflectionData = GetReflectionData<TJob>();
+            ValidateReflectionData(reflectionData);
 
             JobsUtility.JobScheduleParameters scheduleParameters = new JobsUtility.JobScheduleParameters(
                 UnsafeUtility.AddressOf(ref wrapperData),
@@ -84,6 +84,22 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // STATIC HELPERS
         //*************************************************************************************************************
 
+        //Called by Unity's JobsILPostProcessor to initialize the reflection data for the job.
+        [UsedImplicitly]
+        public static void EarlyJobInit<TJob>()
+            where TJob : unmanaged, ITaskJobForDefer
+        {
+            WrapperJobProducer<TJob>.Initialize();
+        }
+
+        private static IntPtr GetReflectionData<TJob>()
+            where TJob : unmanaged, ITaskJobForDefer
+        {
+            WrapperJobProducer<TJob>.Initialize();
+            IntPtr reflectionData = WrapperJobProducer<TJob>.JOB_REFLECTION_DATA.Data;
+            return reflectionData;
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private static void ValidateReflectionData(IntPtr reflectionData)
         {
@@ -94,59 +110,36 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         }
 
         //*************************************************************************************************************
-        // WRAPPER STRUCT
-        //*************************************************************************************************************
-
-        internal struct WrapperJobStruct<TJob, TInstance>
-            where TJob : struct, ITaskJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityKeyedTask
-        {
-            private const int UNSET_NATIVE_THREAD_INDEX = -1;
-
-            internal TJob JobData;
-            internal DataStreamActiveReader<TInstance> Reader;
-            [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
-
-            public WrapperJobStruct(ref TJob jobData, DataStreamScheduleInfo<TInstance> scheduleInfo)
-            {
-                JobData = jobData;
-                Reader = scheduleInfo.Reader;
-                NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
-            }
-        }
-
-        //*************************************************************************************************************
         // PRODUCER
         //*************************************************************************************************************
-        private struct WrapperJobProducer<TJob, TInstance>
-            where TJob : struct, ITaskJobForDefer<TInstance>
-            where TInstance : unmanaged, IEntityKeyedTask
+
+        internal struct WrapperJobProducer<TJob>
+            where TJob : unmanaged, ITaskJobForDefer
         {
             // ReSharper disable once StaticMemberInGenericType
-            internal static readonly IntPtr JOB_REFLECTION_DATA = JobsUtility.CreateJobReflectionData(
-                typeof(WrapperJobStruct<TJob, TInstance>),
-                typeof(TJob),
-                (ExecuteJobFunction)Execute);
+            internal static readonly SharedStatic<IntPtr> JOB_REFLECTION_DATA = SharedStatic<IntPtr>.GetOrCreate<WrapperJobProducer<TJob>>();
 
-
-            private delegate void ExecuteJobFunction(
-                ref WrapperJobStruct<TJob, TInstance> jobData,
-                IntPtr additionalPtr,
-                IntPtr bufferRangePatchData,
-                ref JobRanges ranges,
-                int jobIndex);
-
+            [BurstDiscard]
+            internal static void Initialize()
+            {
+                if (JOB_REFLECTION_DATA.Data == IntPtr.Zero)
+                {
+                    JOB_REFLECTION_DATA.Data = JobsUtility.CreateJobReflectionData(
+                        typeof(WrapperJobProducer<TJob>),
+                        typeof(TJob),
+                        (ExecuteJobFunction)Execute);
+                }
+            }
 
             [SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Required by Burst.")]
-            public static unsafe void Execute(
-                ref WrapperJobStruct<TJob, TInstance> wrapperData,
+            internal static unsafe void Execute(
+                ref WrapperJobProducer<TJob> wrapperData,
                 IntPtr additionalPtr,
                 IntPtr bufferRangePatchData,
                 ref JobRanges ranges,
                 int jobIndex)
             {
-                ref TJob jobData = ref wrapperData.JobData;
-                ref DataStreamActiveReader<TInstance> reader = ref wrapperData.Reader;
+                ref TJob jobData = ref wrapperData.m_JobData;
 
                 jobData.InitForThread(wrapperData.NativeThreadIndex);
 
@@ -158,9 +151,27 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
                     for (int i = beginIndex; i < endIndex; ++i)
                     {
-                        jobData.Execute(reader[i]);
+                        jobData.Execute(i);
                     }
                 }
+            }
+
+            private delegate void ExecuteJobFunction(
+                ref WrapperJobProducer<TJob> jobData,
+                IntPtr additionalPtr,
+                IntPtr bufferRangePatchData,
+                ref JobRanges ranges,
+                int jobIndex);
+
+            private const int UNSET_NATIVE_THREAD_INDEX = -1;
+
+            private TJob m_JobData;
+            [NativeSetThreadIndex] internal readonly int NativeThreadIndex;
+
+            public WrapperJobProducer(ref TJob jobData)
+            {
+                m_JobData = jobData;
+                NativeThreadIndex = UNSET_NATIVE_THREAD_INDEX;
             }
         }
     }

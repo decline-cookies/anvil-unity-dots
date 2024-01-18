@@ -25,6 +25,7 @@ namespace Anvil.Unity.DOTS.Entities.Transform
             get => new BurstableLogger<FixedString32Bytes>(string.Empty);
         }
 
+        //TODO: #302 - Potentially remove this. May not be necessary anymore.
         /// <summary>
         /// Adds any missing transform components to an <see cref="Entity"/> to express basic translation, rotation, and
         /// scale. If a standard component isn't present it is added with an identity value.
@@ -35,19 +36,9 @@ namespace Anvil.Unity.DOTS.Entities.Transform
         {
             Debug.Assert(entityManager.Exists(entity));
 
-            if (!entityManager.HasComponent<Translation>(entity))
+            if (!entityManager.HasComponent<LocalTransform>(entity))
             {
-                entityManager.AddComponentData(entity, new Translation() { Value = float3.zero });
-            }
-
-            if (!entityManager.HasComponent<Scale>(entity) && !entityManager.HasComponent<NonUniformScale>(entity))
-            {
-                entityManager.AddComponentData(entity, new Scale() { Value = 1 });
-            }
-
-            if (!entityManager.HasComponent<Rotation>(entity) && !entityManager.HasComponent<CompositeRotation>(entity))
-            {
-                entityManager.AddComponentData(entity, new Rotation() { Value = quaternion.identity });
+                entityManager.AddComponentData(entity, LocalTransform.Identity);
             }
         }
 

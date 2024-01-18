@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct DataOwnerID : IEquatable<DataOwnerID>,
                                            IToFixedString<FixedString32Bytes>
@@ -22,8 +21,8 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return !(lhs == rhs);
         }
-        
-        
+
+
         private readonly int m_Value;
 
         public bool IsValid
@@ -36,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug.Assert(value != UNSET_ID.m_Value);
             m_Value = value;
         }
-        
+
         public bool Equals(DataOwnerID other)
         {
             return this == other;
@@ -56,8 +55,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return m_Value.ToString();
         }
-        
-        [BurstCompatible]
+
         public FixedString32Bytes ToFixedString()
         {
             return $"Value: {m_Value}";

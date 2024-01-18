@@ -63,7 +63,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         protected override void OnCreate()
         {
             base.OnCreate();
-            EntityWorldMigrationSystem entityWorldMigrationSystem = World.GetOrCreateSystem<EntityWorldMigrationSystem>();
+            EntityWorldMigrationSystem entityWorldMigrationSystem = World.GetOrCreateSystemManaged<EntityWorldMigrationSystem>();
             entityWorldMigrationSystem.RegisterMigrationObserver(this);
         }
 
@@ -314,7 +314,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
         JobHandle IEntityWorldMigrationObserver.MigrateTo(JobHandle dependsOn, World destinationWorld, ref NativeArray<EntityRemapUtility.EntityRemapInfo> remapArray)
         {
-            TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystem<TaskDriverManagementSystem>();
+            TaskDriverManagementSystem destinationTaskDriverManagementSystem = destinationWorld.GetOrCreateSystemManaged<TaskDriverManagementSystem>();
             Debug_EnsureOtherWorldTaskDriverManagementSystemExists(destinationWorld, destinationTaskDriverManagementSystem);
 
             return m_TaskDriverMigrationData.MigrateTo(

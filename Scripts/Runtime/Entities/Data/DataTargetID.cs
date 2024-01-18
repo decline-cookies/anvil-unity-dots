@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace Anvil.Unity.DOTS.Entities
 {
-    [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct DataTargetID : IEquatable<DataTargetID>,
                                             IToFixedString<FixedString32Bytes>
@@ -22,10 +21,10 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return !(lhs == rhs);
         }
-        
-        
+
+
         private readonly int m_Value;
-        
+
         public bool IsValid
         {
             get => this != UNSET_ID;
@@ -36,7 +35,7 @@ namespace Anvil.Unity.DOTS.Entities
             Debug.Assert(value != UNSET_ID.m_Value);
             m_Value = value;
         }
-        
+
         public bool Equals(DataTargetID other)
         {
             return this == other;
@@ -56,8 +55,7 @@ namespace Anvil.Unity.DOTS.Entities
         {
             return m_Value.ToString();
         }
-        
-        [BurstCompatible]
+
         public FixedString32Bytes ToFixedString()
         {
             return $"{m_Value}";

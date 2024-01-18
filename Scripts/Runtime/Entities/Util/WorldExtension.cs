@@ -40,11 +40,11 @@ namespace Anvil.Unity.DOTS.Entities
                 {
                     if (typeof(ComponentSystemBase).IsAssignableFrom(systemType))
                     {
-                        world.GetOrCreateSystem(systemType);
+                        world.GetOrCreateSystemManaged(systemType);
                     }
                     else if (typeof(ISystem).IsAssignableFrom(systemType))
                     {
-                        world.GetOrCreateUnmanagedSystem(systemType);
+                        world.GetOrCreateSystem(systemType);
                     }
                     else
                     {

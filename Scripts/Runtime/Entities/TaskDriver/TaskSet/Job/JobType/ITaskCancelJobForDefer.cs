@@ -10,9 +10,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being cancelled.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskCancelJobForDeferExtension.WrapperJobStruct<,>))]
-    public interface ITaskCancelJobForDefer<TInstance>
-        where TInstance : unmanaged, IEntityKeyedTask
+    [JobProducerType(typeof(TaskCancelJobForDeferExtension.WrapperJobProducer<>))]
+    public interface ITaskCancelJobForDefer
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -28,6 +27,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <param name="cancelInstance">The <see cref="IEntityKeyedTask"/> to cancel.</param>
         /// <param name="cancellationUpdater">A helper struct to continue or resolve</param>
-        void Execute(TInstance cancelInstance, ref DataStreamCancellationUpdater<TInstance> cancellationUpdater);
+        void Execute(int index);
     }
 }

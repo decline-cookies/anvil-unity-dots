@@ -34,7 +34,7 @@ namespace Anvil.Unity.DOTS.Entities
         /// <param name="data">The data that was fetched. This data is only valid if the method returns true.</param>
         /// <typeparam name="T">The data type to fetch.</typeparam>
         /// <returns>True if the data was present on the entity.</returns>
-        public static bool TryGetComponentData<T>(this EntityManager entityManager, Entity entity, out T data) where T : struct, IComponentData
+        public static bool TryGetComponentData<T>(this EntityManager entityManager, Entity entity, out T data) where T : unmanaged, IComponentData
         {
             if (entityManager.HasComponent<T>(entity))
             {

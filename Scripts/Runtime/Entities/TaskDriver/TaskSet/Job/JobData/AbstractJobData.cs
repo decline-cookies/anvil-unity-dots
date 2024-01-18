@@ -145,9 +145,9 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Gets a <see cref="NativeArray{Entity}"/> to read from in a job from an <see cref="EntityQuery"/>
         /// </summary>
         /// <returns>The <see cref="NativeArray{Entity}"/></returns>
-        public NativeArray<Entity> GetEntityNativeArrayFromQuery()
+        public NativeList<Entity> GetEntityNativeListFromQuery()
         {
-            return m_JobConfig.GetEntityNativeArrayFromQuery();
+            return m_JobConfig.GetEntityNativeListFromQuery();
         }
 
         /// <summary>
@@ -155,10 +155,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <typeparam name="T">The type of <see cref="IComponentData"/> in the array.</typeparam>
         /// <returns>The <see cref="NativeArray{T}"/></returns>
-        public NativeArray<T> GetIComponentDataNativeArrayFromQuery<T>()
-            where T : struct, IComponentData
+        public NativeList<T> GetIComponentDataNativeListFromQuery<T>()
+            where T : unmanaged, IComponentData
         {
-            return m_JobConfig.GetIComponentDataNativeArrayFromQuery<T>();
+            return m_JobConfig.GetIComponentDataNativeListFromQuery<T>();
         }
 
         //*************************************************************************************************************
@@ -170,7 +170,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out CDFEReader<T> instance)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             m_JobConfig.Fulfill(out instance);
         }
@@ -179,7 +179,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out CDFEWriter<T> instance)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
             m_JobConfig.Fulfill(out instance);
         }
@@ -188,7 +188,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out DBFEForRead<T> instance)
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             m_JobConfig.Fulfill(out instance);
         }
@@ -197,7 +197,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// Fulfills an instance of the provided type for the job.
         /// </summary>
         public void Fulfill<T>(out DBFEForExclusiveWrite<T> instance)
-            where T : struct, IBufferElementData
+            where T : unmanaged, IBufferElementData
         {
             m_JobConfig.Fulfill(out instance);
         }

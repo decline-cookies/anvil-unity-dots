@@ -7,7 +7,6 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
     internal struct CancelRequestsDataSourceConsolidator : IDisposable
     {
         private const int UNSET_THREAD_INDEX = -1;

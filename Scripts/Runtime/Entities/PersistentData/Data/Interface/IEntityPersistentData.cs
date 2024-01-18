@@ -15,5 +15,5 @@ namespace Anvil.Unity.DOTS.Entities
                                                 IReadOnlyEntityPersistentData<T>,
                                                 ISharedWriteAccessControlledValue<EntityPersistentDataWriter<T>>,
                                                 IExclusiveWriteAccessControlledValue<EntityPersistentDataWriter<T>>
-        where T : struct, IEntityPersistentDataInstance { }
+        where T : unmanaged, IEntityPersistentDataInstance { }
 }

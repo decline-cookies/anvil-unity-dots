@@ -1,6 +1,7 @@
 using Anvil.CSharp.Core;
 using Anvil.Unity.DOTS.Jobs;
 using Unity.Burst;
+using Unity.Burst.Intrinsics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -53,7 +54,13 @@ namespace Anvil.Unity.DOTS.Entities
 
         public void CreateQuery()
         {
-            m_Query = m_OwningSystem.GetEntityQuery(m_QueryComponentTypes);
+            EntityQueryDesc entityQueryDesc = new EntityQueryDesc
+            {
+                All = m_QueryComponentTypes,
+                Options = EntityQueryOptions.IncludeDisabledEntities | EntityQueryOptions.IgnoreComponentEnabledState
+            };
+
+            m_Query = m_OwningSystem.GetEntityQuery(entityQueryDesc);
             m_Query.SetOrderVersionFilter();
         }
 
@@ -227,7 +234,7 @@ namespace Anvil.Unity.DOTS.Entities
 
 
         [BurstCompile]
-        private struct UpdateArrivedJob : IJobEntityBatch
+        private struct UpdateArrivedJob : IJobChunk
         {
             [ReadOnly] private readonly EntityTypeHandle m_EntityTypeHandle;
             private NativeParallelHashSet<Entity> m_Lookup;
@@ -243,9 +250,11 @@ namespace Anvil.Unity.DOTS.Entities
                 m_ArrivedEntities = arrivedEntities;
             }
 
-            public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
+            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                NativeArray<Entity> entities = batchInChunk.GetNativeArray(m_EntityTypeHandle);
+                //We're deliberately not using the chunk filter here, because we want to know about all entities that
+                //have entered the world, regardless if they are disabled or not.
+                NativeArray<Entity> entities = chunk.GetNativeArray(m_EntityTypeHandle);
 
                 for (int i = 0; i < entities.Length; ++i)
                 {

@@ -9,10 +9,10 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// <typeparam name="T">The type of <see cref="IComponentData"/> data</typeparam>
     //TODO: #82 - See if this can be consolidated.
     public class EntityQueryComponentScheduleInfo<T> : AbstractScheduleInfo
-        where T : struct, IComponentData
+        where T : unmanaged, IComponentData
     {
         private readonly EntityQueryComponentJobData<T> m_JobData;
-        private readonly EntityQueryComponentNativeArray<T> m_EntityQueryComponentNativeArray;
+        private readonly EntityQueryComponentNativeList<T> m_EntityQueryComponentNativeList;
         private readonly JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> m_ScheduleJobFunction;
 
         /// <summary>
@@ -20,18 +20,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         public int Length
         {
-            get => m_EntityQueryComponentNativeArray.Length;
+            get => m_EntityQueryComponentNativeList.Length;
         }
 
         internal EntityQueryComponentScheduleInfo(
             EntityQueryComponentJobData<T> jobData,
-            EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray,
+            EntityQueryComponentNativeList<T> entityQueryComponentNativeList,
             BatchStrategy batchStrategy,
             JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction)
             : base(scheduleJobFunction.Method, batchStrategy, ChunkUtil.MaxElementsPerChunk<T>())
         {
             m_JobData = jobData;
-            m_EntityQueryComponentNativeArray = entityQueryComponentNativeArray;
+            m_EntityQueryComponentNativeList = entityQueryComponentNativeList;
             m_ScheduleJobFunction = scheduleJobFunction;
         }
 
@@ -43,7 +43,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal override bool ShouldSchedule()
         {
             //If the query won't match anything, no need to schedule. SystemState.ShouldRunSystem does this
-            return !m_EntityQueryComponentNativeArray.EntityQuery.IsEmptyIgnoreFilter;
+            return !m_EntityQueryComponentNativeList.EntityQuery.IsEmptyIgnoreFilter;
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     public class EntityQueryScheduleInfo : AbstractScheduleInfo
     {
         private readonly EntityQueryJobData m_JobData;
-        private readonly EntityQueryNativeArray m_EntityQueryNativeArray;
+        private readonly EntityQueryNativeList m_EntityQueryNativeList;
         private readonly JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate m_ScheduleJobFunction;
 
         /// <summary>
@@ -17,18 +17,18 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         public int Length
         {
-            get => m_EntityQueryNativeArray.Length;
+            get => m_EntityQueryNativeList.Length;
         }
 
         internal EntityQueryScheduleInfo(
             EntityQueryJobData jobData,
-            EntityQueryNativeArray entityQueryNativeArray,
+            EntityQueryNativeList entityQueryNativeList,
             BatchStrategy batchStrategy,
             JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction)
             : base(scheduleJobFunction.Method, batchStrategy, ChunkUtil.MaxElementsPerChunk<Entity>())
         {
             m_JobData = jobData;
-            m_EntityQueryNativeArray = entityQueryNativeArray;
+            m_EntityQueryNativeList = entityQueryNativeList;
             m_ScheduleJobFunction = scheduleJobFunction;
         }
 
@@ -40,7 +40,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         internal override bool ShouldSchedule()
         {
             //If the query won't match anything, no need to schedule. SystemState.ShouldRunSystem does this
-            return !m_EntityQueryNativeArray.EntityQuery.IsEmptyIgnoreFilter;
+            return !m_EntityQueryNativeList.EntityQuery.IsEmptyIgnoreFilter;
         }
     }
 }

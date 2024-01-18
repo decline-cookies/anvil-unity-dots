@@ -10,9 +10,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being updated.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskUpdateJobForDeferExtension.WrapperJobStruct<,>))]
-    public interface ITaskUpdateJobForDefer<TInstance>
-        where TInstance : unmanaged, IEntityKeyedTask
+    [JobProducerType(typeof(TaskUpdateJobForDeferExtension.WrapperJobProducer<>))]
+    public interface ITaskUpdateJobForDefer
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -28,6 +27,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         /// <param name="instance">The <see cref="IEntityKeyedTask"/> to update.</param>
         /// <param name="updater">A helper struct to continue or resolve</param>
-        void Execute(TInstance instance, ref DataStreamUpdater<TInstance> updater);
+        void Execute(int index);
     }
 }

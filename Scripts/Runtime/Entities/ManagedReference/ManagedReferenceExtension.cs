@@ -82,14 +82,14 @@ namespace Anvil.Unity.DOTS.Entities
         /// Requires that a singleton <see cref="IComponentReferencable"/> instance reference exists for a
         /// <see cref="ComponentSystemBase"/> to update.
         /// This is the <see cref="IComponentReferencable"/> equivalent of
-        /// <see cref="ComponentSystemBase.RequireSingletonForUpdate"/>.
+        /// <see cref="ComponentSystemBase.RequireForUpdate"/>.
         /// </summary>
         /// <param name="system">The system to add the requirement too.</param>
         /// <typeparam name="T">The type of the managed instance.</typeparam>
         public static void RequireManagedSingletonForUpdate<T>(this ComponentSystemBase system)
             where T : class, IComponentReferencable
         {
-            system.RequireSingletonForUpdate<ManagedReference<T>>();
+            system.RequireForUpdate<ManagedReference<T>>();
         }
 
         /// <summary>
@@ -102,7 +102,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>The managed instance.</returns>
         public static T GetManagedSingleton<T>(this ComponentSystemBase system) where T : class, IComponentReferencable
         {
+            //TODO: #296 - This function will be obsolete post 1.0
+#pragma warning disable CS0618 // Type or member is obsolete
             return system.GetSingleton<ManagedReference<T>>().Resolve();
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         /// <summary>
@@ -114,7 +117,10 @@ namespace Anvil.Unity.DOTS.Entities
         /// <returns>True if a singleton of the managed type exists.</returns>
         public static bool HasManagedSingleton<T>(this ComponentSystemBase system) where T : class, IComponentReferencable
         {
+            //TODO: #296 - This function will be obsolete post 1.0
+#pragma warning disable CS0618 // Type or member is obsolete
             return system.HasSingleton<ManagedReference<T>>();
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }

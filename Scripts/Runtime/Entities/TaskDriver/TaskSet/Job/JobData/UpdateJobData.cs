@@ -18,12 +18,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // DATA STREAMS
         //*************************************************************************************************************
 
-        internal DataStreamUpdater<TInstance> GetDataStreamUpdater()
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
+        /// <param name="updater">The <see cref="DataStreamUpdater{TInstance}"/></param>
+        public void Fulfill(out DataStreamUpdater<TInstance> updater)
         {
             EntityProxyDataStream<TInstance> dataStream = m_UpdateJobConfig.GetPendingDataStream<TInstance>(AbstractJobConfig.Usage.Update);
             ResolveTargetTypeLookup resolveTargetTypeLookup = m_UpdateJobConfig.GetResolveTargetTypeLookup();
-            DataStreamUpdater<TInstance> updater = dataStream.CreateDataStreamUpdater(resolveTargetTypeLookup);
-            return updater;
+            updater = dataStream.CreateDataStreamUpdater(resolveTargetTypeLookup);
         }
     }
 }

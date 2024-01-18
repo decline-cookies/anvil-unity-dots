@@ -16,6 +16,7 @@ using System.Linq;
 
 namespace Anvil.Unity.DOTS.Jobs
 {
+    //TODO: #299 - Might be able to get rid of this class altogether.
     /// <summary>
     /// Utility methods for working accessing values in parallel.
     /// </summary>
@@ -50,11 +51,7 @@ namespace Anvil.Unity.DOTS.Jobs
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Init()
         {
-            JOB_WORKER_MAXIMUM_COUNT.Data = JobsUtility.JobWorkerMaximumCount;
-            //Why plus 2? Because sometimes Unity will put your jobs on the main thread and also an additional
-            //profiler thread outside the job worker threads.
-            CollectionSizeForMaxThreads = JOB_WORKER_MAXIMUM_COUNT.Data + 2;
-
+            JOB_WORKER_MAXIMUM_COUNT.Data = JobsUtility.ThreadIndexCount;
             Debug.Assert(JOB_WORKER_MAXIMUM_COUNT.Data > 0);
         }
 
@@ -70,40 +67,17 @@ namespace Anvil.Unity.DOTS.Jobs
         /// etc
         /// It's the number of separate "buckets" that can be written to in parallel.
         /// </remarks>
-        public static int CollectionSizeForMaxThreads { get; private set; }
+        public static int CollectionSizeForMaxThreads
+        {
+            get => JOB_WORKER_MAXIMUM_COUNT.Data;
+        }
 
         /// <summary>
         /// Returns the correct index for the collection based on the <paramref name="nativeThreadIndex"/> passed in.
         /// </summary>
         /// <remarks>
-        /// This function assumes that the collection being used was sized appropriately via
-        /// <see cref="ParallelAccessUtil.CollectionSizeForMaxThreads"/>. Larger sized collections will still work
-        /// but the intended usage is to create a small tightly packed collection sized for the specific hardware the
-        /// program is running on. Smaller sized collections will error sporadically as the scheduler assigns jobs to
-        /// out of range thread indexes.
-        ///
-        /// This function also assumes that you are never running your job on the main thread via
-        /// <see cref="IJobExtensions.Run"/>. In that case the thread index will be 0 and this function will
-        /// return -1 which will cause an error.
-        ///
-        /// When scheduling your job, Unity will place your job on one of the available worker threads in which case
-        /// the native thread index you receive will be from 1 to <see cref="JobsUtility.JobWorkerMaximumCount"/>.
-        /// There are two special cases.
-        /// 1. The scheduler may place your job on the main thread. In this case the native thread index will be
-        /// some value above <see cref="JobsUtility.JobWorkerMaximumCount"/>.
-        /// 2. The scheduler may place your job on a profiler thread in the editor. In this case the native thread
-        /// index will also be some value above <see cref="JobsUtility.JobWorkerMaximumCount"/>
-        /// It is unknown why this is.
-        ///
-        /// Our goal is to have a tightly packed collection so in the example of an 8 core machine with
-        /// <see cref="JobsUtility.JobWorkerMaximumCount"/> equal to 15, we would have the following mapping.
-        ///
-        /// thread 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, main, profiler
-        /// index  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15, 16
-        ///
-        /// We have a tightly packed collection with index 0 through 16 for a total of 17 buckets.
-        /// (15 job workers, one main, one profiler)
-        /// Thread indexes map directly without having to remember the special rules.
+        /// Temporary, this used to do a lot more work but due to Entities 1.0, we can simply return the nativeThreadIndex.
+        /// See: #299 for more details.
         /// </remarks>
         /// <param name="nativeThreadIndex">
         /// The native thread index to figure out the collection index from. Must be greater than 0.
@@ -113,7 +87,7 @@ namespace Anvil.Unity.DOTS.Jobs
         {
             DetectMultipleXThreads(nativeThreadIndex);
             Debug_EnsureNativeThreadIndexIsValid(nativeThreadIndex);
-            return math.min(nativeThreadIndex - 1, JOB_WORKER_MAXIMUM_COUNT.Data);
+            return nativeThreadIndex;
         }
 
         /// <summary>
@@ -126,7 +100,7 @@ namespace Anvil.Unity.DOTS.Jobs
         /// <returns>The collection index to use</returns>
         public static int CollectionIndexForMainThread()
         {
-            int mainThreadIndex = JOB_WORKER_MAXIMUM_COUNT.Data;
+            int mainThreadIndex = JobsUtility.ThreadIndex;
             DetectMultipleXThreads(mainThreadIndex);
             return mainThreadIndex;
         }
@@ -138,7 +112,7 @@ namespace Anvil.Unity.DOTS.Jobs
         [Conditional("ANVIL_DEBUG_SAFETY")]
         private static void Debug_EnsureNativeThreadIndexIsValid(int nativeThreadIndex)
         {
-            if (nativeThreadIndex is <= 0 or > JobsUtility.MaxJobThreadCount)
+            if (nativeThreadIndex < 0 || nativeThreadIndex > JOB_WORKER_MAXIMUM_COUNT.Data)
             {
                 throw new InvalidOperationException($"Native Thread Index is {nativeThreadIndex}! Did you call {nameof(CollectionIndexForThread)} instead of {nameof(CollectionIndexForMainThread)}?");
             }
@@ -150,7 +124,7 @@ namespace Anvil.Unity.DOTS.Jobs
         private static void DetectMultipleXThreads(int nativeThreadIndex)
         {
 #if ANVIL_DEBUG_SAFETY_EXPENSIVE
-            ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, CollectionSizeForMaxThreads);
+            ThreadHelper.DetectMultipleXThreads(nativeThreadIndex, JOB_WORKER_MAXIMUM_COUNT.Data);
 #endif
         }
     }

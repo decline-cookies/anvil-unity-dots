@@ -10,7 +10,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043567688
     //TODO: https://github.com/decline-cookies/anvil-unity-dots/pull/105#discussion_r1043573642
 
-    [BurstCompatible]
     internal struct EntityProxyDataSourceConsolidator<TInstance> : IDisposable
         where TInstance : unmanaged, IEntityKeyedTask
     {

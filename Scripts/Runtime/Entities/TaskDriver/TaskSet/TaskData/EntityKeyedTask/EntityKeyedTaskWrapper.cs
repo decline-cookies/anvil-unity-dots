@@ -7,7 +7,6 @@ using Unity.Entities;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct EntityKeyedTaskWrapper<TInstance> : IEquatable<EntityKeyedTaskWrapper<TInstance>>
         where TInstance : unmanaged, IEntityKeyedTask
@@ -66,7 +65,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             return $"{InstanceID.ToString()})";
         }
 
-        [BurstCompatible]
         public FixedString64Bytes ToFixedString()
         {
             return InstanceID.ToFixedString();
@@ -87,7 +85,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Equality check for {typeof(EntityKeyedTaskWrapper<TInstance>)} where the ID's are the same but the Payloads are different. This should never happen!");
             }
         }
-        
+
         [Conditional("ANVIL_DEBUG_SAFETY")]
         public static void Debug_EnsureOffsetsAreCorrect()
         {

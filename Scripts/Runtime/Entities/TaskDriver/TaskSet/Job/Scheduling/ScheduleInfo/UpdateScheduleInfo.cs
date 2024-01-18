@@ -21,10 +21,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// </summary>
         public DeferredNativeArrayScheduleInfo DeferredNativeArrayScheduleInfo { get; }
 
-        internal DataStreamUpdater<TInstance> Updater
-        {
-            get => m_JobData.GetDataStreamUpdater();
-        }
 
         internal UpdateScheduleInfo(
             UpdateJobData<TInstance> jobData,

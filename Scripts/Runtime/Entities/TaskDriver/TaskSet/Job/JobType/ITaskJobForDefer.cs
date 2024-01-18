@@ -10,9 +10,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// This is specific to a context where the data is being read.
     /// </summary>
     /// <typeparam name="TInstance">The type of <see cref="IEntityKeyedTask"/> data</typeparam>
-    [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobStruct<,>))]
-    public interface ITaskJobForDefer<in TInstance>
-        where TInstance : unmanaged, IEntityKeyedTask
+    [JobProducerType(typeof(TaskJobForDeferExtension.WrapperJobProducer<>))]
+    public interface ITaskJobForDefer
     {
         /// <summary>
         /// Called once per thread to allow for initialization of state in the job
@@ -25,6 +24,6 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         /// occur.
         /// </summary>
         /// <param name="instance">The <see cref="IEntityKeyedTask"/> to read.</param>
-        void Execute(TInstance instance);
+        void Execute(int index);
     }
 }

@@ -20,13 +20,16 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
         // DATA STREAMS
         //*************************************************************************************************************
 
-        internal DataStreamCancellationUpdater<TInstance> GetDataStreamCancellationUpdater()
+        /// <summary>
+        /// Fulfills an instance of the provided type for the job.
+        /// </summary>
+        /// <param name="cancellationUpdater">The <see cref="DataStreamCancellationUpdater{TInstance}"/></param>
+        public void Fulfill(out DataStreamCancellationUpdater<TInstance> cancellationUpdater)
         {
             EntityProxyDataStream<TInstance> activeCancelDataStream = m_CancelJobConfig.GetActiveCancelDataStream<TInstance>();
             ResolveTargetTypeLookup resolveTargetTypeLookup = m_CancelJobConfig.GetResolveTargetTypeLookup();
             UnsafeParallelHashMap<EntityKeyedTaskID, bool> cancelProgressLookup = m_CancelJobConfig.GetCancelProgressLookup();
-            DataStreamCancellationUpdater<TInstance> cancellationUpdater = activeCancelDataStream.CreateDataStreamCancellationUpdater(resolveTargetTypeLookup, cancelProgressLookup);
-            return cancellationUpdater;
+            cancellationUpdater = activeCancelDataStream.CreateDataStreamCancellationUpdater(resolveTargetTypeLookup, cancelProgressLookup);
         }
     }
 }

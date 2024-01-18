@@ -15,7 +15,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <remarks>The <see cref="DynamicBuffer{T}"/> compliment to <see cref="MemsetNativeArray{T}"/>.</remarks>
     //TODO: #133 - Profile vs NativeArrayExtension.FloodSet. This probably isn't faster than FloodSetting in a job.
     [BurstCompile]
-    public struct MemsetBufferJob<T> : IJobParallelForBatch where T : struct, IBufferElementData
+    public struct MemsetBufferJob<T> : IJobParallelForBatch where T : unmanaged, IBufferElementData
     {
         // The minimum number of elements to process in a single batch.
         // Attempts to keep batch sizes large enough to prevent multiple cores from copying the same

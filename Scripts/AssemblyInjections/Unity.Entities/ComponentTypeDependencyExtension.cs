@@ -11,11 +11,10 @@ using UnityEngine;
 /// A collection of extension methods to help calculate and modify the dependencies on <see cref="ComponentType"/>s
 /// directly.
 /// </summary>
-[BurstCompatible]
 public static class ComponentTypeDependencyExtension
 {
-    private static UnsafeList<int> s_WriteTypeList_ScratchPad;
-    private static UnsafeList<int> s_ReadTypeList_ScratchPad;
+    private static UnsafeList<TypeIndex> s_WriteTypeList_ScratchPad;
+    private static UnsafeList<TypeIndex> s_ReadTypeList_ScratchPad;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Init()
@@ -24,13 +23,13 @@ public static class ComponentTypeDependencyExtension
         {
             s_WriteTypeList_ScratchPad.Dispose();
         }
-        s_WriteTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
+        s_WriteTypeList_ScratchPad = new UnsafeList<TypeIndex>(0, Allocator.Persistent);
 
         if (s_ReadTypeList_ScratchPad.IsCreated)
         {
             s_ReadTypeList_ScratchPad.Dispose();
         }
-        s_ReadTypeList_ScratchPad = new UnsafeList<int>(0, Allocator.Persistent);
+        s_ReadTypeList_ScratchPad = new UnsafeList<TypeIndex>(0, Allocator.Persistent);
     }
 
 
@@ -55,7 +54,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <param name="componentTypes">The component types to calculate the dependency of.</param>
     /// <returns>The combined dependency for the component types</returns>
-    [NotBurstCompatible]
     public static unsafe JobHandle GetDependency(this EntityManager manager, params ComponentType[] componentTypes)
     {
         return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, componentTypes);
@@ -70,7 +68,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <param name="componentTypes">The component types to calculate the dependency of.</param>
     /// <returns>The combined dependency for the component types</returns>
-    [NotBurstCompatible]
     public static unsafe JobHandle GetDependency<T>(this EntityManager manager, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
@@ -110,7 +107,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="componentTypes">The component types to calculate the dependency of.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <returns>The combined dependency for the component types</returns>
-    [NotBurstCompatible]
     public static unsafe JobHandle GetDependency<T>(this T componentTypes, EntityManager manager)
         where T : class, IEnumerable<ComponentType>
     {
@@ -124,7 +120,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="componentTypes">The component types to calculate the dependency of.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <returns>The combined dependency for the component types</returns>
-    [NotBurstCompatible]
     public static unsafe JobHandle GetDependency(this ref NativeArray<ComponentType> componentTypes, EntityManager manager)
     {
         return GetDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, ref componentTypes);
@@ -151,7 +146,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="componentTypes">The component types to set the dependency of.</param>
-    [NotBurstCompatible]
     public static unsafe void AddDependency(this EntityManager manager, JobHandle dependency, params ComponentType[] componentTypes)
     {
         AddDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, dependency, componentTypes);
@@ -166,7 +160,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
     /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="componentTypes">The component types to set the dependency of.</param>
-    [NotBurstCompatible]
     public static unsafe void AddDependency<T>(this EntityManager manager, JobHandle dependency, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
@@ -206,7 +199,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="componentTypes">The component types to set the dependency of.</param>
     /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    [NotBurstCompatible]
     public static unsafe void AddDependency<T>(this T componentTypes, JobHandle dependency, EntityManager manager)
         where T : class, IEnumerable<ComponentType>
     {
@@ -220,7 +212,6 @@ public static class ComponentTypeDependencyExtension
     /// <param name="componentTypes">The component types to set the dependency of.</param>
     /// <param name="dependency">The handle that represents when the consuming job is complete.</param>
     /// <param name="manager"> The <see cref="World"/>'s <see cref="EntityManager"/>.</param>
-    [NotBurstCompatible]
     public static unsafe void AddDependency(this ref NativeArray<ComponentType> componentTypes, JobHandle dependency, EntityManager manager)
     {
         AddDependency(manager.GetCheckedEntityDataAccess()->DependencyManager, dependency, ref componentTypes);
@@ -235,7 +226,7 @@ public static class ComponentTypeDependencyExtension
         //  1. Get the pointer to the one type index.
         //  2. Use the pointer for both the reader and writer parameters
         //  3. Calculate the reader/writer count based on the component type's access mode.
-        int* typeIndexPtr = (int*)UnsafeUtility.AddressOf(ref componentType.TypeIndex);
+        TypeIndex* typeIndexPtr = (TypeIndex*)UnsafeUtility.AddressOf(ref componentType.TypeIndex);
         int writerCount = componentType.AccessModeType == ComponentType.AccessMode.ReadWrite ? 1 : 0;
         int readerCount = 1 - writerCount;
 
@@ -243,7 +234,6 @@ public static class ComponentTypeDependencyExtension
             ->GetDependency(typeIndexPtr, readerCount, typeIndexPtr, writerCount);
     }
 
-    [NotBurstCompatible]
     private static unsafe JobHandle GetDependency<T>(ComponentDependencyManager* dependencyManager, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
@@ -266,7 +256,7 @@ public static class ComponentTypeDependencyExtension
         //  1. Get the pointer to the one type index.
         //  2. Use the pointer for both the reader and writer parameters
         //  3. Calculate the reader/writer count based on the component type's access mode.
-        int* typeIndexPtr = (int*)UnsafeUtility.AddressOf(ref componentType.TypeIndex);
+        TypeIndex* typeIndexPtr = (TypeIndex*)UnsafeUtility.AddressOf(ref componentType.TypeIndex);
         int writerCount = componentType.AccessModeType == ComponentType.AccessMode.ReadWrite ? 1 : 0;
         int readerCount = 1 - writerCount;
 
@@ -274,7 +264,6 @@ public static class ComponentTypeDependencyExtension
             ->AddDependency(typeIndexPtr, readerCount, typeIndexPtr, writerCount, dependency);
     }
 
-    [NotBurstCompatible]
     private static unsafe void AddDependency<T>(ComponentDependencyManager* dependencyManager, JobHandle dependency, T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {
@@ -290,7 +279,6 @@ public static class ComponentTypeDependencyExtension
             ->AddDependency(s_ReadTypeList_ScratchPad.Ptr, s_ReadTypeList_ScratchPad.Length, s_WriteTypeList_ScratchPad.Ptr, s_WriteTypeList_ScratchPad.Length, dependency);
     }
 
-    [NotBurstCompatible]
     private static void BuildTypeLists<T>(T componentTypes)
         where T : class, IEnumerable<ComponentType>
     {

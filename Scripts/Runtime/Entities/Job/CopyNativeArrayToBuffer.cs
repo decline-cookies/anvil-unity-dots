@@ -13,7 +13,7 @@ namespace Anvil.Unity.DOTS.Entities
     /// <see cref="DynamicBuffer{T}" /> and <see cref="NativeArray{T}" /> must have the same length.
     /// </remarks>
     [BurstCompile]
-    public struct CopyNativeArrayToBuffer<T> : IJob where T : struct, IBufferElementData
+    public struct CopyNativeArrayToBuffer<T> : IJob where T : unmanaged, IBufferElementData
     {
         /// <summary>
         /// The <see cref="NativeArray{T}" /> to copy from.
@@ -23,12 +23,12 @@ namespace Anvil.Unity.DOTS.Entities
         /// <summary>
         /// The type handle for the <see cref="DynamicBuffer{T}" /> to copy to.
         /// </summary>
-        [WriteOnly] public BufferFromSingleEntity<T> OutputBufferFromEntity;
+        [WriteOnly] public BufferFromSingleEntity<T> OutputBufferLookup;
 
         /// <inheritdoc/>
         public void Execute()
         {
-            NativeArray<T> outputBuffer = OutputBufferFromEntity.GetBuffer().AsNativeArray();
+            NativeArray<T> outputBuffer = OutputBufferLookup.GetBuffer().AsNativeArray();
 
             // Could be modified to support mismatched lengths using `NativeArray<T>.Copy()` but it's not
             // necessary for the intended use case and adds complexity. Add support if the need arises.

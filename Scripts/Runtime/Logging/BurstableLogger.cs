@@ -30,8 +30,7 @@ namespace Anvil.Unity.DOTS.Logging
     /// except for the Editor console (<see cref="UnityLogHandler"/>).
     /// This is a Burst limitation.
     /// </remarks>
-    [BurstCompatible]
-    public readonly struct BurstableLogger<TPrefixStringType> where TPrefixStringType : struct, INativeList<byte>, IUTF8Bytes
+    public readonly struct BurstableLogger<TPrefixStringType> where TPrefixStringType : unmanaged, INativeList<byte>, IUTF8Bytes
     {
         private const int UNSET_THREAD_INDEX = -1;
 
@@ -53,7 +52,6 @@ namespace Anvil.Unity.DOTS.Logging
         /// <exception cref="Exception">
         /// Thrown if there is an unknown error encountered when configuring the prefix string.
         /// </exception>
-        [NotBurstCompatible]
         public BurstableLogger(Logger logger, string appendToMessagePrefix)
         {
             m_ThreadIndex = UNSET_THREAD_INDEX;

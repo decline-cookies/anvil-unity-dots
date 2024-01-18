@@ -8,7 +8,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     /// </summary>
     /// <typeparam name="T">The type of <see cref="IComponentData"/></typeparam>
     public class EntityQueryComponentJobData<T> : AbstractJobData
-        where T : struct, IComponentData
+        where T : unmanaged, IComponentData
     {
         private readonly EntityQueryComponentJobConfig<T> m_JobConfig;
 

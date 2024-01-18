@@ -4,7 +4,6 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Anvil.Unity.DOTS.Entities.TaskDriver
 {
-    [BurstCompatible]
     internal struct CancelRequestsActiveConsolidator
     {
         private readonly bool m_HasCancellableData;

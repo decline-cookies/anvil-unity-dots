@@ -64,10 +64,10 @@ namespace Anvil.Unity.DOTS.Entities
             //instance id issued combo.
             //This way we don't run out of IDs when acquiring every frame but we also don't need to force the call site
             //to manage and store an ID.
-            
+
             //TODO: https://github.com/decline-cookies/anvil-csharp-core/issues/147
             //      Change to a Pool<int> instead.
-            
+
             //If we have an ID free to use in the queue, just get it
             if (m_InstanceIDQueue.Count > 0)
             {
@@ -84,7 +84,7 @@ namespace Anvil.Unity.DOTS.Entities
 
             Type type = GetType();
             Type commandBufferSystemType = type.GetCustomAttribute<UseCommandBufferSystemAttribute>().CommandBufferSystemType;
-            m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystem(commandBufferSystemType);
+            m_CommandBufferSystem = (EntityCommandBufferSystem)World.GetOrCreateSystemManaged(commandBufferSystemType);
 
             CreateArchetypeLookup();
         }
@@ -104,11 +104,6 @@ namespace Anvil.Unity.DOTS.Entities
                 if (m_EntityArchetypes.TryGetValue(entityArchetypeHash, out EntityArchetype entityArchetype))
                 {
                     continue;
-                }
-
-                if (definitionType.GetCustomAttribute<BurstCompatibleAttribute>() == null)
-                {
-                    throw new InvalidOperationException($"Definition Type of {definitionType.GetReadableName()} should have the {nameof(BurstCompatibleAttribute)} set but it does not.");
                 }
 
                 if (definitionType.GetCustomAttribute<IsReadOnlyAttribute>() == null)
@@ -157,7 +152,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // SPAWN API - IN JOB
         //*************************************************************************************************************
-        
+
         /// <summary>
         /// Acquires an <see cref="EntitySpawner"/> for use in a job and returns the dependency to wait on.
         /// Must call <see cref="ReleaseAsync"/> with the dependency for the jobs that use this instance.
@@ -183,7 +178,7 @@ namespace Anvil.Unity.DOTS.Entities
             m_CommandBufferSystem.AddJobHandleForProducer(releaseAccessDependency);
         }
 
-        
+
         private EntitySpawner AcquireDeferred()
         {
             return AcquireSpawner(true, m_EntityPrototypes.Acquire(AccessType.SharedRead));
@@ -270,7 +265,7 @@ namespace Anvil.Unity.DOTS.Entities
             }
             ReleaseDeferred(entitySpawner);
         }
-        
+
         /// <summary>
         /// Spawns an <see cref="Entity"/> immediately with the given <see cref="IEntitySpawnDefinition"/>
         /// </summary>
@@ -349,7 +344,7 @@ namespace Anvil.Unity.DOTS.Entities
         //*************************************************************************************************************
         // UPDATE
         //*************************************************************************************************************
-        
+
         protected override void OnUpdate()
         {
             m_PendingReleaseSpawners.Clear();

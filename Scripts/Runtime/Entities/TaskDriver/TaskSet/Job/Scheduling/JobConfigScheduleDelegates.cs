@@ -38,7 +38,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             JobHandle jobHandle,
             EntityQueryComponentJobData<T> jobData,
             EntityQueryComponentScheduleInfo<T> scheduleInfo)
-            where T : struct, IComponentData;
+            where T : unmanaged, IComponentData;
 
         /// <summary>
         /// For scheduling a job triggered by instances in a <see cref="NativeArray{T}"/> from a

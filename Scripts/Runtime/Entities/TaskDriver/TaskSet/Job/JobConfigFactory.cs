@@ -78,15 +78,15 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             JobConfigScheduleDelegates.ScheduleEntityQueryJobDelegate scheduleJobFunction,
             BatchStrategy batchStrategy)
         {
-            EntityQueryNativeArray entityQueryNativeArray = new EntityQueryNativeArray(entityQuery);
+            EntityQueryNativeList entityQueryNativeList = new EntityQueryNativeList(entityQuery);
 
-            EntityQueryJobConfig jobConfig = new EntityQueryJobConfig(taskSetOwner, entityQueryNativeArray);
+            EntityQueryJobConfig jobConfig = new EntityQueryJobConfig(taskSetOwner, entityQueryNativeList);
 
             EntityQueryJobData jobData = new EntityQueryJobData(jobConfig);
 
             EntityQueryScheduleInfo scheduleInfo = new EntityQueryScheduleInfo(
                 jobData,
-                entityQueryNativeArray,
+                entityQueryNativeList,
                 batchStrategy,
                 scheduleJobFunction);
 
@@ -98,19 +98,19 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             EntityQuery entityQuery,
             JobConfigScheduleDelegates.ScheduleEntityQueryComponentJobDelegate<T> scheduleJobFunction,
             BatchStrategy batchStrategy)
-            where T : struct, IComponentData
+            where T : unmanaged, IComponentData
         {
-            EntityQueryComponentNativeArray<T> entityQueryComponentNativeArray = new EntityQueryComponentNativeArray<T>(entityQuery);
+            EntityQueryComponentNativeList<T> entityQueryComponentNativeList = new EntityQueryComponentNativeList<T>(entityQuery);
 
             EntityQueryComponentJobConfig<T> jobConfig = new EntityQueryComponentJobConfig<T>(
                 taskSetOwner,
-                entityQueryComponentNativeArray);
+                entityQueryComponentNativeList);
 
             EntityQueryComponentJobData<T> jobData = new EntityQueryComponentJobData<T>(jobConfig);
 
             EntityQueryComponentScheduleInfo<T> scheduleInfo = new EntityQueryComponentScheduleInfo<T>(
                 jobData,
-                entityQueryComponentNativeArray,
+                entityQueryComponentNativeList,
                 batchStrategy,
                 scheduleJobFunction);
 

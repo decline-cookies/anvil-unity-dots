@@ -25,6 +25,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
     {
         private static readonly Type TASK_DRIVER_SYSTEM_TYPE = typeof(TaskDriverSystem<>);
         private static readonly Type COMPONENT_SYSTEM_GROUP_TYPE = typeof(ComponentSystemGroup);
+        private static readonly Type WORLD_TYPE = typeof(World);
+        private static readonly MethodInfo ADD_SYSTEM_MANAGED_METHOD_INFO = WORLD_TYPE.GetMethod("AddSystemManaged", BindingFlags.Instance | BindingFlags.Public);
 
         private readonly PersistentDataSystem m_PersistentDataSystem;
         private readonly List<AbstractTaskDriver> m_SubTaskDrivers;
@@ -133,8 +135,8 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
             Parent?.m_SubTaskDrivers.Add(this);
             WorldUniqueID = GenerateWorldUniqueID(uniqueContextIdentifier);
 
-            TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystem<TaskDriverManagementSystem>();
-            m_PersistentDataSystem = World.GetOrCreateSystem<PersistentDataSystem>();
+            TaskDriverManagementSystem taskDriverManagementSystem = World.GetOrCreateSystemManaged<TaskDriverManagementSystem>();
+            m_PersistentDataSystem = World.GetOrCreateSystemManaged<PersistentDataSystem>();
 
             m_SubTaskDrivers = new List<AbstractTaskDriver>();
             TaskSet = new TaskSet(this);
@@ -148,12 +150,13 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
 
 
             //If we've already created a TaskDriver of this type, then it's corresponding system will also have been created.
-            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystem(customSystemType);
+            TaskDriverSystem = (AbstractTaskDriverSystem)World.GetExistingSystemManaged(customSystemType);
             //If not, then we will want to explicitly create it and ensure it is part of the lifecycle.
             if (TaskDriverSystem == null)
             {
                 TaskDriverSystem = (AbstractTaskDriverSystem)Activator.CreateInstance(customSystemType, World);
-                World.AddSystem(TaskDriverSystem);
+                MethodInfo customAddSystemManagedMethodInfo = ADD_SYSTEM_MANAGED_METHOD_INFO.MakeGenericMethod(customSystemType);
+                customAddSystemManagedMethodInfo.Invoke(World, new object[] { TaskDriverSystem });
                 ComponentSystemGroup systemGroup = GetSystemGroup();
                 systemGroup.AddSystemToUpdateList(TaskDriverSystem);
             }
@@ -192,7 +195,7 @@ namespace Anvil.Unity.DOTS.Entities.TaskDriver
                 throw new InvalidOperationException($"Tried to get the {COMPONENT_SYSTEM_GROUP_TYPE.GetReadableName()} for {this} but {systemGroupType.GetReadableName()} is not a valid group type!");
             }
 
-            return (ComponentSystemGroup)World.GetOrCreateSystem(systemGroupType);
+            return (ComponentSystemGroup)World.GetOrCreateSystemManaged(systemGroupType);
         }
 
         private Type GetSystemGroupType()

@@ -30,13 +30,11 @@ namespace Anvil.Unity.DOTS.Data
     /// fill up the buffer.
     /// </summary>
     /// <typeparam name="T">The type of elements to store in the collection.</typeparam>
-    [BurstCompatible]
     public unsafe struct UnsafeTypedStream<T> : INativeDisposable where T : unmanaged
     {
         /// <summary>
         /// Information about the <see cref="UnsafeTypedStream{T}" /> itself.
         /// </summary>
-        [BurstCompatible]
         internal struct BufferInfo
         {
             public static readonly int SIZE = UnsafeUtility.SizeOf<BufferInfo>();
@@ -57,7 +55,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <remarks>
         /// Unity will refer to this as a "foreachindex" which is a little bit confusing.
         /// </remarks>
-        [BurstCompatible]
         [StructLayout(LayoutKind.Sequential, Size = 64)]
         internal struct LaneInfo
         {
@@ -77,7 +74,6 @@ namespace Anvil.Unity.DOTS.Data
         /// Contains the pointer to where the "block" begins and a pointer to another <see cref="BlockInfo" /> instance
         /// for the next "block" in the linked list.
         /// </summary>
-        [BurstCompatible]
         internal struct BlockInfo
         {
             public static readonly int SIZE = UnsafeUtility.SizeOf<BlockInfo>();
@@ -508,7 +504,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// A lightweight struct to allow for writing to the collection
         /// </summary>
-        [BurstCompatible]
         public readonly struct Writer
         {
             internal static Writer ReinterpretFromPointer(void* ptr)
@@ -582,7 +577,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// A lightweight writer instance that is locked to a specific lane
         /// </summary>
-        [BurstCompatible]
         public readonly struct LaneWriter
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
@@ -678,7 +672,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <summary>
         /// A lightweight struct to allow for reader from the collection
         /// </summary>
-        [BurstCompatible]
         public readonly struct Reader
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;
@@ -778,7 +771,6 @@ namespace Anvil.Unity.DOTS.Data
         /// <see cref="LaneReader" />'s manage their own state so that multiple readers can read from a given lane at
         /// the same time.
         /// </summary>
-        [BurstCompatible]
         public struct LaneReader
         {
             [NativeDisableUnsafePtrRestriction] private readonly BufferInfo* m_BufferInfo;

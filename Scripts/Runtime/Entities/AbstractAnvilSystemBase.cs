@@ -86,7 +86,8 @@ namespace Anvil.Unity.DOTS.Entities
             m_UpdateInGroupType = updateInGroupAttribute.GroupType;
 
             //We'll get or create the system specified in the attribute. It SHOULD be a Group, but might not be so...
-            ComponentSystemBase componentSystemBase = World.GetOrCreateSystem(m_UpdateInGroupType);
+            ComponentSystemBase componentSystemBase = World.GetOrCreateSystemManaged(m_UpdateInGroupType);
+            
             if (componentSystemBase is not ComponentSystemGroup componentSystemGroup)
             {
                 //We'll rightly complain about it.
