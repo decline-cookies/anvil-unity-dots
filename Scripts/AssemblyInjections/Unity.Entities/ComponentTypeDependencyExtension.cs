@@ -1,4 +1,6 @@
+using Anvil.Unity.DOTS.Entities;
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -11,6 +13,8 @@ using UnityEngine;
 /// A collection of extension methods to help calculate and modify the dependencies on <see cref="ComponentType"/>s
 /// directly.
 /// </summary>
+
+[BurstCompile]
 public static class ComponentTypeDependencyExtension
 {
     private static UnsafeList<TypeIndex> s_WriteTypeList_ScratchPad;
@@ -30,6 +34,14 @@ public static class ComponentTypeDependencyExtension
             s_ReadTypeList_ScratchPad.Dispose();
         }
         s_ReadTypeList_ScratchPad = new UnsafeList<TypeIndex>(0, Allocator.Persistent);
+    }
+
+    [BurstCompile]
+    public static unsafe int GetNumReadHandles(this ref EntityManager manager, in ComponentType componentType)
+    {
+        EntityDataAccess* entityDataAccess = manager.GetCheckedEntityDataAccess();
+        ComponentDependencyManager* componentDependencyManager = entityDataAccess->DependencyManager;
+        return ComponentDependencyManagerInternal.GetNumReadHandles(componentDependencyManager, componentType);
     }
 
 
