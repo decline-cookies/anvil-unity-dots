@@ -75,8 +75,6 @@ namespace Anvil.Unity.DOTS.Core
         {
             // The read handle will automatically be moved forward by the system.
             // We must manually move the write handle forward in case a Read job happens after us.
-
-
             ComponentType readWriteType = ComponentType.ReadWrite<T>();
 
             ref NativeArray<SharedWriteState> data = ref s_SharedWriteStateByTypeIndex.Data;

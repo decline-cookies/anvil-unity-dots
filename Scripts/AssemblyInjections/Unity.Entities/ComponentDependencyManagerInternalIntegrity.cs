@@ -41,8 +41,6 @@ namespace Anvil.Unity.DOTS.Entities
                 throw new InvalidProgramException($"{typeof(ComponentDependencyManager)} has changed it's inner layout. Please update {nameof(ComponentDependencyManagerInternal.FIELD_OFFSET_DEPENDENCY_HANDLES)} to match {s_FieldOffset_m_DependencyHandles}.");
             }
 
-
-
             Type innerDependencyHandleType = s_ComponentDependencyManagerType.GetNestedType("DependencyHandle", BindingFlags.Instance | BindingFlags.NonPublic);
             Type ourDependencyHandleType = typeof(ComponentDependencyManagerInternal.DependencyHandle);
 
