@@ -8,6 +8,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Profiling;
 using UnityEngine;
 
 #if ANVIL_TEST_CASE_SHARED_WRITE
@@ -25,17 +26,20 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
         private readonly SharedWriteTrigger m_ExpectedSharedWriteTrigger;
         private readonly int m_Index;
         private readonly int m_Value;
+        private readonly ProfilerMarker m_ProfilerMarker;
         private EntityQuery m_SingletonQuery;
 
         public SharedWriterSystemPart(
             ref SystemState state,
             SharedWriteTrigger expectedSharedWriteTrigger,
             int index,
-            int value)
+            int value,
+            ProfilerMarker profilerMarker)
         {
             m_ExpectedSharedWriteTrigger = expectedSharedWriteTrigger;
             m_Index = index;
             m_Value = value;
+            m_ProfilerMarker = profilerMarker;
 
             EntityQueryBuilder queryBuilder = new EntityQueryBuilder(AllocatorManager.Temp)
                                              .WithAll<T>()
@@ -58,7 +62,8 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
             SharedWriteJob job = new SharedWriteJob(
                                                     ref data,
                                                     m_Index,
-                                                    m_Value);
+                                                    m_Value,
+                                                    m_ProfilerMarker);
 
             // If we're new, then we need to account for all other dependencies coming in here.
             if (sharedWriteTrigger == SharedWriteTrigger.New)
@@ -88,22 +93,27 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
 
             private readonly int m_Index;
             private readonly int m_Value;
+            private readonly ProfilerMarker m_ProfilerMarker;
 
             public SharedWriteJob(
                 ref T data,
                 int index,
-                int value)
+                int value,
+                ProfilerMarker profilerMarker)
             {
                 m_Data = data;
                 m_Index = index;
                 m_Value = value;
+                m_ProfilerMarker = profilerMarker;
             }
 
             public void Execute()
             {
+                m_ProfilerMarker.Begin();
                 MathUtil.FindPrimeNumber(SWTCConstants.NTH_PRIME_VALUE_TO_FIND);
                 ref int element = ref m_Data.Buffer.ElementAt(m_Index);
                 element = m_Value;
+                m_ProfilerMarker.End();
             }
         }
     }
