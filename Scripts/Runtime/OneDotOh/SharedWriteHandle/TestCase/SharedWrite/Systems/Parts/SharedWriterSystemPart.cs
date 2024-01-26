@@ -73,6 +73,13 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
             // If we're another Shared Write job in the chain, we don't want to use the built in dependency because
             // then we would be scheduled after the first Shared Write job. Instead, we want to schedule back when the
             // first job happened.
+            // TODO: What happens if the system dependency contained data that we need too? Are we potentially having a conflict?
+            // Example Case -
+            // JobA - Takes in a bunch of entities to read some data from them and write to other data but also SharedWrite to an event buffer.
+            // JobB - Takes in different data to read and write but also SharedWrites to the same event buffer.
+            // If the data for both JobA and JobB doesn't conflict in any way, then we should be fine to just schedule based on the SharedWriteHandle.
+            // If the data for both JobA and JobB does conflict, ex, they both need to write to the same place exclusively. Then the SharedWriteHandle will cause a conflict.
+            // Need to create two test cases to test for this assertion.
             else
             {
                 dependsOn = sharedWriteHandle;

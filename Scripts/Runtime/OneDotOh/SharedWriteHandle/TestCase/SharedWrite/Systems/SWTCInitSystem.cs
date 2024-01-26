@@ -14,6 +14,9 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
             state.EntityManager.CreateSingleton(new SWTCBufferX(new NativeArray<int>(3, Allocator.Persistent)));
             state.EntityManager.CreateSingleton(new SWTCBufferY(new NativeArray<int>(3, Allocator.Persistent)));
 
+            state.EntityManager.CreateSingleton(new SWTCExclusiveCounterA(new NativeArray<int>(1, Allocator.Persistent)));
+            state.EntityManager.CreateSingleton(new SWTCExclusiveCounterB(new NativeArray<int>(1, Allocator.Persistent)));
+
             state.Enabled = false;
         }
 
@@ -27,6 +30,15 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
             if (SystemAPI.TryGetSingletonRW(out RefRW<SWTCBufferY> swtcBufferY))
             {
                 swtcBufferY.ValueRW.Buffer.Dispose();
+            }
+
+            if (SystemAPI.TryGetSingletonRW(out RefRW<SWTCExclusiveCounterA> swtcExclusiveCounterA))
+            {
+                swtcExclusiveCounterA.ValueRW.Buffer.Dispose();
+            }
+            if (SystemAPI.TryGetSingletonRW(out RefRW<SWTCExclusiveCounterB> swtcExclusiveCounterB))
+            {
+                swtcExclusiveCounterB.ValueRW.Buffer.Dispose();
             }
         }
     }
