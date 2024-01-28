@@ -261,6 +261,12 @@ public static class ComponentTypeDependencyExtension
             ->GetDependency(s_ReadTypeList_ScratchPad.Ptr, s_ReadTypeList_ScratchPad.Length, s_WriteTypeList_ScratchPad.Ptr, s_WriteTypeList_ScratchPad.Length);
     }
 
+    public static unsafe JobHandle GetDependency(ref this EntityManager entityManager, TypeIndex* readerTypes, int readerTypesCount, TypeIndex* writerTypes, int writerTypesCount)
+    {
+        ComponentDependencyManager* componentDependencyManager = entityManager.GetCheckedEntityDataAccess()->DependencyManager;
+        return componentDependencyManager->GetDependency(readerTypes, readerTypesCount, writerTypes, writerTypesCount);
+    }
+
     private static unsafe void AddDependency(ComponentDependencyManager* dependencyManager, JobHandle dependency, ComponentType componentType)
     {
         // Micro-optimization

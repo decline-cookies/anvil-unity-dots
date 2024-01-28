@@ -36,7 +36,7 @@ namespace Anvil.Unity.DOTS.Core
 
         public void Release(ref SystemState state, in JobHandle dependsOn)
         {
-            state.ReleaseSharedWriteHandle<T>(dependsOn);
+            // state.ReleaseSharedWriteHandle<T>(dependsOn);
         }
 
         public T Data

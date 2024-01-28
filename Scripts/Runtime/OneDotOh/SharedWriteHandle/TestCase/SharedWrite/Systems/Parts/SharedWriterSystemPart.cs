@@ -52,7 +52,7 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
 
         public void OnUpdate(ref SystemState state)
         {
-            state.GetSystemDependency(out JobHandle dependsOn);
+            // state.GetSystemDependency(out JobHandle dependsOn);
 
             state.AcquireSharedWriteHandle<T>(out JobHandle sharedWriteHandle, out SharedWriteTrigger sharedWriteTrigger);
             Debug.Assert(sharedWriteTrigger == m_ExpectedSharedWriteTrigger);
@@ -66,10 +66,10 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
                                                     m_ProfilerMarker);
 
             // If we're new, then we need to account for all other dependencies coming in here.
-            if (sharedWriteTrigger == SharedWriteTrigger.New)
-            {
-                dependsOn = JobHandle.CombineDependencies(dependsOn, sharedWriteHandle);
-            }
+            // if (sharedWriteTrigger == SharedWriteTrigger.New)
+            // {
+            //     dependsOn = JobHandle.CombineDependencies(dependsOn, sharedWriteHandle);
+            // }
             // If we're another Shared Write job in the chain, we don't want to use the built in dependency because
             // then we would be scheduled after the first Shared Write job. Instead, we want to schedule back when the
             // first job happened.
@@ -80,16 +80,23 @@ namespace Anvil.Unity.DOTS.TestCase.SharedWrite
             // If the data for both JobA and JobB doesn't conflict in any way, then we should be fine to just schedule based on the SharedWriteHandle.
             // If the data for both JobA and JobB does conflict, ex, they both need to write to the same place exclusively. Then the SharedWriteHandle will cause a conflict.
             // Need to create two test cases to test for this assertion.
-            else
-            {
-                dependsOn = sharedWriteHandle;
-            }
+            // else
+            // {
+            //     dependsOn = sharedWriteHandle;
+            // }
 
+            // TODO: Cleanup - This will have the system dependency baked in minus the shared write component.
+            // TODO: If we have multiple shared writes for the same job, we need a way to account for that.
+            JobHandle dependsOn = sharedWriteHandle;
             dependsOn = job.ScheduleByRef(dependsOn);
 
-            state.ReleaseSharedWriteHandle<T>(dependsOn);
+            // TODO: We want to schedule the job based on the SharedWrite handle combined with the modified system dependency.
+            // However, we then want to move the Write and Read handle forward by the original system dependency combined with the job we just scheduled out of band
+            // so that everything still jives.
+            // dependsOn = JobHandle.CombineDependencies(dependsOn, state.Dependency);
+            state.ReleaseSharedWriteHandle<T>(ref dependsOn);
 
-            state.SetSystemDependency(JobHandle.CombineDependencies(dependsOn, state.Dependency));
+            state.SetSystemDependency(dependsOn);
         }
 
         [BurstCompile]
